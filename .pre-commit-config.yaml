@@ -1,0 +1,29 @@
+exclude: "^notebooks/|^notes/"
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        args: [--no-strict-optional, --ignore-missing-imports]
+        files: ^(pdq/|tests/)
+        additional_dependencies: [types-requests]
+  - repo: https://github.com/ambv/black
+    rev: 24.2.0
+    hooks:
+    - id: black
+      language: python
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--multi-line", "3", "--profile", "black", "--treat-comment-as-code", "# %%", "--float-to-top"]

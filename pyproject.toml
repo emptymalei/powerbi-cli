@@ -1,0 +1,41 @@
+[tool.poetry]
+
+name = "Power BI Command Line Tool"
+version = "0.1.0"
+description = "A Sample project."
+
+packages = [{ include = "pbi_cli", from="src"}]
+
+license = ""
+authors = ["L M <hi@leima.is>"]
+
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.2"
+openpyxl = "^3.1.4"
+click = "^8.1.7"
+loguru = "^0.7.2"
+requests = "^2.32.3"
+python-slugify = "^8.0.4"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+pytest = "^8.3.3"
+twine = "^6.1.0"
+
+[tool.poetry.scripts]
+pbi = "pbi_cli.cli:pbi"
+
+[tool.poetry.requires-plugins]
+
+poetry-plugin-export = ">=1.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
