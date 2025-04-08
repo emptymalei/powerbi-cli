@@ -27,6 +27,14 @@ ipykernel = "^6.29.4"
 pytest = "^8.3.3"
 twine = "^6.1.0"
 
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.6.11"
+mkdocs-autorefs = "^1.4.1"
+mkdocstrings = {version = "^0.29.1", extras = ["python"]}
+mkdocs-jupyter = "^0.25.1"
+mkdocs-click = "^0.9.0"
+
 [tool.poetry.scripts]
 pbi = "pbi_cli.cli:pbi"
 
@@ -38,4 +46,3 @@ poetry-plugin-export = ">=1.8"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-

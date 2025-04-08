@@ -124,10 +124,7 @@ class DataRetriever:
         """
         cookies = {"language": "en"}
 
-        headers = {
-            **self.get_random_user_agent(),
-            **headers
-        }
+        headers = {**self.get_random_user_agent(), **headers}
 
         timeout = (5, 14)
 
@@ -143,7 +140,7 @@ class DataRetriever:
     ) -> requests.Response:
         """Download page and save content
 
-        :param headers: header information such as useragent, 
+        :param headers: header information such as useragent,
             defaults to random user agent from get_random_user_agent
         """
         content = self.session.get(
