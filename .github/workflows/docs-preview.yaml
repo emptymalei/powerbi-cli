@@ -1,0 +1,41 @@
+name: Deploy PR Docs previews
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.1.6
+    - uses: actions/setup-python@v5.1.0
+      with:
+        python-version: "3.12"
+    - uses: pre-commit/action@v3.0.1
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.6
+      - uses: actions/setup-python@v5.1.0
+        with:
+          python-version: "3.12"
+      - name: Setup Poetry
+        uses: abatilo/actions-poetry@v3.0.0
+        with:
+          poetry-version: 1.8.3
+      - name: Install Packages
+        run: poetry install --with docs,tutorial
+      - run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Build Docs
+        run: poetry run mkdocs build
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: ./site/
