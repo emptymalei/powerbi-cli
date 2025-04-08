@@ -1,12 +1,12 @@
 [tool.poetry]
 
-name = "Power BI Command Line Tool"
+name = "pbi_cli"
 version = "0.1.0"
-description = "A Sample project."
+description = "Power BI Command Line Tool for managing Power BI projects."
 
 packages = [{ include = "pbi_cli", from="src"}]
 
-license = ""
+license = "MIT"
 authors = ["L M <hi@leima.is>"]
 
 readme = "README.md"
