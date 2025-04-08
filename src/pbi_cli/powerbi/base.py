@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from pbi_cli.web import DataRetriever
 
 
@@ -22,13 +23,12 @@ class Base(ABC):
         return DataRetriever(
             session_query_configs={"headers": self.auth, "verify": self.verify}
         )
-    
+
     @staticmethod
     def _encode_query_params(query_params: dict, leading_char: str = "%24") -> str:
-        query_params_encoded = "&".join([
-            f"{leading_char}{k}={v}"
-            for k, v in query_params.items()
-        ])
+        query_params_encoded = "&".join(
+            [f"{leading_char}{k}={v}" for k, v in query_params.items()]
+        )
         return query_params_encoded
 
     @property

@@ -1,5 +1,6 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def multi_group_dict_to_excel(data: dict, target: Path):
@@ -13,11 +14,11 @@ def multi_group_dict_to_excel(data: dict, target: Path):
     }
     dict_to_excel(data, "output.xlsx")
     ```
-    
+
     :param data: A dictionary where each key maps to a list of dictionaries or data.
     :param file_name: Name of the Excel file to save
     """
-    with pd.ExcelWriter(target, engine='openpyxl') as writer:
+    with pd.ExcelWriter(target, engine="openpyxl") as writer:
         for sheet_name, rows in data.items():
             df = pd.DataFrame(rows)
             df.to_excel(writer, sheet_name=sheet_name, index=False)

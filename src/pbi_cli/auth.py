@@ -5,17 +5,13 @@ class PBIAuth:
     :param region: region of the aws account
     """
 
-    def __init__(
-        self, authorization: str
-    ):
+    def __init__(self, authorization: str):
 
         self.authorization = authorization
 
     @property
     def headers(self) -> dict:
-        return {
-            "Authorization": self.authorization
-        }
+        return {"Authorization": self.authorization}
 
     @property
     def base_uri(self) -> str:
