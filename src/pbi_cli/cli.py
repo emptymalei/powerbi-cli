@@ -51,7 +51,22 @@ def pbi(ctx):
 @pbi.command()
 @click.option("--bearer-token", "-t", help="Bearer token", required=True)
 def auth(bearer_token: str):
-    """get auth bearer token and cache it"""
+    """get auth bearer token and cache it
+
+    ```
+    pbi auth --bearer-token <your_bearer_token>
+    ```
+
+    or
+
+    ```
+    pbi auth -t <your_bearer_token>
+    ```
+
+    for short.
+
+    :param bearer_token: Bearer token to authenticate with Power BI API
+    """
 
     if bearer_token.startswith("Bearer"):
         logger.warning("Do not include the Bearer string in the begining")
@@ -79,7 +94,6 @@ def auth(bearer_token: str):
 )
 def export(group_id: str, report_id: str, target: Path):
     """get auth bearer token and cache it"""
-
     dr = DataRetriever(session_query_configs={"headers": load_auth(), "verify": False})
 
     uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
@@ -93,6 +107,7 @@ def export(group_id: str, report_id: str, target: Path):
 @pbi.group(invoke_without_command=True)
 @click.pass_context
 def workspaces(ctx):
+    """Command group for Power BI workspaces"""
     if ctx.invoked_subcommand is None:
         click.echo("Use pbi workspaces --help for help.")
     else:
@@ -133,6 +148,7 @@ def list(
     file_type: list[str],
     file_name: str = "workspaces",
 ):
+    """List Power BI workspaces and save them to files"""
 
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
@@ -180,7 +196,7 @@ def list(
     required=False,
 )
 def format_convert(source: Path, target: Path, format):
-
+    """Convert output format of workspaces"""
     workspaces = Workspaces(auth={}, verify=False)
 
     click.echo(f"Converting to {format=}: {source=} -> {target}")
@@ -196,6 +212,7 @@ def format_convert(source: Path, target: Path, format):
 @pbi.group(invoke_without_command=True)
 @click.pass_context
 def users(ctx):
+    """Command group for Power BI users"""
     if ctx.invoked_subcommand is None:
         click.echo("Use pbi users --help.")
     else:
@@ -228,6 +245,7 @@ def user_access(
     file_types: list,
     file_name: Optional[str] = None,
 ):
+    """Get user access information from Power BI API"""
     if file_name is None:
         file_name = slugify(user_id)
 
@@ -258,6 +276,7 @@ def user_access(
 @pbi.group(invoke_without_command=True)
 @click.pass_context
 def apps(ctx):
+    """Power BI Apps Command Group"""
     if ctx.invoked_subcommand is None:
         click.echo("Use pbi apps --help.")
     else:
@@ -284,7 +303,7 @@ def apps(ctx):
 def list(
     target_folder: Path, role: str, file_type: str = "json", file_name: str = "apps"
 ):
-
+    """List Power BI Apps and save them to files"""
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
         target_folder.mkdir(parents=True, exist_ok=True)
@@ -320,7 +339,7 @@ def list(
     "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
 )
 def app(app_id: str, target: Path, file_type: str = "json"):
-
+    """Retrieve information about a specific Power BI App"""
     click.echo(f"Investigating {app_id}")
 
     a_app = powerbi_app.App(auth=load_auth(), verify=False, app_id=app_id)
@@ -353,7 +372,7 @@ def app(app_id: str, target: Path, file_type: str = "json"):
     "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
 )
 def augment(source: Path, target: Path, file_type: str = "json"):
-
+    """Augment Power BI Apps data from a source file and save to target file"""
     if file_type == "excel":
         if target.suffix:
             click.echo("Use path as target for excel output")
@@ -387,6 +406,7 @@ def augment(source: Path, target: Path, file_type: str = "json"):
 @pbi.group(invoke_without_command=True)
 @click.pass_context
 def reports(ctx):
+    """Reports Command Group"""
     if ctx.invoked_subcommand is None:
         click.echo("Use pbi reports --help.")
     else:

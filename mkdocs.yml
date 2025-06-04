@@ -88,5 +88,10 @@ nav:
     - "pbi_cli":
       - "cli": references/cli.md
       - "powerbi":
+        - "index": references/powerbi/index.md
         - "admin": references/powerbi/admin.md
+        - "app": references/powerbi/app.md
+        - "base": references/powerbi/base.md
+        - "io": references/powerbi/io.md
+        - "report": references/powerbi/report.md
   - "Changelog": changelog.md
