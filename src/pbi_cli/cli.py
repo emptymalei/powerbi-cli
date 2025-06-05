@@ -93,7 +93,7 @@ def auth(bearer_token: str):
     "--target", "-t", type=click.Path(exists=False), help="target file", required=True
 )
 def export(group_id: str, report_id: str, target: Path):
-    """get auth bearer token and cache it"""
+    """export report based on id"""
     dr = DataRetriever(session_query_configs={"headers": load_auth(), "verify": False})
 
     uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
