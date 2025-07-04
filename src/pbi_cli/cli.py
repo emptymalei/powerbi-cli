@@ -10,14 +10,13 @@ from loguru import logger
 from slugify import slugify
 
 import pbi_cli.powerbi.admin as powerbi_admin
+import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 from pbi_cli.auth import PBIAuth
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
-import pbi_cli.powerbi.admin.report as powerbi_admin_report
-
 
 logger.remove()
 logger.add(sys.stderr, level="INFO", enqueue=True)
@@ -415,7 +414,6 @@ def reports(ctx):
         pass
 
 
-
 @reports.command()
 @click.option(
     "--source",
@@ -432,16 +430,13 @@ def reports(ctx):
     required=True,
 )
 @click.option(
-    "--include", "-ft", type=click.Choice(["report_users"]), default="report_users"
-)
-@click.option(
     "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
 )
 def users(source: Path, target: Path, file_type: str = "json"):
     """Augment Power BI Apps data from a source file and save to target file together with report users"""
 
     click.secho("getting report user details requires admin token")
-    
+
     if file_type == "excel":
         if target.suffix:
             click.echo("Use path as target for excel output")
@@ -467,18 +462,16 @@ def users(source: Path, target: Path, file_type: str = "json"):
             report_id = r.get("id")
             try:
                 logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
-                r_data = powerbi_admin_report.ReportUsers(auth=load_auth(), report_id=report_id, verify=False).users
-                r_data = {
-                    **r_data,
-                    **r
-                }
+                r_data = powerbi_admin_report.ReportUsers(
+                    auth=load_auth(), report_id=report_id, verify=False
+                ).users
+                r_data = {**r_data, **r}
                 report_data.append(r_data)
             except ValueError:
-                failed_id.append(failed_id)
+                failed_id.append(report_id)
                 logger.warning(f"Failed to download {r['name']}, {report_id}")
         a["reports"] = report_data
     updated_apps_data.append(a)
-
 
     if file_type == "json":
         with open(target, "w") as fp:
@@ -491,7 +484,6 @@ def users(source: Path, target: Path, file_type: str = "json"):
             multi_group_dict_to_excel(
                 a_data_flattened, target / f"{a_name}_{a_id}_report_users.xlsx"
             )
-
 
 
 @reports.command()

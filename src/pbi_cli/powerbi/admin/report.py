@@ -8,6 +8,7 @@ class ReportUsers(Base):
     :param report_id: id of the report
     :param verify: whether to verify SSL
     """
+
     def __init__(
         self,
         auth: dict,
@@ -22,13 +23,15 @@ class ReportUsers(Base):
         """
         Returns the base URI for Power BI report users.
         """
-        return f"https://api.powerbi.com/v1.0/myorg/admin/reports/{self.report_id}/users"
+        return (
+            f"https://api.powerbi.com/v1.0/myorg/admin/reports/{self.report_id}/users"
+        )
 
     @property
     def users(self) -> list:
         req_result = self._data_retriever.get(self._base_uri)
 
         if req_result.ok:
-            return req_result.content
+            return req_result.json()
         else:
             req_result.raise_for_status()
