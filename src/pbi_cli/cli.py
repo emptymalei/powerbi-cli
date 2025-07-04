@@ -10,6 +10,7 @@ from loguru import logger
 from slugify import slugify
 
 import pbi_cli.powerbi.admin as powerbi_admin
+import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 from pbi_cli.auth import PBIAuth
@@ -411,6 +412,78 @@ def reports(ctx):
         click.echo("Use pbi reports --help.")
     else:
         pass
+
+
+@reports.command()
+@click.option(
+    "--source",
+    "-s",
+    type=click.Path(exists=True, path_type=Path),
+    help="source file",
+    required=True,
+)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="target file",
+    required=True,
+)
+@click.option(
+    "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
+)
+def users(source: Path, target: Path, file_type: str = "json"):
+    """Augment Power BI Apps data from a source file and save to target file together with report users"""
+
+    click.secho("getting report user details requires admin token")
+
+    if file_type == "excel":
+        if target.suffix:
+            click.echo("Use path as target for excel output")
+            raise click.BadOptionUsage(message=f"{target=}")
+        else:
+            click.secho(f"creating folder {target}", fg="blue")
+            target.mkdir(parents=True, exist_ok=True)
+
+    pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
+
+    apps_data = []
+    for a in pbi_apps.apps:
+        try:
+            apps_data.append(a())
+        except ValueError as e:
+            click.secho(f"Can not download {a.app_info}", fg="red")
+
+    updated_apps_data = []
+    for a in apps_data:
+        report_data = []
+        failed_id = []
+        for r in a.get("reports", []):
+            report_id = r.get("id")
+            try:
+                logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
+                r_data = powerbi_admin_report.ReportUsers(
+                    auth=load_auth(), report_id=report_id, verify=False
+                ).users
+                r_data = {**r_data, **r}
+                report_data.append(r_data)
+            except ValueError:
+                failed_id.append(report_id)
+                logger.warning(f"Failed to download {r['name']}, {report_id}")
+        a["reports"] = report_data
+    updated_apps_data.append(a)
+
+    if file_type == "json":
+        with open(target, "w") as fp:
+            json.dump(updated_apps_data, fp)
+    elif file_type == "excel":
+        for a_data in updated_apps_data:
+            a_id = a_data.get("id")
+            a_name = a_data.get("name")
+            a_data_flattened = pbi_apps.apps[0].flatten_app(a_data)
+            multi_group_dict_to_excel(
+                a_data_flattened, target / f"{a_name}_{a_id}_report_users.xlsx"
+            )
 
 
 @reports.command()
