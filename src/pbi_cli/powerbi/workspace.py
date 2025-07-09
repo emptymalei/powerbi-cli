@@ -81,7 +81,7 @@ class Workspaces(Base):
             ):
                 report_id = r.get("reports_id")
                 try:
-                    logger.debug(
+                    logger.info(
                         f"Retrieving user info for {r.get('reports_name')}, {report_id}"
                     )
                     r_users = powerbi_admin_report.ReportUsers(
