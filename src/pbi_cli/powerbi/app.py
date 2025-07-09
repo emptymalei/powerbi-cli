@@ -111,7 +111,7 @@ class App(Base):
                         for app_k, v in data_app.items()
                         if app_k in app_level_keys
                     },
-                    **{f"{k}_{d_k}": d[k] for d_k in d},
+                    **{f"{k}_{d_k}": d[d_k] for d_k in d},
                 }
                 for d in data_app.get(k, [])
             ]
