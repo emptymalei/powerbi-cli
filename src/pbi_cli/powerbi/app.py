@@ -105,7 +105,14 @@ class App(Base):
 
         for k in keys:
             flattened[k] = [
-                {**{k: v for k, v in data_app.items() if k in app_level_keys}, **{**d}}
+                {
+                    **{
+                        app_k: v
+                        for app_k, v in data_app.items()
+                        if app_k in app_level_keys
+                    },
+                    **{f"{k}_{d_k}": d[k] for d_k in d},
+                }
                 for d in data_app.get(k, [])
             ]
 

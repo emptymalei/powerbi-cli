@@ -49,7 +49,7 @@ class Workspaces:
                         for k, v in data_workspace.items()
                         if k in workspace_level_keys
                     },
-                    **{**d},
+                    **{f"{k}_{d_k}": d[k] for d_k in d},
                 }
                 for d in data_workspace.get(k, [])
             ]
