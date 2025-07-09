@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -50,7 +51,9 @@ class Workspaces(Base):
         """
         return "https://api.powerbi.com/v1.0/myorg/groups"
 
-    def report_users(self, workspace_types: Optional[list] = None) -> pd.DataFrame:
+    def report_users(
+        self, workspace_types: Optional[list] = None, wait_interval: int = 2
+    ) -> pd.DataFrame:
         """
         Returns a DataFrame with details of all users of reports in the workspaces.
         """
@@ -89,6 +92,10 @@ class Workspaces(Base):
                         **r,
                     }
                     workspace_reports_augmented.append(r_users_augmented)
+                    logger.debug(
+                        f"Wait for {wait_interval} seconds before next request"
+                    )
+                    time.sleep(wait_interval)
                 except ValueError as e:
                     failed_ids.append(report_id)
                     logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")

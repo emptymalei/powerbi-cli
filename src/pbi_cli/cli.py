@@ -233,7 +233,16 @@ def format_convert(source: Path, target: Path, format):
     type=click.Choice(["json", "excel"]),
     default="json",
 )
-def report_users(source: Path, target: Path, file_type: str = "json"):
+@click.option(
+    "--wait-interval",
+    "-wi",
+    help="number of seconds to wait between requests",
+    type=int,
+    default="3",
+)
+def report_users(
+    source: Path, target: Path, file_type: str = "json", wait_interval: int = 3
+):
     """
     Augment Power BI Workspace data from a source file
     and save to target file together with report users
@@ -252,7 +261,10 @@ def report_users(source: Path, target: Path, file_type: str = "json"):
         auth=load_auth(), verify=False, cache_file=source
     )
 
-    report_users = pbi_workspaces.report_users(workspace_types=["Workspace"])
+    report_users = pbi_workspaces.report_users(
+        workspace_types=["Workspace"],
+        wait_interval=wait_interval,
+    )
 
     if file_type == "json":
         with open(target, "w") as fp:
