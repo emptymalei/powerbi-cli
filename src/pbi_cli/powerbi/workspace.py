@@ -35,7 +35,7 @@ class Workspaces(Base):
         """
         Load cache from a folder containing JSON files.
         """
-        if cache_excel.suffix not in ["xlsx", ".xls"]:
+        if cache_excel.suffix not in [".xlsx", ".xls"]:
             raise ValueError(
                 f"Unsupported file type: {cache_excel.suffix}. "
                 "Please provide an Excel file (.xlsx or .xls)."
