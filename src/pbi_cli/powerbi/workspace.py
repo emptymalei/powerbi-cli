@@ -43,6 +43,13 @@ class Workspaces(Base):
 
         return pd.read_excel(cache_excel, sheet_name=None)
 
+    @property
+    def _base_uri(self) -> str:
+        """
+        Returns the base URI for Power BI Apps API.
+        """
+        return "https://api.powerbi.com/v1.0/myorg/groups"
+
     def report_users(self, workspace_types: Optional[list] = None) -> pd.DataFrame:
         """
         Returns a DataFrame with details of all users of reports in the workspaces.
