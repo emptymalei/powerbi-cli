@@ -67,7 +67,7 @@ class Workspaces(Base):
 
         failed_ids = []
         all_reports = {}
-        for workspace_name in df_reports.unique("name"):
+        for workspace_name in df_reports["name"].unique():
             if df_reports.empty:
                 logger.warning(f"No reports found in workspace {workspace_name}.")
                 return pd.DataFrame()
