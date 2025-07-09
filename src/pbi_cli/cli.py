@@ -10,8 +10,10 @@ from loguru import logger
 from slugify import slugify
 
 import pbi_cli.powerbi.admin as powerbi_admin
+import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
+import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
@@ -209,6 +211,75 @@ def format_convert(source: Path, target: Path, format):
     multi_group_dict_to_excel(flattened, target)
 
 
+@workspaces.command()
+@click.option(
+    "--source",
+    "-s",
+    type=click.Path(exists=True, path_type=Path),
+    help="source json/excel file that contains all workspace information",
+    required=True,
+)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="target file",
+    required=True,
+)
+@click.option(
+    "--file-type",
+    "-ft",
+    help="file type to save the results as",
+    type=click.Choice(["json", "excel"]),
+    default="json",
+)
+@click.option(
+    "--wait-interval",
+    "-wi",
+    help="number of seconds to wait between requests",
+    type=int,
+    default="3",
+)
+def report_users(
+    source: Path, target: Path, file_type: str = "json", wait_interval: int = 3
+):
+    """
+    Augment Power BI Workspace data from a source file
+    and save to target file together with report users
+    """
+    click.secho("getting report user details requires admin token")
+
+    if file_type == "excel":
+        if target.suffix:
+            click.echo("Please specify a folder instead for excel output")
+            raise click.BadOptionUsage(message=f"{target=}")
+        else:
+            click.secho(f"creating folder {target}", fg="blue")
+            target.mkdir(parents=True, exist_ok=True)
+
+    pbi_workspaces = powerbi_workspace.Workspaces(
+        auth=load_auth(), verify=False, cache_file=source
+    )
+
+    report_users = pbi_workspaces.report_users(
+        workspace_types=["Workspace"],
+        wait_interval=wait_interval,
+    )
+
+    if file_type == "json":
+        with open(target, "w") as fp:
+            json.dump(report_users, fp)
+    elif file_type == "excel":
+        multi_group_dict_to_excel(
+            report_users, target / f"workspace_reports_and_users.xlsx"
+        )
+
+
+#######################
+# Users Command Group
+#######################
+
+
 @pbi.group(invoke_without_command=True)
 @click.pass_context
 def users(ctx):
@@ -388,7 +459,7 @@ def augment(source: Path, target: Path, file_type: str = "json"):
         try:
             apps_data.append(a())
         except ValueError as e:
-            click.secho(f"Can not download {a.app_info}", fg="red")
+            click.secho(f"Cannot download {a.app_info}", fg="red")
 
     if file_type == "json":
         with open(target, "w") as fp:
@@ -411,6 +482,78 @@ def reports(ctx):
         click.echo("Use pbi reports --help.")
     else:
         pass
+
+
+@reports.command()
+@click.option(
+    "--source",
+    "-s",
+    type=click.Path(exists=True, path_type=Path),
+    help="source file",
+    required=True,
+)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="target file",
+    required=True,
+)
+@click.option(
+    "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
+)
+def users(source: Path, target: Path, file_type: str = "json"):
+    """Augment Power BI Apps data from a source file and save to target file together with report users"""
+
+    click.secho("getting report user details requires admin token")
+
+    if file_type == "excel":
+        if target.suffix:
+            click.echo("Use path as target for excel output")
+            raise click.BadOptionUsage(message=f"{target=}")
+        else:
+            click.secho(f"creating folder {target}", fg="blue")
+            target.mkdir(parents=True, exist_ok=True)
+
+    pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
+
+    apps_data = []
+    for a in pbi_apps.apps:
+        try:
+            apps_data.append(a())
+        except ValueError as e:
+            click.secho(f"Can not download {a.app_info}", fg="red")
+
+    updated_apps_data = []
+    for a in apps_data:
+        report_data = []
+        failed_id = []
+        for r in a.get("reports", []):
+            report_id = r.get("id")
+            try:
+                logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
+                r_data = powerbi_admin_report.ReportUsers(
+                    auth=load_auth(), report_id=report_id, verify=False
+                ).users
+                r_data = {**r_data, **r}
+                report_data.append(r_data)
+            except ValueError as e:
+                failed_id.append(report_id)
+                logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
+        a["reports"] = report_data
+    updated_apps_data.append(a)
+
+    if file_type == "json":
+        with open(target, "w") as fp:
+            json.dump(updated_apps_data, fp)
+    elif file_type == "excel":
+        for a_data in updated_apps_data:
+            a_id = a_data.get("id")
+            a_name = a_data.get("name")
+            a_data_flattened = pbi_apps.apps[0].flatten_app(a_data)
+            multi_group_dict_to_excel(
+                a_data_flattened, target / f"{a_name}_{a_id}_report_users.xlsx"
+            )
 
 
 @reports.command()
