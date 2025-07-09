@@ -41,17 +41,17 @@ class Workspaces:
 
         flattened = {}
 
-        for k in keys:
-            flattened[k] = [
+        for key in keys:
+            flattened[key] = [
                 {
                     **{
                         k: v
                         for k, v in data_workspace.items()
                         if k in workspace_level_keys
                     },
-                    **{f"{k}_{d_k}": d[d_k] for d_k in d},
+                    **{f"{key}_{d_k}": d[d_k] for d_k in d},
                 }
-                for d in data_workspace.get(k, [])
+                for d in data_workspace.get(key, [])
             ]
 
         flattened["workspace"] = [
