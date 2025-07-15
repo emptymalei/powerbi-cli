@@ -222,7 +222,7 @@ def format_convert(source: Path, target: Path, format):
 @click.option(
     "--target-folder",
     "-t",
-    type=click.Path(exists=False, path_type=Path),
+    type=click.Path(exists=True, path_type=Path),
     help=(
         "target folder to save the results to; "
         "Do not include the trailing (back)slash"
