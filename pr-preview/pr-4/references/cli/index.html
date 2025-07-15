@@ -1844,9 +1844,9 @@ and save to target file together with report users</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="s2">&quot;getting report user details requires admin token&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">target_folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Please specify a folder instead for excel output&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">BadOptionUsage</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_folder</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># if not target_folder.is_dir():</span>
+    <span class="c1">#     click.echo(&quot;Please specify a folder instead for excel output&quot;)</span>
+    <span class="c1">#     raise click.BadOptionUsage(option_name=&quot;target-folder&quot;, message=f&quot;{target_folder=}&quot;)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">target_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;creating folder </span><span class="si">{</span><span class="n">target_folder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">)</span>
         <span class="n">target_folder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
