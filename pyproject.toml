@@ -1,7 +1,7 @@
 [tool.poetry]
 
 name = "pbi_cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Power BI Command Line Tool for managing Power BI projects."
 
 packages = [{ include = "pbi_cli", from="src"}]
