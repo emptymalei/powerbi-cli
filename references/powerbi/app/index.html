@@ -1100,7 +1100,14 @@
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span>
-<span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">App</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">App</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to interact with Power BI App</span>
 
@@ -1129,10 +1136,17 @@
 
         <span class="n">flattened</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-            <span class="n">flattened</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="p">{</span><span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data_app</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">app_level_keys</span><span class="p">},</span> <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">d</span><span class="p">}}</span>
-                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data_app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">flattened</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="o">**</span><span class="p">{</span>
+                        <span class="n">app_k</span><span class="p">:</span> <span class="n">v</span>
+                        <span class="k">for</span> <span class="n">app_k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data_app</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">app_k</span> <span class="ow">in</span> <span class="n">app_level_keys</span>
+                    <span class="p">},</span>
+                    <span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">d_k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="n">d_k</span><span class="p">]</span> <span class="k">for</span> <span class="n">d_k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">},</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data_app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span>
             <span class="p">]</span>
 
         <span class="n">flattened</span><span class="p">[</span><span class="s2">&quot;app&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data_app</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">app_level_keys</span><span class="p">}]</span>
