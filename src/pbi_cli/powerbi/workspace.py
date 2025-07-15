@@ -62,7 +62,9 @@ class Workspaces(Base):
         """
         logger.info("Getting all users of reports requires admin permissions.")
         if not self.cache:
-            raise ValueError("No cache data available. Please provide a valid cache file.")
+            raise ValueError(
+                "No cache data available. Please provide a valid cache file."
+            )
 
         df_reports = self.cache.get("reports", pd.DataFrame())
 
