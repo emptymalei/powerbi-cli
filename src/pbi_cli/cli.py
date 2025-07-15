@@ -257,9 +257,9 @@ def report_users(
     """
     click.secho("getting report user details requires admin token")
 
-    if not target_folder.is_dir():
-        click.echo("Please specify a folder instead for excel output")
-        raise click.BadOptionUsage(message=f"{target_folder=}")
+    # if not target_folder.is_dir():
+    #     click.echo("Please specify a folder instead for excel output")
+    #     raise click.BadOptionUsage(option_name="target-folder", message=f"{target_folder=}")
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
         target_folder.mkdir(parents=True, exist_ok=True)
