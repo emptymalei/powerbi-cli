@@ -93,7 +93,7 @@ class Workspaces(Base):
                         f"Retrieving user info for {r.get('reports_name')}, {report_id}"
                     )
                     r_users = powerbi_admin_report.ReportUsers(
-                        auth=self.auth, report_id=report_id, verify=False
+                        auth=self.auth, report_id=report_id, verify=self.verify
                     ).users
                     logger.debug(f"Fetched users: {r_users}")
                     r_users_augmented = {
