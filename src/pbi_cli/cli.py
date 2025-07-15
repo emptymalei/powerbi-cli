@@ -242,7 +242,7 @@ def format_convert(source: Path, target: Path, format):
     "-wi",
     help="number of seconds to wait between requests",
     type=int,
-    default="3",
+    default=3,
 )
 @click.option(
     "--file-name", "-n", type=str, help="file name without extension", default="workspaces_reports_users"
