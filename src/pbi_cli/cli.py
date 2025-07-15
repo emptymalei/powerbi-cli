@@ -223,7 +223,10 @@ def format_convert(source: Path, target: Path, format):
     "--target-folder",
     "-t",
     type=click.Path(exists=False, path_type=Path),
-    help="target folder to save the results to",
+    help=(
+        "target folder to save the results to; "
+        "Do not include the trailing (back)slash"
+    ),
     required=True,
 )
 @click.option(
@@ -254,13 +257,12 @@ def report_users(
     """
     click.secho("getting report user details requires admin token")
 
-    if file_type == "excel":
-        if target_folder.suffix:
-            click.echo("Please specify a folder instead for excel output")
-            raise click.BadOptionUsage(message=f"{target_folder=}")
-        else:
-            click.secho(f"creating folder {target_folder}", fg="blue")
-            target_folder.mkdir(parents=True, exist_ok=True)
+    if not target_folder.is_dir():
+        click.echo("Please specify a folder instead for excel output")
+        raise click.BadOptionUsage(message=f"{target_folder=}")
+    if not target_folder.exists():
+        click.secho(f"creating folder {target_folder}", fg="blue")
+        target_folder.mkdir(parents=True, exist_ok=True)
 
     pbi_workspaces = powerbi_workspace.Workspaces(
         auth=load_auth(), verify=False, cache_file=source
