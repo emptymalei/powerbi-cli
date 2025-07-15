@@ -271,12 +271,13 @@ def report_users(
         wait_interval=wait_interval,
     )
 
+    click.secho(f"Writing results to the folder {target_folder}")
     if "json" in file_type:
         json_file_path = target_folder / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
         with open(json_file_path, "w") as fp:
             json.dump(report_users, fp)
-    elif file_type == "excel":
+    if "excel" in file_type:
         excel_file_path = target_folder / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
         multi_group_dict_to_excel(
