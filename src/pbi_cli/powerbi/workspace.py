@@ -83,33 +83,40 @@ class Workspaces(Base):
         else:
             selected_workspace_names = all_workspace_names
         for w_name in selected_workspace_names:
+            workspace_reports_augmented = []
             if df_reports.loc[df_reports["name"] == w_name].empty:
                 logger.warning(f"No reports found in workspace {w_name}.")
-                return pd.DataFrame()
-
-            workspace_reports_augmented = []
-            for r in df_reports.loc[df_reports["name"] == w_name].to_dict("records"):
-                report_id = r.get("reports_id")
-                try:
-                    logger.info(
-                        f"Retrieving user info for {r.get('reports_name')}, {report_id}"
-                    )
-                    r_users = powerbi_admin_report.ReportUsers(
-                        auth=self.auth, report_id=report_id, verify=self.verify
-                    ).users
-                    logger.debug(f"Fetched users: {r_users}")
-                    r_users_augmented = {
-                        **{f"reports_users_{r_u_k}": v for r_u_k, v in r_users.items()},
-                        **r,
-                    }
-                    workspace_reports_augmented.append(r_users_augmented)
-                    logger.debug(
-                        f"Wait for {wait_interval} seconds before next request"
-                    )
-                    time.sleep(wait_interval)
-                except Exception as e:
-                    failed_ids.append(report_id)
-                    logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
+            else:
+                workspace_reports_augmented = []
+                for r in df_reports.loc[df_reports["name"] == w_name].to_dict(
+                    "records"
+                ):
+                    report_id = r.get("reports_id")
+                    try:
+                        logger.info(
+                            f"Retrieving user info for {r.get('reports_name')}, {report_id}"
+                        )
+                        r_users = powerbi_admin_report.ReportUsers(
+                            auth=self.auth, report_id=report_id, verify=self.verify
+                        ).users
+                        logger.debug(f"Fetched users: {r_users}")
+                        r_users_augmented = {
+                            **{
+                                f"reports_users_{r_u_k}": v
+                                for r_u_k, v in r_users.items()
+                            },
+                            **r,
+                        }
+                        workspace_reports_augmented.append(r_users_augmented)
+                        logger.debug(
+                            f"Wait for {wait_interval} seconds before next request"
+                        )
+                        time.sleep(wait_interval)
+                    except Exception as e:
+                        failed_ids.append(report_id)
+                        logger.warning(
+                            f"Failed to download {r['name']}, {report_id}\n{e}"
+                        )
 
             all_reports[w_name] = workspace_reports_augmented
         logger.warning(f"All failed IDs {failed_ids}")
