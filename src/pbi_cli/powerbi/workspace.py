@@ -52,8 +52,11 @@ class Workspaces(Base):
         return "https://api.powerbi.com/v1.0/myorg/groups"
 
     def report_users(
-        self, workspace_types: Optional[list] = None, wait_interval: int = 2
-    ) -> pd.DataFrame:
+        self,
+        workspace_types: Optional[list] = None,
+        workspace_name: Optional[list] = None,
+        wait_interval: int = 2,
+    ) -> dict:
         """
         Returns a DataFrame with details of all users of reports in the workspaces.
         """
@@ -70,15 +73,20 @@ class Workspaces(Base):
 
         failed_ids = []
         all_reports = {}
-        for workspace_name in df_reports["name"].unique():
+        all_workspace_names = df_reports["name"].unique()
+        if workspace_name is not None:
+            selected_workspace_names = set(all_workspace_names).intersection(
+                workspace_name
+            )
+        else:
+            selected_workspace_names = all_workspace_names
+        for w_name in selected_workspace_names:
             if df_reports.empty:
-                logger.warning(f"No reports found in workspace {workspace_name}.")
+                logger.warning(f"No reports found in workspace {w_name}.")
                 return pd.DataFrame()
 
             workspace_reports_augmented = []
-            for r in df_reports.loc[df_reports["name"] == workspace_name].to_dict(
-                "records"
-            ):
+            for r in df_reports.loc[df_reports["name"] == w_name].to_dict("records"):
                 report_id = r.get("reports_id")
                 try:
                     logger.info(
@@ -97,11 +105,11 @@ class Workspaces(Base):
                         f"Wait for {wait_interval} seconds before next request"
                     )
                     time.sleep(wait_interval)
-                except ValueError as e:
+                except Exception as e:
                     failed_ids.append(report_id)
                     logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
-
-            all_reports[workspace_name] = workspace_reports_augmented
+            logger.warning(f"All failed IDs {failed_ids}")
+            all_reports[w_name] = workspace_reports_augmented
 
         return all_reports
 

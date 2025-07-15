@@ -251,12 +251,22 @@ def format_convert(source: Path, target: Path, format):
     help="file name without extension",
     default="workspaces_reports_users",
 )
+@click.option(
+    "--workspace-name",
+    "-wn",
+    help="workspace names to download",
+    type=str,
+    default=None,
+    multiple=True,
+    required=False,
+)
 def report_users(
     source: Path,
     target_folder: Path,
-    file_type: str = "json",
+    file_type: list = ["json", "excel"],
     wait_interval: int = 3,
     file_name: str = "workspaces_reports_users",
+    workspace_name: Optional[list] = None,
 ):
     """
     Augment Power BI Workspace data from a source file
@@ -277,6 +287,7 @@ def report_users(
 
     report_users = pbi_workspaces.report_users(
         workspace_types=["Workspace"],
+        workspace_name=workspace_name,
         wait_interval=wait_interval,
     )
 
