@@ -28,7 +28,7 @@ class ReportUsers(Base):
         )
 
     @property
-    def users(self) -> list:
+    def users(self) -> dict:
         req_result = self._data_retriever.get(self._base_uri)
 
         if req_result.ok:

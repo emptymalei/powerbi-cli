@@ -444,7 +444,10 @@ def apps(ctx):
 @click.option("--role", "-r", type=click.Choice(["admin", "user"]), default="user")
 @click.option("--file-name", "-n", type=str, help="file name", default="apps")
 def list(
-    target_folder: Path, role: str, file_type: str = "json", file_name: str = "apps"
+    target_folder: Path,
+    role: str,
+    file_type: tuple = ("json", "excel"),
+    file_name: str = "apps",
 ):
     """List Power BI Apps and save them to files"""
     if not target_folder.exists():

@@ -81,7 +81,7 @@ class Workspaces(Base):
         else:
             selected_workspace_names = all_workspace_names
         for w_name in selected_workspace_names:
-            if df_reports.empty:
+            if df_reports.loc[df_reports["name"] == w_name].empty:
                 logger.warning(f"No reports found in workspace {w_name}.")
                 return pd.DataFrame()
 
@@ -108,8 +108,9 @@ class Workspaces(Base):
                 except Exception as e:
                     failed_ids.append(report_id)
                     logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
-            logger.warning(f"All failed IDs {failed_ids}")
+
             all_reports[w_name] = workspace_reports_augmented
+        logger.warning(f"All failed IDs {failed_ids}")
 
         return all_reports
 
