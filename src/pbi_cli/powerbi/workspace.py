@@ -87,7 +87,6 @@ class Workspaces(Base):
             if df_reports.loc[df_reports["name"] == w_name].empty:
                 logger.warning(f"No reports found in workspace {w_name}.")
             else:
-                workspace_reports_augmented = []
                 for r in df_reports.loc[df_reports["name"] == w_name].to_dict(
                     "records"
                 ):
