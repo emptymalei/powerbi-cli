@@ -87,6 +87,7 @@ class Workspaces(Base):
                     r_users = powerbi_admin_report.ReportUsers(
                         auth=self.auth, report_id=report_id, verify=False
                     ).users
+                    logger.debug(f"Fetched users: {r_users}")
                     r_users_augmented = {
                         **{f"reports_users_{r_u_k}": v for r_u_k, v in r_users.items()},
                         **r,

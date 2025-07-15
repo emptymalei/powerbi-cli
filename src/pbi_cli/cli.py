@@ -541,7 +541,7 @@ def users(source: Path, target: Path, file_type: str = "json"):
                 failed_id.append(report_id)
                 logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
         a["reports"] = report_data
-    updated_apps_data.append(a)
+        updated_apps_data.append(a)
 
     if file_type == "json":
         with open(target, "w") as fp:
