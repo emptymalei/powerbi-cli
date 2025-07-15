@@ -20,5 +20,5 @@ def multi_group_dict_to_excel(data: dict, target: Path):
     """
     with pd.ExcelWriter(target, engine="openpyxl") as writer:
         for sheet_name, rows in data.items():
-            df = pd.DataFrame(rows)
+            df = pd.json_normalize(rows)
             df.to_excel(writer, sheet_name=sheet_name, index=False)

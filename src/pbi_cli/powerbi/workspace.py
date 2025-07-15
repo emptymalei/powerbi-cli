@@ -104,6 +104,72 @@ class Workspaces(Base):
             all_reports[workspace_name] = workspace_reports_augmented
 
         return all_reports
+    
+    @staticmethod
+    def flatten_workspaces_reports_users(data: dict, report_users_key: str="reports_users_value") -> dict[str,list[dict]]:
+        """Input data has the following format
+
+        ```python
+        data = {
+            "workspace_name": [
+                {
+                    "reports_users_@odata.context": "...",
+                    "reports_users_value": [
+                        {
+                            "reportUserAccessRight": "Owner",
+                            "emailAddress": "bac.def@xxx.com",
+                            "displayName": "ABC DEF",
+                            "identifier": "bac.def@xxx.com",
+                            "graphId": "xxx-xxx--xxxx",
+                            "principalType": "User",
+                            "userType": "Member"
+                        },
+                        {
+                            "reportUserAccessRight": "Owner",
+                            "emailAddress": "xyz.mnd@xxx.com",
+                            "displayName": "xyz mnd",
+                            "identifier": "xxxx-xxxx-xxxx",
+                            "graphId": "xxx....",
+                            "principalType": "Group"
+                        }
+                    ],
+                    "...": ...
+                }                
+            ],
+            "another_workspace_name": [
+                ...
+            ]
+        }
+        ```
+        """
+        flattened_data = {}
+        for workspace_name, workspace_data in data.items():
+            workspace_data_flat = []
+            for r_data in workspace_data:
+                r_data_base = {}
+                for r_data_k, r_data_v in r_data.items():
+                    if r_data_k != report_users_key:
+                        r_data_base[r_data_k] = r_data_v
+                
+                r_data_flat = []
+
+                for r_data_list_v in r_data[report_users_key]:
+                    r_data_flat.append(
+                        {
+                            **r_data_base,
+                            **{
+                                f"{report_users_key}_{k}": v
+                                for k, v in
+                                r_data_list_v.items()
+                            }
+                        }
+                    )
+                workspace_data_flat += r_data_flat
+            flattened_data[workspace_name] = workspace_data_flat
+
+        return flattened_data
+
+
 
     def save_as(self, target_path: Path):
         """

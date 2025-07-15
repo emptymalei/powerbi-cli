@@ -282,8 +282,10 @@ def report_users(
     if "excel" in file_type:
         excel_file_path = target_folder / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
+        
         multi_group_dict_to_excel(
-            report_users, excel_file_path
+            pbi_workspaces.flatten_workspaces_reports_users(report_users), 
+            excel_file_path,
         )
 
 
