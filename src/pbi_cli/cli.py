@@ -150,7 +150,18 @@ def list(
     file_type: list[str],
     file_name: str = "workspaces",
 ):
-    """List Power BI workspaces and save them to files"""
+    r"""List Power BI workspaces and save them to files
+
+
+    ```sh
+    pbi workspaces list -ft json -ft excel -tf "C:\Users\$Env:UserName\PowerBI\backups\$(Get-Date -format 'yyyy-MM-dd')" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
 
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
@@ -198,7 +209,14 @@ def list(
     required=False,
 )
 def format_convert(source: Path, target: Path, format):
-    """Convert output format of workspaces"""
+    """Convert output format of workspaces list
+    (`pbi workspaces list`)
+    from json to excel.
+
+    ```sh
+    pbi workspaces format-convert -s "workspaces.json" -t "workspaces.xlsx"
+    ```
+    """
     workspaces = Workspaces(auth={}, verify=False)
 
     click.echo(f"Converting to {format=}: {source=} -> {target}")
@@ -268,9 +286,31 @@ def report_users(
     file_name: str = "workspaces_reports_users",
     workspace_name: Optional[list] = None,
 ):
-    """
+    r"""
     Augment Power BI Workspace data from a source file
     and save to target file together with report users
+
+    The source `-s` should be the excel file exported from the command
+    `pbi workspaces list`
+
+    ```sh
+    pbi workspaces report-users -s "workspaces.xlsx" -t "$(Get-Date -format 'yyyy-MM-dd')" -wn $w -n $w -wi 5
+    ```
+
+    Combined with PowerShell or bash, we can automatatically
+    use different workspace names for the reports.
+
+    Here is an example using PowerShell.
+
+    ```powershell
+    $workspaces = "AA", "BB"
+    foreach ($w in $workspaces) {
+        Write-Host "Backing up for: $w"
+        pbi workspaces report-users -s "C:\Users\$Env:UserName\PowerBI\backups\workspaces.xlsx" --target-folder "C:\Users\$Env:UserName\PowerBI\backups\$(Get-Date -format 'yyyy-MM-dd')" -wn $w -n $w -wi 5
+    }
+    # Wait for 300 seconds (5 minutes) before the next loop
+    Start-Sleep -Seconds 300
+    ```
     """
     click.secho("getting report user details requires admin token")
 
