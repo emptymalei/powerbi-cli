@@ -220,10 +220,10 @@ def format_convert(source: Path, target: Path, format):
     required=True,
 )
 @click.option(
-    "--target",
+    "--target-folder",
     "-t",
     type=click.Path(exists=False, path_type=Path),
-    help="target file",
+    help="target folder to save the results to",
     required=True,
 )
 @click.option(
@@ -231,7 +231,8 @@ def format_convert(source: Path, target: Path, format):
     "-ft",
     help="file type to save the results as",
     type=click.Choice(["json", "excel"]),
-    default="json",
+    default=["json", "excel"],
+    multiple=True,
 )
 @click.option(
     "--wait-interval",
@@ -240,8 +241,12 @@ def format_convert(source: Path, target: Path, format):
     type=int,
     default="3",
 )
+@click.option(
+    "--file-name", "-n", type=str, help="file name without extension", default="workspaces_reports_users"
+)
 def report_users(
-    source: Path, target: Path, file_type: str = "json", wait_interval: int = 3
+    source: Path, target_folder: Path, file_type: str = "json", wait_interval: int = 3,
+    file_name: str="workspaces_reports_users"
 ):
     """
     Augment Power BI Workspace data from a source file
@@ -250,12 +255,12 @@ def report_users(
     click.secho("getting report user details requires admin token")
 
     if file_type == "excel":
-        if target.suffix:
+        if target_folder.suffix:
             click.echo("Please specify a folder instead for excel output")
-            raise click.BadOptionUsage(message=f"{target=}")
+            raise click.BadOptionUsage(message=f"{target_folder=}")
         else:
-            click.secho(f"creating folder {target}", fg="blue")
-            target.mkdir(parents=True, exist_ok=True)
+            click.secho(f"creating folder {target_folder}", fg="blue")
+            target_folder.mkdir(parents=True, exist_ok=True)
 
     pbi_workspaces = powerbi_workspace.Workspaces(
         auth=load_auth(), verify=False, cache_file=source
@@ -266,12 +271,16 @@ def report_users(
         wait_interval=wait_interval,
     )
 
-    if file_type == "json":
-        with open(target, "w") as fp:
+    if "json" in file_type:
+        json_file_path = target_folder / f"{file_name}.json"
+        logger.info(f"Writing json file to {json_file_path}...")
+        with open(json_file_path, "w") as fp:
             json.dump(report_users, fp)
     elif file_type == "excel":
+        excel_file_path = target_folder / f"{file_name}.xlsx"
+        logger.info(f"Writing excel file to {excel_file_path}...")
         multi_group_dict_to_excel(
-            report_users, target / f"workspace_reports_and_users.xlsx"
+            report_users, excel_file_path
         )
 
 
