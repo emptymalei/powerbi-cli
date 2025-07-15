@@ -104,9 +104,11 @@ class Workspaces(Base):
             all_reports[workspace_name] = workspace_reports_augmented
 
         return all_reports
-    
+
     @staticmethod
-    def flatten_workspaces_reports_users(data: dict, report_users_key: str="reports_users_value") -> dict[str,list[dict]]:
+    def flatten_workspaces_reports_users(
+        data: dict, report_users_key: str = "reports_users_value"
+    ) -> dict[str, list[dict]]:
         """Input data has the following format
 
         ```python
@@ -134,7 +136,7 @@ class Workspaces(Base):
                         }
                     ],
                     "...": ...
-                }                
+                }
             ],
             "another_workspace_name": [
                 ...
@@ -150,7 +152,7 @@ class Workspaces(Base):
                 for r_data_k, r_data_v in r_data.items():
                     if r_data_k != report_users_key:
                         r_data_base[r_data_k] = r_data_v
-                
+
                 r_data_flat = []
 
                 for r_data_list_v in r_data[report_users_key]:
@@ -159,17 +161,14 @@ class Workspaces(Base):
                             **r_data_base,
                             **{
                                 f"{report_users_key}_{k}": v
-                                for k, v in
-                                r_data_list_v.items()
-                            }
+                                for k, v in r_data_list_v.items()
+                            },
                         }
                     )
                 workspace_data_flat += r_data_flat
             flattened_data[workspace_name] = workspace_data_flat
 
         return flattened_data
-
-
 
     def save_as(self, target_path: Path):
         """
