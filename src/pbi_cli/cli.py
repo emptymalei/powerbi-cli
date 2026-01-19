@@ -187,12 +187,12 @@ def load_auth(profile: Optional[str] = None) -> dict:
 
     if profile is None:
         raise click.ClickException(
-            "No active profile set. Use 'pbi auth' to create a profile or 'pbi switch auth' to switch profiles."
+            "No active profile set. Use 'pbi auth' to create a profile or 'pbi switch-profile' to switch profiles."
         )
 
     if profile not in profiles_data.get("profiles", {}):
         raise click.ClickException(
-            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles."
+            f"Profile '{profile}' not found. Use 'pbi profiles list' to see available profiles."
         )
 
     # Get token from keyring or file
@@ -392,6 +392,7 @@ def delete_auth(profile: str):
 
     # If this was the active profile, clear it or switch to another
     if profiles_data.get("active_profile") == profile:
+        # Use tuple() instead of list() to avoid shadowing by the workspaces list command
         remaining_profiles = tuple(profiles_data["profiles"].keys())
         profiles_data["active_profile"] = remaining_profiles[0] if remaining_profiles else None
 
