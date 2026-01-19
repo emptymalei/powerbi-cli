@@ -17,8 +17,6 @@ import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.config import (
     PBIConfig,
-    load_config,
-    save_config,
     migrate_legacy_config,
     resolve_output_path,
     get_default_output_folder,
@@ -156,13 +154,13 @@ def _delete_credential(profile: str):
 
 def _migrate_legacy_auth():
     """Migrate legacy auth.json to the new profile-based system"""
-    config = load_config()
+    pbi_config = PBIConfig()
     
     # First migrate from profiles.json to config.yaml if needed
     migrate_legacy_config()
     
     # Then migrate from auth.json if needed
-    if AUTH_CONFIG_FILE.exists() and not config.get("profiles"):
+    if AUTH_CONFIG_FILE.exists() and not pbi_config.profiles:
         try:
             with open(AUTH_CONFIG_FILE, "r", encoding="utf-8") as fp:
                 legacy_auth = json.load(fp)
@@ -172,10 +170,9 @@ def _migrate_legacy_auth():
                 token = legacy_auth["Authorization"].replace("Bearer ", "")
                 # Save to keyring or file
                 _set_credential("default", token)
-                # Update config
-                config["active_profile"] = "default"
-                config["profiles"] = {"default": {"name": "default"}}
-                save_config(config)
+                # Update config using class properties
+                pbi_config.active_profile = "default"
+                pbi_config.add_profile("default", {"name": "default"})
                 logger.info(
                     "Migrated legacy auth to secure storage with profile 'default'"
                 )
@@ -186,20 +183,19 @@ def _migrate_legacy_auth():
 def _load_profiles() -> dict:
     """Load profiles configuration from YAML config"""
     _migrate_legacy_auth()
-    config = load_config()
+    pbi_config = PBIConfig()
     
     return {
-        "active_profile": config.get("active_profile"),
-        "profiles": config.get("profiles", {})
+        "active_profile": pbi_config.active_profile,
+        "profiles": pbi_config.profiles
     }
 
 
 def _save_profiles(profiles_data: dict):
     """Save profiles configuration to YAML config"""
-    config = load_config()
-    config["active_profile"] = profiles_data.get("active_profile")
-    config["profiles"] = profiles_data.get("profiles", {})
-    save_config(config)
+    pbi_config = PBIConfig()
+    pbi_config.active_profile = profiles_data.get("active_profile")
+    pbi_config.profiles = profiles_data.get("profiles", {})
 
 
 def load_auth(profile: Optional[str] = None) -> dict:
@@ -494,17 +490,17 @@ def show_config():
     pbi config show
     ```
     """
-    config = load_config()
+    pbi_config = PBIConfig()
     
     click.echo("Current configuration:")
-    click.echo(f"  Active profile: {config.get('active_profile') or 'None'}")
-    click.echo(f"  Default output folder: {config.get('default_output_folder') or 'Not set'}")
-    click.echo(f"  Profiles: {len(config.get('profiles', {}))}")
+    click.echo(f"  Active profile: {pbi_config.active_profile or 'None'}")
+    click.echo(f"  Default output folder: {pbi_config.default_output_folder or 'Not set'}")
+    click.echo(f"  Profiles: {len(pbi_config.profiles)}")
     
-    if config.get('profiles'):
+    if pbi_config.profiles:
         click.echo("\n  Available profiles:")
-        for profile_name in config.get('profiles', {}).keys():
-            active = " (active)" if profile_name == config.get('active_profile') else ""
+        for profile_name in pbi_config.profiles.keys():
+            active = " (active)" if profile_name == pbi_config.active_profile else ""
             click.echo(f"    - {profile_name}{active}")
 
 

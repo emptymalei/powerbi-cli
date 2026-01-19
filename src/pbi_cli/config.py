@@ -248,26 +248,6 @@ def ensure_config_dir():
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def load_config() -> dict:
-    """Load configuration from YAML file.
-    
-    Returns default config if file doesn't exist.
-    """
-    config = PBIConfig()
-    return config.data
-
-
-def save_config(config: dict):
-    """Save configuration to YAML file.
-    
-    :param config: Configuration dictionary to save
-    """
-    pbi_config = PBIConfig()
-    # Use proper public method to update config
-    for key, value in config.items():
-        pbi_config.set(key, value)
-
-
 def get_default_config() -> dict:
     """Get default configuration."""
     return PBIConfig._get_default_config()
