@@ -19,8 +19,6 @@ from pbi_cli.config import (
     PBIConfig,
     migrate_legacy_config,
     resolve_output_path,
-    get_default_output_folder,
-    set_default_output_folder,
 )
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
@@ -458,7 +456,8 @@ def set_output_folder(folder_path: str):
 
     :param folder_path: Path to the default output folder
     """
-    set_default_output_folder(folder_path)
+    pbi_config = PBIConfig()
+    pbi_config.default_output_folder = folder_path
     resolved_path = Path(folder_path).expanduser().absolute()
     click.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
     click.secho(
@@ -474,7 +473,8 @@ def get_output_folder():
     pbi config get-output-folder
     ```
     """
-    folder = get_default_output_folder()
+    pbi_config = PBIConfig()
+    folder = pbi_config.default_output_folder
     if folder:
         click.echo(f"Default output folder: {folder}")
     else:

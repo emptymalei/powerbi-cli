@@ -6,6 +6,13 @@ from typing import Any, Optional, Dict
 import yaml
 from loguru import logger
 
+# Public API
+__all__ = [
+    "PBIConfig",
+    "resolve_output_path",
+    "migrate_legacy_config",
+]
+
 CONFIG_DIR = Path.home() / ".pbi_cli"
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 # Legacy files for migration
@@ -253,27 +260,6 @@ def get_default_config() -> dict:
     return PBIConfig._get_default_config()
 
 
-def get_config_value(key: str, default: Any = None) -> Any:
-    """Get a configuration value by key.
-    
-    :param key: Configuration key (supports nested keys with dot notation)
-    :param default: Default value if key not found
-    :return: Configuration value or default
-    """
-    config = PBIConfig()
-    return config.get(key, default)
-
-
-def set_config_value(key: str, value: Any):
-    """Set a configuration value.
-    
-    :param key: Configuration key (supports nested keys with dot notation)
-    :param value: Value to set
-    """
-    config = PBIConfig()
-    config.set(key, value)
-
-
 def migrate_legacy_config():
     """Migrate legacy JSON config files to YAML format."""
     if CONFIG_FILE.exists():
@@ -327,21 +313,3 @@ def resolve_output_path(path_input: Optional[str]) -> Optional[Path]:
     else:
         # If no default_output_folder is set, treat as relative to current directory
         return Path.cwd() / path
-
-
-def get_default_output_folder() -> Optional[str]:
-    """Get the default output folder from config.
-    
-    :return: Default output folder path or None
-    """
-    config = PBIConfig()
-    return config.default_output_folder
-
-
-def set_default_output_folder(folder_path: str):
-    """Set the default output folder in config.
-    
-    :param folder_path: Path to the default output folder
-    """
-    config = PBIConfig()
-    config.default_output_folder = folder_path
