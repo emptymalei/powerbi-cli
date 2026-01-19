@@ -16,6 +16,7 @@ import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.config import (
+    PBIConfig,
     load_config,
     save_config,
     migrate_legacy_config,
@@ -596,7 +597,7 @@ def list(
     """
     
     # Resolve the target folder (handles absolute/relative paths)
-    resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces")
+    resolved_folder = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
@@ -763,7 +764,7 @@ def report_users(
     click.secho("getting report user details requires admin token")
 
     # Resolve the target folder (handles absolute/relative paths)
-    resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces/reports")
+    resolved_folder = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
@@ -861,7 +862,7 @@ def user_access(
         click.echo(json.dumps(result, indent=4))
     else:
         # Resolve the target folder
-        resolved_folder = resolve_output_path(target_folder, default_subfolder="users")
+        resolved_folder = resolve_output_path(target_folder)
         
         if resolved_folder is None:
             click.secho(
@@ -926,7 +927,7 @@ def list(
 ):
     """List Power BI Apps and save them to files"""
     # Resolve the target folder
-    resolved_folder = resolve_output_path(target_folder, default_subfolder="apps")
+    resolved_folder = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
