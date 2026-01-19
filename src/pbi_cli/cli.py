@@ -65,6 +65,11 @@ def _set_credential(profile: str, token: str):
             return
         except NoKeyringError:
             pass
+        except (OSError, Exception) as e:
+            # Handle Windows Credential Manager errors (e.g., token too long)
+            # and other keyring-specific errors
+            logger.debug(f"Keyring error: {e}")
+            pass
 
     # Fallback to file-based storage
     logger.warning(
@@ -98,6 +103,10 @@ def _get_credential(profile: str) -> Optional[str]:
                 return token
         except NoKeyringError:
             pass
+        except (OSError, Exception) as e:
+            # Handle Windows Credential Manager errors and other keyring errors
+            logger.debug(f"Keyring error: {e}")
+            pass
 
     # Fallback to file-based storage
     if CREDENTIALS_FILE.exists():
@@ -115,6 +124,10 @@ def _delete_credential(profile: str):
             keyring.delete_password(KEYRING_SERVICE, profile)
             return
         except (NoKeyringError, PasswordDeleteError):
+            pass
+        except (OSError, Exception) as e:
+            # Handle Windows Credential Manager errors and other keyring errors
+            logger.debug(f"Keyring error: {e}")
             pass
 
     # Fallback to file-based storage
