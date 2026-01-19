@@ -15,6 +15,14 @@ import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
+from pbi_cli.config import (
+    load_config,
+    save_config,
+    migrate_legacy_config,
+    resolve_output_path,
+    get_default_output_folder,
+    set_default_output_folder,
+)
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
@@ -36,8 +44,9 @@ logger.add(sys.stderr, level="INFO", enqueue=True)
 
 __CWD__ = os.getcwd()
 CONFIG_DIR = Path.home() / ".pbi_cli"
+# Legacy files for migration
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
-PROFILES_FILE = CONFIG_DIR / "profiles.json"
+LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
 
@@ -146,7 +155,13 @@ def _delete_credential(profile: str):
 
 def _migrate_legacy_auth():
     """Migrate legacy auth.json to the new profile-based system"""
-    if AUTH_CONFIG_FILE.exists() and not PROFILES_FILE.exists():
+    config = load_config()
+    
+    # First migrate from profiles.json to config.yaml if needed
+    migrate_legacy_config()
+    
+    # Then migrate from auth.json if needed
+    if AUTH_CONFIG_FILE.exists() and not config.get("profiles"):
         try:
             with open(AUTH_CONFIG_FILE, "r") as fp:
                 legacy_auth = json.load(fp)
@@ -156,13 +171,10 @@ def _migrate_legacy_auth():
                 token = legacy_auth["Authorization"].replace("Bearer ", "")
                 # Save to keyring or file
                 _set_credential("default", token)
-                # Create profiles file
-                profiles_data = {
-                    "active_profile": "default",
-                    "profiles": {"default": {"name": "default"}},
-                }
-                with open(PROFILES_FILE, "w") as fp:
-                    json.dump(profiles_data, fp, indent=2)
+                # Update config
+                config["active_profile"] = "default"
+                config["profiles"] = {"default": {"name": "default"}}
+                save_config(config)
                 logger.info(
                     "Migrated legacy auth to secure storage with profile 'default'"
                 )
@@ -171,23 +183,22 @@ def _migrate_legacy_auth():
 
 
 def _load_profiles() -> dict:
-    """Load profiles configuration"""
+    """Load profiles configuration from YAML config"""
     _migrate_legacy_auth()
-
-    if not PROFILES_FILE.exists():
-        return {"active_profile": None, "profiles": {}}
-
-    with open(PROFILES_FILE, "r") as fp:
-        return json.load(fp)
+    config = load_config()
+    
+    return {
+        "active_profile": config.get("active_profile"),
+        "profiles": config.get("profiles", {})
+    }
 
 
 def _save_profiles(profiles_data: dict):
-    """Save profiles configuration"""
-    if not CONFIG_DIR.exists():
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    with open(PROFILES_FILE, "w") as fp:
-        json.dump(profiles_data, fp, indent=2)
+    """Save profiles configuration to YAML config"""
+    config = load_config()
+    config["active_profile"] = profiles_data.get("active_profile")
+    config["profiles"] = profiles_data.get("profiles", {})
+    save_config(config)
 
 
 def load_auth(profile: Optional[str] = None) -> dict:
@@ -425,6 +436,77 @@ def delete_auth(profile: str):
         )
 
 
+@pbi.group(name="config", invoke_without_command=True)
+@click.pass_context
+def config_group(ctx):
+    """Manage pbi-cli configuration settings"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi config --help for help.")
+
+
+@config_group.command(name="set-output-folder")
+@click.argument("folder_path", type=click.Path())
+def set_output_folder(folder_path: str):
+    """Set the default parent folder for all command outputs
+
+    ```
+    pbi config set-output-folder ~/PowerBI/backups
+    ```
+
+    or on Windows:
+
+    ```
+    pbi config set-output-folder "C:\\Users\\YourName\\PowerBI\\backups"
+    ```
+
+    :param folder_path: Path to the default output folder
+    """
+    set_default_output_folder(folder_path)
+    resolved_path = Path(folder_path).expanduser().absolute()
+    click.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
+    click.secho(
+        "  Commands will now use subfolders within this folder by default.", fg="blue"
+    )
+
+
+@config_group.command(name="get-output-folder")
+def get_output_folder():
+    """Get the currently configured default output folder
+
+    ```
+    pbi config get-output-folder
+    ```
+    """
+    folder = get_default_output_folder()
+    if folder:
+        click.echo(f"Default output folder: {folder}")
+    else:
+        click.secho("No default output folder configured.", fg="yellow")
+        click.echo("Use 'pbi config set-output-folder' to set one.")
+
+
+@config_group.command(name="show")
+def show_config():
+    """Show all configuration settings
+
+    ```
+    pbi config show
+    ```
+    """
+    config = load_config()
+    
+    click.echo("Current configuration:")
+    click.echo(f"  Active profile: {config.get('active_profile') or 'None'}")
+    click.echo(f"  Default output folder: {config.get('default_output_folder') or 'Not set'}")
+    click.echo(f"  Profiles: {len(config.get('profiles', {}))}")
+    
+    if config.get('profiles'):
+        click.echo("\n  Available profiles:")
+        for profile_name in config.get('profiles', {}).keys():
+            active = " (active)" if profile_name == config.get('active_profile') else ""
+            click.echo(f"    - {profile_name}{active}")
+
+
 @pbi.command()
 @click.option("--group-id", "-g", help="Group ID", required=True)
 @click.option("--report-id", "-r", help="Report ID", required=True)
@@ -458,9 +540,10 @@ def workspaces(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target folder",
-    required=True,
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder)",
+    default="workspaces",
+    required=False,
 )
 @click.option(
     "--expand",
@@ -481,7 +564,7 @@ def workspaces(ctx):
 @click.option("--file-name", "-n", type=str, help="file name", default="workspaces")
 def list(
     top: int,
-    target_folder: Path,
+    target_folder: str,
     expand: list,
     filter: Optional[str],
     file_type: list[str],
@@ -489,9 +572,21 @@ def list(
 ):
     r"""List Power BI workspaces and save them to files
 
+    The --target-folder can be:
+    - An absolute path: "C:\Users\Name\PowerBI\backups\2024-01-01"
+    - A relative subfolder: "2024-01-01" (uses default output folder + this subfolder)
+    - Default: "workspaces" subfolder within configured default output folder
 
     ```sh
+    # Using absolute path
     pbi workspaces list -ft json -ft excel -tf "C:\Users\$Env:UserName\PowerBI\backups\$(Get-Date -format 'yyyy-MM-dd')" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks
+    
+    # Using relative subfolder (requires default output folder to be configured)
+    pbi config set-output-folder "C:\Users\$Env:UserName\PowerBI\backups"
+    pbi workspaces list -ft json -ft excel -tf "$(Get-Date -format 'yyyy-MM-dd')" -e users
+    
+    # Using default "workspaces" subfolder
+    pbi workspaces list -ft json -ft excel -e users
     ```
 
     !!! warning "Requires Admin"
@@ -499,6 +594,19 @@ def list(
         This command requires an admin account.
 
     """
+    
+    # Resolve the target folder (handles absolute/relative paths)
+    resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces")
+    
+    if resolved_folder is None:
+        click.secho(
+            "Error: No target folder specified and no default output folder configured.",
+            fg="red"
+        )
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        raise click.Abort()
+    
+    target_folder = resolved_folder
 
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
@@ -577,12 +685,13 @@ def format_convert(source: Path, target: Path, format):
 @click.option(
     "--target-folder",
     "-t",
-    type=click.Path(path_type=Path),
+    type=str,
     help=(
-        "target folder to save the results to; "
+        "target folder (absolute path or subfolder within default output folder); "
         "Do not include the trailing (back)slash"
     ),
-    required=True,
+    default="workspaces/reports",
+    required=False,
 )
 @click.option(
     "--file-type",
@@ -617,7 +726,7 @@ def format_convert(source: Path, target: Path, format):
 )
 def report_users(
     source: Path,
-    target_folder: Path,
+    target_folder: str,
     file_type: list = ["json", "excel"],
     wait_interval: int = 3,
     file_name: str = "workspaces_reports_users",
@@ -651,9 +760,19 @@ def report_users(
     """
     click.secho("getting report user details requires admin token")
 
-    # if not target_folder.is_dir():
-    #     click.echo("Please specify a folder instead for excel output")
-    #     raise click.BadOptionUsage(option_name="target-folder", message=f"{target_folder=}")
+    # Resolve the target folder (handles absolute/relative paths)
+    resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces/reports")
+    
+    if resolved_folder is None:
+        click.secho(
+            "Error: No target folder specified and no default output folder configured.",
+            fg="red"
+        )
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        raise click.Abort()
+    
+    target_folder = resolved_folder
+
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
         target_folder.mkdir(parents=True, exist_ok=True)
@@ -704,8 +823,8 @@ def users(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file",
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder)",
     required=False,
 )
 @click.option(
@@ -721,7 +840,7 @@ def users(ctx):
 )
 def user_access(
     user_id: str,
-    target_folder: Optional[Path],
+    target_folder: Optional[str],
     file_types: list,
     file_name: Optional[str] = None,
 ):
@@ -737,6 +856,19 @@ def user_access(
         logger.info(f"No target folder provided, printing to interface...")
         click.echo(json.dumps(result, indent=4))
     else:
+        # Resolve the target folder
+        resolved_folder = resolve_output_path(target_folder, default_subfolder="users")
+        
+        if resolved_folder is None:
+            click.secho(
+                "Error: No default output folder configured.",
+                fg="red"
+            )
+            click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+            raise click.Abort()
+        
+        target_folder = resolved_folder
+        
         if not target_folder.exists():
             click.secho(f"creating folder {target_folder}", fg="blue")
             target_folder.mkdir(parents=True, exist_ok=True)
@@ -767,9 +899,10 @@ def apps(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target folder",
-    required=True,
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder)",
+    default="apps",
+    required=False,
 )
 @click.option(
     "--file-type",
@@ -781,12 +914,25 @@ def apps(ctx):
 @click.option("--role", "-r", type=click.Choice(["admin", "user"]), default="user")
 @click.option("--file-name", "-n", type=str, help="file name", default="apps")
 def list(
-    target_folder: Path,
+    target_folder: str,
     role: str,
     file_type: tuple = ("json", "excel"),
     file_name: str = "apps",
 ):
     """List Power BI Apps and save them to files"""
+    # Resolve the target folder
+    resolved_folder = resolve_output_path(target_folder, default_subfolder="apps")
+    
+    if resolved_folder is None:
+        click.secho(
+            "Error: No target folder specified and no default output folder configured.",
+            fg="red"
+        )
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        raise click.Abort()
+    
+    target_folder = resolved_folder
+    
     if not target_folder.exists():
         click.secho(f"creating folder {target_folder}", fg="blue")
         target_folder.mkdir(parents=True, exist_ok=True)
