@@ -28,7 +28,7 @@ def load_config() -> dict:
         return get_default_config()
     
     try:
-        with open(CONFIG_FILE, "r") as fp:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as fp:
             config = yaml.safe_load(fp)
             return config or get_default_config()
     except Exception as e:
@@ -39,7 +39,7 @@ def load_config() -> dict:
 def save_config(config: dict):
     """Save configuration to YAML file."""
     ensure_config_dir()
-    with open(CONFIG_FILE, "w") as fp:
+    with open(CONFIG_FILE, "w", encoding="utf-8") as fp:
         yaml.dump(config, fp, default_flow_style=False, sort_keys=False)
 
 
@@ -87,6 +87,9 @@ def set_config_value(key: str, value: Any):
     for k in keys[:-1]:
         if k not in current:
             current[k] = {}
+        elif not isinstance(current[k], dict):
+            # If the intermediate key exists but is not a dict, we can't traverse further
+            raise ValueError(f"Cannot set nested key '{key}': '{k}' is not a dictionary")
         current = current[k]
     
     current[keys[-1]] = value
@@ -105,7 +108,7 @@ def migrate_legacy_config():
     # Migrate profiles.json if it exists
     if LEGACY_PROFILES_FILE.exists():
         try:
-            with open(LEGACY_PROFILES_FILE, "r") as fp:
+            with open(LEGACY_PROFILES_FILE, "r", encoding="utf-8") as fp:
                 profiles_data = json.load(fp)
                 config["active_profile"] = profiles_data.get("active_profile")
                 config["profiles"] = profiles_data.get("profiles", {})
@@ -126,7 +129,7 @@ def resolve_output_path(path_input: Optional[str], default_subfolder: str = "") 
     If path_input is a relative path, combines it with default_output_folder from config.
     
     :param path_input: User-provided path (can be absolute or relative)
-    :param default_subfolder: Default subfolder name if no path provided
+    :param default_subfolder: Not used in this function (kept for API compatibility)
     :return: Resolved Path object or None
     """
     if path_input is None:

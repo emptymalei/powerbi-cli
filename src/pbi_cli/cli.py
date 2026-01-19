@@ -163,7 +163,7 @@ def _migrate_legacy_auth():
     # Then migrate from auth.json if needed
     if AUTH_CONFIG_FILE.exists() and not config.get("profiles"):
         try:
-            with open(AUTH_CONFIG_FILE, "r") as fp:
+            with open(AUTH_CONFIG_FILE, "r", encoding="utf-8") as fp:
                 legacy_auth = json.load(fp)
 
             if "Authorization" in legacy_auth:
@@ -598,12 +598,14 @@ def list(
     # Resolve the target folder (handles absolute/relative paths)
     resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces")
     
+    # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
         click.secho(
-            "Error: No target folder specified and no default output folder configured.",
+            "Error: Unable to determine output folder.",
             fg="red"
         )
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
     
     target_folder = resolved_folder
@@ -763,12 +765,14 @@ def report_users(
     # Resolve the target folder (handles absolute/relative paths)
     resolved_folder = resolve_output_path(target_folder, default_subfolder="workspaces/reports")
     
+    # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
         click.secho(
-            "Error: No target folder specified and no default output folder configured.",
+            "Error: Unable to determine output folder.",
             fg="red"
         )
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
     
     target_folder = resolved_folder
@@ -861,10 +865,11 @@ def user_access(
         
         if resolved_folder is None:
             click.secho(
-                "Error: No default output folder configured.",
+                "Error: Unable to determine output folder.",
                 fg="red"
             )
-            click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+            click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+            click.echo("or provide an absolute path with --target-folder.")
             raise click.Abort()
         
         target_folder = resolved_folder
@@ -923,12 +928,14 @@ def list(
     # Resolve the target folder
     resolved_folder = resolve_output_path(target_folder, default_subfolder="apps")
     
+    # This should not happen since target_folder has a default, but check for safety
     if resolved_folder is None:
         click.secho(
-            "Error: No target folder specified and no default output folder configured.",
+            "Error: Unable to determine output folder.",
             fg="red"
         )
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder.")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
     
     target_folder = resolved_folder
