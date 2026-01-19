@@ -9,6 +9,16 @@ import pandas as pd
 from loguru import logger
 from slugify import slugify
 
+import pbi_cli.powerbi.admin as powerbi_admin
+import pbi_cli.powerbi.admin.report as powerbi_admin_report
+import pbi_cli.powerbi.app as powerbi_app
+import pbi_cli.powerbi.report as powerbi_report
+import pbi_cli.powerbi.workspace as powerbi_workspace
+from pbi_cli.auth import PBIAuth
+from pbi_cli.powerbi.admin import User, Workspaces
+from pbi_cli.powerbi.io import multi_group_dict_to_excel
+from pbi_cli.web import DataRetriever
+
 try:
     import keyring
     from keyring.errors import NoKeyringError, PasswordDeleteError
@@ -19,15 +29,6 @@ except ImportError:
     NoKeyringError = Exception
     PasswordDeleteError = Exception
 
-import pbi_cli.powerbi.admin as powerbi_admin
-import pbi_cli.powerbi.admin.report as powerbi_admin_report
-import pbi_cli.powerbi.app as powerbi_app
-import pbi_cli.powerbi.report as powerbi_report
-import pbi_cli.powerbi.workspace as powerbi_workspace
-from pbi_cli.auth import PBIAuth
-from pbi_cli.powerbi.admin import User, Workspaces
-from pbi_cli.powerbi.io import multi_group_dict_to_excel
-from pbi_cli.web import DataRetriever
 
 logger.remove()
 logger.add(sys.stderr, level="INFO", enqueue=True)
@@ -149,7 +150,9 @@ def _migrate_legacy_auth():
                 }
                 with open(PROFILES_FILE, "w") as fp:
                     json.dump(profiles_data, fp, indent=2)
-                logger.info("Migrated legacy auth to secure storage with profile 'default'")
+                logger.info(
+                    "Migrated legacy auth to secure storage with profile 'default'"
+                )
         except Exception as e:
             logger.warning(f"Could not migrate legacy auth: {e}")
 
@@ -348,7 +351,9 @@ def list_auth():
     active_profile = profiles_data.get("active_profile")
 
     if not profiles:
-        click.secho("No profiles found. Use 'pbi auth' to create a profile.", fg="yellow")
+        click.secho(
+            "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
+        )
         return
 
     click.echo("Stored authentication profiles:")
@@ -394,13 +399,17 @@ def delete_auth(profile: str):
     if profiles_data.get("active_profile") == profile:
         # Use tuple() instead of list() to avoid shadowing by the workspaces list command
         remaining_profiles = tuple(profiles_data["profiles"].keys())
-        profiles_data["active_profile"] = remaining_profiles[0] if remaining_profiles else None
+        profiles_data["active_profile"] = (
+            remaining_profiles[0] if remaining_profiles else None
+        )
 
     _save_profiles(profiles_data)
 
     click.secho(f"✓ Profile '{profile}' deleted successfully", fg="green")
     if profiles_data.get("active_profile"):
-        click.secho(f"Active profile is now '{profiles_data['active_profile']}'", fg="yellow")
+        click.secho(
+            f"Active profile is now '{profiles_data['active_profile']}'", fg="yellow"
+        )
 
 
 @pbi.command()
