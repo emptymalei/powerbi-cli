@@ -20,6 +20,7 @@ click = "^8.1.7"
 loguru = "^0.7.2"
 requests = "^2.32.3"
 python-slugify = "^8.0.4"
+keyring = "^25.5.0"
 
 
 [tool.poetry.group.dev.dependencies]
