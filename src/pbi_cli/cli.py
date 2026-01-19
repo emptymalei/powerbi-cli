@@ -270,8 +270,8 @@ def auth(bearer_token: str, profile: str):
 
 
 @pbi.command(name="switch-profile")
-@click.argument("profile", required=False)
-def switch_profile_cmd(profile: Optional[str] = None):
+@click.argument("profile_name", required=False)
+def switch_profile_cmd(profile_name: Optional[str] = None):
     """Switch the active authentication profile
 
     ```
@@ -284,10 +284,11 @@ def switch_profile_cmd(profile: Optional[str] = None):
     pbi switch-profile production
     ```
 
-    :param profile: Profile name to switch to (optional, will show interactive selection if not provided)
+    :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)
     """
     profiles_data = _load_profiles()
-    available_profiles = list(profiles_data.get("profiles", {}).keys())
+    # Use tuple() instead of list() to avoid shadowing by the workspaces list command
+    available_profiles = tuple(profiles_data.get("profiles", {}).keys())
 
     if not available_profiles:
         click.secho(
@@ -296,7 +297,7 @@ def switch_profile_cmd(profile: Optional[str] = None):
         return
 
     # If no profile specified, show interactive selection
-    if profile is None:
+    if profile_name is None:
         click.echo("Available profiles:")
         for idx, prof in enumerate(available_profiles, 1):
             active_marker = (
@@ -308,22 +309,22 @@ def switch_profile_cmd(profile: Optional[str] = None):
             "Select profile number", type=int, default=1, show_default=True
         )
         if 1 <= choice <= len(available_profiles):
-            profile = available_profiles[choice - 1]
+            profile_name = available_profiles[choice - 1]
         else:
             click.secho("Invalid selection", fg="red")
             return
 
-    if profile not in available_profiles:
+    if profile_name not in available_profiles:
         click.secho(
-            f"Profile '{profile}' not found. Use 'pbi profiles list' to see available profiles.",
+            f"Profile '{profile_name}' not found. Use 'pbi profiles list' to see available profiles.",
             fg="red",
         )
         return
 
-    profiles_data["active_profile"] = profile
+    profiles_data["active_profile"] = profile_name
     _save_profiles(profiles_data)
 
-    click.secho(f"✓ Switched to profile '{profile}'", fg="green")
+    click.secho(f"✓ Switched to profile '{profile_name}'", fg="green")
 
 
 @pbi.group(name="profiles", invoke_without_command=True)
@@ -391,7 +392,7 @@ def delete_auth(profile: str):
 
     # If this was the active profile, clear it or switch to another
     if profiles_data.get("active_profile") == profile:
-        remaining_profiles = list(profiles_data["profiles"].keys())
+        remaining_profiles = tuple(profiles_data["profiles"].keys())
         profiles_data["active_profile"] = remaining_profiles[0] if remaining_profiles else None
 
     _save_profiles(profiles_data)
