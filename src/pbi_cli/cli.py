@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable, Optional, Union
 
 import click
+import keyring
 import pandas as pd
 from loguru import logger
 from slugify import slugify
@@ -26,18 +27,83 @@ logger.add(sys.stderr, level="INFO", enqueue=True)
 __CWD__ = os.getcwd()
 CONFIG_DIR = Path.home() / ".pbi_cli"
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
+PROFILES_FILE = CONFIG_DIR / "profiles.json"
+KEYRING_SERVICE = "pbi-cli"
 
 
-def load_auth(auth_path: Path = AUTH_CONFIG_FILE) -> dict:
-    """Load the auth file from the config directory
+def _migrate_legacy_auth():
+    """Migrate legacy auth.json to the new profile-based system"""
+    if AUTH_CONFIG_FILE.exists() and not PROFILES_FILE.exists():
+        try:
+            with open(AUTH_CONFIG_FILE, "r") as fp:
+                legacy_auth = json.load(fp)
 
-    :param auth_path: Path to the auth file
+            if "Authorization" in legacy_auth:
+                # Extract token from "Bearer <token>"
+                token = legacy_auth["Authorization"].replace("Bearer ", "")
+                # Save to keyring
+                keyring.set_password(KEYRING_SERVICE, "default", token)
+                # Create profiles file
+                profiles_data = {
+                    "active_profile": "default",
+                    "profiles": {"default": {"name": "default"}},
+                }
+                with open(PROFILES_FILE, "w") as fp:
+                    json.dump(profiles_data, fp, indent=2)
+                logger.info("Migrated legacy auth to secure storage with profile 'default'")
+        except Exception as e:
+            logger.warning(f"Could not migrate legacy auth: {e}")
+
+
+def _load_profiles() -> dict:
+    """Load profiles configuration"""
+    _migrate_legacy_auth()
+
+    if not PROFILES_FILE.exists():
+        return {"active_profile": None, "profiles": {}}
+
+    with open(PROFILES_FILE, "r") as fp:
+        return json.load(fp)
+
+
+def _save_profiles(profiles_data: dict):
+    """Save profiles configuration"""
+    if not CONFIG_DIR.exists():
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+    with open(PROFILES_FILE, "w") as fp:
+        json.dump(profiles_data, fp, indent=2)
+
+
+def load_auth(profile: Optional[str] = None) -> dict:
+    """Load authentication for the specified profile or active profile
+
+    :param profile: Profile name. If None, uses the active profile.
+    :return: dict containing {"Authorization": "Bearer <token>"}
     """
+    profiles_data = _load_profiles()
 
-    with open(auth_path, "r") as fp:
-        auth_data = json.load(fp)
+    if profile is None:
+        profile = profiles_data.get("active_profile")
 
-    return auth_data
+    if profile is None:
+        raise click.ClickException(
+            "No active profile set. Use 'pbi auth' to create a profile or 'pbi switch auth' to switch profiles."
+        )
+
+    if profile not in profiles_data.get("profiles", {}):
+        raise click.ClickException(
+            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles."
+        )
+
+    # Get token from keyring
+    token = keyring.get_password(KEYRING_SERVICE, profile)
+    if token is None:
+        raise click.ClickException(
+            f"No credentials found for profile '{profile}'. Please re-authenticate."
+        )
+
+    return {"Authorization": f"Bearer {token}"}
 
 
 @click.group(invoke_without_command=True)
@@ -52,40 +118,195 @@ def pbi(ctx):
 
 @pbi.command()
 @click.option("--bearer-token", "-t", help="Bearer token", required=True)
-def auth(bearer_token: str):
-    """get auth bearer token and cache it
+@click.option(
+    "--profile",
+    "-p",
+    help="Profile name for this credential set",
+    default="default",
+)
+def auth(bearer_token: str, profile: str):
+    """Store authentication bearer token securely
 
     ```
     pbi auth --bearer-token <your_bearer_token>
     ```
 
-    or
+    or with a custom profile name:
 
     ```
-    pbi auth -t <your_bearer_token>
+    pbi auth -t <your_bearer_token> -p production
     ```
-
-    for short.
 
     :param bearer_token: Bearer token to authenticate with Power BI API
+    :param profile: Profile name to associate with this credential
     """
 
     if bearer_token.startswith("Bearer"):
-        logger.warning("Do not include the Bearer string in the begining")
+        logger.warning("Do not include the Bearer string in the beginning")
         bearer_token = bearer_token.replace("Bearer ", "")
 
     if not CONFIG_DIR.exists():
-        logger.info("creating config folder: {CONFIG_DIR}")
-        CONFIG_DIR.mkdir()
+        logger.info(f"Creating config folder: {CONFIG_DIR}")
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    auth_bearer_token = {
-        "Authorization": "Bearer " + bearer_token,
-    }
+    # Store token securely in keyring
+    keyring.set_password(KEYRING_SERVICE, profile, bearer_token)
 
-    with open(AUTH_CONFIG_FILE, "w") as fp:
-        json.dump(auth_bearer_token, fp)
+    # Update profiles configuration
+    profiles_data = _load_profiles()
+    if "profiles" not in profiles_data:
+        profiles_data["profiles"] = {}
 
-    return auth_bearer_token
+    profiles_data["profiles"][profile] = {"name": profile}
+
+    # Set as active profile if it's the first one or if it's 'default'
+    if not profiles_data.get("active_profile") or profile == "default":
+        profiles_data["active_profile"] = profile
+
+    _save_profiles(profiles_data)
+
+    click.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
+    if profiles_data["active_profile"] == profile:
+        click.secho(f"✓ Profile '{profile}' is now active", fg="green")
+
+
+@pbi.group(name="switch")
+def switch_group():
+    """Switch between different configurations"""
+    pass
+
+
+@switch_group.command(name="auth")
+@click.argument("profile", required=False)
+def switch_auth(profile: Optional[str] = None):
+    """Switch the active authentication profile
+
+    ```
+    pbi switch auth
+    ```
+
+    or specify a profile:
+
+    ```
+    pbi switch auth production
+    ```
+
+    :param profile: Profile name to switch to (optional, will show interactive selection if not provided)
+    """
+    profiles_data = _load_profiles()
+    available_profiles = list(profiles_data.get("profiles", {}).keys())
+
+    if not available_profiles:
+        click.secho(
+            "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
+        )
+        return
+
+    # If no profile specified, show interactive selection
+    if profile is None:
+        click.echo("Available profiles:")
+        for idx, prof in enumerate(available_profiles, 1):
+            active_marker = (
+                " (active)" if prof == profiles_data.get("active_profile") else ""
+            )
+            click.echo(f"  {idx}. {prof}{active_marker}")
+
+        choice = click.prompt(
+            "Select profile number", type=int, default=1, show_default=True
+        )
+        if 1 <= choice <= len(available_profiles):
+            profile = available_profiles[choice - 1]
+        else:
+            click.secho("Invalid selection", fg="red")
+            return
+
+    if profile not in available_profiles:
+        click.secho(
+            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles.",
+            fg="red",
+        )
+        return
+
+    profiles_data["active_profile"] = profile
+    _save_profiles(profiles_data)
+
+    click.secho(f"✓ Switched to profile '{profile}'", fg="green")
+
+
+@pbi.group(name="list")
+def list_group():
+    """List various resources"""
+    pass
+
+
+@list_group.command(name="auth")
+def list_auth():
+    """List all stored authentication profiles
+
+    ```
+    pbi list auth
+    ```
+    """
+    profiles_data = _load_profiles()
+    profiles = profiles_data.get("profiles", {})
+    active_profile = profiles_data.get("active_profile")
+
+    if not profiles:
+        click.secho("No profiles found. Use 'pbi auth' to create a profile.", fg="yellow")
+        return
+
+    click.echo("Stored authentication profiles:")
+    for profile_name in profiles.keys():
+        active_marker = " (active)" if profile_name == active_profile else ""
+        # Check if token exists in keyring
+        token_exists = keyring.get_password(KEYRING_SERVICE, profile_name) is not None
+        status = "✓" if token_exists else "✗"
+        click.echo(f"  {status} {profile_name}{active_marker}")
+
+    click.echo()
+    click.echo(f"Active profile: {active_profile or 'None'}")
+
+
+@pbi.command(name="delete-auth")
+@click.argument("profile")
+@click.confirmation_option(prompt="Are you sure you want to delete this profile?")
+def delete_auth(profile: str):
+    """Delete an authentication profile
+
+    ```
+    pbi delete-auth production
+    ```
+
+    :param profile: Profile name to delete
+    """
+    profiles_data = _load_profiles()
+
+    if profile not in profiles_data.get("profiles", {}):
+        click.secho(
+            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles.",
+            fg="red",
+        )
+        return
+
+    # Delete from keyring
+    try:
+        keyring.delete_password(KEYRING_SERVICE, profile)
+    except keyring.errors.PasswordDeleteError:
+        logger.warning(f"No credentials found in keyring for profile '{profile}'")
+
+    # Remove from profiles
+    del profiles_data["profiles"][profile]
+
+    # If this was the active profile, clear it or switch to another
+    if profiles_data.get("active_profile") == profile:
+        remaining_profiles = list(profiles_data["profiles"].keys())
+        profiles_data["active_profile"] = remaining_profiles[0] if remaining_profiles else None
+
+    _save_profiles(profiles_data)
+
+    click.secho(f"✓ Profile '{profile}' deleted successfully", fg="green")
+    if profiles_data.get("active_profile"):
+        click.secho(f"Active profile is now '{profiles_data['active_profile']}'", fg="yellow")
 
 
 @pbi.command()
