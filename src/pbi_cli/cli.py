@@ -5,10 +5,19 @@ from pathlib import Path
 from typing import Iterable, Optional, Union
 
 import click
-import keyring
 import pandas as pd
 from loguru import logger
 from slugify import slugify
+
+try:
+    import keyring
+    from keyring.errors import NoKeyringError, PasswordDeleteError
+
+    KEYRING_AVAILABLE = True
+except ImportError:
+    KEYRING_AVAILABLE = False
+    NoKeyringError = Exception
+    PasswordDeleteError = Exception
 
 import pbi_cli.powerbi.admin as powerbi_admin
 import pbi_cli.powerbi.admin.report as powerbi_admin_report
@@ -28,7 +37,97 @@ __CWD__ = os.getcwd()
 CONFIG_DIR = Path.home() / ".pbi_cli"
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
 PROFILES_FILE = CONFIG_DIR / "profiles.json"
+CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
+
+
+def _check_keyring_availability():
+    """Check if keyring is available and working"""
+    if not KEYRING_AVAILABLE:
+        return False
+    try:
+        # Test if we can use keyring
+        keyring.get_password("test-service", "test-user")
+        return True
+    except NoKeyringError:
+        return False
+    except Exception:
+        # Any other exception means keyring might work
+        return True
+
+
+def _set_credential(profile: str, token: str):
+    """Set credential for a profile using keyring or fallback to file storage"""
+    if _check_keyring_availability():
+        try:
+            keyring.set_password(KEYRING_SERVICE, profile, token)
+            return
+        except NoKeyringError:
+            pass
+
+    # Fallback to file-based storage
+    logger.warning(
+        "Keyring not available, storing credentials in file. "
+        "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
+    )
+
+    if not CONFIG_DIR.exists():
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+    credentials = {}
+    if CREDENTIALS_FILE.exists():
+        with open(CREDENTIALS_FILE, "r") as fp:
+            credentials = json.load(fp)
+
+    credentials[profile] = token
+
+    with open(CREDENTIALS_FILE, "w") as fp:
+        json.dump(credentials, fp, indent=2)
+
+    # Set restrictive permissions on the credentials file
+    CREDENTIALS_FILE.chmod(0o600)
+
+
+def _get_credential(profile: str) -> Optional[str]:
+    """Get credential for a profile from keyring or file storage"""
+    if _check_keyring_availability():
+        try:
+            token = keyring.get_password(KEYRING_SERVICE, profile)
+            if token is not None:
+                return token
+        except NoKeyringError:
+            pass
+
+    # Fallback to file-based storage
+    if CREDENTIALS_FILE.exists():
+        with open(CREDENTIALS_FILE, "r") as fp:
+            credentials = json.load(fp)
+            return credentials.get(profile)
+
+    return None
+
+
+def _delete_credential(profile: str):
+    """Delete credential for a profile from keyring or file storage"""
+    if _check_keyring_availability():
+        try:
+            keyring.delete_password(KEYRING_SERVICE, profile)
+            return
+        except (NoKeyringError, PasswordDeleteError):
+            pass
+
+    # Fallback to file-based storage
+    if CREDENTIALS_FILE.exists():
+        with open(CREDENTIALS_FILE, "r") as fp:
+            credentials = json.load(fp)
+
+        if profile in credentials:
+            del credentials[profile]
+
+            with open(CREDENTIALS_FILE, "w") as fp:
+                json.dump(credentials, fp, indent=2)
+
+            CREDENTIALS_FILE.chmod(0o600)
 
 
 def _migrate_legacy_auth():
@@ -41,8 +140,8 @@ def _migrate_legacy_auth():
             if "Authorization" in legacy_auth:
                 # Extract token from "Bearer <token>"
                 token = legacy_auth["Authorization"].replace("Bearer ", "")
-                # Save to keyring
-                keyring.set_password(KEYRING_SERVICE, "default", token)
+                # Save to keyring or file
+                _set_credential("default", token)
                 # Create profiles file
                 profiles_data = {
                     "active_profile": "default",
@@ -96,8 +195,8 @@ def load_auth(profile: Optional[str] = None) -> dict:
             f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles."
         )
 
-    # Get token from keyring
-    token = keyring.get_password(KEYRING_SERVICE, profile)
+    # Get token from keyring or file
+    token = _get_credential(profile)
     if token is None:
         raise click.ClickException(
             f"No credentials found for profile '{profile}'. Please re-authenticate."
@@ -149,8 +248,8 @@ def auth(bearer_token: str, profile: str):
         logger.info(f"Creating config folder: {CONFIG_DIR}")
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Store token securely in keyring
-    keyring.set_password(KEYRING_SERVICE, profile, bearer_token)
+    # Store token securely
+    _set_credential(profile, bearer_token)
 
     # Update profiles configuration
     profiles_data = _load_profiles()
@@ -170,25 +269,19 @@ def auth(bearer_token: str, profile: str):
         click.secho(f"✓ Profile '{profile}' is now active", fg="green")
 
 
-@pbi.group(name="switch")
-def switch_group():
-    """Switch between different configurations"""
-    pass
-
-
-@switch_group.command(name="auth")
+@pbi.command(name="switch-profile")
 @click.argument("profile", required=False)
-def switch_auth(profile: Optional[str] = None):
+def switch_profile_cmd(profile: Optional[str] = None):
     """Switch the active authentication profile
 
     ```
-    pbi switch auth
+    pbi switch-profile
     ```
 
     or specify a profile:
 
     ```
-    pbi switch auth production
+    pbi switch-profile production
     ```
 
     :param profile: Profile name to switch to (optional, will show interactive selection if not provided)
@@ -222,7 +315,7 @@ def switch_auth(profile: Optional[str] = None):
 
     if profile not in available_profiles:
         click.secho(
-            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles.",
+            f"Profile '{profile}' not found. Use 'pbi profiles list' to see available profiles.",
             fg="red",
         )
         return
@@ -233,13 +326,15 @@ def switch_auth(profile: Optional[str] = None):
     click.secho(f"✓ Switched to profile '{profile}'", fg="green")
 
 
-@pbi.group(name="list")
-def list_group():
-    """List various resources"""
-    pass
+@pbi.group(name="profiles", invoke_without_command=True)
+@click.pass_context
+def profiles_group(ctx):
+    """Manage authentication profiles"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi profiles --help for help.")
 
 
-@list_group.command(name="auth")
+@profiles_group.command(name="list")
 def list_auth():
     """List all stored authentication profiles
 
@@ -258,8 +353,8 @@ def list_auth():
     click.echo("Stored authentication profiles:")
     for profile_name in profiles.keys():
         active_marker = " (active)" if profile_name == active_profile else ""
-        # Check if token exists in keyring
-        token_exists = keyring.get_password(KEYRING_SERVICE, profile_name) is not None
+        # Check if token exists
+        token_exists = _get_credential(profile_name) is not None
         status = "✓" if token_exists else "✗"
         click.echo(f"  {status} {profile_name}{active_marker}")
 
@@ -267,14 +362,14 @@ def list_auth():
     click.echo(f"Active profile: {active_profile or 'None'}")
 
 
-@pbi.command(name="delete-auth")
+@profiles_group.command(name="delete")
 @click.argument("profile")
 @click.confirmation_option(prompt="Are you sure you want to delete this profile?")
 def delete_auth(profile: str):
     """Delete an authentication profile
 
     ```
-    pbi delete-auth production
+    pbi profiles delete production
     ```
 
     :param profile: Profile name to delete
@@ -288,11 +383,8 @@ def delete_auth(profile: str):
         )
         return
 
-    # Delete from keyring
-    try:
-        keyring.delete_password(KEYRING_SERVICE, profile)
-    except keyring.errors.PasswordDeleteError:
-        logger.warning(f"No credentials found in keyring for profile '{profile}'")
+    # Delete credential
+    _delete_credential(profile)
 
     # Remove from profiles
     del profiles_data["profiles"][profile]
