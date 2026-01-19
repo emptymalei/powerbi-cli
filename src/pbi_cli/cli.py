@@ -596,11 +596,11 @@ def list(
 
     """
     
-    # Resolve the target folder (handles absolute/relative paths)
-    resolved_folder = resolve_output_path(target_folder)
+    # Resolve the target folder path (handles absolute/relative paths)
+    target_path = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
-    if resolved_folder is None:
+    if target_path is None:
         click.secho(
             "Error: Unable to determine output folder.",
             fg="red"
@@ -608,12 +608,10 @@ def list(
         click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
         click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
-    
-    target_folder = resolved_folder
 
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
 
     workspaces = Workspaces(auth=load_auth(), verify=False)
 
@@ -622,13 +620,13 @@ def list(
     result = workspaces(top=top, expand=expand, filter=filter)
 
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing to {json_file_path}")
         with open(json_file_path, "w") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing to {excel_file_path}")
         flattened = workspaces.flatten_workspaces(result["value"])
         multi_group_dict_to_excel(flattened, excel_file_path)
@@ -763,11 +761,11 @@ def report_users(
     """
     click.secho("getting report user details requires admin token")
 
-    # Resolve the target folder (handles absolute/relative paths)
-    resolved_folder = resolve_output_path(target_folder)
+    # Resolve the target folder path (handles absolute/relative paths)
+    target_path = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
-    if resolved_folder is None:
+    if target_path is None:
         click.secho(
             "Error: Unable to determine output folder.",
             fg="red"
@@ -775,12 +773,10 @@ def report_users(
         click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
         click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
-    
-    target_folder = resolved_folder
 
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
 
     pbi_workspaces = powerbi_workspace.Workspaces(
         auth=load_auth(), verify=False, cache_file=source
@@ -792,14 +788,14 @@ def report_users(
         wait_interval=wait_interval,
     )
 
-    click.secho(f"Writing results to the folder {target_folder}")
+    click.secho(f"Writing results to the folder {target_path}")
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
         with open(json_file_path, "w") as fp:
             json.dump(report_users, fp)
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
 
         multi_group_dict_to_excel(
@@ -861,10 +857,10 @@ def user_access(
         logger.info(f"No target folder provided, printing to interface...")
         click.echo(json.dumps(result, indent=4))
     else:
-        # Resolve the target folder
-        resolved_folder = resolve_output_path(target_folder)
+        # Resolve the target folder path
+        target_path = resolve_output_path(target_folder)
         
-        if resolved_folder is None:
+        if target_path is None:
             click.secho(
                 "Error: Unable to determine output folder.",
                 fg="red"
@@ -873,19 +869,17 @@ def user_access(
             click.echo("or provide an absolute path with --target-folder.")
             raise click.Abort()
         
-        target_folder = resolved_folder
-        
-        if not target_folder.exists():
-            click.secho(f"creating folder {target_folder}", fg="blue")
-            target_folder.mkdir(parents=True, exist_ok=True)
+        if not target_path.exists():
+            click.secho(f"creating folder {target_path}", fg="blue")
+            target_path.mkdir(parents=True, exist_ok=True)
 
         if "json" in file_types:
-            json_file_path = target_folder / f"{file_name}.json"
+            json_file_path = target_path / f"{file_name}.json"
             logger.info(f"Writing json file to {json_file_path}...")
             with open(json_file_path, "w") as fp:
                 json.dump(result, fp)
         if "excel" in file_types:
-            excel_file_path = target_folder / f"{file_name}.xlsx"
+            excel_file_path = target_path / f"{file_name}.xlsx"
             logger.info(f"Writing excel file to {excel_file_path}...")
             df = pd.json_normalize(result)
             df.to_excel(excel_file_path)
@@ -926,11 +920,11 @@ def list(
     file_name: str = "apps",
 ):
     """List Power BI Apps and save them to files"""
-    # Resolve the target folder
-    resolved_folder = resolve_output_path(target_folder)
+    # Resolve the target folder path
+    target_path = resolve_output_path(target_folder)
     
     # This should not happen since target_folder has a default, but check for safety
-    if resolved_folder is None:
+    if target_path is None:
         click.secho(
             "Error: Unable to determine output folder.",
             fg="red"
@@ -939,11 +933,9 @@ def list(
         click.echo("or provide an absolute path with --target-folder.")
         raise click.Abort()
     
-    target_folder = resolved_folder
-    
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
 
     if role == "user":
         user = powerbi_app.Apps(auth=load_auth(), verify=False)
@@ -955,13 +947,13 @@ def list(
     result = user()
 
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}")
         with open(json_file_path, "w") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}")
         df = pd.json_normalize(result["value"])
         df.to_excel(excel_file_path)

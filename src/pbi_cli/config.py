@@ -51,7 +51,10 @@ class PBIConfig:
         try:
             with open(self._config_file, "r", encoding="utf-8") as fp:
                 config = yaml.safe_load(fp)
-                return config or self._get_default_config()
+                # Only return default if config is None (empty file) or not a dict
+                if config is None or not isinstance(config, dict):
+                    return self._get_default_config()
+                return config
         except Exception as e:
             logger.warning(f"Could not load config from {self._config_file}: {e}")
             return self._get_default_config()
@@ -255,10 +258,14 @@ def load_config() -> dict:
 
 
 def save_config(config: dict):
-    """Save configuration to YAML file."""
+    """Save configuration to YAML file.
+    
+    :param config: Configuration dictionary to save
+    """
     pbi_config = PBIConfig()
-    pbi_config._data = config
-    pbi_config._save(config)
+    # Use proper public method to update config
+    for key, value in config.items():
+        pbi_config.set(key, value)
 
 
 def get_default_config() -> dict:
