@@ -17,6 +17,7 @@ Example:
 """
 
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -115,7 +116,10 @@ class CacheManager:
     def _get_version_timestamp(self) -> str:
         """Generate a timestamp string for versioning.
         
-        :return: Timestamp string in ISO format
+        Returns a custom timestamp format suitable for directory names:
+        YYYYMMDD_HHMMSS (e.g., '20240101_120000')
+        
+        :return: Timestamp string in YYYYMMDD_HHMMSS format
         """
         return datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -312,8 +316,6 @@ class CacheManager:
             if cache_key is None:
                 # Clear entire cache
                 if self._base_path.exists():
-                    import shutil
-
                     if isinstance(self._base_path, CloudPath):
                         # For cloud paths, remove all objects
                         for item in self._base_path.iterdir():
@@ -330,8 +332,6 @@ class CacheManager:
                 # Clear all versions of a specific key
                 cache_dir = self._base_path / cache_key
                 if cache_dir.exists():
-                    import shutil
-
                     if isinstance(cache_dir, CloudPath):
                         cache_dir.rmtree()
                     else:

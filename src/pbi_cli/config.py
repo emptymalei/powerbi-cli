@@ -237,30 +237,42 @@ class PBIConfig:
     def cache_folder(self, value: Optional[str]):
         """Set the cache folder.
 
-        Handles path normalization similar to default_output_folder.
+        Handles both local and cloud paths (S3, GS, Azure, etc.).
+        Cloud paths are stored as-is, while local paths are normalized.
 
-        :param value: Path to the cache folder
+        :param value: Path to the cache folder (local or cloud)
         """
         if value is not None:
-            # Handle shell escaping issues
-            try:
-                if value.endswith('\\"') or value.endswith("\\'"):
-                    value = value[:-1]
-                elif value.endswith('"') or value.endswith("'"):
-                    if len(value) > 1 and value[-2] != "\\":
+            # Check if it's a cloud path
+            is_cloud_path = any(
+                value.startswith(prefix)
+                for prefix in ["s3://", "gs://", "az://", "file://"]
+            )
+
+            if is_cloud_path:
+                # For cloud paths, just strip quotes and store as-is
+                value = value.strip('"').strip("'")
+                self.set("cache_folder", value)
+            else:
+                # For local paths, handle shell escaping and normalize
+                try:
+                    if value.endswith('\\"') or value.endswith("\\'"):
                         value = value[:-1]
-            except Exception:
-                pass
+                    elif value.endswith('"') or value.endswith("'"):
+                        if len(value) > 1 and value[-2] != "\\":
+                            value = value[:-1]
+                except Exception:
+                    pass
 
-            # Strip leading quotes if present
-            if (value.startswith('"') and not value.startswith('\\"')) or (
-                value.startswith("'") and not value.startswith("\\'")
-            ):
-                value = value[1:]
+                # Strip leading quotes if present
+                if (value.startswith('"') and not value.startswith('\\"')) or (
+                    value.startswith("'") and not value.startswith("\\'")
+                ):
+                    value = value[1:]
 
-            # Expand user home directory and convert to absolute path
-            path = Path(value).expanduser().absolute()
-            self.set("cache_folder", str(path))
+                # Expand user home directory and convert to absolute path
+                path = Path(value).expanduser().absolute()
+                self.set("cache_folder", str(path))
         else:
             self.set("cache_folder", None)
 
