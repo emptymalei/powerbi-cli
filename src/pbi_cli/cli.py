@@ -15,6 +15,7 @@ import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
+from pbi_cli.config import PBIConfig, migrate_legacy_config, resolve_output_path
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
@@ -36,8 +37,9 @@ logger.add(sys.stderr, level="INFO", enqueue=True)
 
 __CWD__ = os.getcwd()
 CONFIG_DIR = Path.home() / ".pbi_cli"
+# Legacy files for migration
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
-PROFILES_FILE = CONFIG_DIR / "profiles.json"
+LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
 
@@ -146,9 +148,15 @@ def _delete_credential(profile: str):
 
 def _migrate_legacy_auth():
     """Migrate legacy auth.json to the new profile-based system"""
-    if AUTH_CONFIG_FILE.exists() and not PROFILES_FILE.exists():
+    pbi_config = PBIConfig()
+
+    # First migrate from profiles.json to config.yaml if needed
+    migrate_legacy_config()
+
+    # Then migrate from auth.json if needed
+    if AUTH_CONFIG_FILE.exists() and not pbi_config.profiles:
         try:
-            with open(AUTH_CONFIG_FILE, "r") as fp:
+            with open(AUTH_CONFIG_FILE, "r", encoding="utf-8") as fp:
                 legacy_auth = json.load(fp)
 
             if "Authorization" in legacy_auth:
@@ -156,13 +164,9 @@ def _migrate_legacy_auth():
                 token = legacy_auth["Authorization"].replace("Bearer ", "")
                 # Save to keyring or file
                 _set_credential("default", token)
-                # Create profiles file
-                profiles_data = {
-                    "active_profile": "default",
-                    "profiles": {"default": {"name": "default"}},
-                }
-                with open(PROFILES_FILE, "w") as fp:
-                    json.dump(profiles_data, fp, indent=2)
+                # Update config using class properties
+                pbi_config.active_profile = "default"
+                pbi_config.add_profile("default", {"name": "default"})
                 logger.info(
                     "Migrated legacy auth to secure storage with profile 'default'"
                 )
@@ -171,23 +175,21 @@ def _migrate_legacy_auth():
 
 
 def _load_profiles() -> dict:
-    """Load profiles configuration"""
+    """Load profiles configuration from YAML config"""
     _migrate_legacy_auth()
+    pbi_config = PBIConfig()
 
-    if not PROFILES_FILE.exists():
-        return {"active_profile": None, "profiles": {}}
-
-    with open(PROFILES_FILE, "r") as fp:
-        return json.load(fp)
+    return {
+        "active_profile": pbi_config.active_profile,
+        "profiles": pbi_config.profiles,
+    }
 
 
 def _save_profiles(profiles_data: dict):
-    """Save profiles configuration"""
-    if not CONFIG_DIR.exists():
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    with open(PROFILES_FILE, "w") as fp:
-        json.dump(profiles_data, fp, indent=2)
+    """Save profiles configuration to YAML config"""
+    pbi_config = PBIConfig()
+    pbi_config.active_profile = profiles_data.get("active_profile")
+    pbi_config.profiles = profiles_data.get("profiles", {})
 
 
 def load_auth(profile: Optional[str] = None) -> dict:
@@ -425,6 +427,83 @@ def delete_auth(profile: str):
         )
 
 
+@pbi.group(name="config", invoke_without_command=True)
+@click.pass_context
+def config_group(ctx):
+    """Manage pbi-cli configuration settings"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi config --help for help.")
+
+
+@config_group.command(name="set-output-folder")
+@click.argument("folder_path", type=click.Path())
+def set_output_folder(folder_path: str):
+    """Set the default parent folder for all command outputs
+
+    ```
+    pbi config set-output-folder ~/PowerBI/backups
+    ```
+
+    or on Windows:
+
+    ```
+    pbi config set-output-folder "C:\\Users\\YourName\\PowerBI\\backups"
+    ```
+
+    :param folder_path: Path to the default output folder
+    """
+    pbi_config = PBIConfig()
+    # Strip any quotes that might have been included due to shell escaping
+    folder_path_clean = folder_path.strip('"').strip("'")
+    pbi_config.default_output_folder = folder_path_clean
+    resolved_path = Path(folder_path_clean).expanduser().absolute()
+    click.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
+    click.secho(
+        "  Commands will now use subfolders within this folder by default.", fg="blue"
+    )
+
+
+@config_group.command(name="get-output-folder")
+def get_output_folder():
+    """Get the currently configured default output folder
+
+    ```
+    pbi config get-output-folder
+    ```
+    """
+    pbi_config = PBIConfig()
+    folder = pbi_config.default_output_folder
+    if folder:
+        click.echo(f"Default output folder: {folder}")
+    else:
+        click.secho("No default output folder configured.", fg="yellow")
+        click.echo("Use 'pbi config set-output-folder' to set one.")
+
+
+@config_group.command(name="show")
+def show_config():
+    """Show all configuration settings
+
+    ```
+    pbi config show
+    ```
+    """
+    pbi_config = PBIConfig()
+
+    click.echo("Current configuration:")
+    click.echo(f"  Active profile: {pbi_config.active_profile or 'None'}")
+    click.echo(
+        f"  Default output folder: {pbi_config.default_output_folder or 'Not set'}"
+    )
+    click.echo(f"  Profiles: {len(pbi_config.profiles)}")
+
+    if pbi_config.profiles:
+        click.echo("\n  Available profiles:")
+        for profile_name in pbi_config.profiles.keys():
+            active = " (active)" if profile_name == pbi_config.active_profile else ""
+            click.echo(f"    - {profile_name}{active}")
+
+
 @pbi.command()
 @click.option("--group-id", "-g", help="Group ID", required=True)
 @click.option("--report-id", "-r", help="Report ID", required=True)
@@ -458,9 +537,10 @@ def workspaces(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target folder",
-    required=True,
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+    default=None,
+    required=False,
 )
 @click.option(
     "--expand",
@@ -481,17 +561,29 @@ def workspaces(ctx):
 @click.option("--file-name", "-n", type=str, help="file name", default="workspaces")
 def list(
     top: int,
-    target_folder: Path,
+    target_folder: Optional[str],
     expand: list,
     filter: Optional[str],
     file_type: list[str],
     file_name: str = "workspaces",
 ):
-    r"""List Power BI workspaces and save them to files
+    r"""List Power BI workspaces and save them to files or print to console
 
+    The --target-folder can be:
+    - An absolute path: "C:\Users\Name\PowerBI\backups\2024-01-01"
+    - A relative subfolder: "2024-01-01" (uses default output folder + this subfolder)
+    - Omitted: prints results as a table to the console (no files created)
 
     ```sh
+    # Print to console as a table
+    pbi workspaces list
+
+    # Using absolute path
     pbi workspaces list -ft json -ft excel -tf "C:\Users\$Env:UserName\PowerBI\backups\$(Get-Date -format 'yyyy-MM-dd')" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks
+
+    # Using relative subfolder (requires default output folder to be configured)
+    pbi config set-output-folder "C:\Users\$Env:UserName\PowerBI\backups"
+    pbi workspaces list -ft json -ft excel -tf "$(Get-Date -format 'yyyy-MM-dd')" -e users
     ```
 
     !!! warning "Requires Admin"
@@ -500,24 +592,71 @@ def list(
 
     """
 
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
-
     workspaces = Workspaces(auth=load_auth(), verify=False)
 
     click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {filter=}")
 
     result = workspaces(top=top, expand=expand, filter=filter)
 
+    # If no target folder provided, print to console as a table
+    if target_folder is None:
+        if result and "value" in result and len(result["value"]) > 0:
+            # Convert to DataFrame and print as table
+            df = pd.json_normalize(result["value"])
+
+            # Select key columns for display (avoid overwhelming output)
+            display_cols = [
+                col
+                for col in [
+                    "id",
+                    "name",
+                    "type",
+                    "state",
+                    "isReadOnly",
+                    "isOnDedicatedCapacity",
+                ]
+                if col in df.columns
+            ]
+
+            if display_cols:
+                click.echo("\n" + "=" * 80)
+                click.echo(f"Found {len(df)} workspace(s)")
+                click.echo("=" * 80)
+                click.echo(df[display_cols].to_string(index=False))
+                click.echo("=" * 80)
+            else:
+                # Fallback to all columns if key columns not found
+                click.echo("\n" + "=" * 80)
+                click.echo(f"Found {len(df)} workspace(s)")
+                click.echo("=" * 80)
+                click.echo(df.to_string(index=False))
+                click.echo("=" * 80)
+        else:
+            click.echo("No workspaces found.")
+        return
+
+    # Resolve the target folder path (handles absolute/relative paths)
+    target_path = resolve_output_path(target_folder)
+
+    # Check if path resolution failed
+    if target_path is None:
+        click.secho("Error: Unable to determine output folder.", fg="red")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
+        raise click.Abort()
+
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
+
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing to {json_file_path}")
         with open(json_file_path, "w") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing to {excel_file_path}")
         flattened = workspaces.flatten_workspaces(result["value"])
         multi_group_dict_to_excel(flattened, excel_file_path)
@@ -577,12 +716,14 @@ def format_convert(source: Path, target: Path, format):
 @click.option(
     "--target-folder",
     "-t",
-    type=click.Path(path_type=Path),
+    type=str,
     help=(
-        "target folder to save the results to; "
+        "target folder (absolute path or subfolder within default output folder). "
+        "If omitted, prints results to console as a table. "
         "Do not include the trailing (back)slash"
     ),
-    required=True,
+    default=None,
+    required=False,
 )
 @click.option(
     "--file-type",
@@ -617,7 +758,7 @@ def format_convert(source: Path, target: Path, format):
 )
 def report_users(
     source: Path,
-    target_folder: Path,
+    target_folder: Optional[str],
     file_type: list = ["json", "excel"],
     wait_interval: int = 3,
     file_name: str = "workspaces_reports_users",
@@ -631,6 +772,10 @@ def report_users(
     `pbi workspaces list`
 
     ```sh
+    # Print to console
+    pbi workspaces report-users -s "workspaces.xlsx" -wn $w -wi 5
+
+    # Save to folder
     pbi workspaces report-users -s "workspaces.xlsx" -t "$(Get-Date -format 'yyyy-MM-dd')" -wn $w -n $w -wi 5
     ```
 
@@ -651,13 +796,6 @@ def report_users(
     """
     click.secho("getting report user details requires admin token")
 
-    # if not target_folder.is_dir():
-    #     click.echo("Please specify a folder instead for excel output")
-    #     raise click.BadOptionUsage(option_name="target-folder", message=f"{target_folder=}")
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
-
     pbi_workspaces = powerbi_workspace.Workspaces(
         auth=load_auth(), verify=False, cache_file=source
     )
@@ -668,14 +806,65 @@ def report_users(
         wait_interval=wait_interval,
     )
 
-    click.secho(f"Writing results to the folder {target_folder}")
+    # If no target folder provided, print to console as a table
+    if target_folder is None:
+        if report_users and len(report_users) > 0:
+            try:
+                # Flatten the structure for better table display
+                all_reports = []
+                for workspace_data in report_users:
+                    workspace_name = workspace_data.get("name", "Unknown")
+                    for report in workspace_data.get("reports", []):
+                        report_info = {
+                            "workspace": workspace_name,
+                            "report_name": report.get("name", ""),
+                            "report_id": report.get("id", ""),
+                            **{
+                                k: v
+                                for k, v in report.items()
+                                if k not in ["name", "id"]
+                            },
+                        }
+                        all_reports.append(report_info)
+
+                if all_reports:
+                    df = pd.DataFrame(all_reports)
+                    click.echo("\n" + "=" * 80)
+                    click.echo(f"Found {len(all_reports)} report(s) across workspaces")
+                    click.echo("=" * 80)
+                    click.echo(df.to_string(index=False))
+                    click.echo("=" * 80)
+                else:
+                    click.echo("No reports found.")
+            except Exception as e:
+                # Fallback to JSON if table formatting fails
+                click.echo(json.dumps(report_users, indent=4))
+        else:
+            click.echo("No report users data found.")
+        return
+
+    # Resolve the target folder path (handles absolute/relative paths)
+    target_path = resolve_output_path(target_folder)
+
+    # Check if path resolution failed
+    if target_path is None:
+        click.secho("Error: Unable to determine output folder.", fg="red")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
+        raise click.Abort()
+
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
+
+    click.secho(f"Writing results to the folder {target_path}")
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
         with open(json_file_path, "w") as fp:
             json.dump(report_users, fp)
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
 
         multi_group_dict_to_excel(
@@ -704,8 +893,8 @@ def users(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file",
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
     required=False,
 )
 @click.option(
@@ -721,7 +910,7 @@ def users(ctx):
 )
 def user_access(
     user_id: str,
-    target_folder: Optional[Path],
+    target_folder: Optional[str],
     file_types: list,
     file_name: Optional[str] = None,
 ):
@@ -734,20 +923,45 @@ def user_access(
     result = user()
 
     if target_folder is None:
-        logger.info(f"No target folder provided, printing to interface...")
-        click.echo(json.dumps(result, indent=4))
+        logger.info(f"No target folder provided, printing to console...")
+        # Try to format as a table if possible
+        if isinstance(result, dict):
+            # Flatten and display as table
+            try:
+                df = pd.json_normalize(result)
+                click.echo("\n" + "=" * 80)
+                click.echo(f"User Access Information for: {user_id}")
+                click.echo("=" * 80)
+                click.echo(df.to_string(index=False))
+                click.echo("=" * 80)
+            except Exception:
+                # Fallback to JSON if table formatting fails
+                click.echo(json.dumps(result, indent=4))
+        else:
+            click.echo(json.dumps(result, indent=4))
     else:
-        if not target_folder.exists():
-            click.secho(f"creating folder {target_folder}", fg="blue")
-            target_folder.mkdir(parents=True, exist_ok=True)
+        # Resolve the target folder path
+        target_path = resolve_output_path(target_folder)
+
+        if target_path is None:
+            click.secho("Error: Unable to determine output folder.", fg="red")
+            click.echo(
+                "Use 'pbi config set-output-folder' to set a default output folder,"
+            )
+            click.echo("or provide an absolute path with --target-folder.")
+            raise click.Abort()
+
+        if not target_path.exists():
+            click.secho(f"creating folder {target_path}", fg="blue")
+            target_path.mkdir(parents=True, exist_ok=True)
 
         if "json" in file_types:
-            json_file_path = target_folder / f"{file_name}.json"
+            json_file_path = target_path / f"{file_name}.json"
             logger.info(f"Writing json file to {json_file_path}...")
             with open(json_file_path, "w") as fp:
                 json.dump(result, fp)
         if "excel" in file_types:
-            excel_file_path = target_folder / f"{file_name}.xlsx"
+            excel_file_path = target_path / f"{file_name}.xlsx"
             logger.info(f"Writing excel file to {excel_file_path}...")
             df = pd.json_normalize(result)
             df.to_excel(excel_file_path)
@@ -767,9 +981,10 @@ def apps(ctx):
 @click.option(
     "--target-folder",
     "-tf",
-    type=click.Path(exists=False, path_type=Path),
-    help="target folder",
-    required=True,
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+    default=None,
+    required=False,
 )
 @click.option(
     "--file-type",
@@ -781,15 +996,12 @@ def apps(ctx):
 @click.option("--role", "-r", type=click.Choice(["admin", "user"]), default="user")
 @click.option("--file-name", "-n", type=str, help="file name", default="apps")
 def list(
-    target_folder: Path,
+    target_folder: Optional[str],
     role: str,
     file_type: tuple = ("json", "excel"),
     file_name: str = "apps",
 ):
-    """List Power BI Apps and save them to files"""
-    if not target_folder.exists():
-        click.secho(f"creating folder {target_folder}", fg="blue")
-        target_folder.mkdir(parents=True, exist_ok=True)
+    """List Power BI Apps and save them to files or print to console"""
 
     if role == "user":
         user = powerbi_app.Apps(auth=load_auth(), verify=False)
@@ -800,14 +1012,56 @@ def list(
 
     result = user()
 
+    # If no target folder provided, print to console as a table
+    if target_folder is None:
+        if result and "value" in result and len(result["value"]) > 0:
+            df = pd.json_normalize(result["value"])
+
+            # Select key columns for display
+            display_cols = [
+                col
+                for col in ["id", "name", "description", "publishedBy", "lastUpdate"]
+                if col in df.columns
+            ]
+
+            if display_cols:
+                click.echo("\n" + "=" * 80)
+                click.echo(f"Found {len(df)} app(s)")
+                click.echo("=" * 80)
+                click.echo(df[display_cols].to_string(index=False))
+                click.echo("=" * 80)
+            else:
+                click.echo("\n" + "=" * 80)
+                click.echo(f"Found {len(df)} app(s)")
+                click.echo("=" * 80)
+                click.echo(df.to_string(index=False))
+                click.echo("=" * 80)
+        else:
+            click.echo("No apps found.")
+        return
+
+    # Resolve the target folder path
+    target_path = resolve_output_path(target_folder)
+
+    # Check if path resolution failed
+    if target_path is None:
+        click.secho("Error: Unable to determine output folder.", fg="red")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or provide an absolute path with --target-folder.")
+        raise click.Abort()
+
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
+
     if "json" in file_type:
-        json_file_path = target_folder / f"{file_name}.json"
+        json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}")
         with open(json_file_path, "w") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
-        excel_file_path = target_folder / f"{file_name}.xlsx"
+        excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}")
         df = pd.json_normalize(result["value"])
         df.to_excel(excel_file_path)
