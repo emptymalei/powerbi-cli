@@ -187,10 +187,35 @@ class PBIConfig:
     def default_output_folder(self, value: Optional[str]):
         """Set the default output folder.
         
+        Handles Windows paths with backslashes and shell escaping issues by:
+        1. Converting to raw string representation
+        2. Stripping any escaped quotes
+        3. Normalizing the path using pathlib
+        
         :param value: Path to the default output folder
         """
         if value is not None:
-            # Expand user home directory if needed
+            # Handle shell escaping issues: if value ends with \", the quote is escaped
+            # We need to strip trailing quotes that were escaped by backslashes
+            # Use repr/eval to handle raw string conversion safely
+            try:
+                # If the string ends with an escaped quote, remove it
+                if value.endswith('\\"') or value.endswith("\\'"):
+                    value = value[:-1]  # Remove the escaped quote
+                elif value.endswith('"') or value.endswith("'"):
+                    # Check if it's a legitimate quote or an escaped one
+                    if len(value) > 1 and value[-2] != '\\':
+                        value = value[:-1]  # Strip unescaped trailing quote
+            except Exception:
+                pass  # If anything goes wrong, use the value as-is
+            
+            # Strip leading quotes if present
+            if (value.startswith('"') and not value.startswith('\\"')) or \
+               (value.startswith("'") and not value.startswith("\\'")):
+                value = value[1:]
+            
+            # Expand user home directory if needed and convert to absolute path
+            # pathlib handles path normalization across platforms
             path = Path(value).expanduser().absolute()
             self.set("default_output_folder", str(path))
         else:

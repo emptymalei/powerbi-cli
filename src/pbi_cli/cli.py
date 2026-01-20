@@ -457,8 +457,10 @@ def set_output_folder(folder_path: str):
     :param folder_path: Path to the default output folder
     """
     pbi_config = PBIConfig()
-    pbi_config.default_output_folder = folder_path
-    resolved_path = Path(folder_path).expanduser().absolute()
+    # Strip any quotes that might have been included due to shell escaping
+    folder_path_clean = folder_path.strip('"').strip("'")
+    pbi_config.default_output_folder = folder_path_clean
+    resolved_path = Path(folder_path_clean).expanduser().absolute()
     click.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
     click.secho(
         "  Commands will now use subfolders within this folder by default.", fg="blue"
