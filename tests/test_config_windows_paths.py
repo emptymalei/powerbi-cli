@@ -1,14 +1,14 @@
 """Tests for Windows path handling in config module."""
 
-import sys
-from pathlib import Path
-import tempfile
 import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+from pbi_cli.config import PBIConfig
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from pbi_cli.config import PBIConfig
 
 
 def test_windows_path_with_trailing_backslash_and_quote():
@@ -46,9 +46,9 @@ def test_windows_path_with_spaces():
     result = config.default_output_folder
 
     # Should preserve the spaces
-    assert "OneDrive - Company Name" in result or "OneDrive" in result, (
-        f"Path should preserve spaces, got: {result}"
-    )
+    assert (
+        "OneDrive - Company Name" in result or "OneDrive" in result
+    ), f"Path should preserve spaces, got: {result}"
 
     print(f"✓ Test passed: Windows path with spaces handled correctly")
 
@@ -64,9 +64,9 @@ def test_windows_path_with_surrounding_quotes():
     result = config.default_output_folder
 
     # Should strip the surrounding quotes
-    assert not result.startswith('"'), (
-        f"Path should not start with quote, got: {result}"
-    )
+    assert not result.startswith(
+        '"'
+    ), f"Path should not start with quote, got: {result}"
     assert not result.endswith('"'), f"Path should not end with quote, got: {result}"
 
     print(f"✓ Test passed: Surrounding quotes stripped correctly")
@@ -99,9 +99,9 @@ def test_unix_path_unaffected():
     result = config.default_output_folder
 
     # Should be converted to absolute path
-    assert result == str(Path(test_input).absolute()), (
-        f"Unix path should be converted to absolute, got: {result}"
-    )
+    assert result == str(
+        Path(test_input).absolute()
+    ), f"Unix path should be converted to absolute, got: {result}"
 
     print(f"✓ Test passed: Unix path handled correctly")
 
@@ -162,12 +162,12 @@ def test_path_with_single_quotes():
     result = config.default_output_folder
 
     # Should strip the single quotes
-    assert not result.startswith("'"), (
-        f"Path should not start with single quote, got: {result}"
-    )
-    assert not result.endswith("'"), (
-        f"Path should not end with single quote, got: {result}"
-    )
+    assert not result.startswith(
+        "'"
+    ), f"Path should not start with single quote, got: {result}"
+    assert not result.endswith(
+        "'"
+    ), f"Path should not end with single quote, got: {result}"
 
     print(f"✓ Test passed: Single quotes stripped correctly")
 
