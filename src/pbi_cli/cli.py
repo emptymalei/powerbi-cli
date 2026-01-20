@@ -259,9 +259,10 @@ def tui():
         run()
     except ImportError as e:
         click.secho(
-            "Error: Textual library not found. Install it with: pip install textual",
+            "Error: Textual library not found. Please reinstall the package:",
             fg="red"
         )
+        click.echo("  pip install --upgrade pbi-cli")
         raise click.Abort()
     except Exception as e:
         click.secho(f"Error launching TUI: {str(e)}", fg="red")

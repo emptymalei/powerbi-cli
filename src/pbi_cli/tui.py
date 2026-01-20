@@ -525,7 +525,7 @@ class DeleteProfileScreen(Screen):
 
             # If this was the active profile, clear it or switch to another
             if profiles_data.get("active_profile") == self.selected_profile:
-                remaining_profiles = tuple(profiles_data["profiles"].keys())
+                remaining_profiles = list(profiles_data["profiles"].keys())
                 profiles_data["active_profile"] = (
                     remaining_profiles[0] if remaining_profiles else None
                 )
