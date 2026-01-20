@@ -21,6 +21,12 @@ To launch the TUI, simply run:
 pbi tui
 ```
 
+### Main Menu
+
+![TUI Main Menu](images/tui_main_menu.svg)
+
+The main menu provides quick access to all major functionalities through numbered shortcuts.
+
 ## Navigation
 
 The TUI supports both keyboard shortcuts and mouse clicks for navigation:
@@ -48,6 +54,8 @@ Each screen has its own set of shortcuts displayed in the footer:
 
 ## Authentication Management
 
+![TUI Authentication Screen](images/tui_auth_screen.svg)
+
 The TUI allows you to manage multiple authentication profiles:
 
 1. **Add a Profile**: Enter a profile name and your bearer token
@@ -58,6 +66,8 @@ All credentials are stored securely using the system keyring (or encrypted file 
 
 ## Configuration Settings
 
+![TUI Configuration Screen](images/tui_config_screen.svg)
+
 Set and manage configuration options:
 
 - **Default Output Folder**: Set a default location for exported files
@@ -65,6 +75,8 @@ Set and manage configuration options:
 - Clear configuration values
 
 ## Workspaces
+
+![TUI Workspaces Screen](images/tui_workspaces_screen.svg)
 
 List and view Power BI workspaces:
 
