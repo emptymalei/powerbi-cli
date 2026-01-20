@@ -61,20 +61,41 @@ class MainMenuScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
-        yield Container(
-            Static("PowerBI CLI - Interactive Terminal UI", id="title"),
-            Static("", id="subtitle"),
+        yield Horizontal(
+            # Left sidebar navigation
             Vertical(
-                Button("1. Authentication Management", id="btn_auth", variant="primary"),
-                Button("2. Configuration", id="btn_config", variant="primary"),
-                Button("3. Workspaces", id="btn_workspaces", variant="primary"),
-                Button("4. Apps", id="btn_apps", variant="primary"),
-                Button("5. Reports", id="btn_reports", variant="primary"),
-                Button("6. Users", id="btn_users", variant="primary"),
-                Button("Q. Quit", id="btn_quit", variant="error"),
-                id="menu_container",
+                Static("Navigation", classes="sidebar-title"),
+                Static("", id="profile_info", classes="profile-info"),
+                Button("Authentication", id="btn_auth", classes="nav-button"),
+                Button("Configuration", id="btn_config", classes="nav-button"),
+                Button("Workspaces", id="btn_workspaces", classes="nav-button"),
+                Button("Apps", id="btn_apps", classes="nav-button"),
+                Button("Reports", id="btn_reports", classes="nav-button"),
+                Button("Users", id="btn_users", classes="nav-button"),
+                Static("", classes="spacer"),
+                Button("Quit", id="btn_quit", classes="nav-button quit"),
+                id="sidebar",
             ),
-            id="main_menu",
+            # Main content area
+            Vertical(
+                Static("PowerBI CLI", classes="content-title"),
+                Static("Welcome to PowerBI CLI Terminal Interface", classes="content-subtitle"),
+                Container(
+                    Static("Quick Actions", classes="panel-title"),
+                    Vertical(
+                        Static("• Press 1-6 to navigate to different sections", classes="help-text"),
+                        Static("• Press Q to quit the application", classes="help-text"),
+                        Static("• Press ESC to go back in any screen", classes="help-text"),
+                        Static("", classes="spacer"),
+                        Static("Current Status", classes="panel-title"),
+                        Static("", id="status_info", classes="status-text"),
+                        classes="help-panel",
+                    ),
+                    classes="main-panel",
+                ),
+                id="main_content",
+            ),
+            id="main_layout",
         )
         yield Footer()
 
@@ -83,17 +104,29 @@ class MainMenuScreen(Screen):
         try:
             pbi_config = PBIConfig()
             active_profile = pbi_config.active_profile
+            output_folder = pbi_config.default_output_folder
+            
             if active_profile:
-                self.query_one("#subtitle", Static).update(
-                    f"Active Profile: [bold green]{active_profile}[/bold green]"
+                self.query_one("#profile_info", Static).update(
+                    f"Profile: {active_profile}"
+                )
+                self.query_one("#status_info", Static).update(
+                    f"Active Profile: {active_profile}\n"
+                    f"Output Folder: {output_folder if output_folder else 'Not set'}"
                 )
             else:
-                self.query_one("#subtitle", Static).update(
-                    "[yellow]No active profile set[/yellow]"
+                self.query_one("#profile_info", Static).update(
+                    "No active profile"
+                )
+                self.query_one("#status_info", Static).update(
+                    "No active profile set\nUse Authentication to add a profile"
                 )
         except Exception as e:
-            self.query_one("#subtitle", Static).update(
-                f"[red]Error: {str(e)}[/red]"
+            self.query_one("#profile_info", Static).update(
+                "Error loading config"
+            )
+            self.query_one("#status_info", Static).update(
+                f"Error: {str(e)}"
             )
 
     def action_quit(self) -> None:
@@ -963,52 +996,211 @@ class PowerBITUI(App):
     """Power BI CLI Terminal User Interface"""
 
     CSS = """
+    /* Base colors - calm, professional palette */
+    * {
+        scrollbar-background: #1a1f2e;
+        scrollbar-color: #3d4859;
+    }
+    
     Screen {
-        align: center middle;
+        background: #1a1f2e;
     }
 
-    #main_menu {
-        width: 60;
-        height: auto;
-        border: solid $primary;
-        padding: 1;
-        background: $surface;
+    Header {
+        background: #252b3b;
+        color: #8b95a8;
+        height: 1;
     }
 
-    #title {
-        content-align: center middle;
+    Footer {
+        background: #252b3b;
+        color: #8b95a8;
+    }
+
+    /* Main layout - sidebar and content */
+    #main_layout {
+        width: 100%;
+        height: 100%;
+        background: #1a1f2e;
+    }
+
+    #sidebar {
+        width: 25;
+        height: 100%;
+        background: #252b3b;
+        border-right: solid #3d4859;
+        padding: 1 1;
+    }
+
+    .sidebar-title {
         text-style: bold;
-        color: $accent;
-        padding: 1;
+        color: #6d8299;
+        padding: 0 0 1 0;
+        text-align: center;
     }
 
-    #subtitle {
-        content-align: center middle;
+    .profile-info {
+        color: #8b95a8;
+        padding: 0 0 1 0;
+        text-align: center;
+        background: #1a1f2e;
+        border: round #3d4859;
+        margin: 0 0 1 0;
+    }
+
+    .nav-button {
+        width: 100%;
+        height: 3;
+        margin: 0 0 1 0;
+        background: #2d3548;
+        border: none;
+        color: #8b95a8;
+        text-align: left;
+        content-align: left middle;
+    }
+
+    .nav-button:hover {
+        background: #3d4859;
+        color: #a3b5cc;
+    }
+
+    .nav-button:focus {
+        background: #4a5568;
+        color: #c5d1e0;
+    }
+
+    .nav-button.quit {
+        background: #3d2f2f;
+        color: #b08888;
+    }
+
+    .nav-button.quit:hover {
+        background: #4d3939;
+    }
+
+    .spacer {
+        height: 1fr;
+    }
+
+    /* Main content area */
+    #main_content {
+        width: 100%;
+        height: 100%;
+        padding: 1 2;
+        background: #1a1f2e;
+    }
+
+    .content-title {
+        text-style: bold;
+        color: #6d8299;
+        padding: 0 0 1 0;
+        text-align: left;
+    }
+
+    .content-subtitle {
+        color: #8b95a8;
+        padding: 0 0 2 0;
+    }
+
+    .main-panel {
+        border: round #3d4859;
+        background: #252b3b;
+        padding: 2;
+        height: auto;
+    }
+
+    .panel-title {
+        text-style: bold;
+        color: #6d8299;
         padding: 0 0 1 0;
     }
 
-    #menu_container {
-        width: 100%;
-        height: auto;
+    .help-panel {
+        padding: 1 0;
     }
 
-    Button {
-        width: 100%;
+    .help-text {
+        color: #8b95a8;
+        padding: 0 0 0 1;
+    }
+
+    .status-text {
+        color: #8b95a8;
+        padding: 1 0 0 1;
+        background: #1a1f2e;
+        border: round #3d4859;
         margin: 0 0 1 0;
     }
 
-    DataTable {
-        height: auto;
-        max-height: 20;
-        margin: 1 0;
+    /* Form elements */
+    Button {
+        height: 3;
+        min-width: 16;
+        background: #3d4859;
+        color: #8b95a8;
+        border: none;
+    }
+
+    Button:hover {
+        background: #4a5568;
+        color: #a3b5cc;
+    }
+
+    Button:focus {
+        background: #556680;
+        color: #c5d1e0;
+        text-style: bold;
+    }
+
+    Button.-primary {
+        background: #3d5a7a;
+        color: #a3c5e0;
+    }
+
+    Button.-success {
+        background: #3d5a4a;
+        color: #a3d5b5;
+    }
+
+    Button.-error {
+        background: #5a3d3d;
+        color: #d5a3a3;
     }
 
     Input {
+        background: #1a1f2e;
+        border: round #3d4859;
+        color: #a3b5cc;
+        padding: 0 1;
         margin: 0 0 1 0;
     }
 
+    Input:focus {
+        border: round #4a6580;
+    }
+
     Label {
+        color: #8b95a8;
         padding: 1 0 0 0;
+    }
+
+    DataTable {
+        background: #1a1f2e;
+        border: round #3d4859;
+        height: auto;
+        max-height: 25;
+        margin: 1 0;
+    }
+
+    DataTable > .datatable--header {
+        background: #2d3548;
+        color: #8b95a8;
+        text-style: bold;
+    }
+
+    DataTable > .datatable--cursor {
+        background: #3d4859;
+        color: #c5d1e0;
     }
 
     Static#auth_status, Static#config_status, Static#workspaces_status,
@@ -1016,6 +1208,7 @@ class PowerBITUI(App):
     Static#add_profile_status, Static#switch_profile_status,
     Static#delete_profile_status, Static#list_workspaces_status {
         padding: 1 0;
+        color: #8b95a8;
     }
 
     #auth_buttons, #config_buttons, #workspaces_buttons,
@@ -1038,16 +1231,43 @@ class PowerBITUI(App):
 
     ScrollableContainer {
         height: auto;
-        max-height: 15;
-        border: solid $primary-lighten-1;
+        max-height: 20;
+        border: round #3d4859;
+        background: #1a1f2e;
         margin: 1 0;
         padding: 1;
     }
 
     ListView {
         height: auto;
-        max-height: 15;
+        max-height: 20;
         margin: 1 0;
+        background: #1a1f2e;
+        border: round #3d4859;
+    }
+
+    ListItem {
+        background: #252b3b;
+        color: #8b95a8;
+        padding: 1;
+    }
+
+    ListItem:hover {
+        background: #3d4859;
+        color: #a3b5cc;
+    }
+
+    /* Container styling */
+    Container {
+        background: #1a1f2e;
+    }
+
+    Vertical {
+        background: transparent;
+    }
+
+    Horizontal {
+        background: transparent;
     }
     """
 
