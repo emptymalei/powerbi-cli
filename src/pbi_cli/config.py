@@ -81,6 +81,8 @@ class PBIConfig:
             "active_profile": None,
             "profiles": {},
             "default_output_folder": None,
+            "cache_folder": None,
+            "cache_enabled": True,
         }
 
     @property
@@ -222,6 +224,61 @@ class PBIConfig:
             self.set("default_output_folder", str(path))
         else:
             self.set("default_output_folder", None)
+
+    @property
+    def cache_folder(self) -> Optional[str]:
+        """Get the cache folder.
+
+        :return: Cache folder path or None
+        """
+        return self.get("cache_folder")
+
+    @cache_folder.setter
+    def cache_folder(self, value: Optional[str]):
+        """Set the cache folder.
+
+        Handles path normalization similar to default_output_folder.
+
+        :param value: Path to the cache folder
+        """
+        if value is not None:
+            # Handle shell escaping issues
+            try:
+                if value.endswith('\\"') or value.endswith("\\'"):
+                    value = value[:-1]
+                elif value.endswith('"') or value.endswith("'"):
+                    if len(value) > 1 and value[-2] != "\\":
+                        value = value[:-1]
+            except Exception:
+                pass
+
+            # Strip leading quotes if present
+            if (value.startswith('"') and not value.startswith('\\"')) or (
+                value.startswith("'") and not value.startswith("\\'")
+            ):
+                value = value[1:]
+
+            # Expand user home directory and convert to absolute path
+            path = Path(value).expanduser().absolute()
+            self.set("cache_folder", str(path))
+        else:
+            self.set("cache_folder", None)
+
+    @property
+    def cache_enabled(self) -> bool:
+        """Get whether caching is enabled.
+
+        :return: True if caching is enabled, False otherwise
+        """
+        return self.get("cache_enabled", True)
+
+    @cache_enabled.setter
+    def cache_enabled(self, value: bool):
+        """Set whether caching is enabled.
+
+        :param value: True to enable caching, False to disable
+        """
+        self.set("cache_enabled", bool(value))
 
     @property
     def config_dir(self) -> Path:

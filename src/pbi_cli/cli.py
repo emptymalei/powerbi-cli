@@ -495,6 +495,8 @@ def show_config():
     click.echo(
         f"  Default output folder: {pbi_config.default_output_folder or 'Not set'}"
     )
+    click.echo(f"  Cache folder: {pbi_config.cache_folder or 'Not set'}")
+    click.echo(f"  Cache enabled: {pbi_config.cache_enabled}")
     click.echo(f"  Profiles: {len(pbi_config.profiles)}")
 
     if pbi_config.profiles:
@@ -502,6 +504,208 @@ def show_config():
         for profile_name in pbi_config.profiles.keys():
             active = " (active)" if profile_name == pbi_config.active_profile else ""
             click.echo(f"    - {profile_name}{active}")
+
+
+@config_group.command(name="set-cache-folder")
+@click.argument("folder_path", type=click.Path())
+def set_cache_folder(folder_path: str):
+    """Set the cache folder for storing API call results
+
+    The cache folder can be:
+    - A local path: "/path/to/cache" or "C:\\Users\\Name\\cache"
+    - A cloud path: "s3://bucket-name/cache-folder"
+
+    ```
+    pbi config set-cache-folder ~/PowerBI/cache
+    ```
+
+    or with cloud storage:
+
+    ```
+    pbi config set-cache-folder s3://my-bucket/powerbi-cache
+    ```
+
+    :param folder_path: Path to the cache folder (local or remote)
+    """
+    pbi_config = PBIConfig()
+    # Strip any quotes that might have been included due to shell escaping
+    folder_path_clean = folder_path.strip('"').strip("'")
+    pbi_config.cache_folder = folder_path_clean
+    
+    # Handle cloud paths differently for display
+    if folder_path_clean.startswith(("s3://", "gs://", "az://")):
+        click.secho(f"✓ Cache folder set to: {folder_path_clean}", fg="green")
+    else:
+        from pathlib import Path
+        resolved_path = Path(folder_path_clean).expanduser().absolute()
+        click.secho(f"✓ Cache folder set to: {resolved_path}", fg="green")
+    
+    click.secho(
+        "  API call results will be cached in this folder.", fg="blue"
+    )
+
+
+@config_group.command(name="get-cache-folder")
+def get_cache_folder():
+    """Get the currently configured cache folder
+
+    ```
+    pbi config get-cache-folder
+    ```
+    """
+    pbi_config = PBIConfig()
+    folder = pbi_config.cache_folder
+    if folder:
+        click.echo(f"Cache folder: {folder}")
+        click.echo(f"Cache enabled: {pbi_config.cache_enabled}")
+    else:
+        click.secho("No cache folder configured.", fg="yellow")
+        click.echo("Use 'pbi config set-cache-folder' to set one.")
+
+
+@config_group.command(name="enable-cache")
+def enable_cache():
+    """Enable caching of API call results
+
+    ```
+    pbi config enable-cache
+    ```
+    """
+    pbi_config = PBIConfig()
+    pbi_config.cache_enabled = True
+    click.secho("✓ Cache enabled", fg="green")
+
+
+@config_group.command(name="disable-cache")
+def disable_cache():
+    """Disable caching of API call results
+
+    ```
+    pbi config disable-cache
+    ```
+    """
+    pbi_config = PBIConfig()
+    pbi_config.cache_enabled = False
+    click.secho("✓ Cache disabled", fg="yellow")
+
+
+@pbi.group(name="cache", invoke_without_command=True)
+@click.pass_context
+def cache_group(ctx):
+    """Manage cached API call results"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi cache --help for help.")
+
+
+@cache_group.command(name="list")
+@click.option(
+    "--cache-key",
+    "-k",
+    help="Show versions for a specific cache key",
+    default=None,
+)
+def list_cache(cache_key: Optional[str] = None):
+    """List cached data
+
+    ```
+    # List all cache keys
+    pbi cache list
+
+    # List versions for a specific key
+    pbi cache list -k workspaces
+    ```
+
+    :param cache_key: Optional cache key to show versions for
+    """
+    from pbi_cli.cache import CacheManager
+
+    pbi_config = PBIConfig()
+    cache_folder = pbi_config.cache_folder
+
+    if not cache_folder:
+        click.secho("Cache folder not configured.", fg="yellow")
+        click.echo("Use 'pbi config set-cache-folder' to set one.")
+        return
+
+    cache_manager = CacheManager(cache_folder=cache_folder)
+
+    if cache_key:
+        # List versions for specific key
+        versions = cache_manager.list_versions(cache_key)
+        if versions:
+            click.echo(f"Cached versions for '{cache_key}':")
+            for version in versions:
+                click.echo(f"  - {version}")
+        else:
+            click.secho(f"No cached versions found for '{cache_key}'", fg="yellow")
+    else:
+        # List all cache keys
+        keys = cache_manager.list_keys()
+        if keys:
+            click.echo("Cached data:")
+            for key in keys:
+                versions = cache_manager.list_versions(key)
+                click.echo(f"  - {key} ({len(versions)} version(s))")
+        else:
+            click.secho("No cached data found.", fg="yellow")
+
+
+@cache_group.command(name="clear")
+@click.option(
+    "--cache-key",
+    "-k",
+    help="Clear specific cache key (clears all if omitted)",
+    default=None,
+)
+@click.option(
+    "--version",
+    "-v",
+    help="Clear specific version (requires --cache-key)",
+    default=None,
+)
+@click.confirmation_option(
+    prompt="Are you sure you want to clear the cache?"
+)
+def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
+    """Clear cached data
+
+    ```
+    # Clear all cache
+    pbi cache clear
+
+    # Clear specific cache key
+    pbi cache clear -k workspaces
+
+    # Clear specific version
+    pbi cache clear -k workspaces -v 20240101_120000
+    ```
+
+    :param cache_key: Optional cache key to clear
+    :param version: Optional version to clear (requires cache_key)
+    """
+    from pbi_cli.cache import CacheManager
+
+    pbi_config = PBIConfig()
+    cache_folder = pbi_config.cache_folder
+
+    if not cache_folder:
+        click.secho("Cache folder not configured.", fg="yellow")
+        click.echo("Use 'pbi config set-cache-folder' to set one.")
+        return
+
+    if version and not cache_key:
+        click.secho("Error: --version requires --cache-key", fg="red")
+        return
+
+    cache_manager = CacheManager(cache_folder=cache_folder)
+    cache_manager.clear(cache_key=cache_key, version=version)
+
+    if cache_key and version:
+        click.secho(f"✓ Cleared {cache_key} version {version}", fg="green")
+    elif cache_key:
+        click.secho(f"✓ Cleared all versions of {cache_key}", fg="green")
+    else:
+        click.secho("✓ Cleared entire cache", fg="green")
 
 
 @pbi.command()
@@ -559,6 +763,18 @@ def workspaces(ctx):
     multiple=True,
 )
 @click.option("--file-name", "-n", type=str, help="file name", default="workspaces")
+@click.option(
+    "--use-cache",
+    is_flag=True,
+    help="Use cached data if available instead of making API call",
+    default=False,
+)
+@click.option(
+    "--cache-only",
+    is_flag=True,
+    help="Only use cache, fail if cache not available",
+    default=False,
+)
 def list(
     top: int,
     target_folder: Optional[str],
@@ -566,6 +782,8 @@ def list(
     filter: Optional[str],
     file_type: list[str],
     file_name: str = "workspaces",
+    use_cache: bool = False,
+    cache_only: bool = False,
 ):
     r"""List Power BI workspaces and save them to files or print to console
 
@@ -578,8 +796,14 @@ def list(
     # Print to console as a table
     pbi workspaces list
 
-    # Using absolute path
+    # Using absolute path with caching
     pbi workspaces list -ft json -ft excel -tf "C:\Users\$Env:UserName\PowerBI\backups\$(Get-Date -format 'yyyy-MM-dd')" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks
+
+    # Use cached data if available (falls back to API if not cached)
+    pbi workspaces list --use-cache
+
+    # Only use cache (fails if not cached)
+    pbi workspaces list --cache-only
 
     # Using relative subfolder (requires default output folder to be configured)
     pbi config set-output-folder "C:\Users\$Env:UserName\PowerBI\backups"
@@ -591,12 +815,52 @@ def list(
         This command requires an admin account.
 
     """
+    from pbi_cli.cache import CacheManager
 
-    workspaces = Workspaces(auth=load_auth(), verify=False)
+    pbi_config = PBIConfig()
+    result = None
+    cache_key = "workspaces"
+    used_cache = False
 
-    click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {filter=}")
+    # Try to load from cache if requested
+    if use_cache or cache_only:
+        if pbi_config.cache_folder and pbi_config.cache_enabled:
+            cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+            cached_data = cache_manager.load(cache_key, version="latest")
+            
+            if cached_data:
+                result = cached_data.get("data")
+                used_cache = True
+                cache_version = cached_data.get("version", "unknown")
+                cache_time = cached_data.get("cached_at", "unknown")
+                click.secho(f"Using cached data from {cache_time} (version: {cache_version})", fg="cyan")
+            elif cache_only:
+                click.secho("Error: Cache not available and --cache-only was specified", fg="red")
+                raise click.Abort()
+            else:
+                click.secho("Cache not available, fetching from API...", fg="yellow")
+        elif cache_only:
+            click.secho("Error: Cache not configured and --cache-only was specified", fg="red")
+            click.echo("Use 'pbi config set-cache-folder' to configure caching.")
+            raise click.Abort()
 
-    result = workspaces(top=top, expand=expand, filter=filter)
+    # Fetch from API if not using cache
+    if result is None:
+        workspaces = Workspaces(auth=load_auth(), verify=False)
+        click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {filter=}")
+        result = workspaces(top=top, expand=expand, filter=filter)
+
+        # Save to cache if configured and enabled
+        if pbi_config.cache_folder and pbi_config.cache_enabled:
+            cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+            metadata = {
+                "top": top,
+                "expand": list(expand) if expand else [],
+                "filter": filter,
+            }
+            version = cache_manager.save(cache_key, result, metadata=metadata)
+            if version:
+                click.secho(f"Cached data (version: {version})", fg="green")
 
     # If no target folder provided, print to console as a table
     if target_folder is None:
