@@ -24,7 +24,10 @@ class Apps(Base):
         self.cache = self._load_cache(self.cache_file)
 
     @staticmethod
-    def _load_cache(cache_file: Path) -> dict:
+    def _load_cache(cache_file: Optional[Path]) -> dict:
+        if cache_file is None:
+            return {}
+        
         with open(cache_file, "r") as fp:
             data = json.load(fp)
 
