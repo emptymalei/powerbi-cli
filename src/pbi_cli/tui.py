@@ -97,41 +97,10 @@ class MainMenuScreen(Screen):
                 yield Button("[5] Reports", id="btn-reports", variant="default")
                 yield Button("[6] Users", id="btn-users", variant="default")
             
-            # Main content area - horizontal split
-            with Horizontal(id="main-content-horizontal"):
-                # Left side - Actions table
-                with Container(id="search-results-container"):
-                    yield Static("Available Actions", classes="panel-header")
-                    yield DataTable(id="actions-table", zebra_stripes=True)
-                
-                # Right side - TabbedContent
-                with TabbedContent(id="tabs"):
-                    with TabPane(title="Info", id="tab-info"):
-                        yield Container(
-                            Static("Profile Information", classes="section-title"),
-                            Static("", id="detail-profile", classes="detail-text"),
-                            Static("", id="detail-output", classes="detail-text"),
-                            classes="info-container"
-                        )
-                    with TabPane(title="Guide", id="tab-guide"):
-                        yield Container(
-                            Static("Quick Start Guide", classes="section-title"),
-                            Static("• Press 1-6 to navigate to sections", classes="detail-text"),
-                            Static("• Press Q to quit", classes="detail-text"),
-                            Static("• Press Ctrl+R to refresh", classes="detail-text"),
-                            classes="info-container"
-                        )
-                    with TabPane(title="Help", id="tab-help"):
-                        yield Container(
-                            Static("Keyboard Shortcuts", classes="section-title"),
-                            Static("1 - Authentication Management", classes="detail-text"),
-                            Static("2 - Configuration Settings", classes="detail-text"),
-                            Static("3 - Workspaces Listing", classes="detail-text"),
-                            Static("4 - Apps Viewing", classes="detail-text"),
-                            Static("5 - Reports Functions", classes="detail-text"),
-                            Static("6 - Users Management", classes="detail-text"),
-                            classes="info-container"
-                        )
+            # Main content area - results pane
+            with Container(id="results-container"):
+                yield Static("Results", classes="panel-header", id="results-header")
+                yield DataTable(id="results-table", zebra_stripes=True)
         
         yield Footer()
 
@@ -150,56 +119,174 @@ class MainMenuScreen(Screen):
             output_selector = self.query_one("#output-selector", Select)
             output_selector.set_options([(output_folder, output_folder)])
             
-            # Update details panel
-            self.query_one("#detail-profile", Static).update(f"Active Profile: {active_profile}")
-            self.query_one("#detail-output", Static).update(f"Output Folder: {output_folder}")
-            
-            # Populate actions table
-            table = self.query_one("#actions-table", DataTable)
-            table.add_columns("#", "Action", "Shortcut", "Description")
-            
-            actions = [
-                ("1", "Authentication", "1", "Manage authentication profiles"),
-                ("2", "Configuration", "2", "Configure CLI settings"),
-                ("3", "Workspaces", "3", "List and manage workspaces"),
-                ("4", "Apps", "4", "View Power BI apps"),
-                ("5", "Reports", "5", "Access report functions"),
-                ("6", "Users", "6", "Manage user access"),
-            ]
-            
-            for action in actions:
-                table.add_row(*action)
+            # Show welcome message in results
+            self.show_welcome_message()
                 
         except Exception as e:
-            self.query_one("#detail-profile", Static).update(f"Error: {str(e)}")
+            self.show_error(f"Error: {str(e)}")
+    
+    def show_welcome_message(self) -> None:
+        """Display welcome message in results pane."""
+        self.query_one("#results-header", Static).update("PowerBI CLI - Welcome")
+        table = self.query_one("#results-table", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Action", "Shortcut", "Description")
+        
+        actions = [
+            ("Authentication", "Press 1", "Manage authentication profiles (add, switch, delete)"),
+            ("Configuration", "Press 2", "Configure CLI settings (output folder, etc.)"),
+            ("Workspaces", "Press 3", "List and manage Power BI workspaces"),
+            ("Apps", "Press 4", "View and interact with Power BI apps"),
+            ("Reports", "Press 5", "Access Power BI reports and functions"),
+            ("Users", "Press 6", "Manage user access and permissions"),
+        ]
+        
+        for action in actions:
+            table.add_row(*action)
+    
+    def show_error(self, message: str) -> None:
+        """Display error in results pane."""
+        self.query_one("#results-header", Static).update("Error")
+        table = self.query_one("#results-table", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Error Message")
+        table.add_row(message)
 
     def action_quit(self) -> None:
         """Quit the application."""
         self.app.exit()
 
     def action_auth(self) -> None:
-        """Navigate to authentication screen."""
-        self.app.push_screen(AuthScreen())
+        """Show authentication profiles in results pane."""
+        try:
+            profiles_data = _load_profiles()
+            profiles = profiles_data.get("profiles", {})
+            active_profile = profiles_data.get("active_profile")
+            
+            self.query_one("#results-header", Static).update("Authentication - Profiles")
+            table = self.query_one("#results-table", DataTable)
+            table.clear(columns=True)
+            table.add_columns("Profile", "Status", "Active", "Token Exists")
+            
+            if not profiles:
+                table.add_row("No profiles found", "-", "-", "-")
+                return
+            
+            for profile_name in profiles.keys():
+                is_active = profile_name == active_profile
+                token_exists = _get_credential(profile_name) is not None
+                
+                status = "✓ Ready" if token_exists else "✗ No Token"
+                active_marker = "✓ Active" if is_active else ""
+                token_status = "Yes" if token_exists else "No"
+                
+                table.add_row(profile_name, status, active_marker, token_status)
+                
+        except Exception as e:
+            self.show_error(f"Error loading profiles: {str(e)}")
 
     def action_config(self) -> None:
-        """Navigate to configuration screen."""
-        self.app.push_screen(ConfigScreen())
+        """Show configuration in results pane."""
+        try:
+            pbi_config = PBIConfig()
+            
+            self.query_one("#results-header", Static).update("Configuration Settings")
+            table = self.query_one("#results-table", DataTable)
+            table.clear(columns=True)
+            table.add_columns("Setting", "Value")
+            
+            table.add_row("Active Profile", pbi_config.active_profile or "Not set")
+            table.add_row("Output Folder", pbi_config.default_output_folder or "Not set")
+            table.add_row("Config File", str(pbi_config.config_file))
+            
+        except Exception as e:
+            self.show_error(f"Error loading config: {str(e)}")
 
     def action_workspaces(self) -> None:
-        """Navigate to workspaces screen."""
-        self.app.push_screen(WorkspacesScreen())
+        """List workspaces in results pane."""
+        try:
+            self.query_one("#results-header", Static).update("Workspaces - Loading...")
+            table = self.query_one("#results-table", DataTable)
+            table.clear(columns=True)
+            table.add_columns("Loading...")
+            table.add_row("Fetching workspaces from Power BI API...")
+            
+            # Try to load workspaces
+            try:
+                auth = load_auth()
+                workspaces_api = Workspaces(auth)
+                workspaces_list = workspaces_api.list_workspaces()
+                
+                self.query_one("#results-header", Static).update(f"Workspaces ({len(workspaces_list)} found)")
+                table.clear(columns=True)
+                table.add_columns("Name", "ID", "Type", "State")
+                
+                for ws in workspaces_list:
+                    table.add_row(
+                        ws.get("name", "N/A"),
+                        ws.get("id", "N/A")[:20] + "...",
+                        ws.get("type", "N/A"),
+                        ws.get("state", "N/A")
+                    )
+            except Exception as e:
+                self.show_error(f"Error fetching workspaces: {str(e)}")
+                
+        except Exception as e:
+            self.show_error(f"Error: {str(e)}")
 
     def action_apps(self) -> None:
-        """Navigate to apps screen."""
-        self.app.push_screen(AppsScreen())
+        """List apps in results pane."""
+        try:
+            self.query_one("#results-header", Static).update("Apps - Loading...")
+            table = self.query_one("#results-table", DataTable)
+            table.clear(columns=True)
+            table.add_columns("Loading...")
+            table.add_row("Fetching apps from Power BI API...")
+            
+            # Try to load apps
+            try:
+                auth = load_auth()
+                apps_api = Apps(auth)
+                apps_list = apps_api.list_apps()
+                
+                self.query_one("#results-header", Static).update(f"Apps ({len(apps_list)} found)")
+                table.clear(columns=True)
+                table.add_columns("Name", "ID", "Description")
+                
+                for app in apps_list:
+                    table.add_row(
+                        app.get("name", "N/A"),
+                        app.get("id", "N/A")[:20] + "...",
+                        app.get("description", "N/A")[:50]
+                    )
+            except Exception as e:
+                self.show_error(f"Error fetching apps: {str(e)}")
+                
+        except Exception as e:
+            self.show_error(f"Error: {str(e)}")
 
     def action_reports(self) -> None:
-        """Navigate to reports screen."""
-        self.app.push_screen(ReportsScreen())
+        """Show reports info in results pane."""
+        self.query_one("#results-header", Static).update("Reports")
+        table = self.query_one("#results-table", DataTable)
+        table.clear(columns=True)
+        table.add_columns("Info")
+        table.add_row("Reports functionality: Navigate through Workspaces or Apps to view reports")
+        table.add_row("Use option 3 (Workspaces) or 4 (Apps) to access reports")
 
     def action_users(self) -> None:
-        """Navigate to users screen."""
-        self.app.push_screen(UsersScreen())
+        """Show users info in results pane."""
+        try:
+            self.query_one("#results-header", Static).update("Users")
+            table = self.query_one("#results-table", DataTable)
+            table.clear(columns=True)
+            table.add_columns("Info")
+            table.add_row("Users Management: Get user access information")
+            table.add_row("This feature requires workspace context")
+            table.add_row("Navigate to Workspaces first to manage users")
+            
+        except Exception as e:
+            self.show_error(f"Error: {str(e)}")
 
     def action_refresh(self) -> None:
         """Refresh data"""
@@ -232,28 +319,6 @@ class MainMenuScreen(Screen):
     @on(Button.Pressed, "#btn-users")
     def on_users_button(self) -> None:
         self.action_users()
-
-    @on(DataTable.RowSelected)
-    def on_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection"""
-        try:
-            row = event.data_table.get_row(event.row_key)
-            action_num = row[0]
-            
-            if action_num == "1":
-                self.action_auth()
-            elif action_num == "2":
-                self.action_config()
-            elif action_num == "3":
-                self.action_workspaces()
-            elif action_num == "4":
-                self.action_apps()
-            elif action_num == "5":
-                self.action_reports()
-            elif action_num == "6":
-                self.action_users()
-        except Exception:
-            pass
 
 
 class AuthScreen(Screen):
@@ -1154,19 +1219,12 @@ class PowerBITUI(App):
         margin: 0;
     }
 
-    /* Main content horizontal split */
-    #main-content-horizontal {
+    /* Main content - results container */
+    #results-container {
         width: 100%;
         height: 1fr;
-    }
-
-    /* Search results container - left panel */
-    #search-results-container {
-        width: 50%;
-        height: 100%;
         border: round #3E3E42;
         background: transparent;
-        margin: 0 1 0 0;
     }
 
     .panel-header {
@@ -1177,51 +1235,10 @@ class PowerBITUI(App):
         border-bottom: solid #3E3E42;
     }
 
-    #actions-table {
+    #results-table {
         background: transparent;
         scrollbar-size-vertical: 1;
         height: 100%;
-    }
-
-    /* TabbedContent - right panel */
-    #tabs {
-        width: 50%;
-        height: 100%;
-    }
-
-    TabbedContent TabsBar {
-        background: #2D2D30;
-    }
-
-    TabbedContent Tab {
-        background: #2D2D30;
-        color: #A0A0A0;
-        &:hover {
-            background: #3E3E42;
-            color: #E8E8E8;
-        }
-    }
-
-    TabbedContent Tab.-active {
-        background: #00188F;
-        color: #FFFFFF;
-        text-style: bold;
-    }
-
-    .info-container {
-        padding: 2;
-        background: transparent;
-    }
-
-    .section-title {
-        text-style: bold;
-        color: #F2C811;
-        padding: 0 0 1 0;
-    }
-
-    .detail-text {
-        color: #E8E8E8;
-        padding: 0 0 1 1;
     }
 
     /* DataTable styling with Power BI colors */
