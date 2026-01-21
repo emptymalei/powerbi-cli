@@ -21,6 +21,8 @@ from textual.widgets import (
     RadioSet,
     Checkbox,
     DataTable,
+    TabbedContent,
+    TabPane,
 )
 from textual.screen import Screen
 from textual.binding import Binding
@@ -50,78 +52,86 @@ class MainMenuScreen(Screen):
 
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
-        Binding("f", "filter", "Filter", show=True),
-        Binding("o", "open", "Open", show=True),
-        Binding("s", "search", "Search", show=True),
-        Binding("n", "new", "New", show=True),
-        Binding("c", "config", "Config", show=True),
-        Binding("h", "help", "Help", show=True),
+        Binding("ctrl+r", "refresh", "Refresh", show=True),
+        Binding("ctrl+n", "new", "New", show=True),
+        Binding("1", "auth", "Auth", show=False),
+        Binding("2", "config", "Config", show=False),
+        Binding("3", "workspaces", "Workspaces", show=False),
+        Binding("4", "apps", "Apps", show=False),
+        Binding("5", "reports", "Reports", show=False),
+        Binding("6", "users", "Users", show=False),
     ]
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
         
-        # Top filter bar - similar to JiraTUI
-        yield Container(
-            Horizontal(
-                Container(
-                    Label("Profile", classes="filter-label"),
-                    Static("", id="filter_profile", classes="filter-value"),
-                    classes="filter-item",
-                ),
-                Container(
-                    Label("Output Folder", classes="filter-label"),
-                    Static("", id="filter_output", classes="filter-value"),
-                    classes="filter-item",
-                ),
-                Container(
-                    Label("Action", classes="filter-label"),
-                    Static("Select an action", id="filter_action", classes="filter-value"),
-                    classes="filter-item",
-                ),
-                id="filter_bar",
-            ),
-            id="top_filter_section",
-        )
-        
-        # Main content area - split left/right like JiraTUI
-        yield Horizontal(
-            # Left side - Table of options/items
-            Container(
-                Static("Actions", classes="panel-header"),
-                DataTable(id="actions_table", zebra_stripes=True, cursor_type="row"),
-                id="left_panel",
-                classes="main-panel",
-            ),
-            # Right side - Details panel
-            Container(
-                Static("Details", classes="panel-header"),
-                Container(
-                    Static("Profile Information", classes="detail-section-title"),
-                    Static("", id="detail_profile", classes="detail-text"),
-                    Static("", id="detail_status", classes="detail-text"),
-                    classes="detail-section",
-                ),
-                Container(
-                    Static("Quick Actions", classes="detail-section-title"),
-                    Static("• Press 'o' to open selected action", classes="detail-text"),
-                    Static("• Press 'f' to change filters", classes="detail-text"),
-                    Static("• Press 's' to search", classes="detail-text"),
-                    Static("• Press 'c' for configuration", classes="detail-text"),
-                    Static("• Press 'q' to quit", classes="detail-text"),
-                    classes="detail-section",
-                ),
-                Container(
-                    Static("Keyboard Shortcuts", classes="detail-section-title"),
-                    Static("f1 - Help | f2 - Config | f3 - Profiles", classes="detail-text"),
-                    classes="detail-section",
-                ),
-                id="right_panel",
-                classes="main-panel",
-            ),
-            id="main_content_area",
-        )
+        with Vertical(id="main-container"):
+            # Top filter bar - row 1
+            with Horizontal(id="filter-bar-1"):
+                yield Select(
+                    options=[("default", "default")],
+                    prompt="Profile",
+                    id="profile-selector",
+                    classes="filter-selector"
+                )
+                yield Select(
+                    options=[("Not set", "Not set")],
+                    prompt="Output Folder",
+                    id="output-selector",
+                    classes="filter-selector"
+                )
+                yield Select(
+                    options=[("Ready", "Ready")],
+                    prompt="Status",
+                    id="status-selector",
+                    classes="filter-selector"
+                )
+            
+            # Actions bar - row 2
+            with Horizontal(id="actions-bar", classes="action-buttons-bar"):
+                yield Button("[1] Authentication", id="btn-auth", variant="default")
+                yield Button("[2] Configuration", id="btn-config", variant="default")
+                yield Button("[3] Workspaces", id="btn-workspaces", variant="default")
+                yield Button("[4] Apps", id="btn-apps", variant="default")
+                yield Button("[5] Reports", id="btn-reports", variant="default")
+                yield Button("[6] Users", id="btn-users", variant="default")
+            
+            # Main content area - horizontal split
+            with Horizontal(id="main-content-horizontal"):
+                # Left side - Actions table
+                with Container(id="search-results-container"):
+                    yield Static("Available Actions", classes="panel-header")
+                    yield DataTable(id="actions-table", zebra_stripes=True)
+                
+                # Right side - TabbedContent
+                with TabbedContent(id="tabs"):
+                    with TabPane(title="Info", id="tab-info"):
+                        yield Container(
+                            Static("Profile Information", classes="section-title"),
+                            Static("", id="detail-profile", classes="detail-text"),
+                            Static("", id="detail-output", classes="detail-text"),
+                            classes="info-container"
+                        )
+                    with TabPane(title="Guide", id="tab-guide"):
+                        yield Container(
+                            Static("Quick Start Guide", classes="section-title"),
+                            Static("• Press 1-6 to navigate to sections", classes="detail-text"),
+                            Static("• Press Q to quit", classes="detail-text"),
+                            Static("• Press Ctrl+R to refresh", classes="detail-text"),
+                            classes="info-container"
+                        )
+                    with TabPane(title="Help", id="tab-help"):
+                        yield Container(
+                            Static("Keyboard Shortcuts", classes="section-title"),
+                            Static("1 - Authentication Management", classes="detail-text"),
+                            Static("2 - Configuration Settings", classes="detail-text"),
+                            Static("3 - Workspaces Listing", classes="detail-text"),
+                            Static("4 - Apps Viewing", classes="detail-text"),
+                            Static("5 - Reports Functions", classes="detail-text"),
+                            Static("6 - Users Management", classes="detail-text"),
+                            classes="info-container"
+                        )
         
         yield Footer()
 
@@ -133,16 +143,19 @@ class MainMenuScreen(Screen):
             active_profile = pbi_config.active_profile or "None"
             output_folder = pbi_config.default_output_folder or "Not set"
             
-            # Update filters
-            self.query_one("#filter_profile", Static).update(active_profile)
-            self.query_one("#filter_output", Static).update(output_folder)
+            # Update selectors
+            profile_selector = self.query_one("#profile-selector", Select)
+            profile_selector.set_options([(active_profile, active_profile)])
+            
+            output_selector = self.query_one("#output-selector", Select)
+            output_selector.set_options([(output_folder, output_folder)])
             
             # Update details panel
-            self.query_one("#detail_profile", Static).update(f"Active Profile: {active_profile}")
-            self.query_one("#detail_status", Static).update(f"Output Folder: {output_folder}")
+            self.query_one("#detail-profile", Static).update(f"Active Profile: {active_profile}")
+            self.query_one("#detail-output", Static).update(f"Output Folder: {output_folder}")
             
             # Populate actions table
-            table = self.query_one("#actions_table", DataTable)
+            table = self.query_one("#actions-table", DataTable)
             table.add_columns("#", "Action", "Shortcut", "Description")
             
             actions = [
@@ -158,10 +171,7 @@ class MainMenuScreen(Screen):
                 table.add_row(*action)
                 
         except Exception as e:
-            self.query_one("#detail_status", Static).update(f"Error: {str(e)}")
-            self.query_one("#status_info", Static).update(
-                f"Error: {str(e)}"
-            )
+            self.query_one("#detail-profile", Static).update(f"Error: {str(e)}")
 
     def action_quit(self) -> None:
         """Quit the application."""
@@ -191,101 +201,59 @@ class MainMenuScreen(Screen):
         """Navigate to users screen."""
         self.app.push_screen(UsersScreen())
 
-    def action_filter(self) -> None:
-        """Toggle filter options"""
-        pass  # Placeholder for filter action
-
-    def action_open(self) -> None:
-        """Open selected action"""
-        table = self.query_one("#actions_table", DataTable)
-        if table.cursor_row is not None:
-            try:
-                row_key = table.cursor_row
-                row = table.get_row(row_key)
-                action_num = row[0]
-                
-                # Navigate based on action number
-                if action_num == "1":
-                    self.action_auth()
-                elif action_num == "2":
-                    self.action_config()
-                elif action_num == "3":
-                    self.action_workspaces()
-                elif action_num == "4":
-                    self.action_apps()
-                elif action_num == "5":
-                    self.action_reports()
-                elif action_num == "6":
-                    self.action_users()
-            except Exception:
-                pass  # No valid row selected
-
-    def action_search(self) -> None:
-        """Search action"""
-        pass  # Placeholder for search
+    def action_refresh(self) -> None:
+        """Refresh data"""
+        self.on_mount()
 
     def action_new(self) -> None:
         """New action"""
-        pass  # Placeholder for new
+        pass  # Placeholder
 
-    def action_help(self) -> None:
-        """Show help"""
-        pass  # Placeholder for help
-
-    @on(DataTable.RowSelected)
-    def on_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection in the actions table"""
-        row = event.data_table.get_row(event.row_key)
-        action_name = row[1]
-        description = row[3]
-        
-        # Update details panel with selection info
-        self.query_one("#filter_action", Static).update(action_name)
-
-    @on(Button.Pressed, "#btn_auth")
+    @on(Button.Pressed, "#btn-auth")
     def on_auth_button(self) -> None:
         self.action_auth()
 
-    @on(Button.Pressed, "#btn_config")
+    @on(Button.Pressed, "#btn-config")
     def on_config_button(self) -> None:
         self.action_config()
 
-    @on(Button.Pressed, "#btn_workspaces")
+    @on(Button.Pressed, "#btn-workspaces")
     def on_workspaces_button(self) -> None:
         self.action_workspaces()
 
-    @on(Button.Pressed, "#btn_apps")
+    @on(Button.Pressed, "#btn-apps")
     def on_apps_button(self) -> None:
         self.action_apps()
 
-    @on(Button.Pressed, "#btn_reports")
+    @on(Button.Pressed, "#btn-reports")
     def on_reports_button(self) -> None:
         self.action_reports()
 
-    @on(Button.Pressed, "#btn_users")
+    @on(Button.Pressed, "#btn-users")
     def on_users_button(self) -> None:
         self.action_users()
 
-    @on(Button.Pressed, "#btn_quit")
-    def on_quit_button(self) -> None:
-        self.action_quit()
-
-    def on_click(self, event) -> None:
-        """Handle click events on navigation boxes"""
-        if hasattr(event, 'widget') and hasattr(event.widget, 'id'):
-            widget_id = event.widget.id
-            if widget_id == "nav_auth":
+    @on(DataTable.RowSelected)
+    def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle row selection"""
+        try:
+            row = event.data_table.get_row(event.row_key)
+            action_num = row[0]
+            
+            if action_num == "1":
                 self.action_auth()
-            elif widget_id == "nav_config":
+            elif action_num == "2":
                 self.action_config()
-            elif widget_id == "nav_workspaces":
+            elif action_num == "3":
                 self.action_workspaces()
-            elif widget_id == "nav_apps":
+            elif action_num == "4":
                 self.action_apps()
-            elif widget_id == "nav_reports":
+            elif action_num == "5":
                 self.action_reports()
-            elif widget_id == "nav_users":
+            elif action_num == "6":
                 self.action_users()
+        except Exception:
+            pass
 
 
 class AuthScreen(Screen):
@@ -1098,206 +1066,286 @@ class PowerBITUI(App):
     """Power BI CLI Terminal User Interface"""
 
     CSS = """
-    /* Base colors - JiraTUI inspired dark theme with blue accents */
-    * {
-        scrollbar-background: #1e2124;
-        scrollbar-color: #4a90d9;
-    }
+    /* Power BI Color Palette
+     * Primary: #F2C811 (Power BI Yellow/Gold)
+     * Secondary Blue: #00188F (Dark Blue)
+     * Accent Blue: #00A4EF (Light Blue)
+     * Dark Background: #1E1E1E (Dark Gray)
+     * Surface: #2D2D30 (Medium Gray)
+     * Border: #3E3E42 (Light Gray)
+     * Text: #E8E8E8 (Light Gray)
+     * Muted Text: #A0A0A0 (Medium Gray)
+     */
     
     Screen {
-        background: #2b2b2b;
+        background: #1E1E1E;
     }
 
     Header {
-        background: #1e2124;
-        color: #a0a0a0;
-        height: 1;
+        background: #252526;
+        color: #E8E8E8;
     }
 
     Footer {
-        background: #1e2124;
-        color: #a0a0a0;
+        background: #252526;
+        color: #E8E8E8;
     }
 
-    /* Top filter bar - similar to JiraTUI */
-    #top_filter_section {
+    /* Main container */
+    #main-container {
         height: auto;
-        background: #1e2124;
-        border: round #3c3f41;
-        margin: 0 0 1 0;
-        padding: 1;
     }
 
-    #filter_bar {
+    /* Filter bar - row 1 */
+    #filter-bar-1 {
         width: 100%;
         height: auto;
+        padding: 0 0 1 0;
     }
 
-    .filter-item {
+    .filter-selector {
+        border: round #3E3E42;
+        padding: 0 1;
         width: 1fr;
-        height: auto;
-        border: round #3c3f41;
-        background: #313335;
         margin: 0 1 0 0;
-        padding: 1;
+        background: #2D2D30;
+        color: #E8E8E8;
     }
 
-    .filter-item:last-child {
+    .filter-selector:last-child {
         margin: 0;
     }
 
-    .filter-label {
-        color: #6897bb;
-        text-style: bold;
-        padding: 0 0 0 0;
+    .filter-selector:focus {
+        border: round #00A4EF;
     }
 
-    .filter-value {
-        color: #a9b7c6;
-        padding: 0 0 0 1;
+    /* Actions bar - row 2 */
+    #actions-bar {
+        width: 100%;
+        height: auto;
+        padding: 0 0 1 0;
     }
 
-    /* Main content area - split left/right like JiraTUI */
-    #main_content_area {
+    .action-buttons-bar {
+        grid-size: 6 1;
+        grid-columns: 16.66% 16.66% 16.66% 16.66% 16.66% 16.66%;
+    }
+
+    #actions-bar > Button {
+        width: 1fr;
+        margin: 0 1 0 0;
+        border: round #3E3E42;
+        background: #2D2D30;
+        color: #E8E8E8;
+        &:hover {
+            border: round #F2C811;
+            background: #3E3E42;
+            color: #F2C811;
+        }
+        &:focus {
+            border: round #00A4EF;
+            background: #00188F;
+            color: #FFFFFF;
+        }
+    }
+
+    #actions-bar > Button:last-child {
+        margin: 0;
+    }
+
+    /* Main content horizontal split */
+    #main-content-horizontal {
         width: 100%;
         height: 1fr;
     }
 
-    .main-panel {
+    /* Search results container - left panel */
+    #search-results-container {
+        width: 50%;
         height: 100%;
-        border: round #3c3f41;
-        background: #313335;
-        padding: 0;
-    }
-
-    #left_panel {
-        width: 60%;
+        border: round #3E3E42;
+        background: transparent;
         margin: 0 1 0 0;
     }
 
-    #right_panel {
-        width: 40%;
-    }
-
     .panel-header {
-        background: #1e2124;
-        color: #6897bb;
+        background: #2D2D30;
+        color: #F2C811;
         text-style: bold;
         padding: 1;
-        border-bottom: solid #3c3f41;
+        border-bottom: solid #3E3E42;
     }
 
-    /* Table styling - like JiraTUI */
-    DataTable {
-        background: #2b2b2b;
+    #actions-table {
+        background: transparent;
+        scrollbar-size-vertical: 1;
         height: 100%;
-        margin: 0;
-        padding: 0;
     }
 
-    DataTable > .datatable--header {
-        background: #1e2124;
-        color: #6897bb;
+    /* TabbedContent - right panel */
+    #tabs {
+        width: 50%;
+        height: 100%;
+    }
+
+    TabbedContent TabsBar {
+        background: #2D2D30;
+    }
+
+    TabbedContent Tab {
+        background: #2D2D30;
+        color: #A0A0A0;
+        &:hover {
+            background: #3E3E42;
+            color: #E8E8E8;
+        }
+    }
+
+    TabbedContent Tab.-active {
+        background: #00188F;
+        color: #FFFFFF;
         text-style: bold;
     }
 
-    DataTable > .datatable--cursor {
-        background: #4a90d9;
-        color: #ffffff;
+    .info-container {
+        padding: 2;
+        background: transparent;
+    }
+
+    .section-title {
         text-style: bold;
-    }
-
-    DataTable > .datatable--odd-row {
-        background: #313335;
-    }
-
-    DataTable > .datatable--even-row {
-        background: #2b2b2b;
-    }
-
-    DataTable > .datatable--hover {
-        background: #3c3f41;
-    }
-
-    /* Details panel sections */
-    .detail-section {
-        border: round #3c3f41;
-        background: #2b2b2b;
-        padding: 1;
-        margin: 1;
-    }
-
-    .detail-section-title {
-        color: #6897bb;
-        text-style: bold;
+        color: #F2C811;
         padding: 0 0 1 0;
     }
 
     .detail-text {
-        color: #a9b7c6;
-        padding: 0 0 0 1;
+        color: #E8E8E8;
+        padding: 0 0 1 1;
     }
 
-    /* Form elements */
-    Button {
-        height: 3;
-        min-width: 16;
-        background: #4a90d9;
-        color: #ffffff;
-        border: round #3c3f41;
+    /* DataTable styling with Power BI colors */
+    DataTable {
+        background: #1E1E1E;
     }
 
-    Button:hover {
-        background: #5ba3ef;
-        color: #ffffff;
-    }
-
-    Button:focus {
-        background: #6bb3ff;
-        color: #ffffff;
+    DataTable > .datatable--header {
+        background: #2D2D30;
+        color: #F2C811;
         text-style: bold;
     }
 
+    DataTable > .datatable--cursor {
+        background: #00A4EF;
+        color: #FFFFFF;
+        text-style: bold;
+    }
+
+    DataTable > .datatable--odd-row {
+        background: #2D2D30;
+        color: #E8E8E8;
+    }
+
+    DataTable > .datatable--even-row {
+        background: #1E1E1E;
+        color: #E8E8E8;
+    }
+
+    DataTable > .datatable--hover {
+        background: #3E3E42;
+        color: #E8E8E8;
+    }
+
+    /* Select widgets */
+    Select {
+        background: #2D2D30;
+        border: round #3E3E42;
+        color: #E8E8E8;
+        &:focus {
+            border: round #00A4EF;
+        }
+    }
+
+    Select > SelectCurrent {
+        background: #2D2D30;
+        color: #E8E8E8;
+    }
+
+    Select > SelectOverlay {
+        background: #2D2D30;
+        border: solid #00A4EF;
+    }
+
+    /* Button widgets */
+    Button {
+        height: 3;
+        min-width: 10;
+        background: #2D2D30;
+        color: #E8E8E8;
+        border: round #3E3E42;
+    }
+
+    Button:hover {
+        background: #3E3E42;
+        color: #F2C811;
+    }
+
+    Button:focus {
+        background: #00188F;
+        color: #FFFFFF;
+        text-style: bold;
+        border: round #00A4EF;
+    }
+
     Button.-primary {
-        background: #4a90d9;
-        color: #ffffff;
+        background: #00188F;
+        color: #FFFFFF;
     }
 
     Button.-success {
-        background: #499c54;
-        color: #ffffff;
+        background: #107C10;
+        color: #FFFFFF;
     }
 
     Button.-error {
-        background: #c75450;
-        color: #ffffff;
+        background: #E81123;
+        color: #FFFFFF;
     }
 
+    Button.-warning {
+        background: #F2C811;
+        color: #1E1E1E;
+    }
+
+    /* Input widgets */
     Input {
-        background: #2b2b2b;
-        border: round #3c3f41;
-        color: #a9b7c6;
+        background: #1E1E1E;
+        border: round #3E3E42;
+        color: #E8E8E8;
         padding: 0 1;
         margin: 0 0 1 0;
     }
 
     Input:focus {
-        border: round #4a90d9;
+        border: round #00A4EF;
     }
 
+    /* Label widgets */
     Label {
-        color: #a9b7c6;
+        color: #E8E8E8;
         padding: 1 0 0 0;
     }
 
+    /* Static and other text */
     Static#auth_status, Static#config_status, Static#workspaces_status,
     Static#apps_status, Static#reports_status, Static#users_status,
     Static#add_profile_status, Static#switch_profile_status,
     Static#delete_profile_status, Static#list_workspaces_status {
         padding: 1 0;
-        color: #a9b7c6;
+        color: #E8E8E8;
     }
 
+    /* Horizontal button containers */
     #auth_buttons, #config_buttons, #workspaces_buttons,
     #apps_buttons, #reports_buttons, #users_buttons,
     #add_profile_buttons, #delete_profile_buttons,
@@ -1316,32 +1364,34 @@ class PowerBITUI(App):
         margin: 0;
     }
 
+    /* ScrollableContainer */
     ScrollableContainer {
         height: auto;
         max-height: 20;
-        border: round #3c3f41;
-        background: #2b2b2b;
+        border: round #3E3E42;
+        background: #1E1E1E;
         margin: 1 0;
         padding: 1;
     }
 
+    /* ListView */
     ListView {
         height: auto;
         max-height: 20;
         margin: 1 0;
-        background: #2b2b2b;
-        border: round #3c3f41;
+        background: #1E1E1E;
+        border: round #3E3E42;
     }
 
     ListItem {
-        background: #313335;
-        color: #a9b7c6;
+        background: #2D2D30;
+        color: #E8E8E8;
         padding: 1;
     }
 
     ListItem:hover {
-        background: #3c3f41;
-        color: #ffffff;
+        background: #3E3E42;
+        color: #F2C811;
     }
 
     /* Container styling */
@@ -1354,6 +1404,15 @@ class PowerBITUI(App):
     }
 
     Horizontal {
+        background: transparent;
+    }
+
+    /* TabbedContent styling */
+    TabbedContent {
+        background: transparent;
+    }
+
+    TabPane {
         background: transparent;
     }
     """
