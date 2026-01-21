@@ -50,104 +50,115 @@ class MainMenuScreen(Screen):
 
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
-        Binding("1", "auth", "Auth", show=True),
-        Binding("2", "config", "Config", show=True),
-        Binding("3", "workspaces", "Workspaces", show=True),
-        Binding("4", "apps", "Apps", show=True),
-        Binding("5", "reports", "Reports", show=True),
-        Binding("6", "users", "Users", show=True),
+        Binding("f", "filter", "Filter", show=True),
+        Binding("o", "open", "Open", show=True),
+        Binding("s", "search", "Search", show=True),
+        Binding("n", "new", "New", show=True),
+        Binding("c", "config", "Config", show=True),
+        Binding("h", "help", "Help", show=True),
     ]
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
-        yield Vertical(
-            # Top section - Navigation and Status
-            Container(
-                Horizontal(
-                    # Navigation section
-                    Container(
-                        Static("Navigation", classes="section-title"),
-                        Horizontal(
-                            Container(Static("[1] Authentication", classes="nav-item"), id="nav_auth", classes="nav-box"),
-                            Container(Static("[2] Configuration", classes="nav-item"), id="nav_config", classes="nav-box"),
-                            Container(Static("[3] Workspaces", classes="nav-item"), id="nav_workspaces", classes="nav-box"),
-                            classes="nav-row",
-                        ),
-                        Horizontal(
-                            Container(Static("[4] Apps", classes="nav-item"), id="nav_apps", classes="nav-box"),
-                            Container(Static("[5] Reports", classes="nav-item"), id="nav_reports", classes="nav-box"),
-                            Container(Static("[6] Users", classes="nav-item"), id="nav_users", classes="nav-box"),
-                            classes="nav-row",
-                        ),
-                        id="navigation_section",
-                        classes="top-section-panel",
-                    ),
-                    # Status section
-                    Container(
-                        Static("Status", classes="section-title"),
-                        Static("", id="profile_info", classes="status-item"),
-                        Static("", id="output_info", classes="status-item"),
-                        id="status_section",
-                        classes="top-section-panel",
-                    ),
-                    id="top_content",
-                ),
-                id="top_section",
-            ),
-            # Bottom section - Main content area
-            Container(
-                Static("PowerBI CLI - Terminal Interface", classes="main-title"),
+        
+        # Top filter bar - similar to JiraTUI
+        yield Container(
+            Horizontal(
                 Container(
-                    Static("Quick Start Guide", classes="panel-subtitle"),
-                    Static("• Press 1-6 to navigate to different sections", classes="info-text"),
-                    Static("• Press Q to quit, ESC to go back", classes="info-text"),
-                    Static("• All operations are saved to your configuration", classes="info-text"),
-                    classes="info-panel",
+                    Label("Profile", classes="filter-label"),
+                    Static("", id="filter_profile", classes="filter-value"),
+                    classes="filter-item",
                 ),
                 Container(
-                    Static("Available Actions", classes="panel-subtitle"),
-                    Static("", id="status_info", classes="status-detail"),
-                    classes="info-panel",
+                    Label("Output Folder", classes="filter-label"),
+                    Static("", id="filter_output", classes="filter-value"),
+                    classes="filter-item",
                 ),
-                id="main_section",
+                Container(
+                    Label("Action", classes="filter-label"),
+                    Static("Select an action", id="filter_action", classes="filter-value"),
+                    classes="filter-item",
+                ),
+                id="filter_bar",
             ),
-            id="main_layout",
+            id="top_filter_section",
         )
+        
+        # Main content area - split left/right like JiraTUI
+        yield Horizontal(
+            # Left side - Table of options/items
+            Container(
+                Static("Actions", classes="panel-header"),
+                DataTable(id="actions_table", zebra_stripes=True, cursor_type="row"),
+                id="left_panel",
+                classes="main-panel",
+            ),
+            # Right side - Details panel
+            Container(
+                Static("Details", classes="panel-header"),
+                Container(
+                    Static("Profile Information", classes="detail-section-title"),
+                    Static("", id="detail_profile", classes="detail-text"),
+                    Static("", id="detail_status", classes="detail-text"),
+                    classes="detail-section",
+                ),
+                Container(
+                    Static("Quick Actions", classes="detail-section-title"),
+                    Static("• Press 'o' to open selected action", classes="detail-text"),
+                    Static("• Press 'f' to change filters", classes="detail-text"),
+                    Static("• Press 's' to search", classes="detail-text"),
+                    Static("• Press 'c' for configuration", classes="detail-text"),
+                    Static("• Press 'q' to quit", classes="detail-text"),
+                    classes="detail-section",
+                ),
+                Container(
+                    Static("Keyboard Shortcuts", classes="detail-section-title"),
+                    Static("f1 - Help | f2 - Config | f3 - Profiles", classes="detail-text"),
+                    classes="detail-section",
+                ),
+                id="right_panel",
+                classes="main-panel",
+            ),
+            id="main_content_area",
+        )
+        
         yield Footer()
 
     def on_mount(self) -> None:
-        """Display active profile info on mount"""
+        """Initialize the screen with data"""
+        # Load profile info
         try:
             pbi_config = PBIConfig()
-            active_profile = pbi_config.active_profile
-            output_folder = pbi_config.default_output_folder
+            active_profile = pbi_config.active_profile or "None"
+            output_folder = pbi_config.default_output_folder or "Not set"
             
-            if active_profile:
-                self.query_one("#profile_info", Static).update(
-                    f"Profile: {active_profile}"
-                )
-                self.query_one("#output_info", Static).update(
-                    f"Output Folder: {output_folder if output_folder else 'Not set'}"
-                )
-                self.query_one("#status_info", Static).update(
-                    f"Ready to use PowerBI CLI\n"
-                    f"Active profile: {active_profile}"
-                )
-            else:
-                self.query_one("#profile_info", Static).update(
-                    "No active profile"
-                )
-                self.query_one("#output_info", Static).update(
-                    "Output Folder: Not set"
-                )
-                self.query_one("#status_info", Static).update(
-                    "Please configure a profile in Authentication"
-                )
+            # Update filters
+            self.query_one("#filter_profile", Static).update(active_profile)
+            self.query_one("#filter_output", Static).update(output_folder)
+            
+            # Update details panel
+            self.query_one("#detail_profile", Static).update(f"Active Profile: {active_profile}")
+            self.query_one("#detail_status", Static).update(f"Output Folder: {output_folder}")
+            
+            # Populate actions table
+            table = self.query_one("#actions_table", DataTable)
+            table.add_columns("#", "Action", "Shortcut", "Description")
+            
+            actions = [
+                ("1", "Authentication", "1", "Manage authentication profiles"),
+                ("2", "Configuration", "2", "Configure CLI settings"),
+                ("3", "Workspaces", "3", "List and manage workspaces"),
+                ("4", "Apps", "4", "View Power BI apps"),
+                ("5", "Reports", "5", "Access report functions"),
+                ("6", "Users", "6", "Manage user access"),
+            ]
+            
+            for action in actions:
+                table.add_row(*action)
+                
         except Exception as e:
-            self.query_one("#profile_info", Static).update(
-                "Error loading config"
-            )
+            self.query_one("#detail_status", Static).update(f"Error: {str(e)}")
             self.query_one("#status_info", Static).update(
                 f"Error: {str(e)}"
             )
@@ -179,6 +190,57 @@ class MainMenuScreen(Screen):
     def action_users(self) -> None:
         """Navigate to users screen."""
         self.app.push_screen(UsersScreen())
+
+    def action_filter(self) -> None:
+        """Toggle filter options"""
+        pass  # Placeholder for filter action
+
+    def action_open(self) -> None:
+        """Open selected action"""
+        table = self.query_one("#actions_table", DataTable)
+        if table.cursor_row is not None:
+            try:
+                row_key = table.cursor_row
+                row = table.get_row(row_key)
+                action_num = row[0]
+                
+                # Navigate based on action number
+                if action_num == "1":
+                    self.action_auth()
+                elif action_num == "2":
+                    self.action_config()
+                elif action_num == "3":
+                    self.action_workspaces()
+                elif action_num == "4":
+                    self.action_apps()
+                elif action_num == "5":
+                    self.action_reports()
+                elif action_num == "6":
+                    self.action_users()
+            except Exception:
+                pass  # No valid row selected
+
+    def action_search(self) -> None:
+        """Search action"""
+        pass  # Placeholder for search
+
+    def action_new(self) -> None:
+        """New action"""
+        pass  # Placeholder for new
+
+    def action_help(self) -> None:
+        """Show help"""
+        pass  # Placeholder for help
+
+    @on(DataTable.RowSelected)
+    def on_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle row selection in the actions table"""
+        row = event.data_table.get_row(event.row_key)
+        action_name = row[1]
+        description = row[3]
+        
+        # Update details panel with selection info
+        self.query_one("#filter_action", Static).update(action_name)
 
     @on(Button.Pressed, "#btn_auth")
     def on_auth_button(self) -> None:
@@ -1036,255 +1098,196 @@ class PowerBITUI(App):
     """Power BI CLI Terminal User Interface"""
 
     CSS = """
-    /* Base colors - calm, professional palette */
+    /* Base colors - JiraTUI inspired dark theme with blue accents */
     * {
-        scrollbar-background: #1a1f2e;
-        scrollbar-color: #3d4859;
+        scrollbar-background: #1e2124;
+        scrollbar-color: #4a90d9;
     }
     
     Screen {
-        background: #1a1f2e;
+        background: #2b2b2b;
     }
 
     Header {
-        background: #252b3b;
-        color: #8b95a8;
+        background: #1e2124;
+        color: #a0a0a0;
         height: 1;
     }
 
     Footer {
-        background: #252b3b;
-        color: #8b95a8;
+        background: #1e2124;
+        color: #a0a0a0;
     }
 
-    /* Main layout - vertical split */
-    #main_layout {
-        width: 100%;
-        height: 100%;
-        background: #1a1f2e;
-    }
-
-    /* Top section - Navigation and Status */
-    #top_section {
+    /* Top filter bar - similar to JiraTUI */
+    #top_filter_section {
         height: auto;
-        max-height: 12;
-        background: #1a1f2e;
-        border: round #3d4859;
-        margin: 0 1 1 1;
+        background: #1e2124;
+        border: round #3c3f41;
+        margin: 0 0 1 0;
         padding: 1;
     }
 
-    #top_content {
+    #filter_bar {
         width: 100%;
         height: auto;
     }
 
-    .top-section-panel {
+    .filter-item {
         width: 1fr;
         height: auto;
-        border: round #3d4859;
-        background: #252b3b;
-        padding: 1;
+        border: round #3c3f41;
+        background: #313335;
         margin: 0 1 0 0;
-    }
-
-    .top-section-panel:last-child {
-        margin: 0;
-    }
-
-    #navigation_section {
-        width: 2fr;
-    }
-
-    #status_section {
-        width: 1fr;
-    }
-
-    .section-title {
-        text-style: bold;
-        color: #6d8299;
-        margin: 0 0 1 0;
-    }
-
-    /* Navigation boxes */
-    .nav-row {
-        width: 100%;
-        height: auto;
-        margin: 0 0 1 0;
-    }
-
-    .nav-row:last-child {
-        margin: 0;
-    }
-
-    .nav-box {
-        width: 1fr;
-        height: 3;
-        border: round #3d4859;
-        background: #2d3548;
-        margin: 0 1 0 0;
-        padding: 0 1;
-        content-align: center middle;
-    }
-
-    .nav-box:last-child {
-        margin: 0;
-    }
-
-    .nav-box:hover {
-        background: #3d4859;
-        border: round #4a6580;
-    }
-
-    .nav-box:focus-within {
-        background: #4a5568;
-        border: round #5a7590;
-    }
-
-    .nav-item {
-        color: #8b95a8;
-        text-align: center;
-        width: 100%;
-    }
-
-    .nav-box:hover .nav-item {
-        color: #a3b5cc;
-        text-style: bold;
-    }
-
-    /* Status items */
-    .status-item {
-        color: #8b95a8;
-        padding: 0 0 1 0;
-        background: #1a1f2e;
-        border: round #3d4859;
-        margin: 0 0 1 0;
         padding: 1;
     }
 
-    .status-item:last-child {
+    .filter-item:last-child {
         margin: 0;
     }
 
-    /* Main section - Bottom area */
-    #main_section {
-        height: 1fr;
-        background: #1a1f2e;
-        border: round #3d4859;
-        margin: 0 1 1 1;
-        padding: 2;
-        overflow-y: auto;
-    }
-
-    .main-title {
+    .filter-label {
+        color: #6897bb;
         text-style: bold;
-        color: #6d8299;
-        padding: 0 0 2 0;
-        text-align: center;
+        padding: 0 0 0 0;
     }
 
-    .info-panel {
-        border: round #3d4859;
-        background: #252b3b;
-        padding: 2;
-        margin: 0 0 2 0;
-    }
-
-    .info-panel:last-child {
-        margin: 0;
-    }
-
-    .panel-subtitle {
-        text-style: bold;
-        color: #6d8299;
-        padding: 0 0 1 0;
-    }
-
-    .info-text {
-        color: #8b95a8;
-        padding: 0 0 1 1;
-    }
-
-    .info-text:last-child {
+    .filter-value {
+        color: #a9b7c6;
         padding: 0 0 0 1;
     }
 
-    .status-detail {
-        color: #8b95a8;
+    /* Main content area - split left/right like JiraTUI */
+    #main_content_area {
+        width: 100%;
+        height: 1fr;
+    }
+
+    .main-panel {
+        height: 100%;
+        border: round #3c3f41;
+        background: #313335;
+        padding: 0;
+    }
+
+    #left_panel {
+        width: 60%;
+        margin: 0 1 0 0;
+    }
+
+    #right_panel {
+        width: 40%;
+    }
+
+    .panel-header {
+        background: #1e2124;
+        color: #6897bb;
+        text-style: bold;
         padding: 1;
-        background: #1a1f2e;
-        border: round #3d4859;
+        border-bottom: solid #3c3f41;
+    }
+
+    /* Table styling - like JiraTUI */
+    DataTable {
+        background: #2b2b2b;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    DataTable > .datatable--header {
+        background: #1e2124;
+        color: #6897bb;
+        text-style: bold;
+    }
+
+    DataTable > .datatable--cursor {
+        background: #4a90d9;
+        color: #ffffff;
+        text-style: bold;
+    }
+
+    DataTable > .datatable--odd-row {
+        background: #313335;
+    }
+
+    DataTable > .datatable--even-row {
+        background: #2b2b2b;
+    }
+
+    DataTable > .datatable--hover {
+        background: #3c3f41;
+    }
+
+    /* Details panel sections */
+    .detail-section {
+        border: round #3c3f41;
+        background: #2b2b2b;
+        padding: 1;
+        margin: 1;
+    }
+
+    .detail-section-title {
+        color: #6897bb;
+        text-style: bold;
+        padding: 0 0 1 0;
+    }
+
+    .detail-text {
+        color: #a9b7c6;
+        padding: 0 0 0 1;
     }
 
     /* Form elements */
     Button {
         height: 3;
         min-width: 16;
-        background: #3d4859;
-        color: #8b95a8;
-        border: round #3d4859;
+        background: #4a90d9;
+        color: #ffffff;
+        border: round #3c3f41;
     }
 
     Button:hover {
-        background: #4a5568;
-        color: #a3b5cc;
+        background: #5ba3ef;
+        color: #ffffff;
     }
 
     Button:focus {
-        background: #556680;
-        color: #c5d1e0;
+        background: #6bb3ff;
+        color: #ffffff;
         text-style: bold;
     }
 
     Button.-primary {
-        background: #3d5a7a;
-        color: #a3c5e0;
+        background: #4a90d9;
+        color: #ffffff;
     }
 
     Button.-success {
-        background: #3d5a4a;
-        color: #a3d5b5;
+        background: #499c54;
+        color: #ffffff;
     }
 
     Button.-error {
-        background: #5a3d3d;
-        color: #d5a3a3;
+        background: #c75450;
+        color: #ffffff;
     }
 
     Input {
-        background: #1a1f2e;
-        border: round #3d4859;
-        color: #a3b5cc;
+        background: #2b2b2b;
+        border: round #3c3f41;
+        color: #a9b7c6;
         padding: 0 1;
         margin: 0 0 1 0;
     }
 
     Input:focus {
-        border: round #4a6580;
+        border: round #4a90d9;
     }
 
     Label {
-        color: #8b95a8;
+        color: #a9b7c6;
         padding: 1 0 0 0;
-    }
-
-    DataTable {
-        background: #1a1f2e;
-        border: round #3d4859;
-        height: auto;
-        max-height: 25;
-        margin: 1 0;
-    }
-
-    DataTable > .datatable--header {
-        background: #2d3548;
-        color: #8b95a8;
-        text-style: bold;
-    }
-
-    DataTable > .datatable--cursor {
-        background: #3d4859;
-        color: #c5d1e0;
     }
 
     Static#auth_status, Static#config_status, Static#workspaces_status,
@@ -1292,7 +1295,7 @@ class PowerBITUI(App):
     Static#add_profile_status, Static#switch_profile_status,
     Static#delete_profile_status, Static#list_workspaces_status {
         padding: 1 0;
-        color: #8b95a8;
+        color: #a9b7c6;
     }
 
     #auth_buttons, #config_buttons, #workspaces_buttons,
@@ -1316,8 +1319,8 @@ class PowerBITUI(App):
     ScrollableContainer {
         height: auto;
         max-height: 20;
-        border: round #3d4859;
-        background: #1a1f2e;
+        border: round #3c3f41;
+        background: #2b2b2b;
         margin: 1 0;
         padding: 1;
     }
@@ -1326,19 +1329,19 @@ class PowerBITUI(App):
         height: auto;
         max-height: 20;
         margin: 1 0;
-        background: #1a1f2e;
-        border: round #3d4859;
+        background: #2b2b2b;
+        border: round #3c3f41;
     }
 
     ListItem {
-        background: #252b3b;
-        color: #8b95a8;
+        background: #313335;
+        color: #a9b7c6;
         padding: 1;
     }
 
     ListItem:hover {
-        background: #3d4859;
-        color: #a3b5cc;
+        background: #3c3f41;
+        color: #ffffff;
     }
 
     /* Container styling */
