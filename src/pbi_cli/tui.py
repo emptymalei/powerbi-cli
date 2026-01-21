@@ -99,7 +99,7 @@ class MainMenuScreen(Screen):
             
             # Main content area - results pane
             with Container(id="results-container"):
-                yield Static("Results", classes="panel-header", id="results-header")
+                yield Static("PowerBI CLI - Welcome", classes="panel-header", id="results-header")
                 yield DataTable(id="results-table", zebra_stripes=True)
         
         yield Footer()
@@ -156,6 +156,18 @@ class MainMenuScreen(Screen):
         """Quit the application."""
         self.app.exit()
 
+    def _truncate_id(self, id_str: str, max_len: int = 20) -> str:
+        """Truncate ID string with ellipsis if needed."""
+        if not id_str or len(id_str) <= max_len:
+            return id_str
+        return id_str[:max_len] + "..."
+    
+    def _truncate_text(self, text: str, max_len: int = 50) -> str:
+        """Truncate text with ellipsis if needed."""
+        if not text or len(text) <= max_len:
+            return text or ""
+        return text[:max_len] + "..."
+    
     def action_auth(self) -> None:
         """Show authentication profiles in results pane."""
         try:
@@ -224,7 +236,7 @@ class MainMenuScreen(Screen):
                 for ws in workspaces_list:
                     table.add_row(
                         ws.get("name", "N/A"),
-                        ws.get("id", "N/A")[:20] + "...",
+                        self._truncate_id(ws.get("id", "N/A")),
                         ws.get("type", "N/A"),
                         ws.get("state", "N/A")
                     )
@@ -256,8 +268,8 @@ class MainMenuScreen(Screen):
                 for app in apps_list:
                     table.add_row(
                         app.get("name", "N/A"),
-                        app.get("id", "N/A")[:20] + "...",
-                        app.get("description", "N/A")[:50]
+                        self._truncate_id(app.get("id", "N/A")),
+                        self._truncate_text(app.get("description", ""))
                     )
             except Exception as e:
                 self.show_error(f"Error fetching apps: {str(e)}")
