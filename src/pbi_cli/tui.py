@@ -68,6 +68,13 @@ class MainMenuScreen(Screen):
             return id_str
         return id_str[:max_len]
 
+    @staticmethod
+    def _truncate_text(text: str, max_len: int = 50) -> str:
+        """Truncate text with ellipsis if needed."""
+        if not text or len(text) <= max_len:
+            return text
+        return text[:max_len] + "..."
+
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
@@ -120,7 +127,7 @@ class MainMenuScreen(Screen):
         """Load configuration"""
         try:
             self.pbi_config = PBIConfig()
-            
+
             # Initialize cache manager if configured
             if self.pbi_config.cache_folder and self.pbi_config.cache_enabled:
                 self.cache_manager = CacheManager(
@@ -483,7 +490,7 @@ class WorkspacesScreen(Screen):
                 self._truncate_id(ws.get("id", "N/A")),
                 ws.get("type", "N/A"),
                 ws.get("state", "N/A"),
-                ws.get("capacityId", "N/A")[:20] if ws.get("capacityId") else "None",
+                self._truncate_id(ws.get("capacityId", "N/A"), 20) if ws.get("capacityId") else "None",
             )
 
     @on(Button.Pressed, "#btn-load")
@@ -563,6 +570,13 @@ class AppsScreen(Screen):
         if not id_str or len(id_str) <= max_len:
             return id_str
         return id_str[:max_len]
+
+    @staticmethod
+    def _truncate_text(text: str, max_len: int = 50) -> str:
+        """Truncate text with ellipsis if needed."""
+        if not text or len(text) <= max_len:
+            return text
+        return text[:max_len] + "..."
 
     def is_cache_valid(self, cache_key: str) -> bool:
         """Check if cache exists and is less than 1 hour old"""
@@ -661,12 +675,11 @@ class AppsScreen(Screen):
         # Add rows
         for app in apps:
             desc = app.get("description", "") or ""
-            desc_short = desc[:50] + "..." if len(desc) > 50 else desc
             
             table.add_row(
                 app.get("name", "N/A"),
                 self._truncate_id(app.get("id", "N/A")),
-                desc_short,
+                self._truncate_text(desc),
                 app.get("publishedBy", "N/A"),
             )
 
