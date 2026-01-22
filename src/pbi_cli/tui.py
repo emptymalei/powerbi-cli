@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from rich.table import Table as RichTable
-from rich.text import Text
 from slugify import slugify
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -25,14 +23,9 @@ from textual.widgets import (
     Header,
     Input,
     Label,
-    ListItem,
-    ListView,
     Select,
     Static,
-    TabbedContent,
-    TabPane,
 )
-from textual.worker import Worker, WorkerState
 
 import pbi_cli.powerbi.admin as powerbi_admin
 import pbi_cli.powerbi.app as powerbi_app
@@ -46,6 +39,12 @@ from pbi_cli.cli import (
     load_auth,
 )
 from pbi_cli.config import PBIConfig
+
+# Configuration constants
+CACHE_EXPIRY_HOURS = 1
+DEFAULT_WORKSPACE_LIMIT = 1000
+MAX_ID_LENGTH = 20
+MAX_TEXT_LENGTH = 50
 
 
 class MainMenuScreen(Screen):
@@ -408,7 +407,7 @@ class WorkspacesScreen(Screen):
             try:
                 cached_at = datetime.fromisoformat(cached_at_str)
                 age = datetime.now() - cached_at
-                return age < timedelta(hours=1)
+                return age < timedelta(hours=CACHE_EXPIRY_HOURS)
             except Exception:
                 return False
         
@@ -441,7 +440,7 @@ class WorkspacesScreen(Screen):
             
             auth = load_auth()
             workspaces_api = powerbi_admin.Workspaces(auth=auth, verify=False)
-            result = workspaces_api(top=1000, expand=[], filter=None)
+            result = workspaces_api(top=DEFAULT_WORKSPACE_LIMIT, expand=[], filter=None)
             
             self.workspaces_data = result
             
@@ -593,7 +592,7 @@ class AppsScreen(Screen):
             try:
                 cached_at = datetime.fromisoformat(cached_at_str)
                 age = datetime.now() - cached_at
-                return age < timedelta(hours=1)
+                return age < timedelta(hours=CACHE_EXPIRY_HOURS)
             except Exception:
                 return False
         
@@ -913,7 +912,7 @@ class UsersScreen(Screen):
                     try:
                         cached_at = datetime.fromisoformat(cached_at_str)
                         age = datetime.now() - cached_at
-                        if age < timedelta(hours=1):
+                        if age < timedelta(hours=CACHE_EXPIRY_HOURS):
                             self.user_data = cached_data.get("data")
                             cache_time = cached_data.get("cached_at", "unknown")
                             self.app.call_from_thread(
