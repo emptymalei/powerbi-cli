@@ -81,6 +81,8 @@ class PBIConfig:
             "active_profile": None,
             "profiles": {},
             "default_output_folder": None,
+            "cache_folder": None,
+            "cache_enabled": True,
         }
 
     @property
@@ -222,6 +224,73 @@ class PBIConfig:
             self.set("default_output_folder", str(path))
         else:
             self.set("default_output_folder", None)
+
+    @property
+    def cache_folder(self) -> Optional[str]:
+        """Get the cache folder.
+
+        :return: Cache folder path or None
+        """
+        return self.get("cache_folder")
+
+    @cache_folder.setter
+    def cache_folder(self, value: Optional[str]):
+        """Set the cache folder.
+
+        Handles both local and cloud paths (S3, GS, Azure, etc.).
+        Cloud paths are stored as-is, while local paths are normalized.
+
+        :param value: Path to the cache folder (local or cloud)
+        """
+        if value is not None:
+            # Check if it's a cloud path
+            is_cloud_path = any(
+                value.startswith(prefix)
+                for prefix in ["s3://", "gs://", "az://", "file://"]
+            )
+
+            if is_cloud_path:
+                # For cloud paths, just strip quotes and store as-is
+                value = value.strip('"').strip("'")
+                self.set("cache_folder", value)
+            else:
+                # For local paths, handle shell escaping and normalize
+                try:
+                    if value.endswith('\\"') or value.endswith("\\'"):
+                        value = value[:-1]
+                    elif value.endswith('"') or value.endswith("'"):
+                        if len(value) > 1 and value[-2] != "\\":
+                            value = value[:-1]
+                except Exception:
+                    pass
+
+                # Strip leading quotes if present
+                if (value.startswith('"') and not value.startswith('\\"')) or (
+                    value.startswith("'") and not value.startswith("\\'")
+                ):
+                    value = value[1:]
+
+                # Expand user home directory and convert to absolute path
+                path = Path(value).expanduser().absolute()
+                self.set("cache_folder", str(path))
+        else:
+            self.set("cache_folder", None)
+
+    @property
+    def cache_enabled(self) -> bool:
+        """Get whether caching is enabled.
+
+        :return: True if caching is enabled, False otherwise
+        """
+        return self.get("cache_enabled", True)
+
+    @cache_enabled.setter
+    def cache_enabled(self, value: bool):
+        """Set whether caching is enabled.
+
+        :param value: True to enable caching, False to disable
+        """
+        self.set("cache_enabled", bool(value))
 
     @property
     def config_dir(self) -> Path:
