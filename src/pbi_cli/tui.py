@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from rich.table import Table as RichTable
 from rich.text import Text
+from slugify import slugify
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -59,6 +60,13 @@ class MainMenuScreen(Screen):
         super().__init__()
         self.cache_manager: Optional[CacheManager] = None
         self.pbi_config: Optional[PBIConfig] = None
+
+    @staticmethod
+    def _truncate_id(id_str: str, max_len: int = 36) -> str:
+        """Truncate ID string to specified length."""
+        if not id_str or len(id_str) <= max_len:
+            return id_str
+        return id_str[:max_len]
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
@@ -371,6 +379,13 @@ class WorkspacesScreen(Screen):
         status = self.query_one("#workspaces-status", Static)
         status.update(f"[{color}]{message}[/{color}]")
 
+    @staticmethod
+    def _truncate_id(id_str: str, max_len: int = 36) -> str:
+        """Truncate ID string to specified length."""
+        if not id_str or len(id_str) <= max_len:
+            return id_str
+        return id_str[:max_len]
+
     def is_cache_valid(self, cache_key: str) -> bool:
         """Check if cache exists and is less than 1 hour old"""
         if not self.cache_manager:
@@ -387,7 +402,7 @@ class WorkspacesScreen(Screen):
                 cached_at = datetime.fromisoformat(cached_at_str)
                 age = datetime.now() - cached_at
                 return age < timedelta(hours=1)
-            except:
+            except Exception:
                 return False
         
         return False
@@ -465,7 +480,7 @@ class WorkspacesScreen(Screen):
         for ws in workspaces:
             table.add_row(
                 ws.get("name", "N/A"),
-                ws.get("id", "N/A")[:36],  # Truncate ID
+                self._truncate_id(ws.get("id", "N/A")),
                 ws.get("type", "N/A"),
                 ws.get("state", "N/A"),
                 ws.get("capacityId", "N/A")[:20] if ws.get("capacityId") else "None",
@@ -542,6 +557,13 @@ class AppsScreen(Screen):
         status = self.query_one("#apps-status", Static)
         status.update(f"[{color}]{message}[/{color}]")
 
+    @staticmethod
+    def _truncate_id(id_str: str, max_len: int = 36) -> str:
+        """Truncate ID string to specified length."""
+        if not id_str or len(id_str) <= max_len:
+            return id_str
+        return id_str[:max_len]
+
     def is_cache_valid(self, cache_key: str) -> bool:
         """Check if cache exists and is less than 1 hour old"""
         if not self.cache_manager:
@@ -558,7 +580,7 @@ class AppsScreen(Screen):
                 cached_at = datetime.fromisoformat(cached_at_str)
                 age = datetime.now() - cached_at
                 return age < timedelta(hours=1)
-            except:
+            except Exception:
                 return False
         
         return False
@@ -643,7 +665,7 @@ class AppsScreen(Screen):
             
             table.add_row(
                 app.get("name", "N/A"),
-                app.get("id", "N/A")[:36],  # Truncate ID
+                self._truncate_id(app.get("id", "N/A")),
                 desc_short,
                 app.get("publishedBy", "N/A"),
             )
@@ -870,7 +892,6 @@ class UsersScreen(Screen):
         try:
             # Check cache first
             if self.cache_manager:
-                from slugify import slugify
                 cache_key = f"user_access_{slugify(user_id)}"
                 cached_data = self.cache_manager.load(cache_key, version="latest")
                 
@@ -889,7 +910,7 @@ class UsersScreen(Screen):
                             )
                             self.app.call_from_thread(self.display_user_data)
                             return
-                    except:
+                    except Exception:
                         pass
             
             # Fetch from API
@@ -907,7 +928,6 @@ class UsersScreen(Screen):
             
             # Save to cache
             if self.cache_manager:
-                from slugify import slugify
                 cache_key = f"user_access_{slugify(user_id)}"
                 self.cache_manager.save(
                     cache_key, result, metadata={"user_id": user_id}
