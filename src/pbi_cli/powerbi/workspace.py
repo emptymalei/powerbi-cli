@@ -24,10 +24,12 @@ class Workspaces(Base):
         self.cache_file = cache_file
         self.cache = self._load_cache(self.cache_file)
 
-    def _load_cache(self, cache_path: Path) -> dict:
+    def _load_cache(self, cache_path: Optional[Path]) -> dict:
         """
         load cached data from a folder containing Excel files.
         """
+        if cache_path is None:
+            return {}
 
         return self._load_excel_all_sheets(cache_excel=cache_path)
 
