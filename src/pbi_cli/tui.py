@@ -6,19 +6,19 @@ making it easy to manage authentication, workspaces, apps, reports, and users.
 """
 
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from rich.table import Table as RichTable
 from rich.text import Text
-from textual import on
+from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
 from textual.screen import Screen
 from textual.widgets import (
     Button,
-    Checkbox,
     DataTable,
     Footer,
     Header,
@@ -26,15 +26,16 @@ from textual.widgets import (
     Label,
     ListItem,
     ListView,
-    RadioButton,
-    RadioSet,
     Select,
     Static,
     TabbedContent,
     TabPane,
 )
+from textual.worker import Worker, WorkerState
 
+import pbi_cli.powerbi.admin as powerbi_admin
 import pbi_cli.powerbi.app as powerbi_app
+from pbi_cli.cache import CacheManager
 from pbi_cli.cli import (
     _delete_credential,
     _get_credential,
@@ -43,10 +44,7 @@ from pbi_cli.cli import (
     _set_credential,
     load_auth,
 )
-
-# Import the CLI modules we need
 from pbi_cli.config import PBIConfig
-from pbi_cli.powerbi.admin import Apps, User, Workspaces
 
 
 class MainMenuScreen(Screen):
@@ -55,1011 +53,631 @@ class MainMenuScreen(Screen):
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
         Binding("ctrl+r", "refresh", "Refresh", show=True),
-        Binding("ctrl+n", "new", "New", show=True),
-        Binding("1", "auth", "Auth", show=False),
-        Binding("2", "config", "Config", show=False),
-        Binding("3", "workspaces", "Workspaces", show=False),
-        Binding("4", "apps", "Apps", show=False),
-        Binding("5", "reports", "Reports", show=False),
-        Binding("6", "users", "Users", show=False),
     ]
+
+    def __init__(self):
+        super().__init__()
+        self.cache_manager: Optional[CacheManager] = None
+        self.pbi_config: Optional[PBIConfig] = None
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
 
         with Vertical(id="main-container"):
-            # Top filter bar - row 1
-            with Horizontal(id="filter-bar-1"):
+            # Top selectors bar - FUNCTIONAL selectors
+            with Horizontal(id="filter-bar"):
                 yield Select(
-                    options=[("default", "default")],
+                    options=[("Loading...", "loading")],
                     prompt="Profile",
                     id="profile-selector",
                     classes="filter-selector",
+                    allow_blank=False,
                 )
-                yield Select(
-                    options=[("Not set", "Not set")],
-                    prompt="Output Folder",
-                    id="output-selector",
-                    classes="filter-selector",
+                yield Input(
+                    placeholder="Output Folder (leave empty for default)",
+                    id="output-folder-input",
+                    classes="filter-input",
                 )
-                yield Select(
-                    options=[("Ready", "Ready")],
-                    prompt="Status",
-                    id="status-selector",
-                    classes="filter-selector",
-                )
+                yield Button("Set Folder", id="btn-set-folder", variant="primary")
 
-            # Actions bar - row 2
+            # Actions bar - Combined Auth/Config button, and data buttons
             with Horizontal(id="actions-bar", classes="action-buttons-bar"):
-                yield Button("[1] Authentication", id="btn-auth", variant="default")
-                yield Button("[2] Configuration", id="btn-config", variant="default")
-                yield Button("[3] Workspaces", id="btn-workspaces", variant="default")
-                yield Button("[4] Apps", id="btn-apps", variant="default")
-                yield Button("[5] Reports", id="btn-reports", variant="default")
-                yield Button("[6] Users", id="btn-users", variant="default")
+                yield Button(
+                    "[1] Profiles & Config", id="btn-profiles-config", variant="default"
+                )
+                yield Button("[2] Workspaces", id="btn-workspaces", variant="default")
+                yield Button("[3] Apps", id="btn-apps", variant="default")
+                yield Button("[4] Reports", id="btn-reports", variant="default")
+                yield Button("[5] Users", id="btn-users", variant="default")
 
             # Main content area - results pane
             with Container(id="results-container"):
                 yield Static(
                     "PowerBI CLI - Welcome", classes="panel-header", id="results-header"
                 )
-                yield DataTable(id="results-table", zebra_stripes=True)
+                yield ScrollableContainer(
+                    Static("", id="results-content"), id="results-scroll"
+                )
 
         yield Footer()
 
     def on_mount(self) -> None:
         """Initialize the screen with data"""
-        # Load profile info
+        self.load_config()
+        self.load_profiles()
+        self.show_welcome_message()
+
+    def load_config(self) -> None:
+        """Load configuration"""
         try:
-            pbi_config = PBIConfig()
-            active_profile = pbi_config.active_profile or "None"
-            output_folder = pbi_config.default_output_folder or "Not set"
+            self.pbi_config = PBIConfig()
+            
+            # Initialize cache manager if configured
+            if self.pbi_config.cache_folder and self.pbi_config.cache_enabled:
+                self.cache_manager = CacheManager(
+                    cache_folder=self.pbi_config.cache_folder
+                )
 
-            # Update selectors
-            profile_selector = self.query_one("#profile-selector", Select)
-            profile_selector.set_options([(active_profile, active_profile)])
-
-            output_selector = self.query_one("#output-selector", Select)
-            output_selector.set_options([(output_folder, output_folder)])
-
-            # Show welcome message in results
-            self.show_welcome_message()
+            # Update output folder input
+            output_input = self.query_one("#output-folder-input", Input)
+            if self.pbi_config.default_output_folder:
+                output_input.value = self.pbi_config.default_output_folder
 
         except Exception as e:
-            self.show_error(f"Error: {str(e)}")
+            self.show_error(f"Error loading config: {str(e)}")
+
+    def load_profiles(self) -> None:
+        """Load profiles and update profile selector"""
+        try:
+            profiles_data = _load_profiles()
+            profiles = profiles_data.get("profiles", {})
+            active_profile = profiles_data.get("active_profile") or "None"
+
+            profile_selector = self.query_one("#profile-selector", Select)
+            
+            if not profiles:
+                profile_selector.set_options([("No profiles", "none")])
+            else:
+                options = [
+                    (
+                        f"{name} {'(active)' if name == active_profile else ''}",
+                        name,
+                    )
+                    for name in profiles.keys()
+                ]
+                profile_selector.set_options(options)
+                
+                # Set the active profile as selected
+                if active_profile and active_profile in profiles:
+                    profile_selector.value = active_profile
+
+        except Exception as e:
+            self.show_error(f"Error loading profiles: {str(e)}")
+
+    @on(Select.Changed, "#profile-selector")
+    def on_profile_changed(self, event: Select.Changed) -> None:
+        """Handle profile selection change - SWITCH the active profile"""
+        if event.value and event.value not in ["loading", "none"]:
+            try:
+                profiles_data = _load_profiles()
+                profiles_data["active_profile"] = event.value
+                _save_profiles(profiles_data)
+                
+                # Reload to update display
+                self.load_profiles()
+                self.show_info(f"Switched to profile: {event.value}")
+            except Exception as e:
+                self.show_error(f"Error switching profile: {str(e)}")
+
+    @on(Button.Pressed, "#btn-set-folder")
+    def on_set_folder(self) -> None:
+        """Handle output folder change"""
+        try:
+            folder_input = self.query_one("#output-folder-input", Input)
+            folder_path = folder_input.value.strip()
+
+            if not self.pbi_config:
+                self.pbi_config = PBIConfig()
+
+            if folder_path:
+                # Set the folder
+                self.pbi_config.default_output_folder = folder_path
+                self.show_info(f"Output folder set to: {folder_path}")
+            else:
+                # Clear the folder
+                self.pbi_config.default_output_folder = None
+                self.show_info("Output folder cleared (using default)")
+            
+            # Reload config
+            self.load_config()
+
+        except Exception as e:
+            self.show_error(f"Error setting output folder: {str(e)}")
 
     def show_welcome_message(self) -> None:
         """Display welcome message in results pane."""
         self.query_one("#results-header", Static).update("PowerBI CLI - Welcome")
-        table = self.query_one("#results-table", DataTable)
-        table.clear(columns=True)
-        table.add_columns("Action", "Shortcut", "Description")
+        
+        content = self.query_one("#results-content", Static)
+        welcome_text = """
+[bold cyan]Welcome to PowerBI CLI TUI[/bold cyan]
 
-        actions = [
-            (
-                "Authentication",
-                "Press 1",
-                "Manage authentication profiles (add, switch, delete)",
-            ),
-            (
-                "Configuration",
-                "Press 2",
-                "Configure CLI settings (output folder, etc.)",
-            ),
-            ("Workspaces", "Press 3", "List and manage Power BI workspaces"),
-            ("Apps", "Press 4", "View and interact with Power BI apps"),
-            ("Reports", "Press 5", "Access Power BI reports and functions"),
-            ("Users", "Press 6", "Manage user access and permissions"),
-        ]
+[yellow]Quick Actions:[/yellow]
+• [1] Profiles & Config - Manage authentication profiles and settings
+• [2] Workspaces - List and manage Power BI workspaces
+• [3] Apps - View and interact with Power BI apps
+• [4] Reports - Augment reports with user data
+• [5] Users - Get user access information
 
-        for action in actions:
-            table.add_row(*action)
+[yellow]Top Controls:[/yellow]
+• Profile Selector - Switch between authentication profiles
+• Output Folder - Set default output folder for exports
+• Set Folder - Apply output folder changes
+
+[yellow]Keyboard Shortcuts:[/yellow]
+• q - Quit application
+• Ctrl+R - Refresh current view
+
+[green]Ready to use![/green]
+"""
+        content.update(welcome_text)
+
+    def show_info(self, message: str) -> None:
+        """Display info message in results pane."""
+        self.query_one("#results-header", Static).update("Information")
+        content = self.query_one("#results-content", Static)
+        content.update(f"[cyan]{message}[/cyan]")
 
     def show_error(self, message: str) -> None:
         """Display error in results pane."""
         self.query_one("#results-header", Static).update("Error")
-        table = self.query_one("#results-table", DataTable)
-        table.clear(columns=True)
-        table.add_columns("Error Message")
-        table.add_row(message)
+        content = self.query_one("#results-content", Static)
+        content.update(f"[red]{message}[/red]")
 
     def action_quit(self) -> None:
         """Quit the application."""
         self.app.exit()
 
-    def _truncate_id(self, id_str: str, max_len: int = 20) -> str:
-        """Truncate ID string with ellipsis if needed."""
-        if not id_str or len(id_str) <= max_len:
-            return id_str
-        return id_str[:max_len] + "..."
-
-    def _truncate_text(self, text: str, max_len: int = 50) -> str:
-        """Truncate text with ellipsis if needed."""
-        if not text or len(text) <= max_len:
-            return text or ""
-        return text[:max_len] + "..."
-
-    def action_auth(self) -> None:
-        """Show authentication profiles in results pane."""
-        try:
-            profiles_data = _load_profiles()
-            profiles = profiles_data.get("profiles", {})
-            active_profile = profiles_data.get("active_profile")
-
-            self.query_one("#results-header", Static).update(
-                "Authentication - Profiles"
-            )
-            table = self.query_one("#results-table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Profile", "Status", "Active", "Token Exists")
-
-            if not profiles:
-                table.add_row("No profiles found", "-", "-", "-")
-                return
-
-            for profile_name in profiles.keys():
-                is_active = profile_name == active_profile
-                token_exists = _get_credential(profile_name) is not None
-
-                status = "✓ Ready" if token_exists else "✗ No Token"
-                active_marker = "✓ Active" if is_active else ""
-                token_status = "Yes" if token_exists else "No"
-
-                table.add_row(profile_name, status, active_marker, token_status)
-
-        except Exception as e:
-            self.show_error(f"Error loading profiles: {str(e)}")
-
-    def action_config(self) -> None:
-        """Show configuration in results pane."""
-        try:
-            pbi_config = PBIConfig()
-
-            self.query_one("#results-header", Static).update("Configuration Settings")
-            table = self.query_one("#results-table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Setting", "Value")
-
-            table.add_row("Active Profile", pbi_config.active_profile or "Not set")
-            table.add_row(
-                "Output Folder", pbi_config.default_output_folder or "Not set"
-            )
-            table.add_row("Config File", str(pbi_config.config_file))
-
-        except Exception as e:
-            self.show_error(f"Error loading config: {str(e)}")
-
-    def action_workspaces(self) -> None:
-        """List workspaces in results pane."""
-        try:
-            self.query_one("#results-header", Static).update("Workspaces - Loading...")
-            table = self.query_one("#results-table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Loading...")
-            table.add_row("Fetching workspaces from Power BI API...")
-
-            # Try to load workspaces
-            try:
-                auth = load_auth()
-                workspaces_api = Workspaces(auth)
-                workspaces_list = workspaces_api.list_workspaces()
-
-                self.query_one("#results-header", Static).update(
-                    f"Workspaces ({len(workspaces_list)} found)"
-                )
-                table.clear(columns=True)
-                table.add_columns("Name", "ID", "Type", "State")
-
-                for ws in workspaces_list:
-                    table.add_row(
-                        ws.get("name", "N/A"),
-                        self._truncate_id(ws.get("id", "N/A")),
-                        ws.get("type", "N/A"),
-                        ws.get("state", "N/A"),
-                    )
-            except Exception as e:
-                self.show_error(f"Error fetching workspaces: {str(e)}")
-
-        except Exception as e:
-            self.show_error(f"Error: {str(e)}")
-
-    def action_apps(self) -> None:
-        """List apps in results pane."""
-        try:
-            self.query_one("#results-header", Static).update("Apps - Loading...")
-            table = self.query_one("#results-table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Loading...")
-            table.add_row("Fetching apps from Power BI API...")
-
-            # Try to load apps
-            try:
-                auth = load_auth()
-                apps_api = Apps(auth)
-                apps_list = apps_api.list_apps()
-
-                self.query_one("#results-header", Static).update(
-                    f"Apps ({len(apps_list)} found)"
-                )
-                table.clear(columns=True)
-                table.add_columns("Name", "ID", "Description")
-
-                for app in apps_list:
-                    table.add_row(
-                        app.get("name", "N/A"),
-                        self._truncate_id(app.get("id", "N/A")),
-                        self._truncate_text(app.get("description", "")),
-                    )
-            except Exception as e:
-                self.show_error(f"Error fetching apps: {str(e)}")
-
-        except Exception as e:
-            self.show_error(f"Error: {str(e)}")
-
-    def action_reports(self) -> None:
-        """Show reports info in results pane."""
-        self.query_one("#results-header", Static).update("Reports")
-        table = self.query_one("#results-table", DataTable)
-        table.clear(columns=True)
-        table.add_columns("Info")
-        table.add_row(
-            "Reports functionality: Navigate through Workspaces or Apps to view reports"
-        )
-        table.add_row("Use option 3 (Workspaces) or 4 (Apps) to access reports")
-
-    def action_users(self) -> None:
-        """Show users info in results pane."""
-        try:
-            self.query_one("#results-header", Static).update("Users")
-            table = self.query_one("#results-table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Info")
-            table.add_row("Users Management: Get user access information")
-            table.add_row("This feature requires workspace context")
-            table.add_row("Navigate to Workspaces first to manage users")
-
-        except Exception as e:
-            self.show_error(f"Error: {str(e)}")
-
     def action_refresh(self) -> None:
         """Refresh data"""
-        self.on_mount()
+        self.load_config()
+        self.load_profiles()
+        self.show_info("Refreshed configuration and profiles")
 
-    def action_new(self) -> None:
-        """New action"""
-        pass  # Placeholder
-
-    @on(Button.Pressed, "#btn-auth")
-    def on_auth_button(self) -> None:
-        self.action_auth()
-
-    @on(Button.Pressed, "#btn-config")
-    def on_config_button(self) -> None:
-        self.action_config()
+    @on(Button.Pressed, "#btn-profiles-config")
+    def on_profiles_config_button(self) -> None:
+        """Show combined profiles and config view"""
+        self.show_profiles_and_config()
 
     @on(Button.Pressed, "#btn-workspaces")
     def on_workspaces_button(self) -> None:
-        self.action_workspaces()
+        self.app.push_screen(WorkspacesScreen())
 
     @on(Button.Pressed, "#btn-apps")
     def on_apps_button(self) -> None:
-        self.action_apps()
+        self.app.push_screen(AppsScreen())
 
     @on(Button.Pressed, "#btn-reports")
     def on_reports_button(self) -> None:
-        self.action_reports()
+        self.app.push_screen(ReportsScreen())
 
     @on(Button.Pressed, "#btn-users")
     def on_users_button(self) -> None:
-        self.action_users()
+        self.app.push_screen(UsersScreen())
 
-
-class AuthScreen(Screen):
-    """Authentication management screen"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-        Binding("a", "add_profile", "Add Profile", show=True),
-        Binding("s", "switch_profile", "Switch", show=True),
-        Binding("d", "delete_profile", "Delete", show=True),
-        Binding("r", "refresh", "Refresh", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        """Create authentication screen widgets"""
-        yield Header()
-        yield Container(
-            Static("Authentication Management", id="auth_title"),
-            Static("", id="auth_status"),
-            DataTable(id="profiles_table", zebra_stripes=True),
-            Horizontal(
-                Button("Add Profile (A)", id="btn_add_profile", variant="success"),
-                Button(
-                    "Switch Profile (S)", id="btn_switch_profile", variant="primary"
-                ),
-                Button("Delete Profile (D)", id="btn_delete_profile", variant="error"),
-                Button("Refresh (R)", id="btn_refresh", variant="default"),
-                id="auth_buttons",
-            ),
-            ScrollableContainer(id="auth_result"),
-            id="auth_container",
-        )
-        yield Footer()
-
-    def on_mount(self) -> None:
-        """Load and display profiles when screen mounts"""
-        self.load_profiles()
-
-    def load_profiles(self) -> None:
-        """Load and display authentication profiles"""
+    def show_profiles_and_config(self) -> None:
+        """Display profiles and config in a combined view"""
         try:
+            self.query_one("#results-header", Static).update(
+                "Profiles & Configuration"
+            )
+            
+            # Load data
             profiles_data = _load_profiles()
             profiles = profiles_data.get("profiles", {})
             active_profile = profiles_data.get("active_profile")
-
-            table = self.query_one("#profiles_table", DataTable)
-            table.clear(columns=True)
-            table.add_columns("Status", "Profile", "Active", "Token Exists")
-
-            if not profiles:
-                self.query_one("#auth_status", Static).update(
-                    "[yellow]No profiles found. Use 'Add Profile' to create one.[/yellow]"
-                )
-                return
-
-            for profile_name in profiles.keys():
-                is_active = profile_name == active_profile
-                token_exists = _get_credential(profile_name) is not None
-
-                status = "✓" if token_exists else "✗"
-                active_marker = "✓" if is_active else ""
-                token_status = "Yes" if token_exists else "No"
-
-                table.add_row(
-                    status,
-                    profile_name,
-                    active_marker,
-                    token_status,
-                )
-
-            self.query_one("#auth_status", Static).update(
-                f"Active Profile: [bold green]{active_profile or 'None'}[/bold green]"
-            )
-
-        except Exception as e:
-            self.query_one("#auth_status", Static).update(
-                f"[red]Error loading profiles: {str(e)}[/red]"
-            )
-
-    def action_back(self) -> None:
-        """Return to main menu"""
-        self.app.pop_screen()
-
-    def action_add_profile(self) -> None:
-        """Add a new profile"""
-        self.app.push_screen(AddProfileScreen())
-
-    def action_switch_profile(self) -> None:
-        """Switch active profile"""
-        self.app.push_screen(SwitchProfileScreen())
-
-    def action_delete_profile(self) -> None:
-        """Delete a profile"""
-        self.app.push_screen(DeleteProfileScreen())
-
-    def action_refresh(self) -> None:
-        """Refresh the profile list"""
-        self.load_profiles()
-
-    @on(Button.Pressed, "#btn_add_profile")
-    def on_add_profile(self) -> None:
-        self.action_add_profile()
-
-    @on(Button.Pressed, "#btn_switch_profile")
-    def on_switch_profile(self) -> None:
-        self.action_switch_profile()
-
-    @on(Button.Pressed, "#btn_delete_profile")
-    def on_delete_profile(self) -> None:
-        self.action_delete_profile()
-
-    @on(Button.Pressed, "#btn_refresh")
-    def on_refresh(self) -> None:
-        self.action_refresh()
-
-
-class AddProfileScreen(Screen):
-    """Screen for adding a new profile"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Container(
-            Static("Add New Profile", id="add_profile_title"),
-            Static("Enter profile details:", id="add_profile_subtitle"),
-            Label("Profile Name:"),
-            Input(placeholder="e.g., default, production", id="profile_name_input"),
-            Label("Bearer Token:"),
-            Input(
-                placeholder="Enter your bearer token (without 'Bearer' prefix)",
-                password=True,
-                id="token_input",
-            ),
-            Static("", id="add_profile_status"),
-            Horizontal(
-                Button("Save", id="btn_save", variant="success"),
-                Button("Cancel", id="btn_cancel", variant="default"),
-                id="add_profile_buttons",
-            ),
-            id="add_profile_container",
-        )
-        yield Footer()
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn_save")
-    def on_save(self) -> None:
-        """Save the new profile"""
-        try:
-            profile_name = self.query_one("#profile_name_input", Input).value.strip()
-            token = self.query_one("#token_input", Input).value.strip()
-
-            if not profile_name:
-                self.query_one("#add_profile_status", Static).update(
-                    "[red]Profile name is required[/red]"
-                )
-                return
-
-            if not token:
-                self.query_one("#add_profile_status", Static).update(
-                    "[red]Bearer token is required[/red]"
-                )
-                return
-
-            # Remove "Bearer " prefix if present
-            if token.startswith("Bearer "):
-                token = token.replace("Bearer ", "")
-
-            # Store token securely
-            _set_credential(profile_name, token)
-
-            # Update profiles configuration
-            profiles_data = _load_profiles()
-            if "profiles" not in profiles_data:
-                profiles_data["profiles"] = {}
-
-            profiles_data["profiles"][profile_name] = {"name": profile_name}
-
-            # Set as active profile if it's the first one or if it's 'default'
-            if not profiles_data.get("active_profile") or profile_name == "default":
-                profiles_data["active_profile"] = profile_name
-
-            _save_profiles(profiles_data)
-
-            self.query_one("#add_profile_status", Static).update(
-                f"[green]✓ Profile '{profile_name}' saved successfully![/green]"
-            )
-
-            # Return to auth screen after a moment
-            self.set_timer(1.5, self.action_back)
-
-        except Exception as e:
-            self.query_one("#add_profile_status", Static).update(
-                f"[red]Error saving profile: {str(e)}[/red]"
-            )
-
-    @on(Button.Pressed, "#btn_cancel")
-    def on_cancel(self) -> None:
-        self.action_back()
-
-
-class SwitchProfileScreen(Screen):
-    """Screen for switching active profile"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Container(
-            Static("Switch Active Profile", id="switch_profile_title"),
-            Static("Select a profile to activate:", id="switch_profile_subtitle"),
-            ListView(id="profiles_list"),
-            Static("", id="switch_profile_status"),
-            Button("Back", id="btn_back", variant="default"),
-            id="switch_profile_container",
-        )
-        yield Footer()
-
-    def on_mount(self) -> None:
-        """Load profiles when screen mounts"""
-        self.load_profiles()
-
-    def load_profiles(self) -> None:
-        """Load available profiles"""
-        try:
-            profiles_data = _load_profiles()
-            profiles = profiles_data.get("profiles", {})
-            active_profile = profiles_data.get("active_profile")
-
-            list_view = self.query_one("#profiles_list", ListView)
-            list_view.clear()
-
-            if not profiles:
-                self.query_one("#switch_profile_subtitle", Static).update(
-                    "[yellow]No profiles found[/yellow]"
-                )
-                return
-
-            for profile_name in profiles.keys():
-                is_active = profile_name == active_profile
-                marker = " (active)" if is_active else ""
-                list_view.append(ListItem(Label(f"{profile_name}{marker}")))
-
-        except Exception as e:
-            self.query_one("#switch_profile_status", Static).update(
-                f"[red]Error loading profiles: {str(e)}[/red]"
-            )
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(ListView.Selected)
-    def on_profile_selected(self, event: ListView.Selected) -> None:
-        """Handle profile selection"""
-        try:
-            # Get the selected profile name
-            label = event.item.query_one(Label)
-            profile_name = label.renderable.split(" (active)")[0].strip()
-
-            # Update active profile
-            profiles_data = _load_profiles()
-            profiles_data["active_profile"] = profile_name
-            _save_profiles(profiles_data)
-
-            self.query_one("#switch_profile_status", Static).update(
-                f"[green]✓ Switched to profile '{profile_name}'[/green]"
-            )
-
-            # Return to auth screen
-            self.set_timer(1.5, self.action_back)
-
-        except Exception as e:
-            self.query_one("#switch_profile_status", Static).update(
-                f"[red]Error switching profile: {str(e)}[/red]"
-            )
-
-    @on(Button.Pressed, "#btn_back")
-    def on_back(self) -> None:
-        self.action_back()
-
-
-class DeleteProfileScreen(Screen):
-    """Screen for deleting a profile"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Container(
-            Static("Delete Profile", id="delete_profile_title"),
-            Static("Select a profile to delete:", id="delete_profile_subtitle"),
-            ListView(id="delete_profiles_list"),
-            Static("", id="delete_profile_status"),
-            Horizontal(
-                Button("Delete Selected", id="btn_delete", variant="error"),
-                Button("Cancel", id="btn_cancel", variant="default"),
-                id="delete_profile_buttons",
-            ),
-            id="delete_profile_container",
-        )
-        yield Footer()
-
-    def on_mount(self) -> None:
-        """Load profiles when screen mounts"""
-        self.selected_profile = None
-        self.load_profiles()
-
-    def load_profiles(self) -> None:
-        """Load available profiles"""
-        try:
-            profiles_data = _load_profiles()
-            profiles = profiles_data.get("profiles", {})
-
-            list_view = self.query_one("#delete_profiles_list", ListView)
-            list_view.clear()
-
-            if not profiles:
-                self.query_one("#delete_profile_subtitle", Static).update(
-                    "[yellow]No profiles found[/yellow]"
-                )
-                return
-
-            for profile_name in profiles.keys():
-                list_view.append(ListItem(Label(profile_name)))
-
-        except Exception as e:
-            self.query_one("#delete_profile_status", Static).update(
-                f"[red]Error loading profiles: {str(e)}[/red]"
-            )
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(ListView.Selected)
-    def on_profile_selected(self, event: ListView.Selected) -> None:
-        """Store the selected profile"""
-        label = event.item.query_one(Label)
-        self.selected_profile = label.renderable.strip()
-        self.query_one("#delete_profile_status", Static).update(
-            f"Selected: [yellow]{self.selected_profile}[/yellow]"
-        )
-
-    @on(Button.Pressed, "#btn_delete")
-    def on_delete(self) -> None:
-        """Delete the selected profile"""
-        if not self.selected_profile:
-            self.query_one("#delete_profile_status", Static).update(
-                "[red]Please select a profile to delete[/red]"
-            )
-            return
-
-        try:
-            profiles_data = _load_profiles()
-
-            if self.selected_profile not in profiles_data.get("profiles", {}):
-                self.query_one("#delete_profile_status", Static).update(
-                    f"[red]Profile '{self.selected_profile}' not found[/red]"
-                )
-                return
-
-            # Delete credential
-            _delete_credential(self.selected_profile)
-
-            # Remove from profiles
-            del profiles_data["profiles"][self.selected_profile]
-
-            # If this was the active profile, clear it or switch to another
-            if profiles_data.get("active_profile") == self.selected_profile:
-                remaining_profiles = list(profiles_data["profiles"].keys())
-                profiles_data["active_profile"] = (
-                    remaining_profiles[0] if remaining_profiles else None
-                )
-
-            _save_profiles(profiles_data)
-
-            self.query_one("#delete_profile_status", Static).update(
-                f"[green]✓ Profile '{self.selected_profile}' deleted successfully[/green]"
-            )
-
-            # Return to auth screen
-            self.set_timer(1.5, self.action_back)
-
-        except Exception as e:
-            self.query_one("#delete_profile_status", Static).update(
-                f"[red]Error deleting profile: {str(e)}[/red]"
-            )
-
-    @on(Button.Pressed, "#btn_cancel")
-    def on_cancel(self) -> None:
-        self.action_back()
-
-
-class ConfigScreen(Screen):
-    """Configuration management screen"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Container(
-            Static("Configuration Settings", id="config_title"),
-            Static("", id="config_current"),
-            Label("Set Default Output Folder:"),
-            Input(placeholder="e.g., ~/PowerBI/backups", id="output_folder_input"),
-            Horizontal(
-                Button("Save", id="btn_save_config", variant="success"),
-                Button("Clear", id="btn_clear_config", variant="warning"),
-                id="config_buttons",
-            ),
-            Static("", id="config_status"),
-            id="config_container",
-        )
-        yield Footer()
-
-    def on_mount(self) -> None:
-        """Load current configuration"""
-        self.load_config()
-
-    def load_config(self) -> None:
-        """Load and display current configuration"""
-        try:
             pbi_config = PBIConfig()
-            current_folder = pbi_config.default_output_folder or "Not set"
 
-            self.query_one("#config_current", Static).update(
-                f"Current output folder: [cyan]{current_folder}[/cyan]"
+            # Build combined view
+            content_parts = []
+            
+            # Profiles section
+            content_parts.append("[bold yellow]AUTHENTICATION PROFILES:[/bold yellow]\n")
+            if not profiles:
+                content_parts.append("[dim]No profiles found[/dim]\n")
+            else:
+                for profile_name in profiles.keys():
+                    is_active = profile_name == active_profile
+                    token_exists = _get_credential(profile_name) is not None
+                    
+                    status = "✓" if token_exists else "✗"
+                    active_marker = " [green](ACTIVE)[/green]" if is_active else ""
+                    token_status = "Token: Yes" if token_exists else "Token: No"
+                    
+                    content_parts.append(
+                        f"  {status} [cyan]{profile_name}[/cyan]{active_marker} - {token_status}\n"
+                    )
+            
+            # Configuration section
+            content_parts.append("\n[bold yellow]CONFIGURATION SETTINGS:[/bold yellow]\n")
+            content_parts.append(f"  Active Profile: [cyan]{active_profile or 'None'}[/cyan]\n")
+            content_parts.append(
+                f"  Output Folder: [cyan]{pbi_config.default_output_folder or 'Not set'}[/cyan]\n"
             )
+            content_parts.append(f"  Config File: [dim]{pbi_config.config_file}[/dim]\n")
+            content_parts.append(
+                f"  Cache Folder: [cyan]{pbi_config.cache_folder or 'Not set'}[/cyan]\n"
+            )
+            content_parts.append(
+                f"  Cache Enabled: [cyan]{'Yes' if pbi_config.cache_enabled else 'No'}[/cyan]\n"
+            )
+            
+            # Actions section
+            content_parts.append("\n[bold yellow]PROFILE ACTIONS:[/bold yellow]\n")
+            content_parts.append("  • Use Profile Selector (top) to switch profiles\n")
+            content_parts.append("  • Use 'pbi auth add-profile' CLI to add new profiles\n")
+            content_parts.append("  • Use 'pbi auth delete-profile' CLI to remove profiles\n")
+            
+            content_parts.append("\n[bold yellow]CONFIG ACTIONS:[/bold yellow]\n")
+            content_parts.append("  • Use Output Folder input (top) to change output folder\n")
+            content_parts.append("  • Use 'pbi config' CLI for advanced settings\n")
 
-            if pbi_config.default_output_folder:
-                self.query_one("#output_folder_input", Input).value = (
-                    pbi_config.default_output_folder
-                )
+            content = self.query_one("#results-content", Static)
+            content.update("".join(content_parts))
 
         except Exception as e:
-            self.query_one("#config_status", Static).update(
-                f"[red]Error loading config: {str(e)}[/red]"
-            )
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn_save_config")
-    def on_save_config(self) -> None:
-        """Save the configuration"""
-        try:
-            folder_path = self.query_one("#output_folder_input", Input).value.strip()
-
-            if not folder_path:
-                self.query_one("#config_status", Static).update(
-                    "[yellow]Please enter a folder path[/yellow]"
-                )
-                return
-
-            # Strip quotes
-            folder_path_clean = folder_path.strip('"').strip("'")
-
-            pbi_config = PBIConfig()
-            pbi_config.default_output_folder = folder_path_clean
-
-            resolved_path = Path(folder_path_clean).expanduser().absolute()
-
-            self.query_one("#config_status", Static).update(
-                f"[green]✓ Default output folder set to: {resolved_path}[/green]"
-            )
-
-            # Reload config
-            self.load_config()
-
-        except Exception as e:
-            self.query_one("#config_status", Static).update(
-                f"[red]Error saving config: {str(e)}[/red]"
-            )
-
-    @on(Button.Pressed, "#btn_clear_config")
-    def on_clear_config(self) -> None:
-        """Clear the output folder configuration"""
-        try:
-            pbi_config = PBIConfig()
-            pbi_config.default_output_folder = None
-
-            self.query_one("#config_status", Static).update(
-                "[green]✓ Output folder configuration cleared[/green]"
-            )
-
-            # Reload config
-            self.load_config()
-
-        except Exception as e:
-            self.query_one("#config_status", Static).update(
-                f"[red]Error clearing config: {str(e)}[/red]"
-            )
+            self.show_error(f"Error loading profiles/config: {str(e)}")
 
 
 class WorkspacesScreen(Screen):
-    """Workspaces management screen"""
+    """Workspaces management screen with caching"""
 
     BINDINGS = [
         Binding("escape", "back", "Back", show=True),
-        Binding("l", "list_workspaces", "List", show=True),
+        Binding("r", "refresh", "Refresh", show=True),
     ]
+
+    def __init__(self):
+        super().__init__()
+        self.workspaces_data: Optional[Dict] = None
+        self.cache_manager: Optional[CacheManager] = None
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(
-            Static("Workspaces Management", id="workspaces_title"),
-            Static("Manage Power BI Workspaces", id="workspaces_subtitle"),
-            Vertical(
-                Button(
-                    "List Workspaces (L)", id="btn_list_workspaces", variant="primary"
-                ),
-                Button("Back (Esc)", id="btn_back", variant="default"),
-                id="workspaces_buttons",
-            ),
-            ScrollableContainer(id="workspaces_result"),
-            id="workspaces_container",
-        )
+        with Vertical(id="workspaces-container"):
+            yield Static("Workspaces", classes="screen-title", id="workspaces-title")
+            
+            with Horizontal(id="workspaces-controls"):
+                yield Button("Load Workspaces", id="btn-load", variant="primary")
+                yield Button("Refresh (Force)", id="btn-refresh", variant="warning")
+                yield Button("Back", id="btn-back", variant="default")
+            
+            yield Static("", id="workspaces-status")
+            yield DataTable(id="workspaces-table", zebra_stripes=True)
         yield Footer()
 
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    def action_list_workspaces(self) -> None:
-        """Navigate to list workspaces screen"""
-        self.app.push_screen(ListWorkspacesScreen())
-
-    @on(Button.Pressed, "#btn_list_workspaces")
-    def on_list_workspaces(self) -> None:
-        self.action_list_workspaces()
-
-    @on(Button.Pressed, "#btn_back")
-    def on_back(self) -> None:
-        self.action_back()
-
-
-class ListWorkspacesScreen(Screen):
-    """Screen for listing workspaces"""
-
-    BINDINGS = [
-        Binding("escape", "back", "Back", show=True),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Container(
-            Static("List Workspaces", id="list_workspaces_title"),
-            Label("Top N results:"),
-            Input(value="100", id="top_input"),
-            Static("This operation requires admin access", id="list_workspaces_note"),
-            Horizontal(
-                Button("List", id="btn_list", variant="primary"),
-                Button("Cancel", id="btn_cancel", variant="default"),
-                id="list_workspaces_buttons",
-            ),
-            Static("", id="list_workspaces_status"),
-            DataTable(id="workspaces_table", zebra_stripes=True),
-            id="list_workspaces_container",
-        )
-        yield Footer()
-
-    def action_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn_list")
-    def on_list(self) -> None:
-        """List workspaces"""
+    def on_mount(self) -> None:
+        """Initialize cache manager"""
         try:
-            top = int(self.query_one("#top_input", Input).value)
-
-            self.query_one("#list_workspaces_status", Static).update(
-                "[cyan]Loading workspaces...[/cyan]"
-            )
-
-            # Get auth
-            auth = load_auth()
-
-            # Create Workspaces instance
-            workspaces = Workspaces(auth=auth, verify=False)
-
-            # Fetch workspaces
-            result = workspaces(top=top, expand=[], filter=None)
-
-            # Display results
-            table = self.query_one("#workspaces_table", DataTable)
-            table.clear(columns=True)
-
-            if result and "value" in result and len(result["value"]) > 0:
-                # Add columns
-                table.add_columns("ID", "Name", "Type", "State")
-
-                # Add rows
-                for workspace in result["value"]:
-                    table.add_row(
-                        workspace.get("id", ""),
-                        workspace.get("name", ""),
-                        workspace.get("type", ""),
-                        workspace.get("state", ""),
-                    )
-
-                self.query_one("#list_workspaces_status", Static).update(
-                    f"[green]✓ Found {len(result['value'])} workspace(s)[/green]"
-                )
-            else:
-                self.query_one("#list_workspaces_status", Static).update(
-                    "[yellow]No workspaces found[/yellow]"
-                )
-
+            pbi_config = PBIConfig()
+            if pbi_config.cache_folder and pbi_config.cache_enabled:
+                self.cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
         except Exception as e:
-            self.query_one("#list_workspaces_status", Static).update(
-                f"[red]Error: {str(e)}[/red]"
+            self.update_status(f"Cache initialization warning: {str(e)}", "yellow")
+
+    def update_status(self, message: str, color: str = "cyan") -> None:
+        """Update status message"""
+        status = self.query_one("#workspaces-status", Static)
+        status.update(f"[{color}]{message}[/{color}]")
+
+    def is_cache_valid(self, cache_key: str) -> bool:
+        """Check if cache exists and is less than 1 hour old"""
+        if not self.cache_manager:
+            return False
+        
+        cached_data = self.cache_manager.load(cache_key, version="latest")
+        if not cached_data:
+            return False
+        
+        # Check cache age
+        cached_at_str = cached_data.get("cached_at", "")
+        if cached_at_str:
+            try:
+                cached_at = datetime.fromisoformat(cached_at_str)
+                age = datetime.now() - cached_at
+                return age < timedelta(hours=1)
+            except:
+                return False
+        
+        return False
+
+    @work(thread=True, exclusive=True)
+    def load_workspaces_worker(self, force_refresh: bool = False) -> None:
+        """Worker to load workspaces with caching"""
+        cache_key = "workspaces_admin"
+        
+        try:
+            # Try cache first (unless force refresh)
+            if not force_refresh and self.is_cache_valid(cache_key):
+                cached_data = self.cache_manager.load(cache_key, version="latest")
+                if cached_data:
+                    self.workspaces_data = cached_data.get("data")
+                    cache_time = cached_data.get("cached_at", "unknown")
+                    self.app.call_from_thread(
+                        self.update_status,
+                        f"Loaded from cache ({cache_time})",
+                        "green",
+                    )
+                    self.app.call_from_thread(self.display_workspaces)
+                    return
+            
+            # Fetch from API
+            self.app.call_from_thread(
+                self.update_status, "Fetching from Power BI API...", "cyan"
+            )
+            
+            auth = load_auth()
+            workspaces_api = powerbi_admin.Workspaces(auth=auth, verify=False)
+            result = workspaces_api(top=1000, expand=[], filter=None)
+            
+            self.workspaces_data = result
+            
+            # Save to cache
+            if self.cache_manager:
+                self.cache_manager.save(
+                    cache_key,
+                    result,
+                    metadata={"source": "admin_api", "expand": []},
+                )
+            
+            self.app.call_from_thread(
+                self.update_status,
+                f"Loaded {len(result.get('value', []))} workspaces from API",
+                "green",
+            )
+            self.app.call_from_thread(self.display_workspaces)
+            
+        except Exception as e:
+            self.app.call_from_thread(
+                self.update_status, f"Error: {str(e)}", "red"
             )
 
-    @on(Button.Pressed, "#btn_cancel")
-    def on_cancel(self) -> None:
-        self.action_back()
+    def display_workspaces(self) -> None:
+        """Display workspaces in the table"""
+        table = self.query_one("#workspaces-table", DataTable)
+        table.clear(columns=True)
+        
+        if not self.workspaces_data or "value" not in self.workspaces_data:
+            return
+        
+        workspaces = self.workspaces_data.get("value", [])
+        
+        if not workspaces:
+            table.add_columns("Info")
+            table.add_row("No workspaces found")
+            return
+        
+        # Add columns
+        table.add_columns("Name", "ID", "Type", "State", "Capacity")
+        
+        # Add rows
+        for ws in workspaces:
+            table.add_row(
+                ws.get("name", "N/A"),
+                ws.get("id", "N/A")[:36],  # Truncate ID
+                ws.get("type", "N/A"),
+                ws.get("state", "N/A"),
+                ws.get("capacityId", "N/A")[:20] if ws.get("capacityId") else "None",
+            )
+
+    @on(Button.Pressed, "#btn-load")
+    def on_load(self) -> None:
+        """Load workspaces (use cache if valid)"""
+        self.update_status("Loading workspaces...", "cyan")
+        self.load_workspaces_worker(force_refresh=False)
+
+    @on(Button.Pressed, "#btn-refresh")
+    def on_refresh(self) -> None:
+        """Force refresh from API"""
+        self.update_status("Refreshing from API...", "yellow")
+        self.load_workspaces_worker(force_refresh=True)
+
+    def action_refresh(self) -> None:
+        """Keyboard shortcut for refresh"""
+        self.on_refresh()
+
+    @on(Button.Pressed, "#btn-back")
+    def on_back(self) -> None:
+        self.app.pop_screen()
+
+    def action_back(self) -> None:
+        self.app.pop_screen()
 
 
 class AppsScreen(Screen):
-    """Apps management screen"""
+    """Apps management screen with caching"""
 
     BINDINGS = [
         Binding("escape", "back", "Back", show=True),
+        Binding("r", "refresh", "Refresh", show=True),
     ]
+
+    def __init__(self):
+        super().__init__()
+        self.apps_data: Optional[Dict] = None
+        self.cache_manager: Optional[CacheManager] = None
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(
-            Static("Apps Management", id="apps_title"),
-            Static("Manage Power BI Apps", id="apps_subtitle"),
-            Vertical(
-                Button("List Apps", id="btn_list_apps", variant="primary"),
-                Button("Back (Esc)", id="btn_back", variant="default"),
-                id="apps_buttons",
-            ),
-            Static("", id="apps_status"),
-            DataTable(id="apps_table", zebra_stripes=True),
-            id="apps_container",
-        )
+        with Vertical(id="apps-container"):
+            yield Static("Apps", classes="screen-title", id="apps-title")
+            
+            with Horizontal(id="apps-controls"):
+                yield Select(
+                    options=[("User (My Apps)", "user"), ("Admin (All Apps)", "admin")],
+                    prompt="Role",
+                    id="role-selector",
+                    value="user",
+                )
+                yield Button("Load Apps", id="btn-load", variant="primary")
+                yield Button("Refresh (Force)", id="btn-refresh", variant="warning")
+                yield Button("Back", id="btn-back", variant="default")
+            
+            yield Static("", id="apps-status")
+            yield DataTable(id="apps-table", zebra_stripes=True)
         yield Footer()
+
+    def on_mount(self) -> None:
+        """Initialize cache manager"""
+        try:
+            pbi_config = PBIConfig()
+            if pbi_config.cache_folder and pbi_config.cache_enabled:
+                self.cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+        except Exception as e:
+            self.update_status(f"Cache initialization warning: {str(e)}", "yellow")
+
+    def update_status(self, message: str, color: str = "cyan") -> None:
+        """Update status message"""
+        status = self.query_one("#apps-status", Static)
+        status.update(f"[{color}]{message}[/{color}]")
+
+    def is_cache_valid(self, cache_key: str) -> bool:
+        """Check if cache exists and is less than 1 hour old"""
+        if not self.cache_manager:
+            return False
+        
+        cached_data = self.cache_manager.load(cache_key, version="latest")
+        if not cached_data:
+            return False
+        
+        # Check cache age
+        cached_at_str = cached_data.get("cached_at", "")
+        if cached_at_str:
+            try:
+                cached_at = datetime.fromisoformat(cached_at_str)
+                age = datetime.now() - cached_at
+                return age < timedelta(hours=1)
+            except:
+                return False
+        
+        return False
+
+    @work(thread=True, exclusive=True)
+    def load_apps_worker(self, role: str, force_refresh: bool = False) -> None:
+        """Worker to load apps with caching"""
+        cache_key = f"apps_{role}"
+        
+        try:
+            # Try cache first (unless force refresh)
+            if not force_refresh and self.is_cache_valid(cache_key):
+                cached_data = self.cache_manager.load(cache_key, version="latest")
+                if cached_data:
+                    self.apps_data = cached_data.get("data")
+                    cache_time = cached_data.get("cached_at", "unknown")
+                    self.app.call_from_thread(
+                        self.update_status,
+                        f"Loaded from cache ({cache_time}) as {role}",
+                        "green",
+                    )
+                    self.app.call_from_thread(self.display_apps)
+                    return
+            
+            # Fetch from API
+            self.app.call_from_thread(
+                self.update_status, f"Fetching from Power BI API as {role}...", "cyan"
+            )
+            
+            auth = load_auth()
+            
+            # Use correct Apps class based on role
+            if role == "user":
+                apps_api = powerbi_app.Apps(auth=auth, verify=False)
+            else:  # admin
+                apps_api = powerbi_admin.Apps(auth=auth, verify=False)
+            
+            result = apps_api()
+            
+            self.apps_data = result
+            
+            # Save to cache
+            if self.cache_manager:
+                self.cache_manager.save(
+                    cache_key, result, metadata={"role": role}
+                )
+            
+            self.app.call_from_thread(
+                self.update_status,
+                f"Loaded {len(result.get('value', []))} apps from API ({role})",
+                "green",
+            )
+            self.app.call_from_thread(self.display_apps)
+            
+        except Exception as e:
+            self.app.call_from_thread(
+                self.update_status, f"Error: {str(e)}", "red"
+            )
+
+    def display_apps(self) -> None:
+        """Display apps in the table"""
+        table = self.query_one("#apps-table", DataTable)
+        table.clear(columns=True)
+        
+        if not self.apps_data or "value" not in self.apps_data:
+            return
+        
+        apps = self.apps_data.get("value", [])
+        
+        if not apps:
+            table.add_columns("Info")
+            table.add_row("No apps found")
+            return
+        
+        # Add columns
+        table.add_columns("Name", "ID", "Description", "Published By")
+        
+        # Add rows
+        for app in apps:
+            desc = app.get("description", "") or ""
+            desc_short = desc[:50] + "..." if len(desc) > 50 else desc
+            
+            table.add_row(
+                app.get("name", "N/A"),
+                app.get("id", "N/A")[:36],  # Truncate ID
+                desc_short,
+                app.get("publishedBy", "N/A"),
+            )
+
+    @on(Button.Pressed, "#btn-load")
+    def on_load(self) -> None:
+        """Load apps (use cache if valid)"""
+        role_selector = self.query_one("#role-selector", Select)
+        role = role_selector.value or "user"
+        self.update_status(f"Loading apps as {role}...", "cyan")
+        self.load_apps_worker(role, force_refresh=False)
+
+    @on(Button.Pressed, "#btn-refresh")
+    def on_refresh(self) -> None:
+        """Force refresh from API"""
+        role_selector = self.query_one("#role-selector", Select)
+        role = role_selector.value or "user"
+        self.update_status(f"Refreshing from API as {role}...", "yellow")
+        self.load_apps_worker(role, force_refresh=True)
+
+    def action_refresh(self) -> None:
+        """Keyboard shortcut for refresh"""
+        self.on_refresh()
+
+    @on(Button.Pressed, "#btn-back")
+    def on_back(self) -> None:
+        self.app.pop_screen()
 
     def action_back(self) -> None:
         self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn_list_apps")
-    def on_list_apps(self) -> None:
-        """List Power BI apps"""
-        try:
-            self.query_one("#apps_status", Static).update(
-                "[cyan]Loading apps...[/cyan]"
-            )
-
-            # Get auth
-            auth = load_auth()
-
-            # Create Apps instance (as user)
-            apps = powerbi_app.Apps(auth=auth, verify=False)
-
-            # Fetch apps
-            result = apps()
-
-            # Display results
-            table = self.query_one("#apps_table", DataTable)
-            table.clear(columns=True)
-
-            if result and "value" in result and len(result["value"]) > 0:
-                # Add columns
-                table.add_columns("ID", "Name", "Description")
-
-                # Add rows
-                for app in result["value"]:
-                    table.add_row(
-                        app.get("id", "")[:20] + "...",  # Truncate ID
-                        app.get("name", ""),
-                        (
-                            app.get("description", "")[:50]
-                            if app.get("description")
-                            else ""
-                        ),
-                    )
-
-                self.query_one("#apps_status", Static).update(
-                    f"[green]✓ Found {len(result['value'])} app(s)[/green]"
-                )
-            else:
-                self.query_one("#apps_status", Static).update(
-                    "[yellow]No apps found[/yellow]"
-                )
-
-        except Exception as e:
-            self.query_one("#apps_status", Static).update(f"[red]Error: {str(e)}[/red]")
-
-    @on(Button.Pressed, "#btn_back")
-    def on_back(self) -> None:
-        self.action_back()
 
 
 class ReportsScreen(Screen):
-    """Reports management screen"""
+    """Reports management screen - augment reports with user data"""
 
     BINDINGS = [
         Binding("escape", "back", "Back", show=True),
@@ -1067,128 +685,295 @@ class ReportsScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(
-            Static("Reports Management", id="reports_title"),
-            Static("Manage Power BI Reports", id="reports_subtitle"),
-            Static(
-                "Report functionality is available through Workspaces and Apps screens",
-                id="reports_note",
-            ),
-            Button("Back (Esc)", id="btn_back", variant="default"),
-            id="reports_container",
-        )
+        with Vertical(id="reports-container"):
+            yield Static("Reports - Augment with User Data", classes="screen-title")
+            
+            yield Static(
+                "[yellow]This feature augments Power BI Apps data with report user details[/yellow]",
+                id="reports-info",
+            )
+            
+            yield Label("Source File Path (JSON file from apps list):")
+            yield Input(
+                placeholder="/path/to/apps.json",
+                id="source-file-input",
+            )
+            
+            yield Label("Target Path (file or folder):")
+            yield Input(
+                placeholder="/path/to/output",
+                id="target-path-input",
+            )
+            
+            yield Label("File Type:")
+            yield Select(
+                options=[("JSON", "json"), ("Excel", "excel")],
+                prompt="Select file type",
+                id="file-type-selector",
+                value="json",
+            )
+            
+            with Horizontal(id="reports-controls"):
+                yield Button("Augment Reports", id="btn-augment", variant="primary")
+                yield Button("Back", id="btn-back", variant="default")
+            
+            yield Static("", id="reports-status")
+            yield ScrollableContainer(Static("", id="reports-result"))
         yield Footer()
+
+    def update_status(self, message: str, color: str = "cyan") -> None:
+        """Update status message"""
+        status = self.query_one("#reports-status", Static)
+        status.update(f"[{color}]{message}[/{color}]")
+
+    @on(Button.Pressed, "#btn-augment")
+    def on_augment(self) -> None:
+        """Augment reports with user data"""
+        try:
+            source_input = self.query_one("#source-file-input", Input)
+            target_input = self.query_one("#target-path-input", Input)
+            file_type_selector = self.query_one("#file-type-selector", Select)
+            
+            source_path = source_input.value.strip()
+            target_path = target_input.value.strip()
+            file_type = file_type_selector.value or "json"
+            
+            if not source_path:
+                self.update_status("Please enter source file path", "yellow")
+                return
+            
+            if not target_path:
+                self.update_status("Please enter target path", "yellow")
+                return
+            
+            source_file = Path(source_path).expanduser().absolute()
+            target_file = Path(target_path).expanduser().absolute()
+            
+            if not source_file.exists():
+                self.update_status(f"Source file not found: {source_file}", "red")
+                return
+            
+            # This would require implementing the actual augmentation logic
+            # For now, show what would be done
+            result_text = f"""
+[yellow]Report Augmentation Configuration:[/yellow]
+
+Source File: [cyan]{source_file}[/cyan]
+Target Path: [cyan]{target_file}[/cyan]
+File Type: [cyan]{file_type}[/cyan]
+
+[yellow]Note:[/yellow] This feature requires admin access to get report user details.
+
+[yellow]To execute this operation:[/yellow]
+Use the CLI command:
+[cyan]pbi reports users --source {source_file} --target {target_file} --file-type {file_type}[/cyan]
+
+This TUI provides the interface to configure parameters.
+The actual processing is computationally intensive and better suited for CLI execution.
+"""
+            
+            result_container = self.query_one("#reports-result", ScrollableContainer)
+            result_static = result_container.query_one(Static)
+            result_static.update(result_text)
+            
+            self.update_status("Configuration ready - use CLI to execute", "green")
+            
+        except Exception as e:
+            self.update_status(f"Error: {str(e)}", "red")
+
+    @on(Button.Pressed, "#btn-back")
+    def on_back(self) -> None:
+        self.app.pop_screen()
 
     def action_back(self) -> None:
         self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn_back")
-    def on_back(self) -> None:
-        self.action_back()
 
 
 class UsersScreen(Screen):
-    """Users management screen"""
+    """Users management screen - get user access information"""
 
     BINDINGS = [
         Binding("escape", "back", "Back", show=True),
     ]
 
+    def __init__(self):
+        super().__init__()
+        self.user_data: Optional[Dict] = None
+        self.cache_manager: Optional[CacheManager] = None
+
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(
-            Static("Users Management", id="users_title"),
-            Static("Get user access information", id="users_subtitle"),
-            Label("User ID (email):"),
-            Input(placeholder="user@example.com", id="user_id_input"),
-            Horizontal(
-                Button("Get User Access", id="btn_get_user", variant="primary"),
-                Button("Cancel", id="btn_cancel", variant="default"),
-                id="users_buttons",
-            ),
-            Static("", id="users_status"),
-            ScrollableContainer(id="users_result"),
-            id="users_container",
-        )
+        with Vertical(id="users-container"):
+            yield Static("Users - Access Information", classes="screen-title")
+            
+            yield Static(
+                "[yellow]Get user access information from Power BI (requires admin)[/yellow]",
+                id="users-info",
+            )
+            
+            yield Label("User ID (email address):")
+            yield Input(
+                placeholder="user@example.com",
+                id="user-id-input",
+            )
+            
+            yield Label("Target Folder (optional - leave empty to view only):")
+            yield Input(
+                placeholder="/path/to/output/folder",
+                id="target-folder-input",
+            )
+            
+            yield Label("File Types (if saving):")
+            with Horizontal(id="file-types-container"):
+                yield Select(
+                    options=[
+                        ("JSON", "json"),
+                        ("Excel", "excel"),
+                        ("CSV", "csv"),
+                    ],
+                    prompt="File type",
+                    id="file-type-selector",
+                    value="json",
+                )
+            
+            yield Label("File Name (optional - derived from user-id if empty):")
+            yield Input(
+                placeholder="user-access",
+                id="file-name-input",
+            )
+            
+            with Horizontal(id="users-controls"):
+                yield Button("Get User Access", id="btn-get-user", variant="primary")
+                yield Button("Back", id="btn-back", variant="default")
+            
+            yield Static("", id="users-status")
+            yield ScrollableContainer(Static("", id="users-result"))
         yield Footer()
 
-    def action_back(self) -> None:
-        self.app.pop_screen()
+    def on_mount(self) -> None:
+        """Initialize cache manager"""
+        try:
+            pbi_config = PBIConfig()
+            if pbi_config.cache_folder and pbi_config.cache_enabled:
+                self.cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+        except Exception as e:
+            self.update_status(f"Cache initialization warning: {str(e)}", "yellow")
 
-    @on(Button.Pressed, "#btn_get_user")
+    def update_status(self, message: str, color: str = "cyan") -> None:
+        """Update status message"""
+        status = self.query_one("#users-status", Static)
+        status.update(f"[{color}]{message}[/{color}]")
+
+    @work(thread=True, exclusive=True)
+    def get_user_access_worker(self, user_id: str) -> None:
+        """Worker to get user access information"""
+        try:
+            # Check cache first
+            if self.cache_manager:
+                from slugify import slugify
+                cache_key = f"user_access_{slugify(user_id)}"
+                cached_data = self.cache_manager.load(cache_key, version="latest")
+                
+                if cached_data:
+                    cached_at_str = cached_data.get("cached_at", "")
+                    try:
+                        cached_at = datetime.fromisoformat(cached_at_str)
+                        age = datetime.now() - cached_at
+                        if age < timedelta(hours=1):
+                            self.user_data = cached_data.get("data")
+                            cache_time = cached_data.get("cached_at", "unknown")
+                            self.app.call_from_thread(
+                                self.update_status,
+                                f"Loaded from cache ({cache_time})",
+                                "green",
+                            )
+                            self.app.call_from_thread(self.display_user_data)
+                            return
+                    except:
+                        pass
+            
+            # Fetch from API
+            self.app.call_from_thread(
+                self.update_status,
+                f"Fetching user access for {user_id}...",
+                "cyan",
+            )
+            
+            auth = load_auth()
+            user = powerbi_admin.User(auth=auth, user_id=user_id, verify=False)
+            result = user()
+            
+            self.user_data = result
+            
+            # Save to cache
+            if self.cache_manager:
+                from slugify import slugify
+                cache_key = f"user_access_{slugify(user_id)}"
+                self.cache_manager.save(
+                    cache_key, result, metadata={"user_id": user_id}
+                )
+            
+            self.app.call_from_thread(
+                self.update_status,
+                f"Retrieved user access for {user_id}",
+                "green",
+            )
+            self.app.call_from_thread(self.display_user_data)
+            
+        except Exception as e:
+            self.app.call_from_thread(
+                self.update_status, f"Error: {str(e)}", "red"
+            )
+
+    def display_user_data(self) -> None:
+        """Display user data"""
+        if not self.user_data:
+            return
+        
+        result_container = self.query_one("#users-result", ScrollableContainer)
+        result_static = result_container.query_one(Static)
+        
+        # Format as JSON for display
+        result_text = json.dumps(self.user_data, indent=2)
+        result_static.update(f"```json\n{result_text}\n```")
+
+    @on(Button.Pressed, "#btn-get-user")
     def on_get_user(self) -> None:
         """Get user access information"""
         try:
-            user_id = self.query_one("#user_id_input", Input).value.strip()
-
+            user_id_input = self.query_one("#user-id-input", Input)
+            user_id = user_id_input.value.strip()
+            
             if not user_id:
-                self.query_one("#users_status", Static).update(
-                    "[yellow]Please enter a user ID[/yellow]"
-                )
+                self.update_status("Please enter a user ID (email)", "yellow")
                 return
-
-            self.query_one("#users_status", Static).update(
-                "[cyan]Loading user access information...[/cyan]"
-            )
-
-            # Get auth
-            auth = load_auth()
-
-            # Create User instance
-            user = User(auth=auth, user_id=user_id, verify=False)
-
-            # Fetch user data
-            result = user()
-
-            # Display results
-            result_container = self.query_one("#users_result", ScrollableContainer)
-            result_container.remove_children()
-
-            if result:
-                # Format as JSON for display
-                result_text = json.dumps(result, indent=2)
-                result_container.mount(Static(f"```json\n{result_text}\n```"))
-
-                self.query_one("#users_status", Static).update(
-                    f"[green]✓ Retrieved user access info for {user_id}[/green]"
-                )
-            else:
-                self.query_one("#users_status", Static).update(
-                    "[yellow]No data found for user[/yellow]"
-                )
-
+            
+            self.update_status(f"Loading user access for {user_id}...", "cyan")
+            self.get_user_access_worker(user_id)
+            
         except Exception as e:
-            self.query_one("#users_status", Static).update(
-                f"[red]Error: {str(e)}[/red]"
-            )
+            self.update_status(f"Error: {str(e)}", "red")
 
-    @on(Button.Pressed, "#btn_cancel")
-    def on_cancel(self) -> None:
-        self.action_back()
+    @on(Button.Pressed, "#btn-back")
+    def on_back(self) -> None:
+        self.app.pop_screen()
+
+    def action_back(self) -> None:
+        self.app.pop_screen()
 
 
 class PowerBITUI(App):
     """Power BI CLI Terminal User Interface"""
 
     CSS = """
-    /* Power BI Color Palette
-     * Primary: #F2C811 (Power BI Yellow/Gold)
-     * Secondary Blue: #00188F (Dark Blue)
-     * Accent Blue: #00A4EF (Light Blue)
-     * Dark Background: #1E1E1E (Dark Gray)
-     * Surface: #2D2D30 (Medium Gray)
-     * Border: #3E3E42 (Light Gray)
-     * Text: #E8E8E8 (Light Gray)
-     * Muted Text: #A0A0A0 (Medium Gray)
-     */
-
+    /* Power BI Color Palette */
     Screen {
         background: #1E1E1E;
     }
 
     Header {
-        background: #252526;
-        color: #E8E8E8;
+        background: #00188F;
+        color: #F2C811;
     }
 
     Footer {
@@ -1196,16 +981,25 @@ class PowerBITUI(App):
         color: #E8E8E8;
     }
 
+    .screen-title {
+        background: #00188F;
+        color: #F2C811;
+        padding: 1;
+        text-align: center;
+        text-style: bold;
+    }
+
     /* Main container */
     #main-container {
         height: auto;
     }
 
-    /* Filter bar - row 1 */
-    #filter-bar-1 {
+    /* Filter bar */
+    #filter-bar {
         width: 100%;
         height: auto;
-        padding: 0 0 1 0;
+        padding: 1;
+        background: #2D2D30;
     }
 
     .filter-selector {
@@ -1217,73 +1011,101 @@ class PowerBITUI(App):
         color: #E8E8E8;
     }
 
-    .filter-selector:last-child {
-        margin: 0;
+    .filter-input {
+        border: round #3E3E42;
+        padding: 0 1;
+        width: 2fr;
+        margin: 0 1 0 0;
+        background: #2D2D30;
+        color: #E8E8E8;
     }
 
-    .filter-selector:focus {
+    .filter-selector:focus, .filter-input:focus {
         border: round #00A4EF;
     }
 
-    /* Actions bar - row 2 */
+    #btn-set-folder {
+        min-width: 14;
+    }
+
+    /* Actions bar */
     #actions-bar {
         width: 100%;
         height: auto;
-        padding: 0 0 1 0;
+        padding: 1;
     }
 
-    .action-buttons-bar {
-        grid-size: 6 1;
-        grid-columns: 16.66% 16.66% 16.66% 16.66% 16.66% 16.66%;
-    }
-
-    #actions-bar > Button {
+    .action-buttons-bar Button {
         width: 1fr;
         margin: 0 1 0 0;
-        border: round #3E3E42;
-        background: #2D2D30;
-        color: #E8E8E8;
-        &:hover {
-            border: round #F2C811;
-            background: #3E3E42;
-            color: #F2C811;
-        }
-        &:focus {
-            border: round #00A4EF;
-            background: #00188F;
-            color: #FFFFFF;
-        }
     }
 
-    #actions-bar > Button:last-child {
+    .action-buttons-bar Button:last-child {
         margin: 0;
     }
 
-    /* Main content - results container */
+    Button {
+        background: #2D2D30;
+        color: #E8E8E8;
+        border: round #3E3E42;
+    }
+
+    Button:hover {
+        background: #3E3E42;
+        border: round #00A4EF;
+    }
+
+    Button.-primary {
+        background: #00188F;
+        color: #F2C811;
+    }
+
+    Button.-primary:hover {
+        background: #0020B0;
+        border: round #F2C811;
+    }
+
+    Button.-warning {
+        background: #FF8C00;
+        color: #1E1E1E;
+    }
+
+    Button.-warning:hover {
+        background: #FFA500;
+    }
+
+    Button.-default {
+        background: #2D2D30;
+    }
+
+    /* Results container */
     #results-container {
-        width: 100%;
         height: 1fr;
         border: round #3E3E42;
-        background: transparent;
+        margin: 1;
     }
 
     .panel-header {
         background: #2D2D30;
         color: #F2C811;
-        text-style: bold;
         padding: 1;
-        border-bottom: solid #3E3E42;
+        text-style: bold;
     }
 
-    #results-table {
-        background: transparent;
-        scrollbar-size-vertical: 1;
-        height: 100%;
+    #results-scroll {
+        height: 1fr;
+        background: #1E1E1E;
+        padding: 1;
     }
 
-    /* DataTable styling with Power BI colors */
+    #results-content {
+        color: #E8E8E8;
+    }
+
     DataTable {
         background: #1E1E1E;
+        color: #E8E8E8;
+        height: 1fr;
     }
 
     DataTable > .datatable--header {
@@ -1293,93 +1115,37 @@ class PowerBITUI(App):
     }
 
     DataTable > .datatable--cursor {
-        background: #00A4EF;
-        color: #FFFFFF;
-        text-style: bold;
-    }
-
-    DataTable > .datatable--odd-row {
-        background: #2D2D30;
-        color: #E8E8E8;
-    }
-
-    DataTable > .datatable--even-row {
-        background: #1E1E1E;
-        color: #E8E8E8;
-    }
-
-    DataTable > .datatable--hover {
-        background: #3E3E42;
-        color: #E8E8E8;
-    }
-
-    /* Select widgets */
-    Select {
-        background: #2D2D30;
-        border: round #3E3E42;
-        color: #E8E8E8;
-        &:focus {
-            border: round #00A4EF;
-        }
-    }
-
-    Select > SelectCurrent {
-        background: #2D2D30;
-        color: #E8E8E8;
-    }
-
-    Select > SelectOverlay {
-        background: #2D2D30;
-        border: solid #00A4EF;
-    }
-
-    /* Button widgets */
-    Button {
-        height: 3;
-        min-width: 10;
-        background: #2D2D30;
-        color: #E8E8E8;
-        border: round #3E3E42;
-    }
-
-    Button:hover {
-        background: #3E3E42;
+        background: #00188F;
         color: #F2C811;
     }
 
-    Button:focus {
-        background: #00188F;
-        color: #FFFFFF;
-        text-style: bold;
-        border: round #00A4EF;
+    /* Screen containers */
+    #workspaces-container, #apps-container, #reports-container, #users-container {
+        padding: 1;
     }
 
-    Button.-primary {
-        background: #00188F;
-        color: #FFFFFF;
+    #workspaces-controls, #apps-controls, #reports-controls, #users-controls {
+        height: auto;
+        padding: 1 0;
     }
 
-    Button.-success {
-        background: #107C10;
-        color: #FFFFFF;
+    #workspaces-controls Button, #apps-controls Button, #reports-controls Button, #users-controls Button {
+        margin: 0 1 0 0;
     }
 
-    Button.-error {
-        background: #E81123;
-        color: #FFFFFF;
+    #workspaces-status, #apps-status, #reports-status, #users-status {
+        padding: 1 0;
+        height: auto;
     }
 
-    Button.-warning {
-        background: #F2C811;
-        color: #1E1E1E;
+    #workspaces-table, #apps-table {
+        height: 1fr;
     }
 
-    /* Input widgets */
     Input {
-        background: #1E1E1E;
         border: round #3E3E42;
+        background: #2D2D30;
         color: #E8E8E8;
-        padding: 0 1;
         margin: 0 0 1 0;
     }
 
@@ -1387,105 +1153,57 @@ class PowerBITUI(App):
         border: round #00A4EF;
     }
 
-    /* Label widgets */
     Label {
-        color: #E8E8E8;
+        color: #F2C811;
         padding: 1 0 0 0;
     }
 
-    /* Static and other text */
-    Static#auth_status, Static#config_status, Static#workspaces_status,
-    Static#apps_status, Static#reports_status, Static#users_status,
-    Static#add_profile_status, Static#switch_profile_status,
-    Static#delete_profile_status, Static#list_workspaces_status {
-        padding: 1 0;
-        color: #E8E8E8;
-    }
-
-    /* Horizontal button containers */
-    #auth_buttons, #config_buttons, #workspaces_buttons,
-    #apps_buttons, #reports_buttons, #users_buttons,
-    #add_profile_buttons, #delete_profile_buttons,
-    #list_workspaces_buttons {
-        width: 100%;
-        height: auto;
-        padding: 1 0;
-    }
-
-    Horizontal > Button {
-        width: 1fr;
-        margin: 0 1 0 0;
-    }
-
-    Horizontal > Button:last-child {
-        margin: 0;
-    }
-
-    /* ScrollableContainer */
-    ScrollableContainer {
-        height: auto;
-        max-height: 20;
+    Select {
         border: round #3E3E42;
-        background: #1E1E1E;
-        margin: 1 0;
-        padding: 1;
-    }
-
-    /* ListView */
-    ListView {
-        height: auto;
-        max-height: 20;
-        margin: 1 0;
-        background: #1E1E1E;
-        border: round #3E3E42;
-    }
-
-    ListItem {
         background: #2D2D30;
         color: #E8E8E8;
+        margin: 0 1 1 0;
+    }
+
+    Select:focus {
+        border: round #00A4EF;
+    }
+
+    #role-selector {
+        width: 20;
+    }
+
+    Static {
+        color: #E8E8E8;
+    }
+
+    ScrollableContainer {
+        height: 1fr;
+        border: round #3E3E42;
+        background: #1E1E1E;
         padding: 1;
-    }
-
-    ListItem:hover {
-        background: #3E3E42;
-        color: #F2C811;
-    }
-
-    /* Container styling */
-    Container {
-        background: transparent;
-    }
-
-    Vertical {
-        background: transparent;
-    }
-
-    Horizontal {
-        background: transparent;
-    }
-
-    /* TabbedContent styling */
-    TabbedContent {
-        background: transparent;
-    }
-
-    TabPane {
-        background: transparent;
     }
     """
 
+    TITLE = "PowerBI CLI TUI"
+    BINDINGS = [
+        Binding("q", "quit", "Quit", show=True),
+    ]
+
     def on_mount(self) -> None:
-        """Setup the application on mount"""
-        self.title = "PowerBI CLI - Interactive TUI"
-        self.sub_title = "Press ? for help"
+        """Push the main menu screen on mount"""
         self.push_screen(MainMenuScreen())
 
+    def action_quit(self) -> None:
+        """Quit the application"""
+        self.exit()
 
-def run():
-    """Run the PowerBI TUI application"""
+
+def run_tui():
+    """Entry point to run the TUI application"""
     app = PowerBITUI()
     app.run()
 
 
 if __name__ == "__main__":
-    run()
+    run_tui()
