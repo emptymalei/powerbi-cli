@@ -712,9 +712,9 @@ def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
 @click.option("--group-id", "-g", help="Group ID", required=True)
 @click.option("--report-id", "-r", help="Report ID", required=True)
 @click.option(
-    "--target", "-t", type=click.Path(exists=False), help="target file", required=True
+    "--target", "-t", type=click.Path(exists=False), help="target file (if omitted, prints info to console)", default=None, required=False
 )
-def export(group_id: str, report_id: str, target: Path):
+def export(group_id: str, report_id: str, target: Optional[Path]):
     """export report based on id"""
     dr = DataRetriever(session_query_configs={"headers": load_auth(), "verify": False})
 
@@ -722,8 +722,20 @@ def export(group_id: str, report_id: str, target: Path):
 
     result = dr.get(uri)
 
-    with open(target, "wb") as fp:
-        fp.write(result.content)
+    if target is None:
+        # For binary export data, we can't print it directly to console
+        # Instead, show information about the export
+        click.echo("\n" + "=" * 80)
+        click.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
+        click.echo("=" * 80)
+        click.echo(f"Content size: {len(result.content)} bytes")
+        click.echo(f"Content type: {result.headers.get('content-type', 'unknown')}")
+        click.echo("\nUse --target option to save the export to a file.")
+        click.echo("=" * 80)
+    else:
+        with open(target, "wb") as fp:
+            fp.write(result.content)
+        click.secho(f"✓ Export saved to {target}", fg="green")
 
 
 @pbi.group(invoke_without_command=True)
@@ -1334,24 +1346,35 @@ def list(
 @apps.command()
 @click.option("--app-id", "-a", help="app id", type=str, required=True)
 @click.option(
-    "--target", "-t", type=click.Path(exists=False), help="target file", required=True
+    "--target", "-t", type=click.Path(exists=False), help="target file (if omitted, prints to console)", default=None, required=False
 )
 @click.option(
     "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
 )
-def app(app_id: str, target: Path, file_type: str = "json"):
+def app(app_id: str, target: Optional[Path], file_type: str = "json"):
     """Retrieve information about a specific Power BI App"""
     click.echo(f"Investigating {app_id}")
 
     a_app = powerbi_app.App(auth=load_auth(), verify=False, app_id=app_id)
     app_data = a_app()
 
-    if file_type == "json":
-        with open(target, "w") as fp:
-            json.dump(app_data, fp)
-    elif file_type == "excel":
-        app_data_flattened = a_app.flatten_app(app_data)
-        multi_group_dict_to_excel(app_data_flattened, target)
+    if target is None:
+        # Print to console
+        click.echo("\n" + "=" * 80)
+        click.echo(f"App: {app_data.get('name', 'N/A')} (ID: {app_id})")
+        click.echo("=" * 80)
+        click.echo(json.dumps(app_data, indent=2))
+        click.echo("=" * 80)
+    else:
+        # Save to file
+        if file_type == "json":
+            with open(target, "w") as fp:
+                json.dump(app_data, fp)
+            click.secho(f"✓ Saved to {target}", fg="green")
+        elif file_type == "excel":
+            app_data_flattened = a_app.flatten_app(app_data)
+            multi_group_dict_to_excel(app_data_flattened, target)
+            click.secho(f"✓ Saved to {target}", fg="green")
 
 
 @apps.command()
@@ -1493,10 +1516,11 @@ def users(source: Path, target: Path, file_type: str = "json"):
     "--target",
     "-t",
     type=click.Path(exists=False, path_type=Path),
-    help="target file",
-    required=True,
+    help="target file (if omitted, prints info to console)",
+    default=None,
+    required=False,
 )
-def export(group_id: str, report_id: str, target: Path):
+def export(group_id: str, report_id: str, target: Optional[Path]):
     """Export report as file"""
 
     pbi_report = powerbi_report.Report(
@@ -1504,10 +1528,20 @@ def export(group_id: str, report_id: str, target: Path):
     )
 
     result = pbi_report.export()
-    # click.echo(result)
 
-    with open(target, "wb") as fp:
-        fp.write(result)
+    if target is None:
+        # For binary export data, we can't print it directly to console
+        # Instead, show information about the export
+        click.echo("\n" + "=" * 80)
+        click.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
+        click.echo("=" * 80)
+        click.echo(f"Content size: {len(result)} bytes")
+        click.echo("\nUse --target option to save the export to a file.")
+        click.echo("=" * 80)
+    else:
+        with open(target, "wb") as fp:
+            fp.write(result)
+        click.secho(f"✓ Export saved to {target}", fg="green")
 
 
 if __name__ == "__main__":
