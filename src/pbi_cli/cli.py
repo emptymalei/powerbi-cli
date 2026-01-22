@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, Callable, Dict, Any
 
 import click
 import pandas as pd
@@ -15,6 +15,7 @@ import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
+from pbi_cli.cache import CacheManager
 from pbi_cli.config import PBIConfig, migrate_legacy_config, resolve_output_path
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
@@ -42,6 +43,88 @@ AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
 LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
+
+
+def _handle_cache_load(
+    cache_key: str,
+    use_cache: bool,
+    cache_only: bool,
+    pbi_config: PBIConfig
+) -> Optional[Dict[str, Any]]:
+    """Handle loading data from cache.
+    
+    Returns the cached data if available, or None if not cached.
+    Raises click.Abort if cache_only is True but cache is not available.
+    """
+    if not (use_cache or cache_only):
+        return None
+        
+    if pbi_config.cache_folder and pbi_config.cache_enabled:
+        cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+        cached_data = cache_manager.load(cache_key, version="latest")
+        
+        if cached_data:
+            cache_version = cached_data.get("version", "unknown")
+            cache_time = cached_data.get("cached_at", "unknown")
+            click.secho(f"Using cached data from {cache_time} (version: {cache_version})", fg="cyan")
+            return cached_data.get("data")
+        elif cache_only:
+            click.secho("Error: Cache not available and --cache-only was specified", fg="red")
+            raise click.Abort()
+        else:
+            click.secho("Cache not available, fetching from API...", fg="yellow")
+            return None
+    elif cache_only:
+        click.secho("Error: Cache not configured and --cache-only was specified", fg="red")
+        click.echo("Use 'pbi config set-cache-folder' to configure caching.")
+        raise click.Abort()
+    
+    return None
+
+
+def _handle_cache_save(
+    cache_key: str,
+    data: Any,
+    metadata: Dict[str, Any],
+    pbi_config: PBIConfig
+):
+    """Save data to cache if configured and enabled."""
+    if pbi_config.cache_folder and pbi_config.cache_enabled:
+        cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
+        version = cache_manager.save(cache_key, data, metadata=metadata)
+        if version:
+            click.secho(f"Cached data (version: {version})", fg="green")
+
+
+def _display_table(
+    data: Dict[str, Any],
+    title: str,
+    display_cols: Optional[list] = None
+):
+    """Display data as a formatted table.
+    
+    Args:
+        data: Dictionary with 'value' key containing list of records
+        title: Title to display above the table
+        display_cols: Optional list of column names to display
+    """
+    if not data or "value" not in data or len(data["value"]) == 0:
+        click.echo(f"No {title.lower()} found.")
+        return
+    
+    df = pd.json_normalize(data["value"])
+    
+    # Filter to display columns if specified
+    if display_cols:
+        available_cols = [col for col in display_cols if col in df.columns]
+        if available_cols:
+            df = df[available_cols]
+    
+    click.echo("\n" + "=" * 80)
+    click.echo(f"{title}: {len(df)} record(s)")
+    click.echo("=" * 80)
+    click.echo(df.to_string(index=False))
+    click.echo("=" * 80)
 
 
 def _check_keyring_availability():
@@ -617,8 +700,6 @@ def list_cache(cache_key: Optional[str] = None):
 
     :param cache_key: Optional cache key to show versions for
     """
-    from pbi_cli.cache import CacheManager
-
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
 
@@ -683,8 +764,6 @@ def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
     :param cache_key: Optional cache key to clear
     :param version: Optional version to clear (requires cache_key)
     """
-    from pbi_cli.cache import CacheManager
-
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
 
@@ -827,34 +906,11 @@ def list(
         This command requires an admin account.
 
     """
-    from pbi_cli.cache import CacheManager
-
     pbi_config = PBIConfig()
-    result = None
     cache_key = "workspaces"
-    used_cache = False
 
-    # Try to load from cache if requested
-    if use_cache or cache_only:
-        if pbi_config.cache_folder and pbi_config.cache_enabled:
-            cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
-            cached_data = cache_manager.load(cache_key, version="latest")
-            
-            if cached_data:
-                result = cached_data.get("data")
-                used_cache = True
-                cache_version = cached_data.get("version", "unknown")
-                cache_time = cached_data.get("cached_at", "unknown")
-                click.secho(f"Using cached data from {cache_time} (version: {cache_version})", fg="cyan")
-            elif cache_only:
-                click.secho("Error: Cache not available and --cache-only was specified", fg="red")
-                raise click.Abort()
-            else:
-                click.secho("Cache not available, fetching from API...", fg="yellow")
-        elif cache_only:
-            click.secho("Error: Cache not configured and --cache-only was specified", fg="red")
-            click.echo("Use 'pbi config set-cache-folder' to configure caching.")
-            raise click.Abort()
+    # Try to load from cache
+    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
 
     # Fetch from API if not using cache
     if result is None:
@@ -862,53 +918,18 @@ def list(
         click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {filter=}")
         result = workspaces(top=top, expand=expand, filter=filter)
 
-        # Save to cache if configured and enabled
-        if pbi_config.cache_folder and pbi_config.cache_enabled:
-            cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
-            metadata = {
-                "top": top,
-                "expand": list(expand) if expand else [],
-                "filter": filter,
-            }
-            version = cache_manager.save(cache_key, result, metadata=metadata)
-            if version:
-                click.secho(f"Cached data (version: {version})", fg="green")
+        # Save to cache
+        _handle_cache_save(
+            cache_key, 
+            result, 
+            {"top": top, "expand": list(expand) if expand else [], "filter": filter},
+            pbi_config
+        )
 
-    # If no target folder provided, print to console as a table
+    # Display or save results
     if target_folder is None:
-        if result and "value" in result and len(result["value"]) > 0:
-            # Convert to DataFrame and print as table
-            df = pd.json_normalize(result["value"])
-
-            # Select key columns for display (avoid overwhelming output)
-            display_cols = [
-                col
-                for col in [
-                    "id",
-                    "name",
-                    "type",
-                    "state",
-                    "isReadOnly",
-                    "isOnDedicatedCapacity",
-                ]
-                if col in df.columns
-            ]
-
-            if display_cols:
-                click.echo("\n" + "=" * 80)
-                click.echo(f"Found {len(df)} workspace(s)")
-                click.echo("=" * 80)
-                click.echo(df[display_cols].to_string(index=False))
-                click.echo("=" * 80)
-            else:
-                # Fallback to all columns if key columns not found
-                click.echo("\n" + "=" * 80)
-                click.echo(f"Found {len(df)} workspace(s)")
-                click.echo("=" * 80)
-                click.echo(df.to_string(index=False))
-                click.echo("=" * 80)
-        else:
-            click.echo("No workspaces found.")
+        display_cols = ["id", "name", "type", "state", "isReadOnly", "isOnDedicatedCapacity"]
+        _display_table(result, "Workspaces", display_cols)
         return
 
     # Resolve the target folder path (handles absolute/relative paths)
@@ -1184,25 +1205,48 @@ def users(ctx):
 @click.option(
     "--file-name", "-n", type=str, help="file name without extension", default=None
 )
+@click.option(
+    "--use-cache",
+    is_flag=True,
+    help="Use cached data if available instead of making API call",
+    default=False,
+)
+@click.option(
+    "--cache-only",
+    is_flag=True,
+    help="Only use cache, fail if cache not available",
+    default=False,
+)
 def user_access(
     user_id: str,
     target_folder: Optional[str],
     file_types: list,
     file_name: Optional[str] = None,
+    use_cache: bool = False,
+    cache_only: bool = False,
 ):
     """Get user access information from Power BI API"""
     if file_name is None:
         file_name = slugify(user_id)
 
-    user = User(auth=load_auth(), user_id=user_id, verify=False)
+    pbi_config = PBIConfig()
+    cache_key = f"user_access_{slugify(user_id)}"
 
-    result = user()
+    # Try to load from cache
+    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
 
+    # Fetch from API if not using cache
+    if result is None:
+        user = User(auth=load_auth(), user_id=user_id, verify=False)
+        result = user()
+
+        # Save to cache
+        _handle_cache_save(cache_key, result, {"user_id": user_id}, pbi_config)
+
+    # Display or save results
     if target_folder is None:
         logger.info(f"No target folder provided, printing to console...")
-        # Try to format as a table if possible
         if isinstance(result, dict):
-            # Flatten and display as table
             try:
                 df = pd.json_normalize(result)
                 click.echo("\n" + "=" * 80)
@@ -1211,11 +1255,10 @@ def user_access(
                 click.echo(df.to_string(index=False))
                 click.echo("=" * 80)
             except Exception:
-                # Fallback to JSON if table formatting fails
                 click.echo(json.dumps(result, indent=4))
         else:
             click.echo(json.dumps(result, indent=4))
-    else:
+        return
         # Resolve the target folder path
         target_path = resolve_output_path(target_folder)
 
@@ -1271,49 +1314,49 @@ def apps(ctx):
 )
 @click.option("--role", "-r", type=click.Choice(["admin", "user"]), default="user")
 @click.option("--file-name", "-n", type=str, help="file name", default="apps")
+@click.option(
+    "--use-cache",
+    is_flag=True,
+    help="Use cached data if available instead of making API call",
+    default=False,
+)
+@click.option(
+    "--cache-only",
+    is_flag=True,
+    help="Only use cache, fail if cache not available",
+    default=False,
+)
 def list(
     target_folder: Optional[str],
     role: str,
     file_type: tuple = ("json", "excel"),
     file_name: str = "apps",
+    use_cache: bool = False,
+    cache_only: bool = False,
 ):
     """List Power BI Apps and save them to files or print to console"""
+    pbi_config = PBIConfig()
+    cache_key = f"apps_{role}"
 
-    if role == "user":
-        user = powerbi_app.Apps(auth=load_auth(), verify=False)
-    elif role == "admin":
-        user = powerbi_admin.Apps(auth=load_auth(), verify=False)
+    # Try to load from cache
+    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
 
-    click.echo(f"Listing Apps as {role}")
+    # Fetch from API if not using cache
+    if result is None:
+        click.echo(f"Listing Apps as {role}")
+        if role == "user":
+            user = powerbi_app.Apps(auth=load_auth(), verify=False)
+        else:  # admin
+            user = powerbi_admin.Apps(auth=load_auth(), verify=False)
+        result = user()
 
-    result = user()
+        # Save to cache
+        _handle_cache_save(cache_key, result, {"role": role}, pbi_config)
 
-    # If no target folder provided, print to console as a table
+    # Display or save results
     if target_folder is None:
-        if result and "value" in result and len(result["value"]) > 0:
-            df = pd.json_normalize(result["value"])
-
-            # Select key columns for display
-            display_cols = [
-                col
-                for col in ["id", "name", "description", "publishedBy", "lastUpdate"]
-                if col in df.columns
-            ]
-
-            if display_cols:
-                click.echo("\n" + "=" * 80)
-                click.echo(f"Found {len(df)} app(s)")
-                click.echo("=" * 80)
-                click.echo(df[display_cols].to_string(index=False))
-                click.echo("=" * 80)
-            else:
-                click.echo("\n" + "=" * 80)
-                click.echo(f"Found {len(df)} app(s)")
-                click.echo("=" * 80)
-                click.echo(df.to_string(index=False))
-                click.echo("=" * 80)
-        else:
-            click.echo("No apps found.")
+        display_cols = ["id", "name", "description", "publishedBy", "lastUpdate"]
+        _display_table(result, f"Apps ({role})", display_cols)
         return
 
     # Resolve the target folder path
