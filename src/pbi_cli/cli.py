@@ -318,19 +318,19 @@ def pbi(ctx):
 @pbi.command()
 def tui():
     """Launch the interactive Terminal User Interface (TUI)
-    
+
     The TUI provides an easy-to-use interface for all PowerBI CLI functionalities:
     - Authentication management
-    - Configuration settings  
+    - Configuration settings
     - Workspaces management
     - Apps management
     - Reports management
     - Users management
-    
+
     ```
     pbi tui
     ```
-    
+
     Use keyboard shortcuts for quick navigation:
     - Numbers (1-6): Navigate to different sections
     - ESC: Go back
@@ -338,11 +338,11 @@ def tui():
     """
     try:
         from pbi_cli.tui import run
+
         run()
     except ImportError as e:
         click.secho(
-            "Error: Textual library not found. Please reinstall the package:",
-            fg="red"
+            "Error: Textual library not found. Please reinstall the package:", fg="red"
         )
         click.echo("  pip install --upgrade pbi-cli")
         raise click.Abort()

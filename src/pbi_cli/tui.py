@@ -5,46 +5,48 @@ This module provides an interactive TUI for all PowerBI CLI functionalities,
 making it easy to manage authentication, workspaces, apps, reports, and users.
 """
 
+import json
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from rich.table import Table as RichTable
+from rich.text import Text
+from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+from textual.binding import Binding
+from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
+from textual.screen import Screen
 from textual.widgets import (
     Button,
+    Checkbox,
+    DataTable,
     Footer,
     Header,
     Input,
     Label,
-    Static,
-    ListView,
     ListItem,
-    Select,
+    ListView,
     RadioButton,
     RadioSet,
-    Checkbox,
-    DataTable,
+    Select,
+    Static,
     TabbedContent,
     TabPane,
 )
-from textual.screen import Screen
-from textual.binding import Binding
-from textual import on
-from rich.text import Text
-from rich.table import Table as RichTable
-from pathlib import Path
-import json
-from typing import Optional, Dict, Any
 
-# Import the CLI modules we need
-from pbi_cli.config import PBIConfig
+import pbi_cli.powerbi.app as powerbi_app
 from pbi_cli.cli import (
-    load_auth,
+    _delete_credential,
+    _get_credential,
     _load_profiles,
     _save_profiles,
     _set_credential,
-    _get_credential,
-    _delete_credential,
+    load_auth,
 )
-from pbi_cli.powerbi.admin import Workspaces, User, Apps
-import pbi_cli.powerbi.app as powerbi_app
+
+# Import the CLI modules we need
+from pbi_cli.config import PBIConfig
+from pbi_cli.powerbi.admin import Apps, User, Workspaces
 
 
 class MainMenuScreen(Screen):
@@ -65,7 +67,7 @@ class MainMenuScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create child widgets for the main menu."""
         yield Header()
-        
+
         with Vertical(id="main-container"):
             # Top filter bar - row 1
             with Horizontal(id="filter-bar-1"):
@@ -73,21 +75,21 @@ class MainMenuScreen(Screen):
                     options=[("default", "default")],
                     prompt="Profile",
                     id="profile-selector",
-                    classes="filter-selector"
+                    classes="filter-selector",
                 )
                 yield Select(
                     options=[("Not set", "Not set")],
                     prompt="Output Folder",
                     id="output-selector",
-                    classes="filter-selector"
+                    classes="filter-selector",
                 )
                 yield Select(
                     options=[("Ready", "Ready")],
                     prompt="Status",
                     id="status-selector",
-                    classes="filter-selector"
+                    classes="filter-selector",
                 )
-            
+
             # Actions bar - row 2
             with Horizontal(id="actions-bar", classes="action-buttons-bar"):
                 yield Button("[1] Authentication", id="btn-auth", variant="default")
@@ -96,12 +98,14 @@ class MainMenuScreen(Screen):
                 yield Button("[4] Apps", id="btn-apps", variant="default")
                 yield Button("[5] Reports", id="btn-reports", variant="default")
                 yield Button("[6] Users", id="btn-users", variant="default")
-            
+
             # Main content area - results pane
             with Container(id="results-container"):
-                yield Static("PowerBI CLI - Welcome", classes="panel-header", id="results-header")
+                yield Static(
+                    "PowerBI CLI - Welcome", classes="panel-header", id="results-header"
+                )
                 yield DataTable(id="results-table", zebra_stripes=True)
-        
+
         yield Footer()
 
     def on_mount(self) -> None:
@@ -111,39 +115,47 @@ class MainMenuScreen(Screen):
             pbi_config = PBIConfig()
             active_profile = pbi_config.active_profile or "None"
             output_folder = pbi_config.default_output_folder or "Not set"
-            
+
             # Update selectors
             profile_selector = self.query_one("#profile-selector", Select)
             profile_selector.set_options([(active_profile, active_profile)])
-            
+
             output_selector = self.query_one("#output-selector", Select)
             output_selector.set_options([(output_folder, output_folder)])
-            
+
             # Show welcome message in results
             self.show_welcome_message()
-                
+
         except Exception as e:
             self.show_error(f"Error: {str(e)}")
-    
+
     def show_welcome_message(self) -> None:
         """Display welcome message in results pane."""
         self.query_one("#results-header", Static).update("PowerBI CLI - Welcome")
         table = self.query_one("#results-table", DataTable)
         table.clear(columns=True)
         table.add_columns("Action", "Shortcut", "Description")
-        
+
         actions = [
-            ("Authentication", "Press 1", "Manage authentication profiles (add, switch, delete)"),
-            ("Configuration", "Press 2", "Configure CLI settings (output folder, etc.)"),
+            (
+                "Authentication",
+                "Press 1",
+                "Manage authentication profiles (add, switch, delete)",
+            ),
+            (
+                "Configuration",
+                "Press 2",
+                "Configure CLI settings (output folder, etc.)",
+            ),
             ("Workspaces", "Press 3", "List and manage Power BI workspaces"),
             ("Apps", "Press 4", "View and interact with Power BI apps"),
             ("Reports", "Press 5", "Access Power BI reports and functions"),
             ("Users", "Press 6", "Manage user access and permissions"),
         ]
-        
+
         for action in actions:
             table.add_row(*action)
-    
+
     def show_error(self, message: str) -> None:
         """Display error in results pane."""
         self.query_one("#results-header", Static).update("Error")
@@ -161,39 +173,41 @@ class MainMenuScreen(Screen):
         if not id_str or len(id_str) <= max_len:
             return id_str
         return id_str[:max_len] + "..."
-    
+
     def _truncate_text(self, text: str, max_len: int = 50) -> str:
         """Truncate text with ellipsis if needed."""
         if not text or len(text) <= max_len:
             return text or ""
         return text[:max_len] + "..."
-    
+
     def action_auth(self) -> None:
         """Show authentication profiles in results pane."""
         try:
             profiles_data = _load_profiles()
             profiles = profiles_data.get("profiles", {})
             active_profile = profiles_data.get("active_profile")
-            
-            self.query_one("#results-header", Static).update("Authentication - Profiles")
+
+            self.query_one("#results-header", Static).update(
+                "Authentication - Profiles"
+            )
             table = self.query_one("#results-table", DataTable)
             table.clear(columns=True)
             table.add_columns("Profile", "Status", "Active", "Token Exists")
-            
+
             if not profiles:
                 table.add_row("No profiles found", "-", "-", "-")
                 return
-            
+
             for profile_name in profiles.keys():
                 is_active = profile_name == active_profile
                 token_exists = _get_credential(profile_name) is not None
-                
+
                 status = "✓ Ready" if token_exists else "✗ No Token"
                 active_marker = "✓ Active" if is_active else ""
                 token_status = "Yes" if token_exists else "No"
-                
+
                 table.add_row(profile_name, status, active_marker, token_status)
-                
+
         except Exception as e:
             self.show_error(f"Error loading profiles: {str(e)}")
 
@@ -201,16 +215,18 @@ class MainMenuScreen(Screen):
         """Show configuration in results pane."""
         try:
             pbi_config = PBIConfig()
-            
+
             self.query_one("#results-header", Static).update("Configuration Settings")
             table = self.query_one("#results-table", DataTable)
             table.clear(columns=True)
             table.add_columns("Setting", "Value")
-            
+
             table.add_row("Active Profile", pbi_config.active_profile or "Not set")
-            table.add_row("Output Folder", pbi_config.default_output_folder or "Not set")
+            table.add_row(
+                "Output Folder", pbi_config.default_output_folder or "Not set"
+            )
             table.add_row("Config File", str(pbi_config.config_file))
-            
+
         except Exception as e:
             self.show_error(f"Error loading config: {str(e)}")
 
@@ -222,27 +238,29 @@ class MainMenuScreen(Screen):
             table.clear(columns=True)
             table.add_columns("Loading...")
             table.add_row("Fetching workspaces from Power BI API...")
-            
+
             # Try to load workspaces
             try:
                 auth = load_auth()
                 workspaces_api = Workspaces(auth)
                 workspaces_list = workspaces_api.list_workspaces()
-                
-                self.query_one("#results-header", Static).update(f"Workspaces ({len(workspaces_list)} found)")
+
+                self.query_one("#results-header", Static).update(
+                    f"Workspaces ({len(workspaces_list)} found)"
+                )
                 table.clear(columns=True)
                 table.add_columns("Name", "ID", "Type", "State")
-                
+
                 for ws in workspaces_list:
                     table.add_row(
                         ws.get("name", "N/A"),
                         self._truncate_id(ws.get("id", "N/A")),
                         ws.get("type", "N/A"),
-                        ws.get("state", "N/A")
+                        ws.get("state", "N/A"),
                     )
             except Exception as e:
                 self.show_error(f"Error fetching workspaces: {str(e)}")
-                
+
         except Exception as e:
             self.show_error(f"Error: {str(e)}")
 
@@ -254,26 +272,28 @@ class MainMenuScreen(Screen):
             table.clear(columns=True)
             table.add_columns("Loading...")
             table.add_row("Fetching apps from Power BI API...")
-            
+
             # Try to load apps
             try:
                 auth = load_auth()
                 apps_api = Apps(auth)
                 apps_list = apps_api.list_apps()
-                
-                self.query_one("#results-header", Static).update(f"Apps ({len(apps_list)} found)")
+
+                self.query_one("#results-header", Static).update(
+                    f"Apps ({len(apps_list)} found)"
+                )
                 table.clear(columns=True)
                 table.add_columns("Name", "ID", "Description")
-                
+
                 for app in apps_list:
                     table.add_row(
                         app.get("name", "N/A"),
                         self._truncate_id(app.get("id", "N/A")),
-                        self._truncate_text(app.get("description", ""))
+                        self._truncate_text(app.get("description", "")),
                     )
             except Exception as e:
                 self.show_error(f"Error fetching apps: {str(e)}")
-                
+
         except Exception as e:
             self.show_error(f"Error: {str(e)}")
 
@@ -283,7 +303,9 @@ class MainMenuScreen(Screen):
         table = self.query_one("#results-table", DataTable)
         table.clear(columns=True)
         table.add_columns("Info")
-        table.add_row("Reports functionality: Navigate through Workspaces or Apps to view reports")
+        table.add_row(
+            "Reports functionality: Navigate through Workspaces or Apps to view reports"
+        )
         table.add_row("Use option 3 (Workspaces) or 4 (Apps) to access reports")
 
     def action_users(self) -> None:
@@ -296,7 +318,7 @@ class MainMenuScreen(Screen):
             table.add_row("Users Management: Get user access information")
             table.add_row("This feature requires workspace context")
             table.add_row("Navigate to Workspaces first to manage users")
-            
+
         except Exception as e:
             self.show_error(f"Error: {str(e)}")
 
@@ -353,7 +375,9 @@ class AuthScreen(Screen):
             DataTable(id="profiles_table", zebra_stripes=True),
             Horizontal(
                 Button("Add Profile (A)", id="btn_add_profile", variant="success"),
-                Button("Switch Profile (S)", id="btn_switch_profile", variant="primary"),
+                Button(
+                    "Switch Profile (S)", id="btn_switch_profile", variant="primary"
+                ),
                 Button("Delete Profile (D)", id="btn_delete_profile", variant="error"),
                 Button("Refresh (R)", id="btn_refresh", variant="default"),
                 id="auth_buttons",
@@ -387,7 +411,7 @@ class AuthScreen(Screen):
             for profile_name in profiles.keys():
                 is_active = profile_name == active_profile
                 token_exists = _get_credential(profile_name) is not None
-                
+
                 status = "✓" if token_exists else "✗"
                 active_marker = "✓" if is_active else ""
                 token_status = "Yes" if token_exists else "No"
@@ -762,7 +786,7 @@ class ConfigScreen(Screen):
         try:
             pbi_config = PBIConfig()
             current_folder = pbi_config.default_output_folder or "Not set"
-            
+
             self.query_one("#config_current", Static).update(
                 f"Current output folder: [cyan]{current_folder}[/cyan]"
             )
@@ -797,7 +821,7 @@ class ConfigScreen(Screen):
 
             pbi_config = PBIConfig()
             pbi_config.default_output_folder = folder_path_clean
-            
+
             resolved_path = Path(folder_path_clean).expanduser().absolute()
 
             self.query_one("#config_status", Static).update(
@@ -846,7 +870,9 @@ class WorkspacesScreen(Screen):
             Static("Workspaces Management", id="workspaces_title"),
             Static("Manage Power BI Workspaces", id="workspaces_subtitle"),
             Vertical(
-                Button("List Workspaces (L)", id="btn_list_workspaces", variant="primary"),
+                Button(
+                    "List Workspaces (L)", id="btn_list_workspaces", variant="primary"
+                ),
                 Button("Back (Esc)", id="btn_back", variant="default"),
                 id="workspaces_buttons",
             ),
@@ -1009,7 +1035,11 @@ class AppsScreen(Screen):
                     table.add_row(
                         app.get("id", "")[:20] + "...",  # Truncate ID
                         app.get("name", ""),
-                        app.get("description", "")[:50] if app.get("description") else "",
+                        (
+                            app.get("description", "")[:50]
+                            if app.get("description")
+                            else ""
+                        ),
                     )
 
                 self.query_one("#apps_status", Static).update(
@@ -1021,9 +1051,7 @@ class AppsScreen(Screen):
                 )
 
         except Exception as e:
-            self.query_one("#apps_status", Static).update(
-                f"[red]Error: {str(e)}[/red]"
-            )
+            self.query_one("#apps_status", Static).update(f"[red]Error: {str(e)}[/red]")
 
     @on(Button.Pressed, "#btn_back")
     def on_back(self) -> None:
@@ -1153,7 +1181,7 @@ class PowerBITUI(App):
      * Text: #E8E8E8 (Light Gray)
      * Muted Text: #A0A0A0 (Medium Gray)
      */
-    
+
     Screen {
         background: #1E1E1E;
     }

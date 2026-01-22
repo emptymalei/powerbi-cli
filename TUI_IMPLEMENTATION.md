@@ -93,7 +93,7 @@ src/pbi_cli/
 ### Visual Design
 - **Header**: App title and help hint
 - **Footer**: Context-sensitive keyboard shortcuts
-- **Color coding**: 
+- **Color coding**:
   - Success: Green
   - Errors: Red
   - Warnings: Yellow
