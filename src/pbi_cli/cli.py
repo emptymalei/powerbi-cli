@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Iterable, Optional, Union, Callable, Dict, Any
+from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import click
 import pandas as pd
@@ -46,47 +46,48 @@ KEYRING_SERVICE = "pbi-cli"
 
 
 def _handle_cache_load(
-    cache_key: str,
-    use_cache: bool,
-    cache_only: bool,
-    pbi_config: PBIConfig
+    cache_key: str, use_cache: bool, cache_only: bool, pbi_config: PBIConfig
 ) -> Optional[Dict[str, Any]]:
     """Handle loading data from cache.
-    
+
     Returns the cached data if available, or None if not cached.
     Raises click.Abort if cache_only is True but cache is not available.
     """
     if not (use_cache or cache_only):
         return None
-        
+
     if pbi_config.cache_folder and pbi_config.cache_enabled:
         cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
         cached_data = cache_manager.load(cache_key, version="latest")
-        
+
         if cached_data:
             cache_version = cached_data.get("version", "unknown")
             cache_time = cached_data.get("cached_at", "unknown")
-            click.secho(f"Using cached data from {cache_time} (version: {cache_version})", fg="cyan")
+            click.secho(
+                f"Using cached data from {cache_time} (version: {cache_version})",
+                fg="cyan",
+            )
             return cached_data.get("data")
         elif cache_only:
-            click.secho("Error: Cache not available and --cache-only was specified", fg="red")
+            click.secho(
+                "Error: Cache not available and --cache-only was specified", fg="red"
+            )
             raise click.Abort()
         else:
             click.secho("Cache not available, fetching from API...", fg="yellow")
             return None
     elif cache_only:
-        click.secho("Error: Cache not configured and --cache-only was specified", fg="red")
+        click.secho(
+            "Error: Cache not configured and --cache-only was specified", fg="red"
+        )
         click.echo("Use 'pbi config set-cache-folder' to configure caching.")
         raise click.Abort()
-    
+
     return None
 
 
 def _handle_cache_save(
-    cache_key: str,
-    data: Any,
-    metadata: Dict[str, Any],
-    pbi_config: PBIConfig
+    cache_key: str, data: Any, metadata: Dict[str, Any], pbi_config: PBIConfig
 ):
     """Save data to cache if configured and enabled."""
     if pbi_config.cache_folder and pbi_config.cache_enabled:
@@ -97,12 +98,10 @@ def _handle_cache_save(
 
 
 def _display_table(
-    data: Dict[str, Any],
-    title: str,
-    display_cols: Optional[list] = None
+    data: Dict[str, Any], title: str, display_cols: Optional[list] = None
 ):
     """Display data as a formatted table.
-    
+
     Args:
         data: Dictionary with 'value' key containing list of records
         title: Title to display above the table
@@ -111,15 +110,15 @@ def _display_table(
     if not data or "value" not in data or len(data["value"]) == 0:
         click.echo(f"No {title.lower()} found.")
         return
-    
+
     df = pd.json_normalize(data["value"])
-    
+
     # Filter to display columns if specified
     if display_cols:
         available_cols = [col for col in display_cols if col in df.columns]
         if available_cols:
             df = df[available_cols]
-    
+
     click.echo("\n" + "=" * 80)
     click.echo(f"{title}: {len(df)} record(s)")
     click.echo("=" * 80)
@@ -614,18 +613,17 @@ def set_cache_folder(folder_path: str):
     # Strip any quotes that might have been included due to shell escaping
     folder_path_clean = folder_path.strip('"').strip("'")
     pbi_config.cache_folder = folder_path_clean
-    
+
     # Handle cloud paths differently for display
     if folder_path_clean.startswith(("s3://", "gs://", "az://")):
         click.secho(f"✓ Cache folder set to: {folder_path_clean}", fg="green")
     else:
         from pathlib import Path
+
         resolved_path = Path(folder_path_clean).expanduser().absolute()
         click.secho(f"✓ Cache folder set to: {resolved_path}", fg="green")
-    
-    click.secho(
-        "  API call results will be cached in this folder.", fg="blue"
-    )
+
+    click.secho("  API call results will be cached in this folder.", fg="blue")
 
 
 @config_group.command(name="get-cache-folder")
@@ -744,9 +742,7 @@ def list_cache(cache_key: Optional[str] = None):
     help="Clear specific version (requires --cache-key)",
     default=None,
 )
-@click.confirmation_option(
-    prompt="Are you sure you want to clear the cache?"
-)
+@click.confirmation_option(prompt="Are you sure you want to clear the cache?")
 def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
     """Clear cached data
 
@@ -791,7 +787,12 @@ def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
 @click.option("--group-id", "-g", help="Group ID", required=True)
 @click.option("--report-id", "-r", help="Report ID", required=True)
 @click.option(
-    "--target", "-t", type=click.Path(exists=False), help="target file (if omitted, prints info to console)", default=None, required=False
+    "--target",
+    "-t",
+    type=click.Path(exists=False),
+    help="target file (if omitted, prints info to console)",
+    default=None,
+    required=False,
 )
 def export(group_id: str, report_id: str, target: Optional[Path]):
     """export report based on id"""
@@ -920,15 +921,22 @@ def list(
 
         # Save to cache
         _handle_cache_save(
-            cache_key, 
-            result, 
+            cache_key,
+            result,
             {"top": top, "expand": list(expand) if expand else [], "filter": filter},
-            pbi_config
+            pbi_config,
         )
 
     # Display or save results
     if target_folder is None:
-        display_cols = ["id", "name", "type", "state", "isReadOnly", "isOnDedicatedCapacity"]
+        display_cols = [
+            "id",
+            "name",
+            "type",
+            "state",
+            "isReadOnly",
+            "isOnDedicatedCapacity",
+        ]
         _display_table(result, "Workspaces", display_cols)
         return
 
@@ -1389,7 +1397,12 @@ def list(
 @apps.command()
 @click.option("--app-id", "-a", help="app id", type=str, required=True)
 @click.option(
-    "--target", "-t", type=click.Path(exists=False), help="target file (if omitted, prints to console)", default=None, required=False
+    "--target",
+    "-t",
+    type=click.Path(exists=False),
+    help="target file (if omitted, prints to console)",
+    default=None,
+    required=False,
 )
 @click.option(
     "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"

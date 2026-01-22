@@ -30,7 +30,7 @@ __all__ = ["CacheManager", "CacheConfig"]
 
 class CacheConfig:
     """Configuration for cache management.
-    
+
     Attributes:
         cache_folder: Base folder for cache storage (local or remote path)
         enabled: Whether caching is enabled
@@ -44,7 +44,7 @@ class CacheConfig:
         default_versioning: bool = True,
     ):
         """Initialize cache configuration.
-        
+
         :param cache_folder: Base folder for cache storage
         :param enabled: Whether caching is enabled
         :param default_versioning: Whether to use timestamp versioning by default
@@ -56,7 +56,7 @@ class CacheConfig:
     @property
     def cache_path(self) -> Optional[AnyPath]:
         """Get the cache path as an AnyPath object.
-        
+
         :return: AnyPath object or None if not configured
         """
         if self.cache_folder is None:
@@ -66,11 +66,11 @@ class CacheConfig:
 
 class CacheManager:
     """Manager for cache operations with versioning support.
-    
+
     This class handles saving, loading, and managing cached API results.
     It supports timestamp-based versioning and works with both local and
     remote storage through cloudpathlib.
-    
+
     Example:
         >>> cache = CacheManager(cache_folder="/path/to/cache")
         >>> cache.save("workspaces", {"value": [{"id": "123"}]})
@@ -83,7 +83,7 @@ class CacheManager:
         config: Optional[CacheConfig] = None,
     ):
         """Initialize the cache manager.
-        
+
         :param cache_folder: Base folder for cache storage (overrides config)
         :param config: CacheConfig object (optional)
         """
@@ -98,14 +98,14 @@ class CacheManager:
     @property
     def _base_path(self) -> Optional[AnyPath]:
         """Get the base cache path.
-        
+
         :return: AnyPath object or None if not configured
         """
         return self.config.cache_path
 
     def _ensure_cache_dir(self, path: AnyPath):
         """Ensure the cache directory exists.
-        
+
         :param path: Path to ensure exists
         """
         if not isinstance(path, CloudPath):
@@ -115,19 +115,22 @@ class CacheManager:
 
     def _get_version_timestamp(self) -> str:
         """Generate a timestamp string for versioning.
-        
+
         Returns a custom timestamp format suitable for directory names:
         YYYYMMDD_HHMMSS (e.g., '20240101_120000')
-        
+
         :return: Timestamp string in YYYYMMDD_HHMMSS format
         """
         return datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def _get_cache_path(
-        self, cache_key: str, version: Optional[str] = None, create_version: bool = False
+        self,
+        cache_key: str,
+        version: Optional[str] = None,
+        create_version: bool = False,
     ) -> Optional[AnyPath]:
         """Get the full cache path for a given key and version.
-        
+
         :param cache_key: Key identifying the cached data
         :param version: Version identifier (timestamp or "latest")
         :param create_version: Whether to create a new version timestamp
@@ -158,7 +161,7 @@ class CacheManager:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """Save data to cache with optional versioning.
-        
+
         :param cache_key: Key identifying the cached data
         :param data: Data to cache (must be JSON serializable)
         :param version: Optional version identifier (auto-generated if None)
@@ -209,7 +212,7 @@ class CacheManager:
         self, cache_key: str, version: Optional[str] = "latest"
     ) -> Optional[Dict[str, Any]]:
         """Load data from cache.
-        
+
         :param cache_key: Key identifying the cached data
         :param version: Version to load ("latest" for most recent, None for non-versioned)
         :return: Cached data dictionary or None if not found
@@ -245,9 +248,9 @@ class CacheManager:
 
     def list_versions(self, cache_key: str) -> List[str]:
         """List all available versions for a cache key.
-        
+
         Versions are returned in descending order (most recent first).
-        
+
         :param cache_key: Key identifying the cached data
         :return: List of version identifiers
         """
@@ -278,7 +281,7 @@ class CacheManager:
 
     def list_keys(self) -> List[str]:
         """List all cache keys.
-        
+
         :return: List of cache keys
         """
         if self._base_path is None:
@@ -304,7 +307,7 @@ class CacheManager:
 
     def clear(self, cache_key: Optional[str] = None, version: Optional[str] = None):
         """Clear cache data.
-        
+
         :param cache_key: Specific cache key to clear (clears all if None)
         :param version: Specific version to clear (clears all versions if None)
         """
