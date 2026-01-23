@@ -2,42 +2,46 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
+    </url>
+    <url>
+         <loc>https://emptymalei.github.io/powerbi-cli/cache/</loc>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/changelog/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/cli/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/admin/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/app/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/base/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/io/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
     <url>
          <loc>https://emptymalei.github.io/powerbi-cli/references/powerbi/report/</loc>
-         <lastmod>2026-01-20</lastmod>
+         <lastmod>2026-01-23</lastmod>
     </url>
 </urlset>
