@@ -36,9 +36,43 @@ pbi --help
 
 ### Requirements
 
-* Python 3.12
+* Python 3.10 or higher
+
+### Installation
+
+#### Using uv (Recommended - Fast & Modern)
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+# or: pip install uv
+
+# Install pbi-cli
+uv pip install pbi-cli
+
+# Or install from source
+git clone https://github.com/emptymalei/powerbi-cli.git
+cd powerbi-cli
+uv pip install -e .
+```
+
+See [UV_INSTALLATION.md](UV_INSTALLATION.md) for detailed uv installation instructions.
+
+#### Using pip
+
+```bash
+pip install pbi-cli
+```
+
+#### Using Poetry
+
+```bash
+poetry install
+```
 
 ### Development
 
 1. Install pre-commit hooks: `pre-commit install`
-2. Install dependencies `poetry install`
+2. Install dependencies:
+   - With uv: `uv pip install -e ".[dev]"`
+   - With Poetry: `poetry install`

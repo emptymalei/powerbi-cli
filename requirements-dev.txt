@@ -1,0 +1,8 @@
+# Development dependencies for pbi-cli
+# Generated from pyproject.toml for uv compatibility
+-r requirements.txt
+
+# Dev dependencies
+ipykernel>=6.29.4,<7.0.0
+pytest>=8.3.3,<9.0.0
+twine>=6.1.0,<7.0.0

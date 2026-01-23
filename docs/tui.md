@@ -140,11 +140,26 @@ The TUI is built using [Textual](https://github.com/Textualize/textual), a moder
 
 The TUI requires the `textual` library, which is automatically installed as a dependency when you install PowerBI CLI. If you encounter import errors, try reinstalling:
 
+**With uv (Recommended):**
 ```bash
-pip install --upgrade pbi-cli
+uv pip install --force-reinstall pbi-cli
+# Or from source:
+uv pip install --force-reinstall -e .
 ```
 
-This will ensure all required dependencies, including Textual, are properly installed.
+**With pip:**
+```bash
+pip install --upgrade --force-reinstall pbi-cli
+```
+
+**With Poetry:**
+```bash
+poetry install --sync
+```
+
+This will ensure all required dependencies, including Textual (>=7.3.0), are properly installed.
+
+See [UV_INSTALLATION.md](../UV_INSTALLATION.md) for more details on using uv with PowerBI CLI.
 
 ### Display Issues
 
