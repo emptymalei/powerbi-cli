@@ -23,7 +23,7 @@ pbi tui
 
 ### Main Menu
 
-![TUI Main Menu](images/tui_redesign_main.svg)
+![TUI Main Menu](images/tui_01_welcome.svg)
 
 The main interface provides quick access to all major functionalities through numbered action buttons and functional controls at the top for profile switching and output folder configuration.
 
@@ -52,7 +52,7 @@ The TUI supports both keyboard shortcuts and mouse clicks for navigation:
 
 ## Settings & Profiles Management
 
-![TUI Settings Screen](images/tui_redesign_settings.svg)
+![TUI Settings & Profiles Screen](images/tui_02_settings_profiles.svg)
 
 The TUI allows you to manage authentication profiles and configuration in one place:
 
@@ -70,6 +70,8 @@ All credentials are stored securely using the system keyring (or encrypted file 
 
 ## Workspaces
 
+![TUI Workspaces Screen](images/tui_03_workspaces.svg)
+
 List and view Power BI workspaces with intelligent caching:
 
 - **Load Workspaces**: Fetch workspaces using the admin API (uses cache if available)
@@ -78,6 +80,8 @@ List and view Power BI workspaces with intelligent caching:
 - View workspace details in a table format with ID, name, type, and state
 
 ## Apps
+
+![TUI Apps Screen](images/tui_04_apps.svg)
 
 Manage Power BI apps with intelligent caching:
 
@@ -88,6 +92,8 @@ Manage Power BI apps with intelligent caching:
 
 ## Reports
 
+![TUI Reports Screen](images/tui_05_reports.svg)
+
 Export and download Power BI reports with full parameter support:
 
 - **Source File**: Enter the path to the source report file
@@ -97,6 +103,8 @@ Export and download Power BI reports with full parameter support:
 
 ## Users
 
+![TUI Users Screen](images/tui_06_users.svg)
+
 Query user access information with full parameter support:
 
 - **User ID**: Enter a user's email address
@@ -104,6 +112,17 @@ Query user access information with full parameter support:
 - **File Types**: Choose which types of data to include (apps, groups, capacities)
 - **File Name**: Customize the output file name
 - View results in formatted JSON or export to file
+
+## Help
+
+![TUI Help Screen](images/tui_07_help.svg)
+
+Access built-in help and keyboard shortcuts:
+
+- View all available keyboard shortcuts
+- Quick reference for navigation
+- Feature descriptions and usage tips
+- Press **6** or click the Help button to access help at any time
 
 ## Benefits of Using the TUI
 
