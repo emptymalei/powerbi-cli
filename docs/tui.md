@@ -33,76 +33,77 @@ The TUI supports both keyboard shortcuts and mouse clicks for navigation:
 
 ### Main Menu Shortcuts
 
-- **1-6**: Navigate directly to different sections (Auth, Config, Workspaces, Apps, Reports, Users)
-- **Q**: Quit the application
-- **ESC**: Go back to the previous screen
+- **1**: Settings & Profiles (combined authentication and configuration)
+- **2**: Workspaces (list workspaces with caching)
+- **3**: Apps (list apps with caching)
+- **4**: Reports (export reports with input fields)
+- **5**: Users (query user access with input fields)
+- **6**: Help (display help information)
+- **Q** or **Ctrl+C**: Quit the application
+- **Ctrl+R**: Refresh the current view
 
-### Screen-Specific Shortcuts
+### Navigation Tips
 
-Each screen has its own set of shortcuts displayed in the footer:
+- Use the **Profile dropdown** at the top to switch between authentication profiles
+- Use the **Output Folder input** and "Set Folder" button to update configuration
+- **Tab**: Navigate between input fields, buttons, and selects
+- **Enter**: Activate buttons, select dropdown items, or submit forms
+- **Arrow keys**: Navigate within dropdowns and tables
 
-- **Authentication Screen**:
-  - `A`: Add a new profile
-  - `S`: Switch active profile
-  - `D`: Delete a profile
-  - `R`: Refresh the profile list
+## Settings & Profiles Management
 
-- **General Navigation**:
-  - `ESC`: Return to the previous screen
-  - `Tab`: Navigate between input fields and buttons
-  - `Enter`: Activate buttons or select items
+![TUI Settings Screen](images/tui_redesign_settings.svg)
 
-## Authentication Management
+The TUI allows you to manage authentication profiles and configuration in one place:
 
-![TUI Authentication Screen](images/tui_auth_screen.svg)
-
-The TUI allows you to manage multiple authentication profiles:
-
+### Authentication Profiles
 1. **Add a Profile**: Enter a profile name and your bearer token
-2. **Switch Profiles**: Select which profile to use as active
+2. **Switch Profiles**: Use the profile selector dropdown at the top to switch active profiles
 3. **Delete Profiles**: Remove profiles you no longer need
+
+### Configuration Settings
+- **Output Folder**: Set a default location for exported files using the input field and "Set Folder" button
+- View current active profile and output folder in the top bar
+- All configuration is automatically saved
 
 All credentials are stored securely using the system keyring (or encrypted file storage as a fallback).
 
-## Configuration Settings
-
-![TUI Configuration Screen](images/tui_config_screen.svg)
-
-Set and manage configuration options:
-
-- **Default Output Folder**: Set a default location for exported files
-- View current configuration settings
-- Clear configuration values
-
 ## Workspaces
 
-![TUI Workspaces Screen](images/tui_workspaces_screen.svg)
+List and view Power BI workspaces with intelligent caching:
 
-List and view Power BI workspaces:
-
-- Fetch workspaces using the admin API
-- View workspace details in a table format
-- Specify the number of results to retrieve
+- **Load Workspaces**: Fetch workspaces using the admin API (uses cache if available)
+- **Refresh Cache**: Force a fresh API call to update workspace data
+- **Caching**: Results are cached for 1 hour to improve performance
+- View workspace details in a table format with ID, name, type, and state
 
 ## Apps
 
-Manage Power BI apps:
+Manage Power BI apps with intelligent caching:
 
-- List all apps you have access to
-- View app details including ID, name, and description
-- Export app data
+- **Load Apps**: List all apps you have access to (uses cache if available)
+- **Refresh Cache**: Force a fresh API call to update app data
+- **Caching**: Results are cached for 1 hour to improve performance
+- View app details including ID, name, and description in table format
 
 ## Reports
 
-Access report-related functionality through the workspaces and apps screens.
+Export and download Power BI reports with full parameter support:
+
+- **Source File**: Enter the path to the source report file
+- **Target File**: Specify where to save the exported report
+- **File Type**: Select from csv, tsv, json, xlsx, or parquet formats
+- All parameters match the CLI command options
 
 ## Users
 
-Query user access information:
+Query user access information with full parameter support:
 
-- Enter a user ID (email address)
-- Retrieve and display user access details
-- View results in formatted JSON
+- **User ID**: Enter a user's email address
+- **Target Folder**: Specify where to save user access data
+- **File Types**: Choose which types of data to include (apps, groups, capacities)
+- **File Name**: Customize the output file name
+- View results in formatted JSON or export to file
 
 ## Benefits of Using the TUI
 
@@ -137,11 +138,13 @@ The TUI is built using [Textual](https://github.com/Textualize/textual), a moder
 
 ### TUI Not Launching
 
-If you see an error about missing dependencies:
+The TUI requires the `textual` library, which is automatically installed as a dependency when you install PowerBI CLI. If you encounter import errors, try reinstalling:
 
 ```bash
-pip install textual
+pip install --upgrade pbi-cli
 ```
+
+This will ensure all required dependencies, including Textual, are properly installed.
 
 ### Display Issues
 
