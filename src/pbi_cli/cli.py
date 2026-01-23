@@ -337,7 +337,7 @@ def tui():
     - Q: Quit
     """
     try:
-        from pbi_cli.tui import run_tui
+        from pbi_cli.tui_new import run_tui
 
         run_tui()
     except ImportError as e:
