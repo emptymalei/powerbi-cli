@@ -79,33 +79,44 @@ class MainMenuScreen(Screen):
         yield Header()
 
         with Vertical(id="main-container"):
+            # Title banner
+            yield Static(
+                "🔷 Microsoft Power BI CLI - Interactive Terminal",
+                classes="title-banner",
+                id="title-banner"
+            )
+            
             # Top selectors bar - FUNCTIONAL selectors
             with Horizontal(id="filter-bar"):
+                yield Static("Profile:", classes="filter-label")
                 yield Select(
                     options=[("Loading...", "loading")],
-                    prompt="Profile",
+                    prompt="Select Profile",
                     id="profile-selector",
                     classes="filter-selector",
                     allow_blank=False,
                 )
+                yield Static("Output Folder:", classes="filter-label")
                 yield Input(
-                    placeholder="Output Folder (leave empty for default)",
+                    placeholder="~/PowerBI/exports (leave empty for default)",
                     id="output-folder-input",
                     classes="filter-input",
                 )
-                yield Button("Set Folder", id="btn-set-folder", variant="primary")
+                yield Button("💾 Set Folder", id="btn-set-folder", variant="primary")
 
             # Actions bar - Combined Auth/Config button, and data buttons
+            yield Static("Power BI Actions:", classes="section-label")
             with Horizontal(id="actions-bar", classes="action-buttons-bar"):
                 yield Button(
-                    "[1] Profiles & Config", id="btn-profiles-config", variant="default"
+                    "⚙️  [1] Profiles & Config", id="btn-profiles-config", variant="default"
                 )
-                yield Button("[2] Workspaces", id="btn-workspaces", variant="default")
-                yield Button("[3] Apps", id="btn-apps", variant="default")
-                yield Button("[4] Reports", id="btn-reports", variant="default")
-                yield Button("[5] Users", id="btn-users", variant="default")
+                yield Button("📊 [2] Workspaces", id="btn-workspaces", variant="default")
+                yield Button("📱 [3] Apps", id="btn-apps", variant="default")
+                yield Button("📄 [4] Reports", id="btn-reports", variant="default")
+                yield Button("👥 [5] Users", id="btn-users", variant="default")
 
             # Main content area - results pane
+            yield Static("Results:", classes="section-label")
             with Container(id="results-container"):
                 yield Static(
                     "PowerBI CLI - Welcome", classes="panel-header", id="results-header"
@@ -211,29 +222,32 @@ class MainMenuScreen(Screen):
 
     def show_welcome_message(self) -> None:
         """Display welcome message in results pane."""
-        self.query_one("#results-header", Static).update("PowerBI CLI - Welcome")
+        self.query_one("#results-header", Static).update("🔷 Microsoft Power BI CLI - Welcome")
         
         content = self.query_one("#results-content", Static)
         welcome_text = """
-[bold cyan]Welcome to PowerBI CLI TUI[/bold cyan]
+[bold yellow]═══════════════════════════════════════════════════════════[/bold yellow]
+[bold cyan]           Welcome to Microsoft Power BI CLI TUI           [/bold cyan]
+[bold yellow]═══════════════════════════════════════════════════════════[/bold yellow]
 
-[yellow]Quick Actions:[/yellow]
-• [1] Profiles & Config - Manage authentication profiles and settings
-• [2] Workspaces - List and manage Power BI workspaces
-• [3] Apps - View and interact with Power BI apps
-• [4] Reports - Augment reports with user data
-• [5] Users - Get user access information
+[bold yellow]Power BI Actions:[/bold yellow]
+  ⚙️  [1] [bold]Profiles & Config[/bold] - Manage Azure AD authentication and settings
+  📊 [2] [bold]Workspaces[/bold] - List and manage Power BI workspaces  
+  📱 [3] [bold]Apps[/bold] - View and interact with Power BI apps
+  📄 [4] [bold]Reports[/bold] - Augment reports with user access data
+  👥 [5] [bold]Users[/bold] - Get user access information
 
-[yellow]Top Controls:[/yellow]
-• Profile Selector - Switch between authentication profiles
-• Output Folder - Set default output folder for exports
-• Set Folder - Apply output folder changes
+[bold yellow]Top Controls:[/bold yellow]
+  • [bold]Profile Selector[/bold] - Switch between Azure AD authentication profiles
+  • [bold]Output Folder[/bold] - Set default output folder for Power BI exports
+  • [bold]Set Folder Button[/bold] - Apply output folder changes
 
-[yellow]Keyboard Shortcuts:[/yellow]
-• q - Quit application
-• Ctrl+R - Refresh current view
+[bold yellow]Keyboard Shortcuts:[/bold yellow]
+  • [bold]1-5[/bold] - Navigate to Power BI actions
+  • [bold]q[/bold] - Quit application
+  • [bold]Ctrl+R[/bold] - Refresh current view
 
-[green]Ready to use![/green]
+[bold green]✓ Ready to manage your Power BI environment![/bold green]
 """
         content.update(welcome_text)
 
@@ -1018,6 +1032,32 @@ class PowerBITUI(App):
         color: #F2C811;
         padding: 1;
         text-align: center;
+        text-style: bold;
+    }
+    
+    .title-banner {
+        background: #00188F;
+        color: #F2C811;
+        padding: 1;
+        text-align: center;
+        text-style: bold;
+        height: 3;
+        content-align: center middle;
+        border: heavy #F2C811;
+    }
+    
+    .section-label {
+        color: #F2C811;
+        background: #2D2D30;
+        padding: 0 1;
+        text-style: bold;
+        height: 1;
+    }
+    
+    .filter-label {
+        color: #F2C811;
+        padding: 0 1;
+        width: auto;
         text-style: bold;
     }
 
