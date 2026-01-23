@@ -24,8 +24,8 @@ Power BI command line tool
 
 3. Install pre-commit (if not already installed) and set up hooks:
    ```bash
-   # Install pre-commit at the user/system level
-   pip install pre-commit  # or: brew install pre-commit, or: apt install pre-commit
+   # Install pre-commit at the user level using uv
+   uv tool install pre-commit
 
    # Install the git hooks
    pre-commit install
