@@ -23,9 +23,9 @@ pbi tui
 
 ### Main Menu
 
-![TUI Main Menu](images/tui_main_menu.svg)
+![TUI Main Menu](images/tui_redesign_main.svg)
 
-The main menu provides quick access to all major functionalities through numbered shortcuts.
+The main interface provides quick access to all major functionalities through numbered action buttons and functional controls at the top for profile switching and output folder configuration.
 
 ## Navigation
 

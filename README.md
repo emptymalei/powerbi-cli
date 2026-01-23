@@ -12,7 +12,7 @@ Launch the interactive Terminal User Interface for easy access to all features:
 pbi tui
 ```
 
-![TUI Main Menu](docs/images/tui_main_menu.svg)
+![TUI Main Menu](docs/images/tui_redesign_main.svg)
 
 The TUI provides an intuitive interface for:
 - Authentication management
