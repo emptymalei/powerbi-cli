@@ -316,6 +316,42 @@ def pbi(ctx):
 
 
 @pbi.command()
+def tui():
+    """Launch the interactive Terminal User Interface (TUI)
+
+    The TUI provides an easy-to-use interface for all PowerBI CLI functionalities:
+    - Authentication management
+    - Configuration settings
+    - Workspaces management
+    - Apps management
+    - Reports management
+    - Users management
+
+    ```
+    pbi tui
+    ```
+
+    Use keyboard shortcuts for quick navigation:
+    - Numbers (1-6): Navigate to different sections
+    - ESC: Go back
+    - Q: Quit
+    """
+    try:
+        from pbi_cli.tui_new import run_tui
+
+        run_tui()
+    except ImportError as e:
+        click.secho(
+            "Error: Textual library not found. Please reinstall the package:", fg="red"
+        )
+        click.echo("  pip install --upgrade pbi-cli")
+        raise click.Abort()
+    except Exception as e:
+        click.secho(f"Error launching TUI: {str(e)}", fg="red")
+        raise
+
+
+@pbi.command()
 @click.option("--bearer-token", "-t", help="Bearer token", required=True)
 @click.option(
     "--profile",

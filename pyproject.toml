@@ -1,3 +1,46 @@
+[project]
+name = "pbi-cli"
+version = "0.1.1"
+description = "Power BI Command Line Tool for managing Power BI projects."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "L M", email = "hi@leima.is"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.2.2,<3.0.0",
+    "openpyxl>=3.1.4,<4.0.0",
+    "click>=8.1.7,<9.0.0",
+    "loguru>=0.7.2,<0.8.0",
+    "requests>=2.32.3,<3.0.0",
+    "python-slugify>=8.0.4,<9.0.0",
+    "keyring>=25.5.0,<26.0.0",
+    "pyyaml>=6.0.1,<7.0.0",
+    "textual>=7.3.0,<8.0.0",
+    "cloudpathlib[s3]>=0.20.0,<0.21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel>=6.29.4,<7.0.0",
+    "pytest>=8.3.3,<9.0.0",
+    "twine>=6.1.0,<7.0.0",
+]
+docs = [
+    "mkdocs-material>=9.6.11,<10.0.0",
+    "mkdocs-autorefs>=1.4.1,<2.0.0",
+    "mkdocstrings[python]>=0.29.1,<0.30.0",
+    "mkdocs-jupyter>=0.25.1,<0.26.0",
+    "mkdocs-click>=0.9.0,<0.10.0",
+]
+
+[project.scripts]
+pbi = "pbi_cli.cli:pbi"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pbi_cli"]
+
 [tool.poetry]
 
 name = "pbi_cli"
@@ -22,6 +65,7 @@ requests = "^2.32.3"
 python-slugify = "^8.0.4"
 keyring = "^25.5.0"
 pyyaml = "^6.0.1"
+textual = "^7.3.0"
 cloudpathlib = {extras = ["s3"], version = "^0.20.0"}
 
 
@@ -47,5 +91,5 @@ poetry-plugin-export = ">=1.8"
 
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
