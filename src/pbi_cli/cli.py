@@ -337,9 +337,9 @@ def tui():
     - Q: Quit
     """
     try:
-        from pbi_cli.tui import run
+        from pbi_cli.tui import run_tui
 
-        run()
+        run_tui()
     except ImportError as e:
         click.secho(
             "Error: Textual library not found. Please reinstall the package:", fg="red"
