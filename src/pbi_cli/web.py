@@ -1,8 +1,10 @@
 import random
+import warnings
 from functools import cached_property
 from typing import Optional
 
 import requests
+import urllib3
 from loguru import logger
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
@@ -143,11 +145,14 @@ class DataRetriever:
         :param headers: header information such as useragent,
             defaults to random user agent from get_random_user_agent
         """
-        content = self.session.get(
-            link, auth=auth, params=params, **self.session_query_configs
-        )
-
-        return content
+        with warnings.catch_warnings():
+            if not self.session_query_configs.get("verify", True):
+                warnings.filterwarnings(
+                    "ignore", category=urllib3.exceptions.InsecureRequestWarning
+                )
+            return self.session.get(
+                link, auth=auth, params=params, **self.session_query_configs
+            )
 
     def post(
         self,
@@ -162,8 +167,11 @@ class DataRetriever:
         """
         if data is None:
             data = {}
-        content = self.session.post(
-            link, auth=auth, data=data, **self.session_query_configs
-        )
-
-        return content
+        with warnings.catch_warnings():
+            if not self.session_query_configs.get("verify", True):
+                warnings.filterwarnings(
+                    "ignore", category=urllib3.exceptions.InsecureRequestWarning
+                )
+            return self.session.post(
+                link, auth=auth, data=data, **self.session_query_configs
+            )
