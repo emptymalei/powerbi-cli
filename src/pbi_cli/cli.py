@@ -871,10 +871,10 @@ def workspaces(ctx):
 )
 def list(
     top: int,
-    target_folder: Optional[str],
     expand: list,
-    filter: Optional[str],
     file_type: list[str],
+    filter: Optional[str],
+    target_folder: Optional[str],
     file_name: str = "workspaces",
     use_cache: bool = False,
     cache_only: bool = False,
