@@ -925,7 +925,7 @@ def list(
         _handle_cache_save(
             cache_key,
             result,
-            {"top": top, "expand": list(expand) if expand else [], "filter": odata_filter},
+            {"top": top, "expand": [*expand] if expand else [], "filter": odata_filter},
             pbi_config,
         )
 
