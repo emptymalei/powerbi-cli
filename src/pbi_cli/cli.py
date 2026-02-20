@@ -844,7 +844,9 @@ def workspaces(ctx):
     type=click.Choice(
         ["users", "reports", "dashboards", "datasets", "dataflows", "workbooks"]
     ),
+    default=["users", "reports", "dashboards", "datasets", "dataflows", "workbooks"],
     multiple=True,
+    show_default=True,
 )
 @click.option("--filter", "-f", type=str, help="odata filter", required=False)
 @click.option(
