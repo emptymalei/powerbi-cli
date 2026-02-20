@@ -848,7 +848,7 @@ def workspaces(ctx):
     multiple=True,
     show_default=True,
 )
-@click.option("--filter", "-f", type=str, help="odata filter", required=False)
+@click.option("--odata-filter", "-f", type=str, help="odata filter", required=False)
 @click.option(
     "--file-type",
     "-ft",
@@ -873,7 +873,7 @@ def list(
     top: int,
     expand: list,
     file_type: list[str],
-    filter: Optional[str],
+    odata_filter: Optional[str],
     target_folder: Optional[str],
     file_name: str = "workspaces",
     use_cache: bool = False,
@@ -918,14 +918,14 @@ def list(
     # Fetch from API if not using cache
     if result is None:
         workspaces = Workspaces(auth=load_auth(), verify=False)
-        click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {filter=}")
-        result = workspaces(top=top, expand=expand, filter=filter)
+        click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
+        result = workspaces(top=top, expand=expand, filter=odata_filter)
 
         # Save to cache
         _handle_cache_save(
             cache_key,
             result,
-            {"top": top, "expand": list(expand) if expand else [], "filter": filter},
+            {"top": top, "expand": list(expand) if expand else [], "filter": odata_filter},
             pbi_config,
         )
 
