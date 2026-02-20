@@ -105,7 +105,7 @@ class Workspaces:
             and isinstance(expand, (list, tuple))
             and len(expand) >= 1
         ):
-            query_params["expand"] = ",".join(expand)
+            query_params["expand"] = "%2C".join(expand)
 
         if filter is not None:
             query_params["filter"] = filter
