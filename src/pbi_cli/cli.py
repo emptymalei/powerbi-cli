@@ -831,14 +831,6 @@ def workspaces(ctx):
 @workspaces.command()
 @click.option("--top", help="top n results", type=int, default=1000, required=True)
 @click.option(
-    "--target-folder",
-    "-tf",
-    type=str,
-    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
-    default=None,
-    required=False,
-)
-@click.option(
     "--expand",
     "-e",
     type=click.Choice(
@@ -848,13 +840,21 @@ def workspaces(ctx):
     multiple=True,
     show_default=True,
 )
-@click.option("--odata-filter", "-f", type=str, help="odata filter", required=False)
 @click.option(
     "--file-type",
     "-ft",
     type=click.Choice(["json", "excel"]),
     default=["json"],
     multiple=True,
+)
+@click.option("--odata-filter", "-f", type=str, help="odata filter", required=False)
+@click.option(
+    "--target-folder",
+    "-tf",
+    type=str,
+    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+    default=None,
+    required=False,
 )
 @click.option("--file-name", "-n", type=str, help="file name", default="workspaces")
 @click.option(
