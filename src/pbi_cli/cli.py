@@ -287,12 +287,12 @@ def load_auth(profile: Optional[str] = None) -> dict:
 
     if profile is None:
         raise click.ClickException(
-            "No active profile set. Use 'pbi auth' to create a profile or 'pbi switch-profile' to switch profiles."
+            "No active profile set. Use 'pbi auth' to create a profile or 'pbi profile switch' to switch profiles."
         )
 
     if profile not in profiles_data.get("profiles", {}):
         raise click.ClickException(
-            f"Profile '{profile}' not found. Use 'pbi profiles list' to see available profiles."
+            f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles."
         )
 
     # Get token from keyring or file
@@ -377,19 +377,27 @@ def auth(bearer_token: str, profile: str):
         click.secho(f"✓ Profile '{profile}' is now active", fg="green")
 
 
-@pbi.command(name="switch-profile")
+@pbi.group(name="profile", invoke_without_command=True)
+@click.pass_context
+def profile_group(ctx):
+    """Manage authentication profiles"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi profile --help for help.")
+
+
+@profile_group.command(name="switch")
 @click.argument("profile_name", required=False)
 def switch_profile_cmd(profile_name: Optional[str] = None):
     """Switch the active authentication profile
 
     ```
-    pbi switch-profile
+    pbi profile switch
     ```
 
     or specify a profile:
 
     ```
-    pbi switch-profile production
+    pbi profile switch production
     ```
 
     :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)
@@ -424,7 +432,7 @@ def switch_profile_cmd(profile_name: Optional[str] = None):
 
     if profile_name not in available_profiles:
         click.secho(
-            f"Profile '{profile_name}' not found. Use 'pbi profiles list' to see available profiles.",
+            f"Profile '{profile_name}' not found. Use 'pbi profile list' to see available profiles.",
             fg="red",
         )
         return
@@ -435,20 +443,12 @@ def switch_profile_cmd(profile_name: Optional[str] = None):
     click.secho(f"✓ Switched to profile '{profile_name}'", fg="green")
 
 
-@pbi.group(name="profiles", invoke_without_command=True)
-@click.pass_context
-def profiles_group(ctx):
-    """Manage authentication profiles"""
-    if ctx.invoked_subcommand is None:
-        click.echo("Use pbi profiles --help for help.")
-
-
-@profiles_group.command(name="list")
+@profile_group.command(name="list")
 def list_auth():
     """List all stored authentication profiles
 
     ```
-    pbi list auth
+    pbi profile list
     ```
     """
     profiles_data = _load_profiles()
@@ -473,14 +473,14 @@ def list_auth():
     click.echo(f"Active profile: {active_profile or 'None'}")
 
 
-@profiles_group.command(name="delete")
+@profile_group.command(name="delete")
 @click.argument("profile")
 @click.confirmation_option(prompt="Are you sure you want to delete this profile?")
 def delete_auth(profile: str):
     """Delete an authentication profile
 
     ```
-    pbi profiles delete production
+    pbi profile delete production
     ```
 
     :param profile: Profile name to delete
@@ -489,7 +489,7 @@ def delete_auth(profile: str):
 
     if profile not in profiles_data.get("profiles", {}):
         click.secho(
-            f"Profile '{profile}' not found. Use 'pbi list auth' to see available profiles.",
+            f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles.",
             fg="red",
         )
         return
@@ -1608,7 +1608,6 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
         with open(target, "wb") as fp:
             fp.write(result)
         click.secho(f"✓ Export saved to {target}", fg="green")
-
 
 
 @workspaces.group(name="scan", invoke_without_command=True)
