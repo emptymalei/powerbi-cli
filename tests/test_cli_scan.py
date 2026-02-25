@@ -227,7 +227,11 @@ def test_scan_get_retries_then_succeeds():
         ):
             with patch(
                 "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                side_effect=[ScanNotReadyError("not ready"), ScanNotReadyError("not ready"), fake_result],
+                side_effect=[
+                    ScanNotReadyError("not ready"),
+                    ScanNotReadyError("not ready"),
+                    fake_result,
+                ],
             ) as mock_result:
                 with patch("time.sleep"):
                     result = runner.invoke(
