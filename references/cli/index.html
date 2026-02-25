@@ -1125,21 +1125,21 @@ pbi cache list -k workspaces
   -t, --target PATH     target file (if omitted, prints info to console)
   --help                Show this message and exit.
 </code></pre></div>
-<h2 id="profiles">profiles<a class="headerlink" href="#profiles" title="Permanent link">¤</a></h2>
+<h2 id="profile">profile<a class="headerlink" href="#profile" title="Permanent link">¤</a></h2>
 <p>Manage authentication profiles</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi profiles [OPTIONS] COMMAND [ARGS]...
+<div class="highlight"><pre><span></span><code>pbi profile [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
 </code></pre></div>
 <h3 id="delete">delete<a class="headerlink" href="#delete" title="Permanent link">¤</a></h3>
 <p>Delete an authentication profile</p>
-<div class="highlight"><pre><span></span><code>pbi profiles delete production
+<div class="highlight"><pre><span></span><code>pbi profile delete production
 </code></pre></div>
 <p>:param profile: Profile name to delete</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi profiles delete [OPTIONS] PROFILE
+<div class="highlight"><pre><span></span><code>pbi profile delete [OPTIONS] PROFILE
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  --yes   Confirm the action without prompting.
@@ -1147,10 +1147,24 @@ pbi cache list -k workspaces
 </code></pre></div>
 <h3 id="list_2">list<a class="headerlink" href="#list_2" title="Permanent link">¤</a></h3>
 <p>List all stored authentication profiles</p>
-<div class="highlight"><pre><span></span><code>pbi list auth
+<div class="highlight"><pre><span></span><code>pbi profile list
 </code></pre></div>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi profiles list [OPTIONS]
+<div class="highlight"><pre><span></span><code>pbi profile list [OPTIONS]
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
+</code></pre></div>
+<h3 id="switch">switch<a class="headerlink" href="#switch" title="Permanent link">¤</a></h3>
+<p>Switch the active authentication profile</p>
+<div class="highlight"><pre><span></span><code>pbi profile switch
+</code></pre></div>
+<p>or specify a profile:</p>
+<div class="highlight"><pre><span></span><code>pbi profile switch production
+</code></pre></div>
+<p>:param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code>pbi profile switch [OPTIONS] [PROFILE_NAME]
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
@@ -1184,20 +1198,6 @@ pbi cache list -k workspaces
   -t, --target PATH              target file  [required]
   -ft, --file-type [json|excel]
   --help                         Show this message and exit.
-</code></pre></div>
-<h2 id="switch-profile">switch-profile<a class="headerlink" href="#switch-profile" title="Permanent link">¤</a></h2>
-<p>Switch the active authentication profile</p>
-<div class="highlight"><pre><span></span><code>pbi switch-profile
-</code></pre></div>
-<p>or specify a profile:</p>
-<div class="highlight"><pre><span></span><code>pbi switch-profile production
-</code></pre></div>
-<p>:param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)</p>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi switch-profile [OPTIONS] [PROFILE_NAME]
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
 </code></pre></div>
 <h2 id="users_1">users<a class="headerlink" href="#users_1" title="Permanent link">¤</a></h2>
 <p>Command group for Power BI users</p>
@@ -2769,7 +2769,7 @@ pbi cache clear -k workspaces -v 20240101_120000
     <div class="doc doc-contents ">
 
         <p>Delete an authentication profile</p>
-<div class="highlight"><pre><span></span><code>pbi profiles delete production
+<div class="highlight"><pre><span></span><code>pbi profile delete production
 </code></pre></div>
 
 
@@ -2847,14 +2847,14 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">514</span>
 <span class="normal">515</span>
 <span class="normal">516</span>
-<span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profiles_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">)</span>
+<span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">confirmation_option</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Are you sure you want to delete this profile?&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">delete_auth</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an authentication profile</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    pbi profiles delete production</span>
+<span class="sd">    pbi profile delete production</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    :param profile: Profile name to delete</span>
@@ -2863,7 +2863,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
     <span class="k">if</span> <span class="n">profile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profiles&quot;</span><span class="p">,</span> <span class="p">{}):</span>
         <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi list auth&#39; to see available profiles.&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profile list&#39; to see available profiles.&quot;</span><span class="p">,</span>
             <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span>
@@ -3496,7 +3496,7 @@ from json to excel.</p>
     <div class="doc doc-contents ">
 
         <p>List all stored authentication profiles</p>
-<div class="highlight"><pre><span></span><code>pbi list auth
+<div class="highlight"><pre><span></span><code>pbi profile list
 </code></pre></div>
 
 
@@ -3529,12 +3529,12 @@ from json to excel.</p>
 <span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span>
-<span class="normal">473</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profiles_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
+<span class="normal">473</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_auth</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List all stored authentication profiles</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    pbi list auth</span>
+<span class="sd">    pbi profile list</span>
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">profiles_data</span> <span class="o">=</span> <span class="n">_load_profiles</span><span class="p">()</span>
@@ -3830,12 +3830,12 @@ pbi cache list -k workspaces
 
     <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
-            <span class="s2">&quot;No active profile set. Use &#39;pbi auth&#39; to create a profile or &#39;pbi switch-profile&#39; to switch profiles.&quot;</span>
+            <span class="s2">&quot;No active profile set. Use &#39;pbi auth&#39; to create a profile or &#39;pbi profile switch&#39; to switch profiles.&quot;</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">profile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profiles&quot;</span><span class="p">,</span> <span class="p">{}):</span>
         <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profiles list&#39; to see available profiles.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profile list&#39; to see available profiles.&quot;</span>
         <span class="p">)</span>
 
     <span class="c1"># Get token from keyring or file</span>
@@ -3855,10 +3855,10 @@ pbi cache list -k workspaces
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pbi_cli.cli.profiles_group" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">profiles_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span></code>
+<h2 id="pbi_cli.cli.profile_group" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">profile_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span></code>
 
-<a href="#pbi_cli.cli.profiles_group" class="headerlink" title="Permanent link">¤</a></h2>
+<a href="#pbi_cli.cli.profile_group" class="headerlink" title="Permanent link">¤</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3868,17 +3868,17 @@ pbi cache list -k workspaces
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;profiles&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">profiles_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">profile_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage authentication profiles&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Use pbi profiles --help for help.&quot;</span><span class="p">)</span>
+        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Use pbi profile --help for help.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4322,7 +4322,8 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1733</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1732</span>
+<span class="normal">1733</span>
 <span class="normal">1734</span>
 <span class="normal">1735</span>
 <span class="normal">1736</span>
@@ -4445,8 +4446,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1853</span>
 <span class="normal">1854</span>
 <span class="normal">1855</span>
-<span class="normal">1856</span>
-<span class="normal">1857</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
+<span class="normal">1856</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -4602,7 +4602,8 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1628</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1627</span>
+<span class="normal">1628</span>
 <span class="normal">1629</span>
 <span class="normal">1630</span>
 <span class="normal">1631</span>
@@ -4665,8 +4666,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1688</span>
 <span class="normal">1689</span>
 <span class="normal">1690</span>
-<span class="normal">1691</span>
-<span class="normal">1692</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
+<span class="normal">1691</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -4763,7 +4763,8 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1695</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1694</span>
+<span class="normal">1695</span>
 <span class="normal">1696</span>
 <span class="normal">1697</span>
 <span class="normal">1698</span>
@@ -4797,8 +4798,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1726</span>
 <span class="normal">1727</span>
 <span class="normal">1728</span>
-<span class="normal">1729</span>
-<span class="normal">1730</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
+<span class="normal">1729</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;scan_id&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -5164,10 +5164,10 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
     <div class="doc doc-contents ">
 
         <p>Switch the active authentication profile</p>
-<div class="highlight"><pre><span></span><code>pbi switch-profile
+<div class="highlight"><pre><span></span><code>pbi profile switch
 </code></pre></div>
 <p>or specify a profile:</p>
-<div class="highlight"><pre><span></span><code>pbi switch-profile production
+<div class="highlight"><pre><span></span><code>pbi profile switch production
 </code></pre></div>
 
 
@@ -5204,15 +5204,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">380</span>
-<span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">388</span>
 <span class="normal">389</span>
 <span class="normal">390</span>
 <span class="normal">391</span>
@@ -5259,19 +5251,27 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">432</span>
 <span class="normal">433</span>
 <span class="normal">434</span>
-<span class="normal">435</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;switch-profile&quot;</span><span class="p">)</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;switch&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;profile_name&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">switch_profile_cmd</span><span class="p">(</span><span class="n">profile_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Switch the active authentication profile</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    pbi switch-profile</span>
+<span class="sd">    pbi profile switch</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    or specify a profile:</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    pbi switch-profile production</span>
+<span class="sd">    pbi profile switch production</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)</span>
@@ -5306,7 +5306,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
     <span class="k">if</span> <span class="n">profile_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_profiles</span><span class="p">:</span>
         <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile_name</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profiles list&#39; to see available profiles.&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile_name</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profile list&#39; to see available profiles.&quot;</span><span class="p">,</span>
             <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span>
@@ -5791,7 +5791,8 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1614</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1613</span>
+<span class="normal">1614</span>
 <span class="normal">1615</span>
 <span class="normal">1616</span>
 <span class="normal">1617</span>
@@ -5801,8 +5802,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1621</span>
 <span class="normal">1622</span>
 <span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1624</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Command group for workspace scan operations.</span>
