@@ -16,7 +16,7 @@ import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.cache import CacheManager
-from pbi_cli.config import PBIConfig, migrate_legacy_config, resolve_output_path
+from pbi_cli.config import PBIConfig, migrate_legacy_config, resolve_output_path, VALID_GROUPS
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
@@ -37,12 +37,29 @@ logger.add(sys.stderr, level="INFO", enqueue=True)
 
 
 __CWD__ = os.getcwd()
+# These are computed at import time for backward compatibility.
+# Functions that need runtime-resolved paths use Path.home() directly.
 CONFIG_DIR = Path.home() / ".pbi_cli"
 # Legacy files for migration
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
 LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
+
+
+def _get_config_dir() -> Path:
+    """Return the pbi-cli config directory, resolved at call time."""
+    return Path.home() / ".pbi_cli"
+
+
+def _get_credentials_file() -> Path:
+    """Return the credentials file path, resolved at call time."""
+    return _get_config_dir() / "credentials.json"
+
+
+def _get_auth_config_file() -> Path:
+    """Return the legacy auth config file path, resolved at call time."""
+    return _get_config_dir() / "auth.json"
 
 
 def _handle_cache_load(
@@ -161,21 +178,23 @@ def _set_credential(profile: str, token: str):
         "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
     )
 
-    if not CONFIG_DIR.exists():
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    config_dir = _get_config_dir()
+    credentials_file = _get_credentials_file()
+    if not config_dir.exists():
+        config_dir.mkdir(parents=True, exist_ok=True)
 
     credentials = {}
-    if CREDENTIALS_FILE.exists():
-        with open(CREDENTIALS_FILE, "r") as fp:
+    if credentials_file.exists():
+        with open(credentials_file, "r") as fp:
             credentials = json.load(fp)
 
     credentials[profile] = token
 
-    with open(CREDENTIALS_FILE, "w") as fp:
+    with open(credentials_file, "w") as fp:
         json.dump(credentials, fp, indent=2)
 
     # Set restrictive permissions on the credentials file
-    CREDENTIALS_FILE.chmod(0o600)
+    credentials_file.chmod(0o600)
 
 
 def _get_credential(profile: str) -> Optional[str]:
@@ -193,8 +212,9 @@ def _get_credential(profile: str) -> Optional[str]:
             pass
 
     # Fallback to file-based storage
-    if CREDENTIALS_FILE.exists():
-        with open(CREDENTIALS_FILE, "r") as fp:
+    credentials_file = _get_credentials_file()
+    if credentials_file.exists():
+        with open(credentials_file, "r") as fp:
             credentials = json.load(fp)
             return credentials.get(profile)
 
@@ -215,17 +235,18 @@ def _delete_credential(profile: str):
             pass
 
     # Fallback to file-based storage
-    if CREDENTIALS_FILE.exists():
-        with open(CREDENTIALS_FILE, "r") as fp:
+    credentials_file = _get_credentials_file()
+    if credentials_file.exists():
+        with open(credentials_file, "r") as fp:
             credentials = json.load(fp)
 
         if profile in credentials:
             del credentials[profile]
 
-            with open(CREDENTIALS_FILE, "w") as fp:
+            with open(credentials_file, "w") as fp:
                 json.dump(credentials, fp, indent=2)
 
-            CREDENTIALS_FILE.chmod(0o600)
+            credentials_file.chmod(0o600)
 
 
 def _migrate_legacy_auth():
@@ -236,9 +257,10 @@ def _migrate_legacy_auth():
     migrate_legacy_config()
 
     # Then migrate from auth.json if needed
-    if AUTH_CONFIG_FILE.exists() and not pbi_config.profiles:
+    auth_config_file = _get_auth_config_file()
+    if auth_config_file.exists() and not pbi_config.profiles:
         try:
-            with open(AUTH_CONFIG_FILE, "r", encoding="utf-8") as fp:
+            with open(auth_config_file, "r", encoding="utf-8") as fp:
                 legacy_auth = json.load(fp)
 
             if "Authorization" in legacy_auth:
@@ -274,26 +296,69 @@ def _save_profiles(profiles_data: dict):
     pbi_config.profiles = profiles_data.get("profiles", {})
 
 
-def load_auth(profile: Optional[str] = None) -> dict:
-    """Load authentication for the specified profile or active profile
+def _load_group_profiles(group: str) -> dict:
+    """Load profiles for a specific group from config.
 
-    :param profile: Profile name. If None, uses the active profile.
+    :param group: Group name (e.g. 'user' or 'admin')
+    :return: dict with 'active_profile' and 'profiles' keys for the group
+    """
+    pbi_config = PBIConfig()
+    return {
+        "active_profile": pbi_config.get_group_active_profile(group),
+        "profiles": pbi_config.get_group_profiles(group),
+    }
+
+
+def _save_group_profiles(group: str, group_data: dict):
+    """Save profiles for a specific group to config.
+
+    :param group: Group name (e.g. 'user' or 'admin')
+    :param group_data: dict with 'active_profile' and 'profiles' keys
+    """
+    pbi_config = PBIConfig()
+    for profile_name, profile_info in group_data.get("profiles", {}).items():
+        pbi_config.add_profile_to_group(group, profile_name, profile_info)
+    pbi_config.set_group_active_profile(group, group_data.get("active_profile"))
+
+
+def load_auth(profile: Optional[str] = None, group: Optional[str] = None) -> dict:
+    """Load authentication for the specified profile or active profile.
+
+    If *group* is provided the active profile is resolved from that group.
+    Otherwise the legacy flat active-profile is used.
+
+    :param profile: Profile name. If None, resolves from group or flat config.
+    :param group: Group name ('user' or 'admin'). When set, the group's active
+        profile is used when *profile* is None.
     :return: dict containing {"Authorization": "Bearer <token>"}
     """
-    profiles_data = _load_profiles()
-
-    if profile is None:
-        profile = profiles_data.get("active_profile")
-
-    if profile is None:
-        raise click.ClickException(
-            "No active profile set. Use 'pbi auth' to create a profile or 'pbi profile switch' to switch profiles."
-        )
-
-    if profile not in profiles_data.get("profiles", {}):
-        raise click.ClickException(
-            f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles."
-        )
+    if group is not None:
+        pbi_config = PBIConfig()
+        if profile is None:
+            profile = pbi_config.get_group_active_profile(group)
+        if profile is None:
+            raise click.ClickException(
+                f"No active profile set for group '{group}'. "
+                f"Use 'pbi auth -g {group}' to create a profile or "
+                f"'pbi profile switch -g {group}' to switch profiles."
+            )
+        if not pbi_config.has_profile_in_group(group, profile):
+            raise click.ClickException(
+                f"Profile '{profile}' not found in group '{group}'. "
+                "Use 'pbi profile list' to see available profiles."
+            )
+    else:
+        profiles_data = _load_profiles()
+        if profile is None:
+            profile = profiles_data.get("active_profile")
+        if profile is None:
+            raise click.ClickException(
+                "No active profile set. Use 'pbi auth' to create a profile or 'pbi profile switch' to switch profiles."
+            )
+        if profile not in profiles_data.get("profiles", {}):
+            raise click.ClickException(
+                f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles."
+            )
 
     # Get token from keyring or file
     token = _get_credential(profile)
@@ -331,7 +396,15 @@ def version():
     help="Profile name for this credential set",
     default="default",
 )
-def auth(bearer_token: str, profile: str):
+@click.option(
+    "--group",
+    "-g",
+    help="Group to store this profile in ('user' or 'admin')",
+    type=click.Choice(list(VALID_GROUPS)),
+    default=None,
+    required=False,
+)
+def auth(bearer_token: str, profile: str, group: Optional[str]):
     """Store authentication bearer token securely
 
     ```
@@ -344,37 +417,63 @@ def auth(bearer_token: str, profile: str):
     pbi auth -t <your_bearer_token> -p production
     ```
 
+    or scoped to a group:
+
+    ```
+    pbi auth -t <your_bearer_token> -p admin-nlm -g admin
+    pbi auth -t <your_bearer_token> -p user-nlm -g user
+    ```
+
     :param bearer_token: Bearer token to authenticate with Power BI API
     :param profile: Profile name to associate with this credential
+    :param group: Optional group ('user' or 'admin') to store the profile in
     """
 
     if bearer_token.startswith("Bearer"):
         logger.warning("Do not include the Bearer string in the beginning")
         bearer_token = bearer_token.replace("Bearer ", "")
 
-    if not CONFIG_DIR.exists():
-        logger.info(f"Creating config folder: {CONFIG_DIR}")
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    config_dir = _get_config_dir()
+    if not config_dir.exists():
+        logger.info(f"Creating config folder: {config_dir}")
+        config_dir.mkdir(parents=True, exist_ok=True)
 
-    # Store token securely
+    # Store token securely (keyed by profile name)
     _set_credential(profile, bearer_token)
 
-    # Update profiles configuration
-    profiles_data = _load_profiles()
-    if "profiles" not in profiles_data:
-        profiles_data["profiles"] = {}
+    if group is not None:
+        # Store in group-based config
+        pbi_config = PBIConfig()
+        pbi_config.add_profile_to_group(group, profile, {"name": profile})
+        # Activate this profile in the group if none is set yet
+        if not pbi_config.get_group_active_profile(group):
+            pbi_config.set_group_active_profile(group, profile)
+        active_in_group = pbi_config.get_group_active_profile(group)
+        click.secho(
+            f"✓ Credentials saved securely for profile '{profile}' in group '{group}'",
+            fg="green",
+        )
+        if active_in_group == profile:
+            click.secho(
+                f"✓ Profile '{profile}' is now active in group '{group}'", fg="green"
+            )
+    else:
+        # Legacy: store in flat profiles
+        profiles_data = _load_profiles()
+        if "profiles" not in profiles_data:
+            profiles_data["profiles"] = {}
 
-    profiles_data["profiles"][profile] = {"name": profile}
+        profiles_data["profiles"][profile] = {"name": profile}
 
-    # Set as active profile if it's the first one or if it's 'default'
-    if not profiles_data.get("active_profile") or profile == "default":
-        profiles_data["active_profile"] = profile
+        # Set as active profile if it's the first one or if it's 'default'
+        if not profiles_data.get("active_profile") or profile == "default":
+            profiles_data["active_profile"] = profile
 
-    _save_profiles(profiles_data)
+        _save_profiles(profiles_data)
 
-    click.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
-    if profiles_data["active_profile"] == profile:
-        click.secho(f"✓ Profile '{profile}' is now active", fg="green")
+        click.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
+        if profiles_data["active_profile"] == profile:
+            click.secho(f"✓ Profile '{profile}' is now active", fg="green")
 
 
 @pbi.group(name="profile", invoke_without_command=True)
@@ -387,7 +486,17 @@ def profile_group(ctx):
 
 @profile_group.command(name="switch")
 @click.argument("profile_name", required=False)
-def switch_profile_cmd(profile_name: Optional[str] = None):
+@click.option(
+    "--group",
+    "-g",
+    help="Group to switch profile in ('user' or 'admin')",
+    type=click.Choice(list(VALID_GROUPS)),
+    default=None,
+    required=False,
+)
+def switch_profile_cmd(
+    profile_name: Optional[str] = None, group: Optional[str] = None
+):
     """Switch the active authentication profile
 
     ```
@@ -400,8 +509,63 @@ def switch_profile_cmd(profile_name: Optional[str] = None):
     pbi profile switch production
     ```
 
+    or within a group:
+
+    ```
+    pbi profile switch admin-nlm -g admin
+    pbi profile switch user-nlm -g user
+    ```
+
     :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)
+    :param group: Optional group ('user' or 'admin') to switch within
     """
+    if group is not None:
+        pbi_config = PBIConfig()
+        group_profiles = pbi_config.get_group_profiles(group)
+        available_profiles = tuple(group_profiles.keys())
+
+        if not available_profiles:
+            click.secho(
+                f"No profiles found in group '{group}'. "
+                f"Use 'pbi auth -g {group}' to create a profile.",
+                fg="yellow",
+            )
+            return
+
+        if profile_name is None:
+            click.echo(f"Available profiles in group '{group}':")
+            for idx, prof in enumerate(available_profiles, 1):
+                active_marker = (
+                    " (active)"
+                    if prof == pbi_config.get_group_active_profile(group)
+                    else ""
+                )
+                click.echo(f"  {idx}. {prof}{active_marker}")
+
+            choice = click.prompt(
+                "Select profile number", type=int, default=1, show_default=True
+            )
+            if 1 <= choice <= len(available_profiles):
+                profile_name = available_profiles[choice - 1]
+            else:
+                click.secho("Invalid selection", fg="red")
+                return
+
+        if profile_name not in available_profiles:
+            click.secho(
+                f"Profile '{profile_name}' not found in group '{group}'. "
+                "Use 'pbi profile list' to see available profiles.",
+                fg="red",
+            )
+            return
+
+        pbi_config.set_group_active_profile(group, profile_name)
+        click.secho(
+            f"✓ Switched to profile '{profile_name}' in group '{group}'", fg="green"
+        )
+        return
+
+    # Legacy: switch flat active profile
     profiles_data = _load_profiles()
     # Use tuple() instead of list() to avoid shadowing by the workspaces list command
     available_profiles = tuple(profiles_data.get("profiles", {}).keys())
@@ -455,36 +619,101 @@ def list_auth():
     profiles = profiles_data.get("profiles", {})
     active_profile = profiles_data.get("active_profile")
 
-    if not profiles:
+    pbi_config = PBIConfig()
+
+    # Show flat (legacy) profiles
+    if profiles:
+        click.echo("Stored authentication profiles (ungrouped):")
+        for profile_name in profiles.keys():
+            active_marker = " (active)" if profile_name == active_profile else ""
+            token_exists = _get_credential(profile_name) is not None
+            status = "✓" if token_exists else "✗"
+            click.echo(f"  {status} {profile_name}{active_marker}")
+        click.echo()
+        click.echo(f"Active profile: {active_profile or 'None'}")
+    else:
+        click.secho(
+            "No ungrouped profiles found. Use 'pbi auth' to create a profile.",
+            fg="yellow",
+        )
+
+    # Show group profiles
+    click.echo()
+    for group in VALID_GROUPS:
+        group_profiles = pbi_config.get_group_profiles(group)
+        group_active = pbi_config.get_group_active_profile(group)
+        if group_profiles:
+            click.echo(f"Group '{group}':")
+            for profile_name in group_profiles.keys():
+                active_marker = " (active)" if profile_name == group_active else ""
+                token_exists = _get_credential(profile_name) is not None
+                status = "✓" if token_exists else "✗"
+                click.echo(f"  {status} {profile_name}{active_marker}")
+            click.echo(f"  Active: {group_active or 'None'}")
+        else:
+            click.secho(
+                f"No profiles found in group '{group}'. "
+                f"Use 'pbi auth -g {group}' to create one.",
+                fg="yellow",
+            )
+
+    if not profiles and not any(
+        pbi_config.get_group_profiles(g) for g in VALID_GROUPS
+    ):
         click.secho(
             "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
         )
-        return
-
-    click.echo("Stored authentication profiles:")
-    for profile_name in profiles.keys():
-        active_marker = " (active)" if profile_name == active_profile else ""
-        # Check if token exists
-        token_exists = _get_credential(profile_name) is not None
-        status = "✓" if token_exists else "✗"
-        click.echo(f"  {status} {profile_name}{active_marker}")
-
-    click.echo()
-    click.echo(f"Active profile: {active_profile or 'None'}")
 
 
 @profile_group.command(name="delete")
 @click.argument("profile")
+@click.option(
+    "--group",
+    "-g",
+    help="Group to delete the profile from ('user' or 'admin')",
+    type=click.Choice(list(VALID_GROUPS)),
+    default=None,
+    required=False,
+)
 @click.confirmation_option(prompt="Are you sure you want to delete this profile?")
-def delete_auth(profile: str):
+def delete_auth(profile: str, group: Optional[str]):
     """Delete an authentication profile
 
     ```
     pbi profile delete production
     ```
 
+    or from a specific group:
+
+    ```
+    pbi profile delete admin-nlm -g admin
+    ```
+
     :param profile: Profile name to delete
+    :param group: Optional group ('user' or 'admin') to delete from
     """
+    if group is not None:
+        pbi_config = PBIConfig()
+        if not pbi_config.has_profile_in_group(group, profile):
+            click.secho(
+                f"Profile '{profile}' not found in group '{group}'. "
+                "Use 'pbi profile list' to see available profiles.",
+                fg="red",
+            )
+            return
+
+        _delete_credential(profile)
+        pbi_config.remove_profile_from_group(group, profile)
+        click.secho(
+            f"✓ Profile '{profile}' deleted from group '{group}'", fg="green"
+        )
+        new_active = pbi_config.get_group_active_profile(group)
+        if new_active:
+            click.secho(
+                f"Active profile in group '{group}' is now '{new_active}'", fg="yellow"
+            )
+        return
+
     profiles_data = _load_profiles()
 
     if profile not in profiles_data.get("profiles", {}):
@@ -590,10 +819,19 @@ def show_config():
     click.echo(f"  Profiles: {len(pbi_config.profiles)}")
 
     if pbi_config.profiles:
-        click.echo("\n  Available profiles:")
+        click.echo("\n  Available profiles (ungrouped):")
         for profile_name in pbi_config.profiles.keys():
             active = " (active)" if profile_name == pbi_config.active_profile else ""
             click.echo(f"    - {profile_name}{active}")
+
+    click.echo()
+    click.echo("  Groups:")
+    for group in VALID_GROUPS:
+        group_profiles = pbi_config.get_group_profiles(group)
+        group_active = pbi_config.get_group_active_profile(group)
+        click.echo(
+            f"    {group}: {len(group_profiles)} profile(s), active='{group_active or 'None'}'"
+        )
 
 
 @config_group.command(name="set-cache-folder")

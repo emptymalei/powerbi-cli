@@ -12,8 +12,23 @@ __all__ = [
     "PBIConfig",
     "resolve_output_path",
     "migrate_legacy_config",
+    "VALID_GROUPS",
 ]
 
+VALID_GROUPS = ("user", "admin")
+
+
+def _default_config_dir() -> Path:
+    """Return the default configuration directory (computed at call time)."""
+    return Path.home() / ".pbi_cli"
+
+
+def _default_config_file() -> Path:
+    """Return the default configuration file path (computed at call time)."""
+    return _default_config_dir() / "config.yaml"
+
+
+# Module-level constants retained for backward compatibility (import-time values)
 CONFIG_DIR = Path.home() / ".pbi_cli"
 CONFIG_FILE = CONFIG_DIR / "config.yaml"
 # Legacy files for migration
@@ -39,7 +54,7 @@ class PBIConfig:
 
         :param config_file: Optional path to config file (defaults to ~/.pbi_cli/config.yaml)
         """
-        self._config_file = config_file or CONFIG_FILE
+        self._config_file = config_file if config_file is not None else _default_config_file()
         self._config_dir = self._config_file.parent
         self._data: Optional[Dict] = None
 
@@ -80,6 +95,10 @@ class PBIConfig:
         return {
             "active_profile": None,
             "profiles": {},
+            "groups": {
+                "user": {"active_profile": None, "profiles": {}},
+                "admin": {"active_profile": None, "profiles": {}},
+            },
             "default_output_folder": None,
             "cache_folder": None,
             "cache_enabled": True,
@@ -341,6 +360,93 @@ class PBIConfig:
                 # Set to first remaining profile or None
                 remaining = list(profiles.keys())
                 self.active_profile = remaining[0] if remaining else None
+
+    # Group management methods
+
+    def get_group_active_profile(self, group: str) -> Optional[str]:
+        """Get the active profile name for a group.
+
+        :param group: Group name (e.g. 'user' or 'admin')
+        :return: Active profile name for the group, or None
+        """
+        return self.get(f"groups.{group}.active_profile")
+
+    def set_group_active_profile(self, group: str, profile_name: Optional[str]):
+        """Set the active profile for a group.
+
+        :param group: Group name (e.g. 'user' or 'admin')
+        :param profile_name: Profile name to activate, or None
+        """
+        config = self.data.copy()
+        if "groups" not in config or not isinstance(config["groups"], dict):
+            config["groups"] = {}
+        if group not in config["groups"] or not isinstance(config["groups"][group], dict):
+            config["groups"][group] = {"active_profile": None, "profiles": {}}
+        config["groups"][group]["active_profile"] = profile_name
+        self._save(config)
+
+    def get_group_profiles(self, group: str) -> dict:
+        """Get all profiles for a group.
+
+        :param group: Group name (e.g. 'user' or 'admin')
+        :return: Dictionary of profiles in the group
+        """
+        return self.get(f"groups.{group}.profiles", {})
+
+    def has_profile_in_group(self, group: str, profile_name: str) -> bool:
+        """Check if a profile exists in a group.
+
+        :param group: Group name
+        :param profile_name: Profile name to check
+        :return: True if the profile exists in the group, False otherwise
+        """
+        return profile_name in self.get_group_profiles(group)
+
+    def add_profile_to_group(
+        self, group: str, profile_name: str, profile_data: Optional[dict] = None
+    ):
+        """Add a profile to a group.
+
+        :param group: Group name (e.g. 'user' or 'admin')
+        :param profile_name: Name of the profile to add
+        :param profile_data: Optional profile data dictionary
+        """
+        config = self.data.copy()
+        if "groups" not in config or not isinstance(config["groups"], dict):
+            config["groups"] = {}
+        if group not in config["groups"] or not isinstance(config["groups"][group], dict):
+            config["groups"][group] = {"active_profile": None, "profiles": {}}
+        if "profiles" not in config["groups"][group] or not isinstance(
+            config["groups"][group]["profiles"], dict
+        ):
+            config["groups"][group]["profiles"] = {}
+        config["groups"][group]["profiles"][profile_name] = profile_data or {
+            "name": profile_name
+        }
+        self._save(config)
+
+    def remove_profile_from_group(self, group: str, profile_name: str):
+        """Remove a profile from a group.
+
+        If the removed profile was active, the active profile is set to the
+        first remaining profile in the group, or None if no profiles remain.
+
+        :param group: Group name (e.g. 'user' or 'admin')
+        :param profile_name: Name of the profile to remove
+        """
+        config = self.data.copy()
+        group_data = (config.get("groups") or {}).get(group, {})
+        profiles = group_data.get("profiles") or {}
+        if profile_name not in profiles:
+            return
+        del profiles[profile_name]
+        config["groups"][group]["profiles"] = profiles
+        if config["groups"][group].get("active_profile") == profile_name:
+            remaining = list(profiles.keys())
+            config["groups"][group]["active_profile"] = (
+                remaining[0] if remaining else None
+            )
+        self._save(config)
 
 
 # Module-level functions for backward compatibility and convenience
