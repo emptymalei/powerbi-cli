@@ -316,6 +316,14 @@ def pbi(ctx):
 
 
 @pbi.command()
+def version():
+    """Show the current version of the pbi CLI tool."""
+    from importlib.metadata import version as _version
+
+    click.echo(_version("pbi_cli"))
+
+
+@pbi.command()
 @click.option("--bearer-token", "-t", help="Bearer token", required=True)
 @click.option(
     "--profile",
@@ -1756,14 +1764,14 @@ def scan_result(scan_id: str, target: Optional[Path]):
 )
 @click.option(
     "--interval",
-    type=float,
+    type=click.FloatRange(min=0, min_open=True),
     default=5.0,
     show_default=True,
     help="Seconds to wait between status checks",
 )
 @click.option(
     "--timeout",
-    type=float,
+    type=click.FloatRange(min=0, min_open=True),
     default=300.0,
     show_default=True,
     help="Maximum seconds to wait for scan completion",
@@ -1829,7 +1837,7 @@ def scan_get(
         try:
             result = workspace_info.get_scan_result(scan_id=scan_id)
             break
-        except ValueError:
+        except powerbi_admin.ScanNotReadyError:
             if time.monotonic() >= deadline:
                 raise click.ClickException(
                     f"Scan {scan_id} did not complete within {timeout}s."

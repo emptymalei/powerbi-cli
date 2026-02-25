@@ -1,12 +1,12 @@
 """Tests for scan CLI commands (under pbi workspaces scan group)."""
 
 import json
-import time
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from click.testing import CliRunner
 
 from pbi_cli.cli import pbi
+from pbi_cli.powerbi.admin import ScanNotReadyError
 
 
 def test_scan_group_in_workspaces_help():
@@ -211,7 +211,6 @@ def test_scan_get_succeeds_immediately():
 
     assert result.exit_code == 0
     mock_result.assert_called_once_with(scan_id="scan-789")
-    output_lines = [l for l in result.output.splitlines() if l.startswith("{") or l.startswith("}") or '"workspaces"' in l]
     assert any("ws-1" in l for l in result.output.splitlines())
 
 
@@ -228,7 +227,7 @@ def test_scan_get_retries_then_succeeds():
         ):
             with patch(
                 "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                side_effect=[ValueError("not ready"), ValueError("not ready"), fake_result],
+                side_effect=[ScanNotReadyError("not ready"), ScanNotReadyError("not ready"), fake_result],
             ) as mock_result:
                 with patch("time.sleep"):
                     result = runner.invoke(
@@ -253,7 +252,7 @@ def test_scan_get_times_out():
         ):
             with patch(
                 "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                side_effect=ValueError("not ready"),
+                side_effect=ScanNotReadyError("not ready"),
             ):
                 with patch("time.sleep"):
                     # Use a very short timeout so it expires after first failure

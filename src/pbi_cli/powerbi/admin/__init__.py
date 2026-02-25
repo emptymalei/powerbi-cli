@@ -8,6 +8,10 @@ from pbi_cli.powerbi.base import Base
 from pbi_cli.web import DataRetriever
 
 
+class ScanNotReadyError(Exception):
+    """Raised when a workspace scan result is not yet available (HTTP 202)."""
+
+
 class Workspaces:
     """Accessing all workspaces
 
@@ -299,7 +303,13 @@ class WorkspaceInfo(Base):
         uri = f"{self._base_uri}/scanResult/{scan_id}"
         logger.info(f"Using API Endpoint: {uri}")
 
-        result = self._data_retriever.get(uri).json()
+        response = self._data_retriever.get(uri)
+
+        if response.status_code == 202:
+            raise ScanNotReadyError(f"Scan {scan_id} is not ready yet (HTTP 202)")
+
+        response.raise_for_status()
+        result = response.json()
 
         if result.get("error"):
             raise ValueError(f"Error: {result}")
