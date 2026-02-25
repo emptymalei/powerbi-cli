@@ -1185,59 +1185,6 @@ pbi cache list -k workspaces
   -ft, --file-type [json|excel]
   --help                         Show this message and exit.
 </code></pre></div>
-<h2 id="scan">scan<a class="headerlink" href="#scan" title="Permanent link">¤</a></h2>
-<p>Command group for Power BI workspace scan operations</p>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi scan [OPTIONS] COMMAND [ARGS]...
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
-</code></pre></div>
-<h3 id="initiate">initiate<a class="headerlink" href="#initiate" title="Permanent link">¤</a></h3>
-<p>Initiate a workspace scan.</p>
-<p>Initiates a scan for the given workspace IDs and returns the scan ID
-which can be used to retrieve results with <code>pbi scan result</code>.</p>
-<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;
-
-pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>--lineage<span class="w"> </span>--datasource-details
-</code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Requires Admin</p>
-<p>This command requires an admin account.</p>
-</div>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi scan initiate [OPTIONS]
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="highlight"><pre><span></span><code>  -w, --workspace-id TEXT  Workspace ID to scan (can be specified multiple
-                           times)  [required]
-  --lineage                Include lineage information
-  --datasource-details     Include datasource details
-  --dataset-schema         Include dataset schema
-  --dataset-expressions    Include dataset expressions
-  --get-artifact-users     Include artifact users
-  --help                   Show this message and exit.
-</code></pre></div>
-<h3 id="result">result<a class="headerlink" href="#result" title="Permanent link">¤</a></h3>
-<p>Get scan results by scan ID.</p>
-<p>Retrieves the scan results for the given scan ID returned by
-<code>pbi scan initiate</code>.</p>
-<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </span>&lt;scan-id&gt;
-
-pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </span>&lt;scan-id&gt;<span class="w"> </span>-t<span class="w"> </span>results.json
-</code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Requires Admin</p>
-<p>This command requires an admin account.</p>
-</div>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi scan result [OPTIONS] SCAN_ID
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="highlight"><pre><span></span><code>  -t, --target PATH  Target file to save scan results (if omitted, prints to
-                     console)
-  --help             Show this message and exit.
-</code></pre></div>
 <h2 id="switch-profile">switch-profile<a class="headerlink" href="#switch-profile" title="Permanent link">¤</a></h2>
 <p>Switch the active authentication profile</p>
 <div class="highlight"><pre><span></span><code>pbi switch-profile
@@ -1382,6 +1329,51 @@ use different workspace names for the reports.</p>
   -n, --file-name TEXT           file name without extension
   -wn, --workspace-name TEXT     workspace names to download
   --help                         Show this message and exit.
+</code></pre></div>
+<h3 id="scan-initiate">scan-initiate<a class="headerlink" href="#scan-initiate" title="Permanent link">¤</a></h3>
+<p>Initiate a workspace scan.</p>
+<p>Initiates a scan for the given workspace IDs and returns the scan ID
+which can be used to retrieve results with <code>pbi workspaces scan-result</code>.</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;
+
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>--lineage<span class="w"> </span>--datasource-details
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Requires Admin</p>
+<p>This command requires an admin account.</p>
+</div>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code>pbi workspaces scan-initiate [OPTIONS]
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<div class="highlight"><pre><span></span><code>  -w, --workspace-id TEXT  Workspace ID to scan (can be specified multiple
+                           times)  [required]
+  --lineage                Include lineage information
+  --datasource-details     Include datasource details
+  --dataset-schema         Include dataset schema
+  --dataset-expressions    Include dataset expressions
+  --get-artifact-users     Include artifact users
+  --help                   Show this message and exit.
+</code></pre></div>
+<h3 id="scan-result">scan-result<a class="headerlink" href="#scan-result" title="Permanent link">¤</a></h3>
+<p>Get scan results by scan ID.</p>
+<p>Retrieves the scan results for the given scan ID returned by
+<code>pbi workspaces scan-initiate</code>.</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-result<span class="w"> </span>&lt;scan-id&gt;
+
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-result<span class="w"> </span>&lt;scan-id&gt;<span class="w"> </span>-t<span class="w"> </span>results.json
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Requires Admin</p>
+<p>This command requires an admin account.</p>
+</div>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code>pbi workspaces scan-result [OPTIONS] SCAN_ID
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<div class="highlight"><pre><span></span><code>  -t, --target PATH  Target file to save scan results (if omitted, prints to
+                     console)
+  --help             Show this message and exit.
 </code></pre></div>
 <h2 id="auxiliary-functions">Auxiliary Functions<a class="headerlink" href="#auxiliary-functions" title="Permanent link">¤</a></h2>
 
@@ -4259,39 +4251,6 @@ use different workspace names for the reports.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pbi_cli.cli.scan" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span></code>
-
-<a href="#pbi_cli.cli.scan" class="headerlink" title="Permanent link">¤</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Command group for Power BI workspace scan operations</p>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1605</span>
-<span class="normal">1606</span>
-<span class="normal">1607</span>
-<span class="normal">1608</span>
-<span class="normal">1609</span>
-<span class="normal">1610</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Command group for Power BI workspace scan operations&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Use pbi scan --help for help.&quot;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h2 id="pbi_cli.cli.scan_initiate" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">scan_initiate</span><span class="p">(</span><span class="n">workspace_ids</span><span class="p">,</span> <span class="n">lineage</span><span class="p">,</span> <span class="n">datasource_details</span><span class="p">,</span> <span class="n">dataset_schema</span><span class="p">,</span> <span class="n">dataset_expressions</span><span class="p">,</span> <span class="n">get_artifact_users</span><span class="p">)</span></code>
 
@@ -4302,10 +4261,10 @@ use different workspace names for the reports.</p>
 
         <p>Initiate a workspace scan.</p>
 <p>Initiates a scan for the given workspace IDs and returns the scan ID
-which can be used to retrieve results with <code>pbi scan result</code>.</p>
-<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;
+which can be used to retrieve results with <code>pbi workspaces scan-result</code>.</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;
 
-pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>--lineage<span class="w"> </span>--datasource-details
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-initiate<span class="w"> </span>-w<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>--lineage<span class="w"> </span>--datasource-details
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Requires Admin</p>
@@ -4315,7 +4274,14 @@ pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> 
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1613</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1606</span>
+<span class="normal">1607</span>
+<span class="normal">1608</span>
+<span class="normal">1609</span>
+<span class="normal">1610</span>
+<span class="normal">1611</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
 <span class="normal">1614</span>
 <span class="normal">1615</span>
 <span class="normal">1616</span>
@@ -4380,14 +4346,7 @@ pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> 
 <span class="normal">1675</span>
 <span class="normal">1676</span>
 <span class="normal">1677</span>
-<span class="normal">1678</span>
-<span class="normal">1679</span>
-<span class="normal">1680</span>
-<span class="normal">1681</span>
-<span class="normal">1682</span>
-<span class="normal">1683</span>
-<span class="normal">1684</span>
-<span class="normal">1685</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
+<span class="normal">1678</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan-initiate&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--workspace-id&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-w&quot;</span><span class="p">,</span>
@@ -4437,12 +4396,12 @@ pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate a workspace scan.</span>
 
 <span class="sd">    Initiates a scan for the given workspace IDs and returns the scan ID</span>
-<span class="sd">    which can be used to retrieve results with ``pbi scan result``.</span>
+<span class="sd">    which can be used to retrieve results with ``pbi workspaces scan-result``.</span>
 
 <span class="sd">    ```sh</span>
-<span class="sd">    pbi scan initiate -w &lt;workspace-id&gt; -w &lt;workspace-id&gt;</span>
+<span class="sd">    pbi workspaces scan-initiate -w &lt;workspace-id&gt; -w &lt;workspace-id&gt;</span>
 
-<span class="sd">    pbi scan initiate -w &lt;workspace-id&gt; --lineage --datasource-details</span>
+<span class="sd">    pbi workspaces scan-initiate -w &lt;workspace-id&gt; --lineage --datasource-details</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    !!! warning &quot;Requires Admin&quot;</span>
@@ -4479,10 +4438,10 @@ pbi<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> 
 
         <p>Get scan results by scan ID.</p>
 <p>Retrieves the scan results for the given scan ID returned by
-<code>pbi scan initiate</code>.</p>
-<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </span>&lt;scan-id&gt;
+<code>pbi workspaces scan-initiate</code>.</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-result<span class="w"> </span>&lt;scan-id&gt;
 
-pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </span>&lt;scan-id&gt;<span class="w"> </span>-t<span class="w"> </span>results.json
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan-result<span class="w"> </span>&lt;scan-id&gt;<span class="w"> </span>-t<span class="w"> </span>results.json
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Requires Admin</p>
@@ -4492,7 +4451,14 @@ pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1688</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
 <span class="normal">1689</span>
 <span class="normal">1690</span>
 <span class="normal">1691</span>
@@ -4520,14 +4486,7 @@ pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </
 <span class="normal">1713</span>
 <span class="normal">1714</span>
 <span class="normal">1715</span>
-<span class="normal">1716</span>
-<span class="normal">1717</span>
-<span class="normal">1718</span>
-<span class="normal">1719</span>
-<span class="normal">1720</span>
-<span class="normal">1721</span>
-<span class="normal">1722</span>
-<span class="normal">1723</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
+<span class="normal">1716</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan-result&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;scan_id&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -4541,12 +4500,12 @@ pbi<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get scan results by scan ID.</span>
 
 <span class="sd">    Retrieves the scan results for the given scan ID returned by</span>
-<span class="sd">    ``pbi scan initiate``.</span>
+<span class="sd">    ``pbi workspaces scan-initiate``.</span>
 
 <span class="sd">    ```sh</span>
-<span class="sd">    pbi scan result &lt;scan-id&gt;</span>
+<span class="sd">    pbi workspaces scan-result &lt;scan-id&gt;</span>
 
-<span class="sd">    pbi scan result &lt;scan-id&gt; -t results.json</span>
+<span class="sd">    pbi workspaces scan-result &lt;scan-id&gt; -t results.json</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    !!! warning &quot;Requires Admin&quot;</span>
