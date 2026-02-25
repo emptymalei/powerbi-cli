@@ -3,9 +3,8 @@
 import pytest
 from click.testing import CliRunner
 
-from pbi_cli.cli import pbi
-from pbi_cli.config import PBIConfig, VALID_GROUPS
-
+from pbi_cli.cli import load_auth, pbi
+from pbi_cli.config import VALID_GROUPS, PBIConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -165,9 +164,7 @@ class TestAuthCommandWithGroup:
         """pbi auth without -g still writes to flat profile storage (backward compat)."""
         runner = _isolated_runner(tmp_path, monkeypatch)
         with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(
-                pbi, ["auth", "-t", "my-token", "-p", "my-profile"]
-            )
+            result = runner.invoke(pbi, ["auth", "-t", "my-token", "-p", "my-profile"])
         assert result.exit_code == 0
         cfg = _cfg(tmp_path)
         assert cfg.has_profile("my-profile")
@@ -185,9 +182,7 @@ class TestProfileSwitchWithGroup:
         cfg.set_group_active_profile("admin", "admin-a")
 
         with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(
-                pbi, ["profile", "switch", "admin-b", "-g", "admin"]
-            )
+            result = runner.invoke(pbi, ["profile", "switch", "admin-b", "-g", "admin"])
         assert result.exit_code == 0
         assert "admin-b" in result.output
         cfg.reload()
@@ -202,9 +197,7 @@ class TestProfileSwitchWithGroup:
         cfg.set_group_active_profile("user", "user-a")
 
         with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(
-                pbi, ["profile", "switch", "user-b", "-g", "user"]
-            )
+            result = runner.invoke(pbi, ["profile", "switch", "user-b", "-g", "user"])
         assert result.exit_code == 0
         assert "user-b" in result.output
         cfg.reload()
@@ -305,3 +298,89 @@ class TestProfileDeleteWithGroup:
                 input="y\n",
             )
         assert "not found" in result.output
+
+
+# ---------------------------------------------------------------------------
+# load_auth automatic group resolution tests
+# ---------------------------------------------------------------------------
+
+
+class TestLoadAuthAutoGroupResolution:
+    """Tests for automatic group-based auth resolution in load_auth()."""
+
+    def _setup_group_credential(
+        self, tmp_path, monkeypatch, group: str, profile: str, token: str
+    ):
+        """Helper: create a group profile and store a credential for it."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        cfg = _cfg(tmp_path)
+        cfg.add_profile_to_group(group, profile)
+        cfg.set_group_active_profile(group, profile)
+        # Store credential via the CLI's internal helper
+        from pbi_cli.cli import _set_credential
+
+        _set_credential(profile, token)
+
+    def test_load_auth_defaults_to_user_group(self, tmp_path, monkeypatch):
+        """load_auth() with no args uses the active profile from the 'user' group."""
+        self._setup_group_credential(
+            tmp_path, monkeypatch, "user", "user-nlm", "user-token"
+        )
+        auth = load_auth()
+        assert auth == {"Authorization": "Bearer user-token"}
+
+    def test_load_auth_admin_group(self, tmp_path, monkeypatch):
+        """load_auth(group='admin') uses the active profile from the 'admin' group."""
+        self._setup_group_credential(
+            tmp_path, monkeypatch, "admin", "admin-nlm", "admin-token"
+        )
+        auth = load_auth(group="admin")
+        assert auth == {"Authorization": "Bearer admin-token"}
+
+    def test_load_auth_user_and_admin_profiles_are_independent(
+        self, tmp_path, monkeypatch
+    ):
+        """load_auth selects the correct token for each group independently."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        cfg = _cfg(tmp_path)
+        cfg.add_profile_to_group("user", "user-nlm")
+        cfg.set_group_active_profile("user", "user-nlm")
+        cfg.add_profile_to_group("admin", "admin-nlm")
+        cfg.set_group_active_profile("admin", "admin-nlm")
+        from pbi_cli.cli import _set_credential
+
+        _set_credential("user-nlm", "user-token-xyz")
+        _set_credential("admin-nlm", "admin-token-xyz")
+
+        assert load_auth(group="user") == {"Authorization": "Bearer user-token-xyz"}
+        assert load_auth(group="admin") == {"Authorization": "Bearer admin-token-xyz"}
+
+    def test_load_auth_falls_back_to_flat_profiles(self, tmp_path, monkeypatch):
+        """load_auth() falls back to flat profiles when no group profile is configured."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        # Store a flat profile (no group)
+        from pbi_cli.cli import _save_profiles, _set_credential
+
+        _set_credential("flat-profile", "flat-token")
+        _save_profiles(
+            {
+                "active_profile": "flat-profile",
+                "profiles": {"flat-profile": {"name": "flat-profile"}},
+            }
+        )
+
+        # No group profile exists, should fall back to flat
+        auth = load_auth()
+        assert auth == {"Authorization": "Bearer flat-token"}
+
+    def test_load_auth_no_profile_raises(self, tmp_path, monkeypatch):
+        """load_auth() raises ClickException when neither group nor flat profile exists."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        import click
+
+        with pytest.raises(click.ClickException):
+            load_auth()

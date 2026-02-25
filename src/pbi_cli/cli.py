@@ -16,7 +16,12 @@ import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.cache import CacheManager
-from pbi_cli.config import PBIConfig, migrate_legacy_config, resolve_output_path, VALID_GROUPS
+from pbi_cli.config import (
+    VALID_GROUPS,
+    PBIConfig,
+    migrate_legacy_config,
+    resolve_output_path,
+)
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
@@ -321,46 +326,50 @@ def _save_group_profiles(group: str, group_data: dict):
     pbi_config.set_group_active_profile(group, group_data.get("active_profile"))
 
 
-def load_auth(profile: Optional[str] = None, group: Optional[str] = None) -> dict:
+def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     """Load authentication for the specified profile or active profile.
 
-    If *group* is provided the active profile is resolved from that group.
-    Otherwise the legacy flat active-profile is used.
+    Resolves the auth profile from the given *group* first.  If no profile is
+    found in that group the function falls back to the legacy flat profile
+    storage so that existing configurations continue to work.
 
-    :param profile: Profile name. If None, resolves from group or flat config.
-    :param group: Group name ('user' or 'admin'). When set, the group's active
-        profile is used when *profile* is None.
-    :return: dict containing {"Authorization": "Bearer <token>"}
+    :param profile: Profile name. If None, the active profile for *group* is
+        used, with further fallback to the flat active-profile.
+    :param group: Auth group to resolve the profile from ('user' or 'admin').
+        Defaults to ``'user'``.  Pass ``'admin'`` for commands that require
+        admin-level access.
+    :return: dict containing ``{"Authorization": "Bearer <token>"}``
     """
-    if group is not None:
-        pbi_config = PBIConfig()
+    pbi_config = PBIConfig()
+
+    # Try to resolve from the requested group first.
+    resolved_profile = profile
+    if resolved_profile is None:
+        resolved_profile = pbi_config.get_group_active_profile(group)
+
+    if resolved_profile is not None and pbi_config.has_profile_in_group(
+        group, resolved_profile
+    ):
+        # Use group-based profile.
+        profile = resolved_profile
+    else:
+        # Fall back to legacy flat profiles for backward compatibility.
+        profiles_data = _load_profiles()
         if profile is None:
-            profile = pbi_config.get_group_active_profile(group)
+            profile = profiles_data.get("active_profile")
         if profile is None:
             raise click.ClickException(
                 f"No active profile set for group '{group}'. "
                 f"Use 'pbi auth -g {group}' to create a profile or "
                 f"'pbi profile switch -g {group}' to switch profiles."
             )
-        if not pbi_config.has_profile_in_group(group, profile):
-            raise click.ClickException(
-                f"Profile '{profile}' not found in group '{group}'. "
-                "Use 'pbi profile list' to see available profiles."
-            )
-    else:
-        profiles_data = _load_profiles()
-        if profile is None:
-            profile = profiles_data.get("active_profile")
-        if profile is None:
-            raise click.ClickException(
-                "No active profile set. Use 'pbi auth' to create a profile or 'pbi profile switch' to switch profiles."
-            )
         if profile not in profiles_data.get("profiles", {}):
             raise click.ClickException(
-                f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles."
+                f"Profile '{profile}' not found in group '{group}' or flat profiles. "
+                "Use 'pbi profile list' to see available profiles."
             )
 
-    # Get token from keyring or file
+    # Get token from keyring or file.
     token = _get_credential(profile)
     if token is None:
         raise click.ClickException(
@@ -494,9 +503,7 @@ def profile_group(ctx):
     default=None,
     required=False,
 )
-def switch_profile_cmd(
-    profile_name: Optional[str] = None, group: Optional[str] = None
-):
+def switch_profile_cmd(profile_name: Optional[str] = None, group: Optional[str] = None):
     """Switch the active authentication profile
 
     ```
@@ -657,9 +664,7 @@ def list_auth():
                 fg="yellow",
             )
 
-    if not profiles and not any(
-        pbi_config.get_group_profiles(g) for g in VALID_GROUPS
-    ):
+    if not profiles and not any(pbi_config.get_group_profiles(g) for g in VALID_GROUPS):
         click.secho(
             "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
         )
@@ -704,9 +709,7 @@ def delete_auth(profile: str, group: Optional[str]):
 
         _delete_credential(profile)
         pbi_config.remove_profile_from_group(group, profile)
-        click.secho(
-            f"✓ Profile '{profile}' deleted from group '{group}'", fg="green"
-        )
+        click.secho(f"✓ Profile '{profile}' deleted from group '{group}'", fg="green")
         new_active = pbi_config.get_group_active_profile(group)
         if new_active:
             click.secho(
@@ -1163,7 +1166,7 @@ def list(
 
     # Fetch from API if not using cache
     if result is None:
-        workspaces = Workspaces(auth=load_auth(), verify=False)
+        workspaces = Workspaces(auth=load_auth(group="admin"), verify=False)
         click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
         result = workspaces(top=top, expand=expand, filter=odata_filter)
 
@@ -1350,7 +1353,7 @@ def report_users(
     click.secho("getting report user details requires admin token")
 
     pbi_workspaces = powerbi_workspace.Workspaces(
-        auth=load_auth(), verify=False, cache_file=source
+        auth=load_auth(group="admin"), verify=False, cache_file=source
     )
 
     report_users = pbi_workspaces.report_users(
@@ -1493,7 +1496,7 @@ def user_access(
 
     # Fetch from API if not using cache
     if result is None:
-        user = User(auth=load_auth(), user_id=user_id, verify=False)
+        user = User(auth=load_auth(group="admin"), user_id=user_id, verify=False)
         result = user()
 
         # Save to cache
@@ -1601,9 +1604,9 @@ def list(
     if result is None:
         click.echo(f"Listing Apps as {role}")
         if role == "user":
-            user = powerbi_app.Apps(auth=load_auth(), verify=False)
+            user = powerbi_app.Apps(auth=load_auth(group="user"), verify=False)
         else:  # admin
-            user = powerbi_admin.Apps(auth=load_auth(), verify=False)
+            user = powerbi_admin.Apps(auth=load_auth(group="admin"), verify=False)
         result = user()
 
         # Save to cache
@@ -1917,7 +1920,9 @@ def scan_initiate(
         This command requires an admin account.
 
     """
-    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    workspace_info = powerbi_admin.WorkspaceInfo(
+        auth=load_auth(group="admin"), verify=False
+    )
     result = workspace_info.initiate_scan(
         workspace_ids=[*workspace_ids],
         lineage=lineage,
@@ -1956,7 +1961,9 @@ def scan_result(scan_id: str, target: Optional[Path]):
         This command requires an admin account.
 
     """
-    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    workspace_info = powerbi_admin.WorkspaceInfo(
+        auth=load_auth(group="admin"), verify=False
+    )
     result = workspace_info.get_scan_result(scan_id=scan_id)
 
     if target is None:
@@ -2051,7 +2058,9 @@ def scan_get(
     """
     import time
 
-    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    workspace_info = powerbi_admin.WorkspaceInfo(
+        auth=load_auth(group="admin"), verify=False
+    )
 
     click.echo("Initiating scan…")
     scan_response = workspace_info.initiate_scan(
