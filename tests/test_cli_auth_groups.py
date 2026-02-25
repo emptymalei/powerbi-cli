@@ -384,3 +384,21 @@ class TestLoadAuthAutoGroupResolution:
 
         with pytest.raises(click.ClickException):
             load_auth()
+
+    def test_load_auth_explicit_profile_in_group(self, tmp_path, monkeypatch):
+        """load_auth(profile=..., group=...) uses the specified profile from the given group."""
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        cfg = _cfg(tmp_path)
+        # Add two profiles to admin group; activate one that is NOT "admin-b"
+        cfg.add_profile_to_group("admin", "admin-a")
+        cfg.add_profile_to_group("admin", "admin-b")
+        cfg.set_group_active_profile("admin", "admin-a")
+        from pbi_cli.cli import _set_credential
+
+        _set_credential("admin-a", "token-a")
+        _set_credential("admin-b", "token-b")
+
+        # Explicitly requesting admin-b must return token-b, not the active admin-a
+        auth = load_auth(profile="admin-b", group="admin")
+        assert auth == {"Authorization": "Bearer token-b"}
