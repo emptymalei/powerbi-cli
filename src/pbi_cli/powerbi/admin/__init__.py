@@ -225,3 +225,83 @@ class Apps(Base):
             return result
         elif format == "flatten":
             return result["value"]
+
+
+class WorkspaceInfo(Base):
+    """
+    A class to initiate workspace scans and retrieve scan results via the
+    Power BI Admin Workspace Info API.
+
+    :param auth: dict containing the auth ``{"Authorization": "Bearer xxx"}``
+    :param verify: whether to verify SSL
+    """
+
+    def __init__(self, auth: dict, verify: bool = True):
+        super().__init__(auth=auth, verify=verify)
+
+    @property
+    def _base_uri(self) -> str:
+        """
+        Returns the base URI for the Workspace Info API.
+        """
+        return "https://api.powerbi.com/v1.0/myorg/admin/workspaces"
+
+    def initiate_scan(
+        self,
+        workspace_ids: List[str],
+        lineage: bool = False,
+        datasource_details: bool = False,
+        dataset_schema: bool = False,
+        dataset_expressions: bool = False,
+        get_artifact_users: bool = False,
+    ) -> dict:
+        """
+        Initiate a workspace scan via the Power BI Admin API.
+
+        See https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info
+
+        :param workspace_ids: list of workspace IDs to scan
+        :param lineage: whether to include lineage information
+        :param datasource_details: whether to include datasource details
+        :param dataset_schema: whether to include dataset schema
+        :param dataset_expressions: whether to include dataset expressions
+        :param get_artifact_users: whether to include artifact users
+        :return: API response as a dict containing the scan ID
+        """
+        query_params = {
+            "lineage": str(lineage).lower(),
+            "datasourceDetails": str(datasource_details).lower(),
+            "datasetSchema": str(dataset_schema).lower(),
+            "datasetExpressions": str(dataset_expressions).lower(),
+            "getArtifactUsers": str(get_artifact_users).lower(),
+        }
+        query_string = "&".join([f"{k}={v}" for k, v in query_params.items()])
+        uri = f"{self._base_uri}/getInfo?{query_string}"
+        logger.info(f"Using API Endpoint: {uri}")
+
+        payload = {"workspaces": workspace_ids}
+        result = self._data_retriever.post(uri, json=payload).json()
+
+        if result.get("error"):
+            raise ValueError(f"Error: {result}")
+
+        return result
+
+    def get_scan_result(self, scan_id: str) -> dict:
+        """
+        Retrieve the scan result for a given scan ID.
+
+        See https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-result
+
+        :param scan_id: the scan ID returned by :meth:`initiate_scan`
+        :return: API response as a dict containing the scan results
+        """
+        uri = f"{self._base_uri}/scanResult/{scan_id}"
+        logger.info(f"Using API Endpoint: {uri}")
+
+        result = self._data_retriever.get(uri).json()
+
+        if result.get("error"):
+            raise ValueError(f"Error: {result}")
+
+        return result

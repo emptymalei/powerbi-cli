@@ -1602,5 +1602,126 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
         click.secho(f"✓ Export saved to {target}", fg="green")
 
 
+@pbi.group(name="scan", invoke_without_command=True)
+@click.pass_context
+def scan(ctx):
+    """Command group for Power BI workspace scan operations"""
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi scan --help for help.")
+
+
+@scan.command(name="initiate")
+@click.option(
+    "--workspace-id",
+    "-w",
+    "workspace_ids",
+    multiple=True,
+    required=True,
+    help="Workspace ID to scan (can be specified multiple times)",
+)
+@click.option(
+    "--lineage",
+    is_flag=True,
+    default=False,
+    help="Include lineage information",
+)
+@click.option(
+    "--datasource-details",
+    is_flag=True,
+    default=False,
+    help="Include datasource details",
+)
+@click.option(
+    "--dataset-schema",
+    is_flag=True,
+    default=False,
+    help="Include dataset schema",
+)
+@click.option(
+    "--dataset-expressions",
+    is_flag=True,
+    default=False,
+    help="Include dataset expressions",
+)
+@click.option(
+    "--get-artifact-users",
+    is_flag=True,
+    default=False,
+    help="Include artifact users",
+)
+def scan_initiate(
+    workspace_ids: tuple,
+    lineage: bool,
+    datasource_details: bool,
+    dataset_schema: bool,
+    dataset_expressions: bool,
+    get_artifact_users: bool,
+):
+    """Initiate a workspace scan.
+
+    Initiates a scan for the given workspace IDs and returns the scan ID
+    which can be used to retrieve results with ``pbi scan result``.
+
+    ```sh
+    pbi scan initiate -w <workspace-id> -w <workspace-id>
+
+    pbi scan initiate -w <workspace-id> --lineage --datasource-details
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    result = workspace_info.initiate_scan(
+        workspace_ids=[*workspace_ids],
+        lineage=lineage,
+        datasource_details=datasource_details,
+        dataset_schema=dataset_schema,
+        dataset_expressions=dataset_expressions,
+        get_artifact_users=get_artifact_users,
+    )
+    click.echo(json.dumps(result, indent=2))
+
+
+@scan.command(name="result")
+@click.argument("scan_id")
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="Target file to save scan results (if omitted, prints to console)",
+    default=None,
+    required=False,
+)
+def scan_result(scan_id: str, target: Optional[Path]):
+    """Get scan results by scan ID.
+
+    Retrieves the scan results for the given scan ID returned by
+    ``pbi scan initiate``.
+
+    ```sh
+    pbi scan result <scan-id>
+
+    pbi scan result <scan-id> -t results.json
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    result = workspace_info.get_scan_result(scan_id=scan_id)
+
+    if target is None:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        with open(target, "w") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Scan results saved to {target}", fg="green")
+
+
 if __name__ == "__main__":
     pbi()
