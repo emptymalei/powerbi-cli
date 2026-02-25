@@ -48,3 +48,13 @@ def test_workspaces_list_default_expand_values():
     assert "dataflows" in result.output
     assert "workbooks" in result.output
     assert result.exit_code == 0
+
+
+def test_pbi_version_command():
+    """Test that `pbi version` outputs the installed package version."""
+    from importlib.metadata import version as _version
+
+    runner = CliRunner()
+    result = runner.invoke(pbi, ["version"])
+    assert result.exit_code == 0
+    assert _version("pbi_cli") in result.output

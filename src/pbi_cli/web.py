@@ -158,20 +158,22 @@ class DataRetriever:
         self,
         link: str,
         auth: Optional[HTTPBasicAuth] = None,
-        data: Optional[dict] = None,
+        body: Optional[dict] = None,
     ) -> requests.Response:
-        """Download page and save content
+        """Post a JSON body to a URL and return the response.
 
-        :param headers: header information such as useragent, defaults to random user agent from get_random_user_agent
-        :type headers: dict, optional
+        :param link: URL to post to
+        :param auth: optional HTTP basic auth credentials
+        :param body: optional JSON body data; defaults to an empty dict
+        :return: response object
         """
-        if data is None:
-            data = {}
+        if body is None:
+            body = {}
         with warnings.catch_warnings():
             if not self.session_query_configs.get("verify", True):
                 warnings.filterwarnings(
                     "ignore", category=urllib3.exceptions.InsecureRequestWarning
                 )
             return self.session.post(
-                link, auth=auth, data=data, **self.session_query_configs
+                link, auth=auth, json=body, **self.session_query_configs
             )

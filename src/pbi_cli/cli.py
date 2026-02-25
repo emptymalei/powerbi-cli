@@ -316,6 +316,14 @@ def pbi(ctx):
 
 
 @pbi.command()
+def version():
+    """Show the current version of the pbi CLI tool."""
+    from importlib.metadata import version as _version
+
+    click.echo(_version("pbi_cli"))
+
+
+@pbi.command()
 @click.option("--bearer-token", "-t", help="Bearer token", required=True)
 @click.option(
     "--profile",
@@ -1600,6 +1608,253 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
         with open(target, "wb") as fp:
             fp.write(result)
         click.secho(f"✓ Export saved to {target}", fg="green")
+
+
+
+@workspaces.group(name="scan", invoke_without_command=True)
+@click.pass_context
+def workspaces_scan(ctx):
+    """Command group for workspace scan operations.
+
+    !!! warning "Requires Admin"
+
+        All commands in this group require an admin account.
+
+    """
+    if ctx.invoked_subcommand is None:
+        click.echo("Use pbi workspaces scan --help for help.")
+
+
+@workspaces_scan.command(name="initiate")
+@click.argument("workspace_ids", nargs=-1, required=True)
+@click.option(
+    "--lineage",
+    is_flag=True,
+    default=False,
+    help="Include lineage information",
+)
+@click.option(
+    "--datasource-details",
+    is_flag=True,
+    default=False,
+    help="Include datasource details",
+)
+@click.option(
+    "--dataset-schema",
+    is_flag=True,
+    default=False,
+    help="Include dataset schema",
+)
+@click.option(
+    "--dataset-expressions",
+    is_flag=True,
+    default=False,
+    help="Include dataset expressions",
+)
+@click.option(
+    "--get-artifact-users",
+    is_flag=True,
+    default=False,
+    help="Include artifact users",
+)
+def scan_initiate(
+    workspace_ids: tuple,
+    lineage: bool,
+    datasource_details: bool,
+    dataset_schema: bool,
+    dataset_expressions: bool,
+    get_artifact_users: bool,
+):
+    """Initiate a workspace scan for one or more WORKSPACE_IDS.
+
+    Returns the scan ID which can be used with ``pbi workspaces scan result``.
+
+    ```sh
+    pbi workspaces scan initiate <workspace-id> <workspace-id>
+
+    pbi workspaces scan initiate <workspace-id> --lineage --datasource-details
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    result = workspace_info.initiate_scan(
+        workspace_ids=[*workspace_ids],
+        lineage=lineage,
+        datasource_details=datasource_details,
+        dataset_schema=dataset_schema,
+        dataset_expressions=dataset_expressions,
+        get_artifact_users=get_artifact_users,
+    )
+    click.echo(json.dumps(result, indent=2))
+
+
+@workspaces_scan.command(name="result")
+@click.argument("scan_id")
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="Target file to save scan results (if omitted, prints to console)",
+    default=None,
+    required=False,
+)
+def scan_result(scan_id: str, target: Optional[Path]):
+    """Get scan results for SCAN_ID.
+
+    Retrieves the scan results for the given scan ID returned by
+    ``pbi workspaces scan initiate``.
+
+    ```sh
+    pbi workspaces scan result <scan-id>
+
+    pbi workspaces scan result <scan-id> -t results.json
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+    result = workspace_info.get_scan_result(scan_id=scan_id)
+
+    if target is None:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        with open(target, "w") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Scan results saved to {target}", fg="green")
+
+
+@workspaces_scan.command(name="get")
+@click.argument("workspace_ids", nargs=-1, required=True)
+@click.option(
+    "--lineage",
+    is_flag=True,
+    default=False,
+    help="Include lineage information",
+)
+@click.option(
+    "--datasource-details",
+    is_flag=True,
+    default=False,
+    help="Include datasource details",
+)
+@click.option(
+    "--dataset-schema",
+    is_flag=True,
+    default=False,
+    help="Include dataset schema",
+)
+@click.option(
+    "--dataset-expressions",
+    is_flag=True,
+    default=False,
+    help="Include dataset expressions",
+)
+@click.option(
+    "--get-artifact-users",
+    is_flag=True,
+    default=False,
+    help="Include artifact users",
+)
+@click.option(
+    "--interval",
+    type=click.FloatRange(min=0, min_open=True),
+    default=5.0,
+    show_default=True,
+    help="Seconds to wait between status checks",
+)
+@click.option(
+    "--timeout",
+    type=click.FloatRange(min=0, min_open=True),
+    default=300.0,
+    show_default=True,
+    help="Maximum seconds to wait for scan completion",
+)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="Target file to save scan results (if omitted, prints to console)",
+    default=None,
+    required=False,
+)
+def scan_get(
+    workspace_ids: tuple,
+    lineage: bool,
+    datasource_details: bool,
+    dataset_schema: bool,
+    dataset_expressions: bool,
+    get_artifact_users: bool,
+    interval: float,
+    timeout: float,
+    target: Optional[Path],
+):
+    """Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.
+
+    Combines ``pbi workspaces scan initiate`` and ``pbi workspaces scan result``
+    into a single step: starts the scan, polls until it completes (or times out),
+    then prints or saves the results.
+
+    ```sh
+    pbi workspaces scan get <workspace-id>
+
+    pbi workspaces scan get <workspace-id> <workspace-id> --lineage -t results.json
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    import time
+
+    workspace_info = powerbi_admin.WorkspaceInfo(auth=load_auth(), verify=False)
+
+    click.echo("Initiating scan…")
+    scan_response = workspace_info.initiate_scan(
+        workspace_ids=[*workspace_ids],
+        lineage=lineage,
+        datasource_details=datasource_details,
+        dataset_schema=dataset_schema,
+        dataset_expressions=dataset_expressions,
+        get_artifact_users=get_artifact_users,
+    )
+    scan_id = scan_response.get("id")
+    if not scan_id:
+        raise click.ClickException(f"Unexpected initiate response: {scan_response}")
+    click.echo(f"Scan started (id={scan_id}). Waiting for results…")
+
+    deadline = time.monotonic() + timeout
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            result = workspace_info.get_scan_result(scan_id=scan_id)
+            break
+        except powerbi_admin.ScanNotReadyError:
+            if time.monotonic() >= deadline:
+                raise click.ClickException(
+                    f"Scan {scan_id} did not complete within {timeout}s."
+                )
+            remaining = deadline - time.monotonic()
+            sleep_time = min(interval, remaining)
+            click.echo(
+                f"  Attempt {attempt}: scan not ready, retrying in {sleep_time:.0f}s…"
+            )
+            time.sleep(sleep_time)
+
+    if target is None:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        with open(target, "w") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Scan results saved to {target}", fg="green")
 
 
 if __name__ == "__main__":

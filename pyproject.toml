@@ -1,6 +1,6 @@
 [project]
 name = "pbi_cli"
-version = "0.1.1"
+version = "0.2.0"
 description = "Power BI Command Line Tool for managing Power BI projects."
 readme = "README.md"
 license = {text = "MIT"}
