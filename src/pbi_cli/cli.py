@@ -1602,15 +1602,8 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
         click.secho(f"✓ Export saved to {target}", fg="green")
 
 
-@pbi.group(name="scan", invoke_without_command=True)
-@click.pass_context
-def scan(ctx):
-    """Command group for Power BI workspace scan operations"""
-    if ctx.invoked_subcommand is None:
-        click.echo("Use pbi scan --help for help.")
 
-
-@scan.command(name="initiate")
+@workspaces.command(name="scan-initiate")
 @click.option(
     "--workspace-id",
     "-w",
@@ -1660,12 +1653,12 @@ def scan_initiate(
     """Initiate a workspace scan.
 
     Initiates a scan for the given workspace IDs and returns the scan ID
-    which can be used to retrieve results with ``pbi scan result``.
+    which can be used to retrieve results with ``pbi workspaces scan-result``.
 
     ```sh
-    pbi scan initiate -w <workspace-id> -w <workspace-id>
+    pbi workspaces scan-initiate -w <workspace-id> -w <workspace-id>
 
-    pbi scan initiate -w <workspace-id> --lineage --datasource-details
+    pbi workspaces scan-initiate -w <workspace-id> --lineage --datasource-details
     ```
 
     !!! warning "Requires Admin"
@@ -1685,7 +1678,7 @@ def scan_initiate(
     click.echo(json.dumps(result, indent=2))
 
 
-@scan.command(name="result")
+@workspaces.command(name="scan-result")
 @click.argument("scan_id")
 @click.option(
     "--target",
@@ -1699,12 +1692,12 @@ def scan_result(scan_id: str, target: Optional[Path]):
     """Get scan results by scan ID.
 
     Retrieves the scan results for the given scan ID returned by
-    ``pbi scan initiate``.
+    ``pbi workspaces scan-initiate``.
 
     ```sh
-    pbi scan result <scan-id>
+    pbi workspaces scan-result <scan-id>
 
-    pbi scan result <scan-id> -t results.json
+    pbi workspaces scan-result <scan-id> -t results.json
     ```
 
     !!! warning "Requires Admin"

@@ -1,7 +1,7 @@
-"""Tests for scan CLI commands."""
+"""Tests for scan CLI commands (under pbi workspaces group)."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -9,19 +9,19 @@ from click.testing import CliRunner
 from pbi_cli.cli import pbi
 
 
-def test_scan_group_help():
-    """Test that the scan command group shows help."""
+def test_scan_initiate_in_workspaces_help():
+    """Test that scan-initiate and scan-result appear in workspaces group help."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["scan", "--help"])
+    result = runner.invoke(pbi, ["workspaces", "--help"])
     assert result.exit_code == 0
-    assert "initiate" in result.output
-    assert "result" in result.output
+    assert "scan-initiate" in result.output
+    assert "scan-result" in result.output
 
 
 def test_scan_initiate_help():
-    """Test that scan initiate command shows help with expected options."""
+    """Test that scan-initiate command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["scan", "initiate", "--help"])
+    result = runner.invoke(pbi, ["workspaces", "scan-initiate", "--help"])
     assert result.exit_code == 0
     assert "--workspace-id" in result.output or "-w" in result.output
     assert "--lineage" in result.output
@@ -29,27 +29,29 @@ def test_scan_initiate_help():
     assert "--dataset-schema" in result.output
     assert "--dataset-expressions" in result.output
     assert "--get-artifact-users" in result.output
+    assert "Admin" in result.output
 
 
 def test_scan_result_help():
-    """Test that scan result command shows help with expected options."""
+    """Test that scan-result command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["scan", "result", "--help"])
+    result = runner.invoke(pbi, ["workspaces", "scan-result", "--help"])
     assert result.exit_code == 0
-    assert "scan_id" in result.output.lower() or "SCAN_ID" in result.output
+    assert "SCAN_ID" in result.output
     assert "--target" in result.output or "-t" in result.output
+    assert "Admin" in result.output
 
 
 def test_scan_initiate_requires_workspace_id():
-    """Test that scan initiate fails when no workspace IDs are provided."""
+    """Test that scan-initiate fails when no workspace IDs are provided."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["scan", "initiate"])
+    result = runner.invoke(pbi, ["workspaces", "scan-initiate"])
     assert result.exit_code != 0
     assert "workspace" in result.output.lower() or "missing" in result.output.lower()
 
 
 def test_scan_initiate_calls_api(tmp_path):
-    """Test that scan initiate sends correct workspace IDs to the API."""
+    """Test that scan-initiate sends correct workspace IDs to the API."""
     fake_response = {
         "id": "scan-123",
         "createdDateTime": "2024-01-01T00:00:00Z",
@@ -65,8 +67,8 @@ def test_scan_initiate_calls_api(tmp_path):
             result = runner.invoke(
                 pbi,
                 [
-                    "scan",
-                    "initiate",
+                    "workspaces",
+                    "scan-initiate",
                     "-w",
                     "workspace-id-1",
                     "-w",
@@ -88,7 +90,7 @@ def test_scan_initiate_calls_api(tmp_path):
 
 
 def test_scan_initiate_with_flags():
-    """Test that scan initiate passes optional flags correctly."""
+    """Test that scan-initiate passes optional flags correctly."""
     fake_response = {"id": "scan-456", "status": "Running"}
 
     runner = CliRunner()
@@ -100,8 +102,8 @@ def test_scan_initiate_with_flags():
             result = runner.invoke(
                 pbi,
                 [
-                    "scan",
-                    "initiate",
+                    "workspaces",
+                    "scan-initiate",
                     "-w",
                     "workspace-id-1",
                     "--lineage",
@@ -122,7 +124,7 @@ def test_scan_initiate_with_flags():
 
 
 def test_scan_result_prints_to_console():
-    """Test that scan result prints JSON to console when no target is given."""
+    """Test that scan-result prints JSON to console when no target is given."""
     fake_result = {
         "workspaces": [{"id": "workspace-id-1", "name": "My Workspace"}]
     }
@@ -133,7 +135,7 @@ def test_scan_result_prints_to_console():
             "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
             return_value=fake_result,
         ) as mock_result:
-            result = runner.invoke(pbi, ["scan", "result", "scan-123"])
+            result = runner.invoke(pbi, ["workspaces", "scan-result", "scan-123"])
 
     assert result.exit_code == 0
     mock_result.assert_called_once_with(scan_id="scan-123")
@@ -142,7 +144,7 @@ def test_scan_result_prints_to_console():
 
 
 def test_scan_result_saves_to_file(tmp_path):
-    """Test that scan result saves JSON to a file when target is given."""
+    """Test that scan-result saves JSON to a file when target is given."""
     fake_result = {
         "workspaces": [{"id": "workspace-id-2", "name": "Other Workspace"}]
     }
@@ -155,7 +157,8 @@ def test_scan_result_saves_to_file(tmp_path):
             return_value=fake_result,
         ):
             result = runner.invoke(
-                pbi, ["scan", "result", "scan-456", "-t", str(target_file)]
+                pbi,
+                ["workspaces", "scan-result", "scan-456", "-t", str(target_file)],
             )
 
     assert result.exit_code == 0

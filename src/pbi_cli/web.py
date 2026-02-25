@@ -158,24 +158,22 @@ class DataRetriever:
         self,
         link: str,
         auth: Optional[HTTPBasicAuth] = None,
-        data: Optional[dict] = None,
-        json: Optional[dict] = None,
+        body: Optional[dict] = None,
     ) -> requests.Response:
-        """Post data to a URL and return the response.
+        """Post a JSON body to a URL and return the response.
 
         :param link: URL to post to
         :param auth: optional HTTP basic auth credentials
-        :param data: optional form-encoded body data
-        :param json: optional JSON body data (mutually exclusive with data)
+        :param body: optional JSON body data; defaults to an empty dict
         :return: response object
         """
-        if data is None and json is None:
-            data = {}
+        if body is None:
+            body = {}
         with warnings.catch_warnings():
             if not self.session_query_configs.get("verify", True):
                 warnings.filterwarnings(
                     "ignore", category=urllib3.exceptions.InsecureRequestWarning
                 )
             return self.session.post(
-                link, auth=auth, data=data, json=json, **self.session_query_configs
+                link, auth=auth, json=body, **self.session_query_configs
             )

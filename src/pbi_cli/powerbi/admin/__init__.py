@@ -280,7 +280,7 @@ class WorkspaceInfo(Base):
         logger.info(f"Using API Endpoint: {uri}")
 
         payload = {"workspaces": workspace_ids}
-        result = self._data_retriever.post(uri, json=payload).json()
+        result = self._data_retriever.post(uri, body=payload).json()
 
         if result.get("error"):
             raise ValueError(f"Error: {result}")
