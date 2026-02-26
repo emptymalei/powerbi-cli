@@ -54,7 +54,9 @@ class PBIConfig:
 
         :param config_file: Optional path to config file (defaults to ~/.pbi_cli/config.yaml)
         """
-        self._config_file = config_file if config_file is not None else _default_config_file()
+        self._config_file = (
+            config_file if config_file is not None else _default_config_file()
+        )
         self._config_dir = self._config_file.parent
         self._data: Optional[Dict] = None
 
@@ -380,7 +382,9 @@ class PBIConfig:
         config = self.data.copy()
         if "groups" not in config or not isinstance(config["groups"], dict):
             config["groups"] = {}
-        if group not in config["groups"] or not isinstance(config["groups"][group], dict):
+        if group not in config["groups"] or not isinstance(
+            config["groups"][group], dict
+        ):
             config["groups"][group] = {"active_profile": None, "profiles": {}}
         config["groups"][group]["active_profile"] = profile_name
         self._save(config)
@@ -414,7 +418,9 @@ class PBIConfig:
         config = self.data.copy()
         if "groups" not in config or not isinstance(config["groups"], dict):
             config["groups"] = {}
-        if group not in config["groups"] or not isinstance(config["groups"][group], dict):
+        if group not in config["groups"] or not isinstance(
+            config["groups"][group], dict
+        ):
             config["groups"][group] = {"active_profile": None, "profiles": {}}
         if "profiles" not in config["groups"][group] or not isinstance(
             config["groups"][group]["profiles"], dict
