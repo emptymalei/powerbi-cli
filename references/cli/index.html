@@ -1484,19 +1484,19 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
 <span class="normal">154</span>
 <span class="normal">155</span>
 <span class="normal">156</span>
 <span class="normal">157</span>
-<span class="normal">158</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_check_keyring_availability</span><span class="p">():</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_check_keyring_availability</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if keyring is available and working&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">KEYRING_AVAILABLE</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -1531,12 +1531,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">224</span>
-<span class="normal">225</span>
-<span class="normal">226</span>
-<span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">229</span>
 <span class="normal">230</span>
 <span class="normal">231</span>
 <span class="normal">232</span>
@@ -1556,7 +1551,12 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">246</span>
 <span class="normal">247</span>
 <span class="normal">248</span>
-<span class="normal">249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_delete_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_delete_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete credential for a profile from keyring or file storage&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">_check_keyring_availability</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1608,12 +1608,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
@@ -1634,7 +1629,12 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">140</span>
 <span class="normal">141</span>
 <span class="normal">142</span>
-<span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_display_table</span><span class="p">(</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_display_table</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display_cols</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Display data as a formatted table.</span>
@@ -1683,9 +1683,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_auth_config_file</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_auth_config_file</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the legacy auth config file path, resolved at call time.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_get_config_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;auth.json&quot;</span>
 </code></pre></div></td></tr></table></div>
@@ -1710,9 +1710,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_config_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_config_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the pbi-cli config directory, resolved at call time.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.pbi_cli&quot;</span>
 </code></pre></div></td></tr></table></div>
@@ -1737,12 +1737,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">205</span>
 <span class="normal">206</span>
 <span class="normal">207</span>
 <span class="normal">208</span>
@@ -1758,7 +1753,12 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">218</span>
 <span class="normal">219</span>
 <span class="normal">220</span>
-<span class="normal">221</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get credential for a profile from keyring or file storage&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">_check_keyring_availability</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1802,9 +1802,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_credentials_file</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_credentials_file</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the credentials file path, resolved at call time.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_get_config_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;credentials.json&quot;</span>
 </code></pre></div></td></tr></table></div>
@@ -1831,12 +1831,7 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
-<span class="normal"> 68</span>
-<span class="normal"> 69</span>
-<span class="normal"> 70</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 70</span>
 <span class="normal"> 71</span>
 <span class="normal"> 72</span>
 <span class="normal"> 73</span>
@@ -1869,7 +1864,12 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 <span class="normal">100</span>
 <span class="normal">101</span>
 <span class="normal">102</span>
-<span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_handle_cache_load</span><span class="p">(</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_handle_cache_load</span><span class="p">(</span>
     <span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">cache_only</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">pbi_config</span><span class="p">:</span> <span class="n">PBIConfig</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle loading data from cache.</span>
@@ -1930,15 +1930,15 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
 <span class="normal">112</span>
 <span class="normal">113</span>
-<span class="normal">114</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_handle_cache_save</span><span class="p">(</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_handle_cache_save</span><span class="p">(</span>
     <span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">pbi_config</span><span class="p">:</span> <span class="n">PBIConfig</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save data to cache if configured and enabled.&quot;&quot;&quot;</span>
@@ -2023,17 +2023,17 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">299</span>
-<span class="normal">300</span>
-<span class="normal">301</span>
-<span class="normal">302</span>
-<span class="normal">303</span>
-<span class="normal">304</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">304</span>
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span>
 <span class="normal">308</span>
-<span class="normal">309</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_load_group_profiles</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_load_group_profiles</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load profiles for a specific group from config.</span>
 
 <span class="sd">    :param group: Group name (e.g. &#39;user&#39; or &#39;admin&#39;)</span>
@@ -2066,15 +2066,15 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">281</span>
-<span class="normal">282</span>
-<span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span>
-<span class="normal">286</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
 <span class="normal">287</span>
 <span class="normal">288</span>
-<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_load_profiles</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_load_profiles</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load profiles configuration from YAML config&quot;&quot;&quot;</span>
     <span class="n">_migrate_legacy_auth</span><span class="p">()</span>
     <span class="n">pbi_config</span> <span class="o">=</span> <span class="n">PBIConfig</span><span class="p">()</span>
@@ -2105,12 +2105,7 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">252</span>
-<span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">257</span>
 <span class="normal">258</span>
 <span class="normal">259</span>
 <span class="normal">260</span>
@@ -2131,7 +2126,12 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 <span class="normal">275</span>
 <span class="normal">276</span>
 <span class="normal">277</span>
-<span class="normal">278</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_migrate_legacy_auth</span><span class="p">():</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_migrate_legacy_auth</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Migrate legacy auth.json to the new profile-based system&quot;&quot;&quot;</span>
     <span class="n">pbi_config</span> <span class="o">=</span> <span class="n">PBIConfig</span><span class="p">()</span>
 
@@ -2227,16 +2227,16 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">312</span>
-<span class="normal">313</span>
-<span class="normal">314</span>
-<span class="normal">315</span>
-<span class="normal">316</span>
-<span class="normal">317</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">317</span>
 <span class="normal">318</span>
 <span class="normal">319</span>
 <span class="normal">320</span>
-<span class="normal">321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_save_group_profiles</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_save_group_profiles</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save profiles for a specific group to config.</span>
 
 <span class="sd">    :param group: Group name (e.g. &#39;user&#39; or &#39;admin&#39;)</span>
@@ -2268,11 +2268,11 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">292</span>
-<span class="normal">293</span>
-<span class="normal">294</span>
-<span class="normal">295</span>
-<span class="normal">296</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_save_profiles</span><span class="p">(</span><span class="n">profiles_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_save_profiles</span><span class="p">(</span><span class="n">profiles_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save profiles configuration to YAML config&quot;&quot;&quot;</span>
     <span class="n">pbi_config</span> <span class="o">=</span> <span class="n">PBIConfig</span><span class="p">()</span>
     <span class="n">pbi_config</span><span class="o">.</span><span class="n">active_profile</span> <span class="o">=</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;active_profile&quot;</span><span class="p">)</span>
@@ -2299,12 +2299,7 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">166</span>
 <span class="normal">167</span>
 <span class="normal">168</span>
 <span class="normal">169</span>
@@ -2335,7 +2330,12 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 <span class="normal">194</span>
 <span class="normal">195</span>
 <span class="normal">196</span>
-<span class="normal">197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_set_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_set_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set credential for a profile using keyring or fallback to file storage&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">_check_keyring_availability</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
@@ -2394,10 +2394,7 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1645</span>
-<span class="normal">1646</span>
-<span class="normal">1647</span>
-<span class="normal">1648</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1648</span>
 <span class="normal">1649</span>
 <span class="normal">1650</span>
 <span class="normal">1651</span>
@@ -2430,7 +2427,10 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 <span class="normal">1678</span>
 <span class="normal">1679</span>
 <span class="normal">1680</span>
-<span class="normal">1681</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--app-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-a&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;app id&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -2489,14 +2489,14 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1545</span>
-<span class="normal">1546</span>
-<span class="normal">1547</span>
-<span class="normal">1548</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1548</span>
 <span class="normal">1549</span>
 <span class="normal">1550</span>
 <span class="normal">1551</span>
-<span class="normal">1552</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">apps</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Power BI Apps Command Group&quot;&quot;&quot;</span>
@@ -2526,10 +2526,7 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1684</span>
-<span class="normal">1685</span>
-<span class="normal">1686</span>
-<span class="normal">1687</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1687</span>
 <span class="normal">1688</span>
 <span class="normal">1689</span>
 <span class="normal">1690</span>
@@ -2573,7 +2570,10 @@ Raises click.Abort if cache_only is True but cache is not available.</p>
 <span class="normal">1728</span>
 <span class="normal">1729</span>
 <span class="normal">1730</span>
-<span class="normal">1731</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1731</span>
+<span class="normal">1732</span>
+<span class="normal">1733</span>
+<span class="normal">1734</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--source&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-s&quot;</span><span class="p">,</span>
@@ -2715,16 +2715,7 @@ pbi auth -t &lt;your_bearer_token&gt; -p user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">400</span>
 <span class="normal">401</span>
 <span class="normal">402</span>
 <span class="normal">403</span>
@@ -2800,7 +2791,16 @@ pbi auth -t &lt;your_bearer_token&gt; -p user-nlm -g user
 <span class="normal">473</span>
 <span class="normal">474</span>
 <span class="normal">475</span>
-<span class="normal">476</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--bearer-token&quot;</span><span class="p">,</span> <span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Bearer token&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--profile&quot;</span><span class="p">,</span>
@@ -2908,12 +2908,12 @@ pbi auth -t &lt;your_bearer_token&gt; -p user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">919</span>
-<span class="normal">920</span>
-<span class="normal">921</span>
-<span class="normal">922</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">922</span>
 <span class="normal">923</span>
-<span class="normal">924</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;cache&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;cache&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cache_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage cached API call results&quot;&quot;&quot;</span>
@@ -2997,10 +2997,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 978</span>
-<span class="normal"> 979</span>
-<span class="normal"> 980</span>
-<span class="normal"> 981</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 981</span>
 <span class="normal"> 982</span>
 <span class="normal"> 983</span>
 <span class="normal"> 984</span>
@@ -3048,7 +3045,10 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">1026</span>
 <span class="normal">1027</span>
 <span class="normal">1028</span>
-<span class="normal">1029</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;clear&quot;</span><span class="p">)</span>
+<span class="normal">1029</span>
+<span class="normal">1030</span>
+<span class="normal">1031</span>
+<span class="normal">1032</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;clear&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--cache-key&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-k&quot;</span><span class="p">,</span>
@@ -3122,12 +3122,12 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">749</span>
-<span class="normal">750</span>
-<span class="normal">751</span>
-<span class="normal">752</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">752</span>
 <span class="normal">753</span>
-<span class="normal">754</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">754</span>
+<span class="normal">755</span>
+<span class="normal">756</span>
+<span class="normal">757</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">config_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage pbi-cli configuration settings&quot;&quot;&quot;</span>
@@ -3207,12 +3207,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">668</span>
-<span class="normal">669</span>
-<span class="normal">670</span>
-<span class="normal">671</span>
-<span class="normal">672</span>
-<span class="normal">673</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">673</span>
 <span class="normal">674</span>
 <span class="normal">675</span>
 <span class="normal">676</span>
@@ -3285,7 +3280,10 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">743</span>
 <span class="normal">744</span>
 <span class="normal">745</span>
-<span class="normal">746</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">)</span>
+<span class="normal">746</span>
+<span class="normal">747</span>
+<span class="normal">748</span>
+<span class="normal">749</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--group&quot;</span><span class="p">,</span>
@@ -3324,9 +3322,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
         <span class="n">_delete_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
         <span class="n">pbi_config</span><span class="o">.</span><span class="n">remove_profile_from_group</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;✓ Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; deleted from group &#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;green&quot;</span>
-        <span class="p">)</span>
+        <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; deleted from group &#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
         <span class="n">new_active</span> <span class="o">=</span> <span class="n">pbi_config</span><span class="o">.</span><span class="n">get_group_active_profile</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_active</span><span class="p">:</span>
             <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span>
@@ -3388,17 +3384,17 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">906</span>
-<span class="normal">907</span>
-<span class="normal">908</span>
-<span class="normal">909</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">909</span>
 <span class="normal">910</span>
 <span class="normal">911</span>
 <span class="normal">912</span>
 <span class="normal">913</span>
 <span class="normal">914</span>
 <span class="normal">915</span>
-<span class="normal">916</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;disable-cache&quot;</span><span class="p">)</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;disable-cache&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">disable_cache</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Disable caching of API call results</span>
 
@@ -3433,17 +3429,17 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">893</span>
-<span class="normal">894</span>
-<span class="normal">895</span>
-<span class="normal">896</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">896</span>
 <span class="normal">897</span>
 <span class="normal">898</span>
 <span class="normal">899</span>
 <span class="normal">900</span>
 <span class="normal">901</span>
 <span class="normal">902</span>
-<span class="normal">903</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;enable-cache&quot;</span><span class="p">)</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;enable-cache&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">enable_cache</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enable caching of API call results</span>
 
@@ -3476,10 +3472,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1816</span>
-<span class="normal">1817</span>
-<span class="normal">1818</span>
-<span class="normal">1819</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1819</span>
 <span class="normal">1820</span>
 <span class="normal">1821</span>
 <span class="normal">1822</span>
@@ -3508,7 +3501,10 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">1845</span>
 <span class="normal">1846</span>
 <span class="normal">1847</span>
-<span class="normal">1848</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1848</span>
+<span class="normal">1849</span>
+<span class="normal">1850</span>
+<span class="normal">1851</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--group-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-g&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Group ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--report-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Report ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
@@ -3567,10 +3563,7 @@ from json to excel.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1218</span>
-<span class="normal">1219</span>
-<span class="normal">1220</span>
-<span class="normal">1221</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1221</span>
 <span class="normal">1222</span>
 <span class="normal">1223</span>
 <span class="normal">1224</span>
@@ -3607,7 +3600,10 @@ from json to excel.</p>
 <span class="normal">1255</span>
 <span class="normal">1256</span>
 <span class="normal">1257</span>
-<span class="normal">1258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1258</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--source&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-s&quot;</span><span class="p">,</span>
@@ -3672,10 +3668,7 @@ from json to excel.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">875</span>
-<span class="normal">876</span>
-<span class="normal">877</span>
-<span class="normal">878</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">878</span>
 <span class="normal">879</span>
 <span class="normal">880</span>
 <span class="normal">881</span>
@@ -3687,7 +3680,10 @@ from json to excel.</p>
 <span class="normal">887</span>
 <span class="normal">888</span>
 <span class="normal">889</span>
-<span class="normal">890</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get-cache-folder&quot;</span><span class="p">)</span>
+<span class="normal">890</span>
+<span class="normal">891</span>
+<span class="normal">892</span>
+<span class="normal">893</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get-cache-folder&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_cache_folder</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the currently configured cache folder</span>
 
@@ -3727,10 +3723,7 @@ from json to excel.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">785</span>
-<span class="normal">786</span>
-<span class="normal">787</span>
-<span class="normal">788</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">788</span>
 <span class="normal">789</span>
 <span class="normal">790</span>
 <span class="normal">791</span>
@@ -3741,7 +3734,10 @@ from json to excel.</p>
 <span class="normal">796</span>
 <span class="normal">797</span>
 <span class="normal">798</span>
-<span class="normal">799</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get-output-folder&quot;</span><span class="p">)</span>
+<span class="normal">799</span>
+<span class="normal">800</span>
+<span class="normal">801</span>
+<span class="normal">802</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get-output-folder&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_output_folder</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the currently configured default output folder</span>
 
@@ -3778,10 +3774,7 @@ from json to excel.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1558</span>
 <span class="normal">1559</span>
 <span class="normal">1560</span>
 <span class="normal">1561</span>
@@ -3865,7 +3858,10 @@ from json to excel.</p>
 <span class="normal">1639</span>
 <span class="normal">1640</span>
 <span class="normal">1641</span>
-<span class="normal">1642</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1642</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target-folder&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-tf&quot;</span><span class="p">,</span>
@@ -3914,9 +3910,9 @@ from json to excel.</p>
     <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Listing Apps as </span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="n">powerbi_app</span><span class="o">.</span><span class="n">Apps</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">powerbi_app</span><span class="o">.</span><span class="n">Apps</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># admin</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">Apps</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">Apps</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">user</span><span class="p">()</span>
 
         <span class="c1"># Save to cache</span>
@@ -3977,14 +3973,7 @@ from json to excel.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">610</span>
-<span class="normal">611</span>
-<span class="normal">612</span>
-<span class="normal">613</span>
-<span class="normal">614</span>
-<span class="normal">615</span>
-<span class="normal">616</span>
-<span class="normal">617</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">617</span>
 <span class="normal">618</span>
 <span class="normal">619</span>
 <span class="normal">620</span>
@@ -4032,7 +4021,12 @@ from json to excel.</p>
 <span class="normal">662</span>
 <span class="normal">663</span>
 <span class="normal">664</span>
-<span class="normal">665</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_auth</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List all stored authentication profiles</span>
 
@@ -4082,9 +4076,7 @@ from json to excel.</p>
                 <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">profiles</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
-        <span class="n">pbi_config</span><span class="o">.</span><span class="n">get_group_profiles</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">VALID_GROUPS</span>
-    <span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">profiles</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">pbi_config</span><span class="o">.</span><span class="n">get_group_profiles</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">VALID_GROUPS</span><span class="p">):</span>
         <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span>
             <span class="s2">&quot;No profiles found. Use &#39;pbi auth&#39; to create a profile.&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span>
         <span class="p">)</span>
@@ -4147,10 +4139,7 @@ pbi cache list -k workspaces
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">927</span>
-<span class="normal">928</span>
-<span class="normal">929</span>
-<span class="normal">930</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">930</span>
 <span class="normal">931</span>
 <span class="normal">932</span>
 <span class="normal">933</span>
@@ -4195,7 +4184,10 @@ pbi cache list -k workspaces
 <span class="normal">972</span>
 <span class="normal">973</span>
 <span class="normal">974</span>
-<span class="normal">975</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--cache-key&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-k&quot;</span><span class="p">,</span>
@@ -4254,7 +4246,7 @@ pbi cache list -k workspaces
 
 
 <h2 id="pbi_cli.cli.load_auth" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;user&#39;</span><span class="p">)</span></code>
 
 <a href="#pbi_cli.cli.load_auth" class="headerlink" title="Permanent link">¤</a></h2>
 
@@ -4262,8 +4254,9 @@ pbi cache list -k workspaces
     <div class="doc doc-contents ">
 
         <p>Load authentication for the specified profile or active profile.</p>
-<p>If <em>group</em> is provided the active profile is resolved from that group.
-Otherwise the legacy flat active-profile is used.</p>
+<p>Resolves the auth profile from the given <em>group</em> first.  If no profile is
+found in that group the function falls back to the legacy flat profile
+storage so that existing configurations continue to work.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4286,7 +4279,7 @@ Otherwise the legacy flat active-profile is used.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Profile name. If None, resolves from group or flat config.</p>
+                <p>Profile name. If None, the active profile for <em>group</em> is used, with further fallback to the flat active-profile.</p>
               </div>
             </td>
             <td>
@@ -4298,15 +4291,15 @@ Otherwise the legacy flat active-profile is used.</p>
                 <code>group</code>
             </td>
             <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
+                  <code><span title="str">str</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Group name ('user' or 'admin'). When set, the group's active profile is used when <em>profile</em> is None.</p>
+                <p>Auth group to resolve the profile from ('user' or 'admin'). Defaults to <code>'user'</code>.  Pass <code>'admin'</code> for commands that require admin-level access.</p>
               </div>
             </td>
             <td>
-                  <code>None</code>
+                  <code>&#39;user&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -4328,7 +4321,7 @@ Otherwise the legacy flat active-profile is used.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>dict containing {"Authorization": "Bearer <token>"}</p>
+                <p>dict containing <code>{"Authorization": "Bearer &lt;token&gt;"}</code></p>
               </div>
             </td>
           </tr>
@@ -4338,12 +4331,7 @@ Otherwise the legacy flat active-profile is used.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">329</span>
 <span class="normal">330</span>
 <span class="normal">331</span>
 <span class="normal">332</span>
@@ -4384,46 +4372,59 @@ Otherwise the legacy flat active-profile is used.</p>
 <span class="normal">367</span>
 <span class="normal">368</span>
 <span class="normal">369</span>
-<span class="normal">370</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;user&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load authentication for the specified profile or active profile.</span>
 
-<span class="sd">    If *group* is provided the active profile is resolved from that group.</span>
-<span class="sd">    Otherwise the legacy flat active-profile is used.</span>
+<span class="sd">    Resolves the auth profile from the given *group* first.  If no profile is</span>
+<span class="sd">    found in that group the function falls back to the legacy flat profile</span>
+<span class="sd">    storage so that existing configurations continue to work.</span>
 
-<span class="sd">    :param profile: Profile name. If None, resolves from group or flat config.</span>
-<span class="sd">    :param group: Group name (&#39;user&#39; or &#39;admin&#39;). When set, the group&#39;s active</span>
-<span class="sd">        profile is used when *profile* is None.</span>
-<span class="sd">    :return: dict containing {&quot;Authorization&quot;: &quot;Bearer &lt;token&gt;&quot;}</span>
+<span class="sd">    :param profile: Profile name. If None, the active profile for *group* is</span>
+<span class="sd">        used, with further fallback to the flat active-profile.</span>
+<span class="sd">    :param group: Auth group to resolve the profile from (&#39;user&#39; or &#39;admin&#39;).</span>
+<span class="sd">        Defaults to ``&#39;user&#39;``.  Pass ``&#39;admin&#39;`` for commands that require</span>
+<span class="sd">        admin-level access.</span>
+<span class="sd">    :return: dict containing ``{&quot;Authorization&quot;: &quot;Bearer &lt;token&gt;&quot;}``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">pbi_config</span> <span class="o">=</span> <span class="n">PBIConfig</span><span class="p">()</span>
+    <span class="n">pbi_config</span> <span class="o">=</span> <span class="n">PBIConfig</span><span class="p">()</span>
+
+    <span class="c1"># Try to resolve from the requested group first.</span>
+    <span class="n">resolved_profile</span> <span class="o">=</span> <span class="n">profile</span>
+    <span class="k">if</span> <span class="n">resolved_profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolved_profile</span> <span class="o">=</span> <span class="n">pbi_config</span><span class="o">.</span><span class="n">get_group_active_profile</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">resolved_profile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pbi_config</span><span class="o">.</span><span class="n">has_profile_in_group</span><span class="p">(</span>
+        <span class="n">group</span><span class="p">,</span> <span class="n">resolved_profile</span>
+    <span class="p">):</span>
+        <span class="c1"># Use group-based profile.</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">resolved_profile</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Fall back to legacy flat profiles for backward compatibility.</span>
+        <span class="n">profiles_data</span> <span class="o">=</span> <span class="n">_load_profiles</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">profile</span> <span class="o">=</span> <span class="n">pbi_config</span><span class="o">.</span><span class="n">get_group_active_profile</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;active_profile&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;No active profile set for group &#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Use &#39;pbi auth -g </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39; to create a profile or &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;&#39;pbi profile switch -g </span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39; to switch profiles.&quot;</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">pbi_config</span><span class="o">.</span><span class="n">has_profile_in_group</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">profile</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found in group &#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
-                <span class="s2">&quot;Use &#39;pbi profile list&#39; to see available profiles.&quot;</span>
-            <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">profiles_data</span> <span class="o">=</span> <span class="n">_load_profiles</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">profile</span> <span class="o">=</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;active_profile&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
-                <span class="s2">&quot;No active profile set. Use &#39;pbi auth&#39; to create a profile or &#39;pbi profile switch&#39; to switch profiles.&quot;</span>
-            <span class="p">)</span>
         <span class="k">if</span> <span class="n">profile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">profiles_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profiles&quot;</span><span class="p">,</span> <span class="p">{}):</span>
             <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found. Use &#39;pbi profile list&#39; to see available profiles.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Profile &#39;</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">&#39; not found in group &#39;</span><span class="si">{</span><span class="n">group</span><span class="si">}</span><span class="s2">&#39; or flat profiles. &quot;</span>
+                <span class="s2">&quot;Use &#39;pbi profile list&#39; to see available profiles.&quot;</span>
             <span class="p">)</span>
 
-    <span class="c1"># Get token from keyring or file</span>
+    <span class="c1"># Get token from keyring or file.</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">_get_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span>
@@ -4453,12 +4454,12 @@ Otherwise the legacy flat active-profile is used.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">profile_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage authentication profiles&quot;&quot;&quot;</span>
@@ -4506,10 +4507,7 @@ use different workspace names for the reports.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1261</span>
-<span class="normal">1262</span>
-<span class="normal">1263</span>
-<span class="normal">1264</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1264</span>
 <span class="normal">1265</span>
 <span class="normal">1266</span>
 <span class="normal">1267</span>
@@ -4671,7 +4669,10 @@ use different workspace names for the reports.</p>
 <span class="normal">1423</span>
 <span class="normal">1424</span>
 <span class="normal">1425</span>
-<span class="normal">1426</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1426</span>
+<span class="normal">1427</span>
+<span class="normal">1428</span>
+<span class="normal">1429</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--source&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-s&quot;</span><span class="p">,</span>
@@ -4763,7 +4764,7 @@ use different workspace names for the reports.</p>
     <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="s2">&quot;getting report user details requires admin token&quot;</span><span class="p">)</span>
 
     <span class="n">pbi_workspaces</span> <span class="o">=</span> <span class="n">powerbi_workspace</span><span class="o">.</span><span class="n">Workspaces</span><span class="p">(</span>
-        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache_file</span><span class="o">=</span><span class="n">source</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache_file</span><span class="o">=</span><span class="n">source</span>
     <span class="p">)</span>
 
     <span class="n">report_users</span> <span class="o">=</span> <span class="n">pbi_workspaces</span><span class="o">.</span><span class="n">report_users</span><span class="p">(</span>
@@ -4859,14 +4860,14 @@ use different workspace names for the reports.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1734</span>
-<span class="normal">1735</span>
-<span class="normal">1736</span>
-<span class="normal">1737</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1737</span>
 <span class="normal">1738</span>
 <span class="normal">1739</span>
 <span class="normal">1740</span>
-<span class="normal">1741</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1741</span>
+<span class="normal">1742</span>
+<span class="normal">1743</span>
+<span class="normal">1744</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reports Command Group&quot;&quot;&quot;</span>
@@ -4907,14 +4908,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1970</span>
-<span class="normal">1971</span>
-<span class="normal">1972</span>
-<span class="normal">1973</span>
-<span class="normal">1974</span>
-<span class="normal">1975</span>
-<span class="normal">1976</span>
-<span class="normal">1977</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1977</span>
 <span class="normal">1978</span>
 <span class="normal">1979</span>
 <span class="normal">1980</span>
@@ -5031,7 +5025,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2091</span>
 <span class="normal">2092</span>
 <span class="normal">2093</span>
-<span class="normal">2094</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
+<span class="normal">2094</span>
+<span class="normal">2095</span>
+<span class="normal">2096</span>
+<span class="normal">2097</span>
+<span class="normal">2098</span>
+<span class="normal">2099</span>
+<span class="normal">2100</span>
+<span class="normal">2101</span>
+<span class="normal">2102</span>
+<span class="normal">2103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -5115,7 +5118,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
 
     <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Initiating scan…&quot;</span><span class="p">)</span>
     <span class="n">scan_response</span> <span class="o">=</span> <span class="n">workspace_info</span><span class="o">.</span><span class="n">initiate_scan</span><span class="p">(</span>
@@ -5187,10 +5192,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1865</span>
-<span class="normal">1866</span>
-<span class="normal">1867</span>
-<span class="normal">1868</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1868</span>
 <span class="normal">1869</span>
 <span class="normal">1870</span>
 <span class="normal">1871</span>
@@ -5251,7 +5253,12 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1926</span>
 <span class="normal">1927</span>
 <span class="normal">1928</span>
-<span class="normal">1929</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
+<span class="normal">1929</span>
+<span class="normal">1930</span>
+<span class="normal">1931</span>
+<span class="normal">1932</span>
+<span class="normal">1933</span>
+<span class="normal">1934</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -5306,7 +5313,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="sd">        This command requires an admin account.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">workspace_info</span><span class="o">.</span><span class="n">initiate_scan</span><span class="p">(</span>
         <span class="n">workspace_ids</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">workspace_ids</span><span class="p">],</span>
         <span class="n">lineage</span><span class="o">=</span><span class="n">lineage</span><span class="p">,</span>
@@ -5348,12 +5357,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1932</span>
-<span class="normal">1933</span>
-<span class="normal">1934</span>
-<span class="normal">1935</span>
-<span class="normal">1936</span>
-<span class="normal">1937</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1937</span>
 <span class="normal">1938</span>
 <span class="normal">1939</span>
 <span class="normal">1940</span>
@@ -5383,7 +5387,14 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1964</span>
 <span class="normal">1965</span>
 <span class="normal">1966</span>
-<span class="normal">1967</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
+<span class="normal">1967</span>
+<span class="normal">1968</span>
+<span class="normal">1969</span>
+<span class="normal">1970</span>
+<span class="normal">1971</span>
+<span class="normal">1972</span>
+<span class="normal">1973</span>
+<span class="normal">1974</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;scan_id&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -5410,7 +5421,9 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="sd">        This command requires an admin account.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">workspace_info</span> <span class="o">=</span> <span class="n">powerbi_admin</span><span class="o">.</span><span class="n">WorkspaceInfo</span><span class="p">(</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">workspace_info</span><span class="o">.</span><span class="n">get_scan_result</span><span class="p">(</span><span class="n">scan_id</span><span class="o">=</span><span class="n">scan_id</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -5480,10 +5493,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">837</span>
-<span class="normal">838</span>
-<span class="normal">839</span>
-<span class="normal">840</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">840</span>
 <span class="normal">841</span>
 <span class="normal">842</span>
 <span class="normal">843</span>
@@ -5515,7 +5525,10 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">869</span>
 <span class="normal">870</span>
 <span class="normal">871</span>
-<span class="normal">872</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;set-cache-folder&quot;</span><span class="p">)</span>
+<span class="normal">872</span>
+<span class="normal">873</span>
+<span class="normal">874</span>
+<span class="normal">875</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;set-cache-folder&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;folder_path&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">())</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_cache_folder</span><span class="p">(</span><span class="n">folder_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the cache folder for storing API call results</span>
@@ -5609,10 +5622,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">757</span>
-<span class="normal">758</span>
-<span class="normal">759</span>
-<span class="normal">760</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">760</span>
 <span class="normal">761</span>
 <span class="normal">762</span>
 <span class="normal">763</span>
@@ -5634,7 +5644,10 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">779</span>
 <span class="normal">780</span>
 <span class="normal">781</span>
-<span class="normal">782</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;set-output-folder&quot;</span><span class="p">)</span>
+<span class="normal">782</span>
+<span class="normal">783</span>
+<span class="normal">784</span>
+<span class="normal">785</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;set-output-folder&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;folder_path&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">())</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_output_folder</span><span class="p">(</span><span class="n">folder_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the default parent folder for all command outputs</span>
@@ -5684,10 +5697,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">802</span>
-<span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">805</span>
 <span class="normal">806</span>
 <span class="normal">807</span>
 <span class="normal">808</span>
@@ -5716,7 +5726,10 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">831</span>
 <span class="normal">832</span>
 <span class="normal">833</span>
-<span class="normal">834</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;show&quot;</span><span class="p">)</span>
+<span class="normal">834</span>
+<span class="normal">835</span>
+<span class="normal">836</span>
+<span class="normal">837</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;show&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">show_config</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Show all configuration settings</span>
 
@@ -5827,16 +5840,7 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">496</span>
 <span class="normal">497</span>
 <span class="normal">498</span>
 <span class="normal">499</span>
@@ -5947,7 +5951,14 @@ pbi profile switch user-nlm -g user
 <span class="normal">604</span>
 <span class="normal">605</span>
 <span class="normal">606</span>
-<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;switch&quot;</span><span class="p">)</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_group</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;switch&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;profile_name&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--group&quot;</span><span class="p">,</span>
@@ -5957,9 +5968,7 @@ pbi profile switch user-nlm -g user
     <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">switch_profile_cmd</span><span class="p">(</span>
-    <span class="n">profile_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">switch_profile_cmd</span><span class="p">(</span><span class="n">profile_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Switch the active authentication profile</span>
 
 <span class="sd">    ```</span>
@@ -6090,10 +6099,7 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1444</span>
-<span class="normal">1445</span>
-<span class="normal">1446</span>
-<span class="normal">1447</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1447</span>
 <span class="normal">1448</span>
 <span class="normal">1449</span>
 <span class="normal">1450</span>
@@ -6188,7 +6194,10 @@ pbi profile switch user-nlm -g user
 <span class="normal">1539</span>
 <span class="normal">1540</span>
 <span class="normal">1541</span>
-<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@users</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span>
+<span class="normal">1545</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@users</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--user-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-u&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;user id&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target-folder&quot;</span><span class="p">,</span>
@@ -6240,7 +6249,7 @@ pbi profile switch user-nlm -g user
 
     <span class="c1"># Fetch from API if not using cache</span>
     <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">),</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">user</span><span class="p">()</span>
 
         <span class="c1"># Save to cache</span>
@@ -6309,10 +6318,7 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1744</span>
-<span class="normal">1745</span>
-<span class="normal">1746</span>
-<span class="normal">1747</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1747</span>
 <span class="normal">1748</span>
 <span class="normal">1749</span>
 <span class="normal">1750</span>
@@ -6378,7 +6384,10 @@ pbi profile switch user-nlm -g user
 <span class="normal">1810</span>
 <span class="normal">1811</span>
 <span class="normal">1812</span>
-<span class="normal">1813</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+<span class="normal">1813</span>
+<span class="normal">1814</span>
+<span class="normal">1815</span>
+<span class="normal">1816</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--source&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-s&quot;</span><span class="p">,</span>
@@ -6470,12 +6479,12 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Show the current version of the pbi CLI tool.&quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span> <span class="k">as</span> <span class="n">_version</span>
@@ -6503,14 +6512,14 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1067</span>
-<span class="normal">1068</span>
-<span class="normal">1069</span>
-<span class="normal">1070</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1070</span>
 <span class="normal">1071</span>
 <span class="normal">1072</span>
 <span class="normal">1073</span>
-<span class="normal">1074</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pbi</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Command group for Power BI workspaces&quot;&quot;&quot;</span>
@@ -6544,10 +6553,7 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1851</span>
-<span class="normal">1852</span>
-<span class="normal">1853</span>
-<span class="normal">1854</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1854</span>
 <span class="normal">1855</span>
 <span class="normal">1856</span>
 <span class="normal">1857</span>
@@ -6555,7 +6561,10 @@ pbi profile switch user-nlm -g user
 <span class="normal">1859</span>
 <span class="normal">1860</span>
 <span class="normal">1861</span>
-<span class="normal">1862</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1862</span>
+<span class="normal">1863</span>
+<span class="normal">1864</span>
+<span class="normal">1865</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Command group for workspace scan operations.</span>
