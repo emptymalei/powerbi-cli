@@ -1195,19 +1195,6 @@ pbi profile switch user-nlm -g user
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  --help  Show this message and exit.
 </code></pre></div>
-<h3 id="all-pages">all-pages<a class="headerlink" href="#all-pages" title="Permanent link">¤</a></h3>
-<p>Get all pages of every report in a workspace group.</p>
-<p>Retrieves the list of reports for the specified group, then fetches the
-pages for each report. The combined result is either printed to the console
-or saved to a JSON file.</p>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi reports all-pages [OPTIONS]
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<div class="highlight"><pre><span></span><code>  -g, --group-id TEXT  Group (workspace) ID  [required]
-  -t, --target PATH    target file (if omitted, prints info to console)
-  --help               Show this message and exit.
-</code></pre></div>
 <h3 id="export_1">export<a class="headerlink" href="#export_1" title="Permanent link">¤</a></h3>
 <p>Export report as file</p>
 <p><strong>Usage:</strong></p>
@@ -1219,12 +1206,12 @@ or saved to a JSON file.</p>
   -t, --target PATH     target file (if omitted, prints info to console)
   --help                Show this message and exit.
 </code></pre></div>
-<h3 id="list-group">list-group<a class="headerlink" href="#list-group" title="Permanent link">¤</a></h3>
+<h3 id="list_3">list<a class="headerlink" href="#list_3" title="Permanent link">¤</a></h3>
 <p>List all reports in a workspace group.</p>
 <p>Retrieves the full list of reports from the specified workspace group and
 either prints the result to the console or saves it to a JSON file.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>pbi reports list-group [OPTIONS]
+<div class="highlight"><pre><span></span><code>pbi reports list [OPTIONS]
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  -g, --group-id TEXT  Group (workspace) ID  [required]
@@ -1232,16 +1219,22 @@ either prints the result to the console or saves it to a JSON file.</p>
   --help               Show this message and exit.
 </code></pre></div>
 <h3 id="pages">pages<a class="headerlink" href="#pages" title="Permanent link">¤</a></h3>
-<p>Get all pages of a report in a workspace group.</p>
-<p>Retrieves the list of pages for the given report from the specified
-workspace group and either prints the result to the console or saves it
-to a JSON file.</p>
+<p>Get pages of a report (or all reports) in a workspace group.</p>
+<p>When <code>--report-id</code> is provided, retrieves the pages for that specific
+report. When omitted, iterates over every report in the group and returns
+the combined pages for all of them.</p>
+<p>Examples::</p>
+<pre><code>pbi reports pages -g GROUP_ID -r REPORT_ID
+
+pbi reports pages -g GROUP_ID
+</code></pre>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>pbi reports pages [OPTIONS]
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="highlight"><pre><span></span><code>  -g, --group-id TEXT   Group (workspace) ID  [required]
-  -r, --report-id TEXT  Report ID  [required]
+  -r, --report-id TEXT  Report ID. If omitted, pages for all reports in the
+                        group are returned.
   -t, --target PATH     target file (if omitted, prints info to console)
   --help                Show this message and exit.
 </code></pre></div>
@@ -1312,7 +1305,7 @@ from json to excel.</p>
   --format [excel]   format of the file
   --help             Show this message and exit.
 </code></pre></div>
-<h3 id="list_3">list<a class="headerlink" href="#list_3" title="Permanent link">¤</a></h3>
+<h3 id="list_4">list<a class="headerlink" href="#list_4" title="Permanent link">¤</a></h3>
 <p>List Power BI workspaces and save them to files or print to console</p>
 <p>The --target-folder can be:
 - An absolute path: "C:\Users\Name\PowerBI\backups\2024-01-01"
@@ -4923,86 +4916,6 @@ use different workspace names for the reports.</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="pbi_cli.cli.reports_all_pages" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">reports_all_pages</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span></code>
-
-<a href="#pbi_cli.cli.reports_all_pages" class="headerlink" title="Permanent link">¤</a></h2>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Get all pages of every report in a workspace group.</p>
-<p>Retrieves the list of reports for the specified group, then fetches the
-pages for each report. The combined result is either printed to the console
-or saved to a JSON file.</p>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1914</span>
-<span class="normal">1915</span>
-<span class="normal">1916</span>
-<span class="normal">1917</span>
-<span class="normal">1918</span>
-<span class="normal">1919</span>
-<span class="normal">1920</span>
-<span class="normal">1921</span>
-<span class="normal">1922</span>
-<span class="normal">1923</span>
-<span class="normal">1924</span>
-<span class="normal">1925</span>
-<span class="normal">1926</span>
-<span class="normal">1927</span>
-<span class="normal">1928</span>
-<span class="normal">1929</span>
-<span class="normal">1930</span>
-<span class="normal">1931</span>
-<span class="normal">1932</span>
-<span class="normal">1933</span>
-<span class="normal">1934</span>
-<span class="normal">1935</span>
-<span class="normal">1936</span>
-<span class="normal">1937</span>
-<span class="normal">1938</span>
-<span class="normal">1939</span>
-<span class="normal">1940</span>
-<span class="normal">1941</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;all-pages&quot;</span><span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--group-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-g&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Group (workspace) ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;-t&quot;</span><span class="p">,</span>
-    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path_type</span><span class="o">=</span><span class="n">Path</span><span class="p">),</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;target file (if omitted, prints info to console)&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">reports_all_pages</span><span class="p">(</span><span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all pages of every report in a workspace group.</span>
-
-<span class="sd">    Retrieves the list of reports for the specified group, then fetches the</span>
-<span class="sd">    pages for each report. The combined result is either printed to the console</span>
-<span class="sd">    or saved to a JSON file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">group_reports</span> <span class="o">=</span> <span class="n">powerbi_report</span><span class="o">.</span><span class="n">GroupReports</span><span class="p">(</span>
-        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span>
-    <span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">group_reports</span><span class="o">.</span><span class="n">all_pages</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ All report pages saved to </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h2 id="pbi_cli.cli.reports_list_group" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">reports_list_group</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span></code>
 
@@ -5044,7 +4957,7 @@ either prints the result to the console or saves it to a JSON file.</p>
 <span class="normal">1877</span>
 <span class="normal">1878</span>
 <span class="normal">1879</span>
-<span class="normal">1880</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list-group&quot;</span><span class="p">)</span>
+<span class="normal">1880</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;list&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--group-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-g&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Group (workspace) ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -5088,10 +5001,15 @@ either prints the result to the console or saves it to a JSON file.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get all pages of a report in a workspace group.</p>
-<p>Retrieves the list of pages for the given report from the specified
-workspace group and either prints the result to the console or saves it
-to a JSON file.</p>
+        <p>Get pages of a report (or all reports) in a workspace group.</p>
+<p>When <code>--report-id</code> is provided, retrieves the pages for that specific
+report. When omitted, iterates over every report in the group and returns
+the combined pages for all of them.</p>
+<p>Examples::</p>
+<pre><code>pbi reports pages -g GROUP_ID -r REPORT_ID
+
+pbi reports pages -g GROUP_ID
+</code></pre>
 
 
             <details class="quote">
@@ -5124,9 +5042,33 @@ to a JSON file.</p>
 <span class="normal">1908</span>
 <span class="normal">1909</span>
 <span class="normal">1910</span>
-<span class="normal">1911</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;pages&quot;</span><span class="p">)</span>
+<span class="normal">1911</span>
+<span class="normal">1912</span>
+<span class="normal">1913</span>
+<span class="normal">1914</span>
+<span class="normal">1915</span>
+<span class="normal">1916</span>
+<span class="normal">1917</span>
+<span class="normal">1918</span>
+<span class="normal">1919</span>
+<span class="normal">1920</span>
+<span class="normal">1921</span>
+<span class="normal">1922</span>
+<span class="normal">1923</span>
+<span class="normal">1924</span>
+<span class="normal">1925</span>
+<span class="normal">1926</span>
+<span class="normal">1927</span>
+<span class="normal">1928</span>
+<span class="normal">1929</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;pages&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--group-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-g&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Group (workspace) ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s2">&quot;--report-id&quot;</span><span class="p">,</span> <span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Report ID&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--report-id&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;-r&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Report ID. If omitted, pages for all reports in the group are returned.&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
     <span class="s2">&quot;-t&quot;</span><span class="p">,</span>
@@ -5135,17 +5077,29 @@ to a JSON file.</p>
     <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">reports_pages</span><span class="p">(</span><span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all pages of a report in a workspace group.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reports_pages</span><span class="p">(</span><span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">target</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get pages of a report (or all reports) in a workspace group.</span>
 
-<span class="sd">    Retrieves the list of pages for the given report from the specified</span>
-<span class="sd">    workspace group and either prints the result to the console or saves it</span>
-<span class="sd">    to a JSON file.</span>
+<span class="sd">    When ``--report-id`` is provided, retrieves the pages for that specific</span>
+<span class="sd">    report. When omitted, iterates over every report in the group and returns</span>
+<span class="sd">    the combined pages for all of them.</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        pbi reports pages -g GROUP_ID -r REPORT_ID</span>
+
+<span class="sd">        pbi reports pages -g GROUP_ID</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pbi_report</span> <span class="o">=</span> <span class="n">powerbi_report</span><span class="o">.</span><span class="n">Report</span><span class="p">(</span>
-        <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">report_id</span><span class="o">=</span><span class="n">report_id</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span>
-    <span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pbi_report</span><span class="o">.</span><span class="n">pages</span>
+    <span class="k">if</span> <span class="n">report_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pbi_report</span> <span class="o">=</span> <span class="n">powerbi_report</span><span class="o">.</span><span class="n">Report</span><span class="p">(</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">report_id</span><span class="o">=</span><span class="n">report_id</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">pbi_report</span><span class="o">.</span><span class="n">pages</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">group_reports</span> <span class="o">=</span> <span class="n">powerbi_report</span><span class="o">.</span><span class="n">GroupReports</span><span class="p">(</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">load_auth</span><span class="p">(),</span> <span class="n">verify</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">group_reports</span><span class="o">.</span><span class="n">all_pages</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
@@ -5186,7 +5140,19 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2067</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2055</span>
+<span class="normal">2056</span>
+<span class="normal">2057</span>
+<span class="normal">2058</span>
+<span class="normal">2059</span>
+<span class="normal">2060</span>
+<span class="normal">2061</span>
+<span class="normal">2062</span>
+<span class="normal">2063</span>
+<span class="normal">2064</span>
+<span class="normal">2065</span>
+<span class="normal">2066</span>
+<span class="normal">2067</span>
 <span class="normal">2068</span>
 <span class="normal">2069</span>
 <span class="normal">2070</span>
@@ -5300,19 +5266,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2178</span>
 <span class="normal">2179</span>
 <span class="normal">2180</span>
-<span class="normal">2181</span>
-<span class="normal">2182</span>
-<span class="normal">2183</span>
-<span class="normal">2184</span>
-<span class="normal">2185</span>
-<span class="normal">2186</span>
-<span class="normal">2187</span>
-<span class="normal">2188</span>
-<span class="normal">2189</span>
-<span class="normal">2190</span>
-<span class="normal">2191</span>
-<span class="normal">2192</span>
-<span class="normal">2193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
+<span class="normal">2181</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;get&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -5470,7 +5424,19 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1958</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1946</span>
+<span class="normal">1947</span>
+<span class="normal">1948</span>
+<span class="normal">1949</span>
+<span class="normal">1950</span>
+<span class="normal">1951</span>
+<span class="normal">1952</span>
+<span class="normal">1953</span>
+<span class="normal">1954</span>
+<span class="normal">1955</span>
+<span class="normal">1956</span>
+<span class="normal">1957</span>
+<span class="normal">1958</span>
 <span class="normal">1959</span>
 <span class="normal">1960</span>
 <span class="normal">1961</span>
@@ -5524,19 +5490,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2009</span>
 <span class="normal">2010</span>
 <span class="normal">2011</span>
-<span class="normal">2012</span>
-<span class="normal">2013</span>
-<span class="normal">2014</span>
-<span class="normal">2015</span>
-<span class="normal">2016</span>
-<span class="normal">2017</span>
-<span class="normal">2018</span>
-<span class="normal">2019</span>
-<span class="normal">2020</span>
-<span class="normal">2021</span>
-<span class="normal">2022</span>
-<span class="normal">2023</span>
-<span class="normal">2024</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
+<span class="normal">2012</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;initiate&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;workspace_ids&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--lineage&quot;</span><span class="p">,</span>
@@ -5635,7 +5589,19 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2027</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2015</span>
+<span class="normal">2016</span>
+<span class="normal">2017</span>
+<span class="normal">2018</span>
+<span class="normal">2019</span>
+<span class="normal">2020</span>
+<span class="normal">2021</span>
+<span class="normal">2022</span>
+<span class="normal">2023</span>
+<span class="normal">2024</span>
+<span class="normal">2025</span>
+<span class="normal">2026</span>
+<span class="normal">2027</span>
 <span class="normal">2028</span>
 <span class="normal">2029</span>
 <span class="normal">2030</span>
@@ -5660,19 +5626,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2049</span>
 <span class="normal">2050</span>
 <span class="normal">2051</span>
-<span class="normal">2052</span>
-<span class="normal">2053</span>
-<span class="normal">2054</span>
-<span class="normal">2055</span>
-<span class="normal">2056</span>
-<span class="normal">2057</span>
-<span class="normal">2058</span>
-<span class="normal">2059</span>
-<span class="normal">2060</span>
-<span class="normal">2061</span>
-<span class="normal">2062</span>
-<span class="normal">2063</span>
-<span class="normal">2064</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
+<span class="normal">2052</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_scan</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s2">&quot;scan_id&quot;</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
@@ -6831,18 +6785,18 @@ pbi profile switch user-nlm -g user
 
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1944</span>
-<span class="normal">1945</span>
-<span class="normal">1946</span>
-<span class="normal">1947</span>
-<span class="normal">1948</span>
-<span class="normal">1949</span>
-<span class="normal">1950</span>
-<span class="normal">1951</span>
-<span class="normal">1952</span>
-<span class="normal">1953</span>
-<span class="normal">1954</span>
-<span class="normal">1955</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1932</span>
+<span class="normal">1933</span>
+<span class="normal">1934</span>
+<span class="normal">1935</span>
+<span class="normal">1936</span>
+<span class="normal">1937</span>
+<span class="normal">1938</span>
+<span class="normal">1939</span>
+<span class="normal">1940</span>
+<span class="normal">1941</span>
+<span class="normal">1942</span>
+<span class="normal">1943</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;scan&quot;</span><span class="p">,</span> <span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">pass_context</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Command group for workspace scan operations.</span>
