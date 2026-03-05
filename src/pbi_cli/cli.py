@@ -1851,6 +1851,84 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
         click.secho(f"✓ Export saved to {target}", fg="green")
 
 
+@reports.command(name="list")
+@click.option("--group-id", "-g", help="Group (workspace) ID", required=True)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="target file (if omitted, prints info to console)",
+    default=None,
+    required=False,
+)
+def reports_list_group(group_id: str, target: Optional[Path]):
+    """List all reports in a workspace group.
+
+    Retrieves the full list of reports from the specified workspace group and
+    either prints the result to the console or saves it to a JSON file.
+    """
+    group_reports = powerbi_report.GroupReports(
+        auth=load_auth(), verify=False, group_id=group_id
+    )
+    result = group_reports.reports
+
+    if target is None:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        with open(target, "w") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Reports list saved to {target}", fg="green")
+
+
+@reports.command(name="pages")
+@click.option("--group-id", "-g", help="Group (workspace) ID", required=True)
+@click.option(
+    "--report-id",
+    "-r",
+    help="Report ID. If omitted, pages for all reports in the group are returned.",
+    default=None,
+    required=False,
+)
+@click.option(
+    "--target",
+    "-t",
+    type=click.Path(exists=False, path_type=Path),
+    help="target file (if omitted, prints info to console)",
+    default=None,
+    required=False,
+)
+def reports_pages(group_id: str, report_id: Optional[str], target: Optional[Path]):
+    """Get pages of a report (or all reports) in a workspace group.
+
+    When ``--report-id`` is provided, retrieves the pages for that specific
+    report. When omitted, iterates over every report in the group and returns
+    the combined pages for all of them.
+
+    Examples::
+
+        pbi reports pages -g GROUP_ID -r REPORT_ID
+
+        pbi reports pages -g GROUP_ID
+    """
+    if report_id is not None:
+        pbi_report = powerbi_report.Report(
+            auth=load_auth(), verify=False, report_id=report_id, group_id=group_id
+        )
+        result = pbi_report.pages
+    else:
+        group_reports = powerbi_report.GroupReports(
+            auth=load_auth(), verify=False, group_id=group_id
+        )
+        result = group_reports.all_pages()
+
+    if target is None:
+        click.echo(json.dumps(result, indent=2))
+    else:
+        with open(target, "w") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Report pages saved to {target}", fg="green")
+
+
 @workspaces.group(name="scan", invoke_without_command=True)
 @click.pass_context
 def workspaces_scan(ctx):
