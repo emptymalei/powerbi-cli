@@ -1,14 +1,16 @@
 """Tests for report CLI commands (under pbi reports group)."""
 
 import json
+import logging
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from click.testing import CliRunner
 
 from pbi_cli.cli import pbi
-
+from pbi_cli.powerbi.report import GroupReports
 
 # ---------------------------------------------------------------------------
 # Help / discovery tests
@@ -208,16 +210,12 @@ def test_reports_pages_without_report_id_prints_to_console():
         {
             "report_id": "report-1",
             "report_name": "Sales Report",
-            "pages": {
-                "value": [{"name": "ReportSection1", "displayName": "Overview"}]
-            },
+            "pages": {"value": [{"name": "ReportSection1", "displayName": "Overview"}]},
         },
         {
             "report_id": "report-2",
             "report_name": "HR Report",
-            "pages": {
-                "value": [{"name": "ReportSection1", "displayName": "Summary"}]
-            },
+            "pages": {"value": [{"name": "ReportSection1", "displayName": "Summary"}]},
         },
     ]
 
@@ -264,3 +262,48 @@ def test_reports_pages_without_report_id_saves_to_file(tmp_path):
         saved = json.load(fp)
     assert saved[0]["report_id"] == "report-3"
 
+
+# ---------------------------------------------------------------------------
+# Unit tests – GroupReports.all_pages error handling
+# ---------------------------------------------------------------------------
+
+
+def test_all_pages_skips_failed_reports_and_logs_error(caplog):
+    """Test that all_pages skips reports whose pages cannot be fetched."""
+    fake_reports = {
+        "value": [
+            {"id": "report-ok", "name": "Good Report"},
+            {"id": "report-bad", "name": "Bad Report"},
+        ]
+    }
+
+    def fake_pages(self):
+        if self.report_id == "report-bad":
+            raise requests.HTTPError("404 Not Found")
+        return {"value": [{"name": "p1", "displayName": "Page 1"}]}
+
+    with patch(
+        "pbi_cli.powerbi.report.GroupReports.reports",
+        new_callable=lambda: property(lambda self: fake_reports),
+    ):
+        with patch(
+            "pbi_cli.powerbi.report.Report.pages",
+            new_callable=lambda: property(fake_pages),
+        ):
+            group = GroupReports(
+                auth={"Authorization": "Bearer test"},
+                group_id="group-1",
+                verify=False,
+            )
+            with caplog.at_level(logging.ERROR, logger="pbi_cli.powerbi.report"):
+                result = group.all_pages()
+
+    # Only the successful report is included
+    assert len(result) == 1
+    assert result[0]["report_id"] == "report-ok"
+
+    # An error was logged for the failing report
+    assert any(
+        "report-bad" in record.message or "Bad Report" in record.message
+        for record in caplog.records
+    )

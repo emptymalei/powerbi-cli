@@ -1,6 +1,11 @@
+import logging
 from typing import List, Literal, Optional
 
+import requests
+
 from pbi_cli.powerbi.base import Base
+
+logger = logging.getLogger(__name__)
 
 
 class Report(Base):
@@ -108,9 +113,11 @@ class GroupReports(Base):
         the pages for each one. Each entry in the returned list contains the
         pages response augmented with the parent report's ``id`` and ``name``.
 
+        If fetching pages for a specific report fails, that report is skipped
+        and an error is logged; processing continues with the remaining reports.
+
         :return: list of dicts, one per report, each containing the report id,
                  report name, and the pages API response
-        :raises requests.HTTPError: if any API request fails
         """
         reports_data = self.reports
         report_list = reports_data.get("value", [])
@@ -125,7 +132,16 @@ class GroupReports(Base):
                 group_id=self.group_id,
                 verify=self.verify,
             )
-            pages_data = report_obj.pages
+            try:
+                pages_data = report_obj.pages
+            except requests.RequestException as exc:
+                logger.error(
+                    "Failed to retrieve pages for report '%s' (id=%s): %s",
+                    report_name,
+                    report_id,
+                    exc,
+                )
+                continue
             results.append(
                 {
                     "report_id": report_id,
