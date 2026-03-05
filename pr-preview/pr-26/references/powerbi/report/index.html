@@ -1202,12 +1202,7 @@
 
               <details class="quote">
                 <summary>Source code in <code>src/pbi_cli/powerbi/report.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 65</span>
-<span class="normal"> 66</span>
-<span class="normal"> 67</span>
-<span class="normal"> 68</span>
-<span class="normal"> 69</span>
-<span class="normal"> 70</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 70</span>
 <span class="normal"> 71</span>
 <span class="normal"> 72</span>
 <span class="normal"> 73</span>
@@ -1274,7 +1269,23 @@
 <span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
-<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GroupReports</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GroupReports</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to interact with all Power BI Reports within a workspace group.</span>
 
@@ -1320,9 +1331,11 @@
 <span class="sd">        the pages for each one. Each entry in the returned list contains the</span>
 <span class="sd">        pages response augmented with the parent report&#39;s ``id`` and ``name``.</span>
 
+<span class="sd">        If fetching pages for a specific report fails, that report is skipped</span>
+<span class="sd">        and an error is logged; processing continues with the remaining reports.</span>
+
 <span class="sd">        :return: list of dicts, one per report, each containing the report id,</span>
 <span class="sd">                 report name, and the pages API response</span>
-<span class="sd">        :raises requests.HTTPError: if any API request fails</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reports_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reports</span>
         <span class="n">report_list</span> <span class="o">=</span> <span class="n">reports_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="p">[])</span>
@@ -1337,7 +1350,16 @@
                 <span class="n">group_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
                 <span class="n">verify</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verify</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">pages_data</span> <span class="o">=</span> <span class="n">report_obj</span><span class="o">.</span><span class="n">pages</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pages_data</span> <span class="o">=</span> <span class="n">report_obj</span><span class="o">.</span><span class="n">pages</span>
+            <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed to retrieve pages for report &#39;</span><span class="si">%s</span><span class="s2">&#39; (id=</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">report_name</span><span class="p">,</span>
+                    <span class="n">report_id</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
                     <span class="s2">&quot;report_id&quot;</span><span class="p">:</span> <span class="n">report_id</span><span class="p">,</span>
@@ -1469,6 +1491,8 @@
 <p>Iterates over all reports retrieved via :attr:<code>reports</code> and fetches
 the pages for each one. Each entry in the returned list contains the
 pages response augmented with the parent report's <code>id</code> and <code>name</code>.</p>
+<p>If fetching pages for a specific report fails, that report is skipped
+and an error is logged; processing continues with the remaining reports.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -1494,37 +1518,9 @@ pages response augmented with the parent report's <code>id</code> and <code>name
     </table>
 
 
-<p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>requests.HTTPError</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>if any API request fails</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
             <details class="quote">
               <summary>Source code in <code>src/pbi_cli/powerbi/report.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
@@ -1553,7 +1549,23 @@ pages response augmented with the parent report's <code>id</code> and <code>name
 <span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
-<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">all_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">all_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns pages for every report in the workspace group.</span>
 
@@ -1561,9 +1573,11 @@ pages response augmented with the parent report's <code>id</code> and <code>name
 <span class="sd">    the pages for each one. Each entry in the returned list contains the</span>
 <span class="sd">    pages response augmented with the parent report&#39;s ``id`` and ``name``.</span>
 
+<span class="sd">    If fetching pages for a specific report fails, that report is skipped</span>
+<span class="sd">    and an error is logged; processing continues with the remaining reports.</span>
+
 <span class="sd">    :return: list of dicts, one per report, each containing the report id,</span>
 <span class="sd">             report name, and the pages API response</span>
-<span class="sd">    :raises requests.HTTPError: if any API request fails</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">reports_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reports</span>
     <span class="n">report_list</span> <span class="o">=</span> <span class="n">reports_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="p">[])</span>
@@ -1578,7 +1592,16 @@ pages response augmented with the parent report's <code>id</code> and <code>name
             <span class="n">group_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
             <span class="n">verify</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verify</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">pages_data</span> <span class="o">=</span> <span class="n">report_obj</span><span class="o">.</span><span class="n">pages</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pages_data</span> <span class="o">=</span> <span class="n">report_obj</span><span class="o">.</span><span class="n">pages</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to retrieve pages for report &#39;</span><span class="si">%s</span><span class="s2">&#39; (id=</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">report_name</span><span class="p">,</span>
+                <span class="n">report_id</span><span class="p">,</span>
+                <span class="n">exc</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="p">{</span>
                 <span class="s2">&quot;report_id&quot;</span><span class="p">:</span> <span class="n">report_id</span><span class="p">,</span>
@@ -1675,12 +1698,7 @@ pages response augmented with the parent report's <code>id</code> and <code>name
 
               <details class="quote">
                 <summary>Source code in <code>src/pbi_cli/powerbi/report.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
@@ -1731,7 +1749,12 @@ pages response augmented with the parent report's <code>id</code> and <code>name
 <span class="normal">59</span>
 <span class="normal">60</span>
 <span class="normal">61</span>
-<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to interact with Power BI Report</span>
 
