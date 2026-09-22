@@ -2052,6 +2052,32 @@ def scan_result(scan_id: str, target: Optional[Path]):
         click.secho(f"✓ Scan results saved to {target}", fg="green")
 
 
+@workspaces_scan.command(name="status")
+@click.argument("scan_id")
+def scan_status(scan_id: str):
+    """Get the scan status for SCAN_ID.
+
+    Retrieves the current status (e.g. ``NotStarted``, ``Running``,
+    ``Succeeded``, ``Failed``) for the given scan ID returned by
+    ``pbi workspaces scan initiate``. Check this before calling
+    ``pbi workspaces scan result``.
+
+    ```sh
+    pbi workspaces scan status <scan-id>
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(
+        auth=load_auth(group="admin"), verify=False
+    )
+    result = workspace_info.get_scan_status(scan_id=scan_id)
+    click.echo(json.dumps(result, indent=2))
+
+
 @workspaces_scan.command(name="get")
 @click.argument("workspace_ids", nargs=-1, required=True)
 @click.option(
@@ -2119,9 +2145,10 @@ def scan_get(
 ):
     """Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.
 
-    Combines ``pbi workspaces scan initiate`` and ``pbi workspaces scan result``
-    into a single step: starts the scan, polls until it completes (or times out),
-    then prints or saves the results.
+    Combines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and
+    ``pbi workspaces scan result`` into a single step: starts the scan, polls the
+    scan status until it succeeds, fails, or times out, then prints or saves the
+    results.
 
     ```sh
     pbi workspaces scan get <workspace-id>
@@ -2152,26 +2179,36 @@ def scan_get(
     scan_id = scan_response.get("id")
     if not scan_id:
         raise click.ClickException(f"Unexpected initiate response: {scan_response}")
-    click.echo(f"Scan started (id={scan_id}). Waiting for results…")
+    click.echo(f"Scan started (id={scan_id}). Waiting for status…")
 
     deadline = time.monotonic() + timeout
     attempt = 0
     while True:
         attempt += 1
-        try:
-            result = workspace_info.get_scan_result(scan_id=scan_id)
+        status_response = workspace_info.get_scan_status(scan_id=scan_id)
+        status = status_response.get("status")
+
+        if status == "Succeeded":
             break
-        except powerbi_admin.ScanNotReadyError:
-            if time.monotonic() >= deadline:
-                raise click.ClickException(
-                    f"Scan {scan_id} did not complete within {timeout}s."
-                )
-            remaining = deadline - time.monotonic()
-            sleep_time = min(interval, remaining)
-            click.echo(
-                f"  Attempt {attempt}: scan not ready, retrying in {sleep_time:.0f}s…"
+
+        if status == "Failed":
+            raise click.ClickException(
+                f"Scan {scan_id} failed: {status_response.get('error')}"
             )
-            time.sleep(sleep_time)
+
+        if time.monotonic() >= deadline:
+            raise click.ClickException(
+                f"Scan {scan_id} did not complete within {timeout}s "
+                f"(last status: {status})."
+            )
+        remaining = deadline - time.monotonic()
+        sleep_time = min(interval, remaining)
+        click.echo(
+            f"  Attempt {attempt}: scan status is '{status}', retrying in {sleep_time:.0f}s…"
+        )
+        time.sleep(sleep_time)
+
+    result = workspace_info.get_scan_result(scan_id=scan_id)
 
     if target is None:
         click.echo(json.dumps(result, indent=2))

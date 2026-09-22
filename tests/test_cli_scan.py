@@ -6,7 +6,6 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from pbi_cli.cli import pbi
-from pbi_cli.powerbi.admin import ScanNotReadyError
 
 
 def test_scan_group_in_workspaces_help():
@@ -18,11 +17,12 @@ def test_scan_group_in_workspaces_help():
 
 
 def test_scan_group_help():
-    """Test that the scan group lists initiate, result, and get commands."""
+    """Test that the scan group lists initiate, status, result, and get commands."""
     runner = CliRunner()
     result = runner.invoke(pbi, ["workspaces", "scan", "--help"])
     assert result.exit_code == 0
     assert "initiate" in result.output
+    assert "status" in result.output
     assert "result" in result.output
     assert "get" in result.output
 
@@ -48,6 +48,15 @@ def test_scan_result_help():
     assert result.exit_code == 0
     assert "SCAN_ID" in result.output
     assert "--target" in result.output or "-t" in result.output
+    assert "Admin" in result.output
+
+
+def test_scan_status_help():
+    """Test that scan status command shows help with expected options."""
+    runner = CliRunner()
+    result = runner.invoke(pbi, ["workspaces", "scan", "status", "--help"])
+    assert result.exit_code == 0
+    assert "SCAN_ID" in result.output
     assert "Admin" in result.output
 
 
@@ -141,6 +150,28 @@ def test_scan_initiate_with_flags():
     )
 
 
+def test_scan_status_calls_api():
+    """Test that scan status prints the status JSON to console."""
+    fake_status = {
+        "id": "scan-123",
+        "createdDateTime": "2024-01-01T00:00:00Z",
+        "status": "Succeeded",
+    }
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+            return_value=fake_status,
+        ) as mock_status:
+            result = runner.invoke(pbi, ["workspaces", "scan", "status", "scan-123"])
+
+    assert result.exit_code == 0
+    mock_status.assert_called_once_with(scan_id="scan-123")
+    output = json.loads(result.output)
+    assert output["status"] == "Succeeded"
+
+
 def test_scan_result_prints_to_console():
     """Test that scan result prints JSON to console when no target is given."""
     fake_result = {"workspaces": [{"id": "workspace-id-1", "name": "My Workspace"}]}
@@ -190,8 +221,9 @@ def test_scan_result_saves_to_file(tmp_path):
 
 
 def test_scan_get_succeeds_immediately():
-    """Test scan get when the scan result is available on the first attempt."""
+    """Test scan get when the scan status is Succeeded on the first attempt."""
     fake_init = {"id": "scan-789", "status": "Running"}
+    fake_status = {"id": "scan-789", "status": "Succeeded"}
     fake_result = {"workspaces": [{"id": "ws-1"}]}
 
     runner = CliRunner()
@@ -201,21 +233,26 @@ def test_scan_get_succeeds_immediately():
             return_value=fake_init,
         ):
             with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                return_value=fake_result,
-            ) as mock_result:
-                result = runner.invoke(
-                    pbi,
-                    ["workspaces", "scan", "get", "ws-1"],
-                )
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
+            ) as mock_status:
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    return_value=fake_result,
+                ) as mock_result:
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "get", "ws-1"],
+                    )
 
     assert result.exit_code == 0
+    mock_status.assert_called_once_with(scan_id="scan-789")
     mock_result.assert_called_once_with(scan_id="scan-789")
     assert any("ws-1" in l for l in result.output.splitlines())
 
 
 def test_scan_get_retries_then_succeeds():
-    """Test scan get retries when scan is not ready, then succeeds."""
+    """Test scan get retries while status is not terminal, then succeeds."""
     fake_init = {"id": "scan-abc", "status": "Running"}
     fake_result = {"workspaces": [{"id": "ws-2"}]}
 
@@ -226,27 +263,36 @@ def test_scan_get_retries_then_succeeds():
             return_value=fake_init,
         ):
             with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
                 side_effect=[
-                    ScanNotReadyError("not ready"),
-                    ScanNotReadyError("not ready"),
-                    fake_result,
+                    {"id": "scan-abc", "status": "NotStarted"},
+                    {"id": "scan-abc", "status": "Running"},
+                    {"id": "scan-abc", "status": "Succeeded"},
                 ],
-            ) as mock_result:
-                with patch("time.sleep"):
-                    result = runner.invoke(
-                        pbi,
-                        ["workspaces", "scan", "get", "ws-2", "--interval", "1"],
-                    )
+            ) as mock_status:
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    return_value=fake_result,
+                ):
+                    with patch("time.sleep"):
+                        result = runner.invoke(
+                            pbi,
+                            ["workspaces", "scan", "get", "ws-2", "--interval", "1"],
+                        )
 
     assert result.exit_code == 0
-    assert mock_result.call_count == 3
+    assert mock_status.call_count == 3
     assert "ws-2" in result.output
 
 
-def test_scan_get_times_out():
-    """Test scan get raises an error when timeout is exceeded."""
-    fake_init = {"id": "scan-timeout", "status": "Running"}
+def test_scan_get_fails():
+    """Test scan get raises an error when the scan status is Failed."""
+    fake_init = {"id": "scan-failed", "status": "Running"}
+    fake_status = {
+        "id": "scan-failed",
+        "status": "Failed",
+        "error": {"code": "InternalError", "message": "boom"},
+    }
 
     runner = CliRunner()
     with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
@@ -255,8 +301,32 @@ def test_scan_get_times_out():
             return_value=fake_init,
         ):
             with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                side_effect=ScanNotReadyError("not ready"),
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
+            ):
+                result = runner.invoke(
+                    pbi,
+                    ["workspaces", "scan", "get", "ws-y"],
+                )
+
+    assert result.exit_code != 0
+    assert "failed" in result.output.lower()
+
+
+def test_scan_get_times_out():
+    """Test scan get raises an error when timeout is exceeded."""
+    fake_init = {"id": "scan-timeout", "status": "Running"}
+    fake_status = {"id": "scan-timeout", "status": "Running"}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            return_value=fake_init,
+        ):
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
             ):
                 with patch("time.sleep"):
                     # Use a very short timeout so it expires after first failure
@@ -273,6 +343,7 @@ def test_scan_get_times_out():
 def test_scan_get_saves_to_file(tmp_path):
     """Test scan get saves results to a file."""
     fake_init = {"id": "scan-file", "status": "Running"}
+    fake_status = {"id": "scan-file", "status": "Succeeded"}
     fake_result = {"workspaces": [{"id": "ws-3"}]}
     target_file = tmp_path / "results.json"
 
@@ -283,13 +354,17 @@ def test_scan_get_saves_to_file(tmp_path):
             return_value=fake_init,
         ):
             with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                return_value=fake_result,
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
             ):
-                result = runner.invoke(
-                    pbi,
-                    ["workspaces", "scan", "get", "ws-3", "-t", str(target_file)],
-                )
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    return_value=fake_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "get", "ws-3", "-t", str(target_file)],
+                    )
 
     assert result.exit_code == 0
     assert target_file.exists()
