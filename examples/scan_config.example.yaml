@@ -2,13 +2,15 @@
 #
 # Copy this file, fill in your own workspace IDs (and optionally names), and
 # point `--config` / `-c` at it. Each workspace is scanned individually and
-# the result is saved as <target_folder>/<name-or-id>.json.
+# the result is saved as <target_folder>/<slugified-name>-<workspace-id>.json
+# when name is provided, or <target_folder>/<workspace-id>.json otherwise.
 
 # Required: workspaces to scan.
 # Each entry is either a plain workspace ID string, or a mapping with an
 # `id` and an optional `name`. When `name` is given, it is slugified and
-# used as the output filename (e.g. "Finance Team" -> finance-team.json);
-# otherwise the file is named after the workspace ID.
+# suffixed with the workspace ID for the output filename
+# (e.g. "Finance Team" + ws-a -> finance-team-ws-a.json); otherwise the file
+# is named after the workspace ID.
 workspace_ids:
   - id: 00000000-0000-0000-0000-000000000001
     name: Finance Team

@@ -85,8 +85,8 @@ pbi workspaces scan batch --config scan_config.yaml
 ### Output file naming
 
 - If a `workspace_ids` entry has a `name`, the result is saved as
-  `<target_folder>/<slugified-name>.json` (e.g. `Finance Team` →
-  `finance-team.json`).
+  `<target_folder>/<slugified-name>-<workspace-id>.json` (e.g. `Finance Team`
+  + `ws-a` → `finance-team-ws-a.json`).
 - Otherwise it falls back to `<target_folder>/<workspace-id>.json`.
 
 ### Handling failures
