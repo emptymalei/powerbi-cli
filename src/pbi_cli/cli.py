@@ -2331,9 +2331,9 @@ def scan_get(
 def scan_batch(config_path: Path):
     """Scan every workspace listed in a YAML config file and save each result.
 
-    Each workspace is scanned individually (its own initiate/status/result
     cycle) so one failing workspace doesn't block the rest, and each result is
-    saved as ``<target_folder>/<workspace_id>.json``.
+    saved as ``<target_folder>/<slugified-name>.json`` when a name is provided,
+    or ``<target_folder>/<workspace_id>.json`` otherwise.
 
     Example config file:
 
