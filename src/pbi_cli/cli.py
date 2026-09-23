@@ -2447,9 +2447,7 @@ def scan_batch(config_path: Path):
             "'interval' and 'timeout' must be numeric values."
         ) from e
     if interval <= 0 or timeout <= 0:
-        raise click.ClickException(
-            "'interval' and 'timeout' must be greater than 0."
-        )
+        raise click.ClickException("'interval' and 'timeout' must be greater than 0.")
 
     workspace_info = powerbi_admin.WorkspaceInfo(
         auth=load_auth(group="admin"), verify=False

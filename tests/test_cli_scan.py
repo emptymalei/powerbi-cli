@@ -458,7 +458,10 @@ def test_scan_batch_help():
     result = runner.invoke(pbi, ["workspaces", "scan", "batch", "--help"])
     assert result.exit_code == 0
     assert "--config" in result.output or "-c" in result.output
-    assert "Each workspace runs through its own initiate/status/result cycle" in result.output
+    assert (
+        "Each workspace runs through its own initiate/status/result cycle"
+        in result.output
+    )
     assert "Admin" in result.output
 
 
