@@ -1,0 +1,36 @@
+# Template config for `pbi workspaces scan batch --config <this-file>`.
+#
+# Copy this file, fill in your own workspace IDs (and optionally names), and
+# point `--config` / `-c` at it. Each workspace is scanned individually and
+# the result is saved as <target_folder>/<name-or-id>.json.
+
+# Required: workspaces to scan.
+# Each entry is either a plain workspace ID string, or a mapping with an
+# `id` and an optional `name`. When `name` is given, it is slugified and
+# used as the output filename (e.g. "Finance Team" -> finance-team.json);
+# otherwise the file is named after the workspace ID.
+workspace_ids:
+  - id: 00000000-0000-0000-0000-000000000001
+    name: Finance Team
+  - id: 00000000-0000-0000-0000-000000000002
+    name: Marketing
+  - 00000000-0000-0000-0000-000000000003 # name is optional
+
+# Required: folder to save results in. Absolute path, or a subfolder of the
+# default output folder set via `pbi config set-output-folder`.
+target_folder: scan_results
+
+# Optional: PostWorkspaceInfo parameters, see
+# https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info
+# All default to false if omitted.
+lineage: true
+datasource_details: true
+dataset_schema: false
+dataset_expressions: false
+get_artifact_users: false
+
+# Optional: polling behavior while waiting for each scan to finish.
+# interval: seconds between status checks (default: 5)
+# timeout: max seconds to wait per workspace before giving up (default: 300)
+interval: 5
+timeout: 300
