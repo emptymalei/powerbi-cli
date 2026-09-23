@@ -2005,8 +2005,10 @@ def _normalize_workspace_entries(entries: Iterable) -> list:
         name: Finance
     ```
     """
+    if not isinstance(entries, list):
+        raise click.ClickException("'workspace_ids' must be a YAML list.")
     normalized = []
-    for entry in entries:
+    for entry in entries
         if isinstance(entry, str):
             normalized.append({"id": entry, "name": None})
         elif isinstance(entry, dict):
