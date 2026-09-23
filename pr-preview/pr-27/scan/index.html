@@ -1238,13 +1238,15 @@ in the repo) and fill in your workspace IDs:</p>
 <span class="c1">#</span>
 <span class="c1"># Copy this file, fill in your own workspace IDs (and optionally names), and</span>
 <span class="c1"># point `--config` / `-c` at it. Each workspace is scanned individually and</span>
-<span class="c1"># the result is saved as &lt;target_folder&gt;/&lt;name-or-id&gt;.json.</span>
+<span class="c1"># the result is saved as &lt;target_folder&gt;/&lt;slugified-name&gt;-&lt;workspace-id&gt;.json</span>
+<span class="c1"># when name is provided, or &lt;target_folder&gt;/&lt;workspace-id&gt;.json otherwise.</span>
 
 <span class="c1"># Required: workspaces to scan.</span>
 <span class="c1"># Each entry is either a plain workspace ID string, or a mapping with an</span>
 <span class="c1"># `id` and an optional `name`. When `name` is given, it is slugified and</span>
-<span class="c1"># used as the output filename (e.g. &quot;Finance Team&quot; -&gt; finance-team.json);</span>
-<span class="c1"># otherwise the file is named after the workspace ID.</span>
+<span class="c1"># suffixed with the workspace ID for the output filename</span>
+<span class="c1"># (e.g. &quot;Finance Team&quot; + ws-a -&gt; finance-team-ws-a.json); otherwise the file</span>
+<span class="c1"># is named after the workspace ID.</span>
 <span class="nt">workspace_ids</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">00000000-0000-0000-0000-000000000001</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Finance Team</span>
@@ -1344,8 +1346,8 @@ in the repo) and fill in your workspace IDs:</p>
 <h3 id="output-file-naming">Output file naming<a class="headerlink" href="#output-file-naming" title="Permanent link">¤</a></h3>
 <ul>
 <li>If a <code>workspace_ids</code> entry has a <code>name</code>, the result is saved as
-  <code>&lt;target_folder&gt;/&lt;slugified-name&gt;.json</code> (e.g. <code>Finance Team</code> →
-  <code>finance-team.json</code>).</li>
+  <code>&lt;target_folder&gt;/&lt;slugified-name&gt;-&lt;workspace-id&gt;.json</code> (e.g. <code>Finance Team</code></li>
+<li><code>ws-a</code> → <code>finance-team-ws-a.json</code>).</li>
 <li>Otherwise it falls back to <code>&lt;target_folder&gt;/&lt;workspace-id&gt;.json</code>.</li>
 </ul>
 <h3 id="handling-failures">Handling failures<a class="headerlink" href="#handling-failures" title="Permanent link">¤</a></h3>
