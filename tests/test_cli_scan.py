@@ -452,6 +452,27 @@ def test_scan_get_target_and_target_folder_mutually_exclusive(tmp_path):
     assert "not both" in result.output
 
 
+def test_scan_get_target_folder_rejects_multiple_workspace_ids(tmp_path):
+    """Test scan get rejects --target-folder with multiple workspace IDs."""
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        result = runner.invoke(
+            pbi,
+            [
+                "workspaces",
+                "scan",
+                "get",
+                "ws-5",
+                "ws-6",
+                "-tf",
+                str(tmp_path / "out_dir"),
+            ],
+        )
+
+    assert result.exit_code != 0
+    assert "single workspace ID" in result.output
+
+
 def test_scan_batch_help():
     """Test that scan batch command shows help with expected options."""
     runner = CliRunner()

@@ -73,7 +73,7 @@ pbi workspaces scan batch --config scan_config.yaml
 | Field | Required | Default | Description |
 | --- | --- | --- | --- |
 | `workspace_ids` | Yes | — | List of workspaces to scan. Each entry is a plain ID string, or a mapping with `id` and an optional `name`. |
-| `target_folder` | Yes | — | Folder to save results in (absolute, or relative to the [default output folder](index.md)). |
+| `target_folder` | Yes | — | Folder to save results in (absolute, or relative to the [default output folder](../)). |
 | `lineage` | No | `false` | Include lineage information |
 | `datasource_details` | No | `false` | Include datasource details |
 | `dataset_schema` | No | `false` | Include dataset schema |

@@ -2252,9 +2252,9 @@ def scan_status(scan_id: str):
     type=str,
     help=(
         "Target folder to save scan results (absolute path or subfolder within "
-        "the default output folder). Results are saved as <workspace_id>.json "
-        "(workspace IDs joined with '_' when multiple are given), which is "
-        "handy when looping over several workspaces. Mutually exclusive with "
+        "the default output folder). Only supported when scanning a single "
+        "workspace ID, and saves the result as <workspace_id>.json. Handy "
+        "when looping over several workspaces. Mutually exclusive with "
         "--target."
     ),
     default=None,
@@ -2297,6 +2297,11 @@ def scan_get(
     """
     if target is not None and target_folder is not None:
         raise click.UsageError("Use either --target or --target-folder, not both.")
+    if target_folder is not None and len(workspace_ids) != 1:
+        raise click.UsageError(
+            "--target-folder only supports a single workspace ID. "
+            "Use --target for multi-workspace scans."
+        )
 
     workspace_info = powerbi_admin.WorkspaceInfo(
         auth=load_auth(group="admin"), verify=False
@@ -2328,8 +2333,7 @@ def scan_get(
             click.secho(f"creating folder {target_path}", fg="blue")
             target_path.mkdir(parents=True, exist_ok=True)
 
-        file_name = "_".join(workspace_ids)
-        output_file = target_path / f"{file_name}.json"
+        output_file = target_path / f"{workspace_ids[0]}.json"
         with open(output_file, "w") as fp:
             json.dump(result, fp, indent=2)
         click.secho(f"✓ Scan results saved to {output_file}", fg="green")
