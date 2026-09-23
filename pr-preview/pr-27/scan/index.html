@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/references/">
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/scan/">
       
       
-        <link rel="prev" href="../cache/">
+        <link rel="prev" href="..">
       
       
-        <link rel="next" href="cli/">
+        <link rel="next" href="../cache/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Introduction - pbi_cli Documentation</title>
+        <title>Workspace Scans - pbi_cli Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#references" class="md-skip">
+        <a href="#workspace-scans" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introduction
+              Workspace Scans
             
           </span>
         </div>
@@ -242,11 +242,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../scan/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -262,13 +264,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../references/" class="md-tabs__link">
           
   
   
@@ -375,26 +375,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -412,7 +417,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -427,10 +432,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../scan/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace Scans
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -446,6 +478,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-scan-of-one-or-two-workspaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick scan of one or two workspaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scanning-several-workspaces-config-file-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scanning several workspaces: config file template
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scanning several workspaces: config file template">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-file-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output file naming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#handling-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handling failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -490,31 +614,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -532,7 +651,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -547,19 +666,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
         
   
   
@@ -575,7 +685,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -594,20 +703,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
             
   
   
@@ -643,7 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="cli/" class="md-nav__link">
+      <a href="../references/cli/" class="md-nav__link">
         
   
   
@@ -723,7 +829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/" class="md-nav__link">
+      <a href="../references/powerbi/" class="md-nav__link">
         
   
   
@@ -751,7 +857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/admin/" class="md-nav__link">
+      <a href="../references/powerbi/admin/" class="md-nav__link">
         
   
   
@@ -779,7 +885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/app/" class="md-nav__link">
+      <a href="../references/powerbi/app/" class="md-nav__link">
         
   
   
@@ -807,7 +913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/base/" class="md-nav__link">
+      <a href="../references/powerbi/base/" class="md-nav__link">
         
   
   
@@ -835,7 +941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/io/" class="md-nav__link">
+      <a href="../references/powerbi/io/" class="md-nav__link">
         
   
   
@@ -863,7 +969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="powerbi/report/" class="md-nav__link">
+      <a href="../references/powerbi/report/" class="md-nav__link">
         
   
   
@@ -954,6 +1060,86 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-scan-of-one-or-two-workspaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick scan of one or two workspaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scanning-several-workspaces-config-file-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scanning several workspaces: config file template
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scanning several workspaces: config file template">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-file-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output file naming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#handling-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handling failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -972,8 +1158,202 @@
   
 
 
-<h1 id="references">References<a class="headerlink" href="#references" title="Permanent link">¤</a></h1>
-<p>References for <code>pbi_cli</code>.</p>
+<h1 id="workspace-scans">Workspace Scans<a class="headerlink" href="#workspace-scans" title="Permanent link">¤</a></h1>
+<p>The <code>pbi workspaces scan</code> command group wraps the Power BI Admin
+<a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info">WorkspaceInfo API</a>
+to trigger a metadata scan of one or more workspaces and retrieve the
+results (reports, dashboards, datasets, datasource lineage, etc).</p>
+<div class="admonition warning">
+<p class="admonition-title">Requires Admin</p>
+<p>Every command in this group needs an admin-scoped auth profile:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>auth<span class="w"> </span>-t<span class="w"> </span>&lt;your_bearer_token&gt;<span class="w"> </span>-g<span class="w"> </span>admin
+</code></pre></div>
+</div>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">¤</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Maps to</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pbi workspaces scan initiate &lt;workspace-id&gt;...</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info">PostWorkspaceInfo</a></td>
+<td>Start a scan, returns a scan ID</td>
+</tr>
+<tr>
+<td><code>pbi workspaces scan status &lt;scan-id&gt;</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-status">GetScanStatus</a></td>
+<td>Check whether a scan has finished</td>
+</tr>
+<tr>
+<td><code>pbi workspaces scan result &lt;scan-id&gt;</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-result">GetScanResult</a></td>
+<td>Fetch the scan metadata once it succeeded</td>
+</tr>
+<tr>
+<td><code>pbi workspaces scan get &lt;workspace-id&gt;...</code></td>
+<td>all three combined</td>
+<td>Initiate, poll status, then fetch the result in one step</td>
+</tr>
+<tr>
+<td><code>pbi workspaces scan batch --config &lt;file&gt;</code></td>
+<td>all three combined, looped</td>
+<td>Same as <code>get</code>, run once per workspace listed in a config file, saved to files</td>
+</tr>
+</tbody>
+</table>
+<p><code>initiate</code> accepts optional flags that map directly to the PostWorkspaceInfo
+query parameters: <code>--lineage</code>, <code>--datasource-details</code>, <code>--dataset-schema</code>,
+<code>--dataset-expressions</code>, <code>--get-artifact-users</code>. <code>get</code> and <code>batch</code> accept the
+same flags.</p>
+<h2 id="quick-scan-of-one-or-two-workspaces">Quick scan of one or two workspaces<a class="headerlink" href="#quick-scan-of-one-or-two-workspaces" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Step by step</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>initiate<span class="w"> </span>&lt;workspace-id&gt;
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>status<span class="w"> </span>&lt;scan-id&gt;
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>result<span class="w"> </span>&lt;scan-id&gt;
+
+<span class="c1"># Or combined: initiate, poll status, fetch result</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>get<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>--lineage<span class="w"> </span>--datasource-details
+
+<span class="c1"># Save to a single file instead of printing to console</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>get<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-t<span class="w"> </span>results.json
+
+<span class="c1"># Save to a folder, named after the workspace ID(s) -- handy inside a loop</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>get<span class="w"> </span>&lt;workspace-id&gt;<span class="w"> </span>-tf<span class="w"> </span>scan_results
+</code></pre></div>
+<h2 id="scanning-several-workspaces-config-file-template">Scanning several workspaces: config file template<a class="headerlink" href="#scanning-several-workspaces-config-file-template" title="Permanent link">¤</a></h2>
+<p>For looping through more than a couple of workspaces, use
+<code>pbi workspaces scan batch</code> with a YAML config file instead of a shell loop.
+Each workspace is scanned individually (its own initiate/status/result
+cycle), so one failing workspace doesn't block the rest, and each result is
+saved as its own file.</p>
+<p>Copy the template below (also available at
+<a href="https://github.com/emptymalei/powerbi-cli/blob/main/examples/scan_config.example.yaml"><code>examples/scan_config.example.yaml</code></a>
+in the repo) and fill in your workspace IDs:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Template config for `pbi workspaces scan batch --config &lt;this-file&gt;`.</span>
+<span class="c1">#</span>
+<span class="c1"># Copy this file, fill in your own workspace IDs (and optionally names), and</span>
+<span class="c1"># point `--config` / `-c` at it. Each workspace is scanned individually and</span>
+<span class="c1"># the result is saved as &lt;target_folder&gt;/&lt;name-or-id&gt;.json.</span>
+
+<span class="c1"># Required: workspaces to scan.</span>
+<span class="c1"># Each entry is either a plain workspace ID string, or a mapping with an</span>
+<span class="c1"># `id` and an optional `name`. When `name` is given, it is slugified and</span>
+<span class="c1"># used as the output filename (e.g. &quot;Finance Team&quot; -&gt; finance-team.json);</span>
+<span class="c1"># otherwise the file is named after the workspace ID.</span>
+<span class="nt">workspace_ids</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">00000000-0000-0000-0000-000000000001</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Finance Team</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">00000000-0000-0000-0000-000000000002</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Marketing</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">00000000-0000-0000-0000-000000000003</span><span class="w"> </span><span class="c1"># name is optional</span>
+
+<span class="c1"># Required: folder to save results in. Absolute path, or a subfolder of the</span>
+<span class="c1"># default output folder set via `pbi config set-output-folder`.</span>
+<span class="nt">target_folder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scan_results</span>
+
+<span class="c1"># Optional: PostWorkspaceInfo parameters, see</span>
+<span class="c1"># https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info</span>
+<span class="c1"># All default to false if omitted.</span>
+<span class="nt">lineage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">datasource_details</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">dataset_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">dataset_expressions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">get_artifact_users</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="c1"># Optional: polling behavior while waiting for each scan to finish.</span>
+<span class="c1"># interval: seconds between status checks (default: 5)</span>
+<span class="c1"># timeout: max seconds to wait per workspace before giving up (default: 300)</span>
+<span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</code></pre></div>
+<p>Then run:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"> </span>batch<span class="w"> </span>--config<span class="w"> </span>scan_config.yaml
+</code></pre></div>
+<h3 id="config-fields">Config fields<a class="headerlink" href="#config-fields" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>workspace_ids</code></td>
+<td>Yes</td>
+<td>—</td>
+<td>List of workspaces to scan. Each entry is a plain ID string, or a mapping with <code>id</code> and an optional <code>name</code>.</td>
+</tr>
+<tr>
+<td><code>target_folder</code></td>
+<td>Yes</td>
+<td>—</td>
+<td>Folder to save results in (absolute, or relative to the <a href="../">default output folder</a>).</td>
+</tr>
+<tr>
+<td><code>lineage</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Include lineage information</td>
+</tr>
+<tr>
+<td><code>datasource_details</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Include datasource details</td>
+</tr>
+<tr>
+<td><code>dataset_schema</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Include dataset schema</td>
+</tr>
+<tr>
+<td><code>dataset_expressions</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Include dataset expressions</td>
+</tr>
+<tr>
+<td><code>get_artifact_users</code></td>
+<td>No</td>
+<td><code>false</code></td>
+<td>Include artifact users</td>
+</tr>
+<tr>
+<td><code>interval</code></td>
+<td>No</td>
+<td><code>5</code></td>
+<td>Seconds between status checks</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>No</td>
+<td><code>300</code></td>
+<td>Max seconds to wait per workspace before giving up</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output-file-naming">Output file naming<a class="headerlink" href="#output-file-naming" title="Permanent link">¤</a></h3>
+<ul>
+<li>If a <code>workspace_ids</code> entry has a <code>name</code>, the result is saved as
+  <code>&lt;target_folder&gt;/&lt;slugified-name&gt;.json</code> (e.g. <code>Finance Team</code> →
+  <code>finance-team.json</code>).</li>
+<li>Otherwise it falls back to <code>&lt;target_folder&gt;/&lt;workspace-id&gt;.json</code>.</li>
+</ul>
+<h3 id="handling-failures">Handling failures<a class="headerlink" href="#handling-failures" title="Permanent link">¤</a></h3>
+<p>If a workspace's scan fails or times out, <code>scan batch</code> logs the error,
+moves on to the next workspace, and saves results for every workspace that
+succeeded. At the end it prints the list of failed workspace IDs and exits
+with a non-zero status code, so you can wire it into a script and check
+<code>$?</code>.</p>
 
 
 
