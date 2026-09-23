@@ -1,3 +1,4 @@
+import builtins
 import json
 import os
 import sys
@@ -6,6 +7,7 @@ from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import click
 import pandas as pd
+import requests
 import yaml
 from loguru import logger
 from slugify import slugify
@@ -1949,14 +1951,17 @@ def _run_scan(
     import time
 
     click.echo(f"Initiating scan for {workspace_ids}…")
-    scan_response = workspace_info.initiate_scan(
-        workspace_ids=workspace_ids,
-        lineage=lineage,
-        datasource_details=datasource_details,
-        dataset_schema=dataset_schema,
-        dataset_expressions=dataset_expressions,
-        get_artifact_users=get_artifact_users,
-    )
+    try:
+        scan_response = workspace_info.initiate_scan(
+            workspace_ids=workspace_ids,
+            lineage=lineage,
+            datasource_details=datasource_details,
+            dataset_schema=dataset_schema,
+            dataset_expressions=dataset_expressions,
+            get_artifact_users=get_artifact_users,
+        )
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
     scan_id = scan_response.get("id")
     if not scan_id:
         raise click.ClickException(f"Unexpected initiate response: {scan_response}")
@@ -1966,7 +1971,10 @@ def _run_scan(
     attempt = 0
     while True:
         attempt += 1
-        status_response = workspace_info.get_scan_status(scan_id=scan_id)
+        try:
+            status_response = workspace_info.get_scan_status(scan_id=scan_id)
+        except (ValueError, requests.exceptions.RequestException) as e:
+            raise click.ClickException(str(e)) from e
         status = status_response.get("status")
 
         if status == "Succeeded":
@@ -1989,7 +1997,10 @@ def _run_scan(
         )
         time.sleep(sleep_time)
 
-    return workspace_info.get_scan_result(scan_id=scan_id)
+    try:
+        return workspace_info.get_scan_result(scan_id=scan_id)
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
 
 
 def _normalize_workspace_entries(entries: Iterable) -> list:
@@ -2005,13 +2016,13 @@ def _normalize_workspace_entries(entries: Iterable) -> list:
         name: Finance
     ```
     """
-    if not isinstance(entries, list):
+    if not isinstance(entries, builtins.list):
         raise click.ClickException("'workspace_ids' must be a YAML list.")
     normalized = []
-    for entry in entries
+    for entry in entries:
         if isinstance(entry, str):
             normalized.append({"id": entry, "name": None})
-        elif isinstance(entry, dict):
+        elif isinstance(entry, builtins.dict):
             workspace_id = entry.get("id")
             if not workspace_id:
                 raise click.ClickException(f"Workspace entry missing 'id': {entry}")
@@ -2331,7 +2342,8 @@ def scan_get(
 def scan_batch(config_path: Path):
     """Scan every workspace listed in a YAML config file and save each result.
 
-    cycle) so one failing workspace doesn't block the rest, and each result is
+    Each workspace runs through its own initiate/status/result cycle so one
+    failing workspace doesn't block the rest, and each result is
     saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
     name is provided,
     or ``<target_folder>/<workspace_id>.json`` otherwise.

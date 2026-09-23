@@ -3,6 +3,7 @@
 import json
 from unittest.mock import patch
 
+import requests
 from click.testing import CliRunner
 
 from pbi_cli.cli import pbi
@@ -443,6 +444,7 @@ def test_scan_batch_help():
     result = runner.invoke(pbi, ["workspaces", "scan", "batch", "--help"])
     assert result.exit_code == 0
     assert "--config" in result.output or "-c" in result.output
+    assert "Each workspace runs through its own initiate/status/result cycle" in result.output
     assert "Admin" in result.output
 
 
@@ -643,6 +645,110 @@ timeout: 10
 
     runner = CliRunner()
     with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            fake_initiate_scan,
+        ):
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                fake_get_scan_status,
+            ):
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    fake_get_scan_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "batch", "-c", str(config_file)],
+                    )
+
+    assert result.exit_code != 0
+    assert (target_folder / "ws-good.json").exists()
+    assert not (target_folder / "ws-bad.json").exists()
+    assert "ws-bad" in result.output
+
+
+def test_scan_batch_continues_after_workspace_api_value_error(tmp_path):
+    """Test scan batch continues when a workspace API call raises ValueError."""
+    config_file = tmp_path / "scan_config.yaml"
+    target_folder = tmp_path / "scan_results"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - ws-good
+  - ws-bad
+target_folder: {target_folder}
+interval: 1
+timeout: 10
+"""
+    )
+
+    def fake_initiate_scan(self, workspace_ids, **kwargs):
+        scan_id = "scan-y-bad" if workspace_ids == ["ws-bad"] else "scan-y-good"
+        return {"id": scan_id, "status": "Running"}
+
+    def fake_get_scan_status(self, scan_id):
+        if scan_id == "scan-y-bad":
+            raise ValueError("Error: {'message': 'boom'}")
+        return {"status": "Succeeded"}
+
+    def fake_get_scan_result(self, scan_id):
+        return {"workspaces": [{"id": "ws-good"}]}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            fake_initiate_scan,
+        ):
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                fake_get_scan_status,
+            ):
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    fake_get_scan_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "batch", "-c", str(config_file)],
+                    )
+
+    assert result.exit_code != 0
+    assert (target_folder / "ws-good.json").exists()
+    assert not (target_folder / "ws-bad.json").exists()
+    assert "ws-bad" in result.output
+
+
+def test_scan_batch_continues_after_workspace_http_error(tmp_path):
+    """Test scan batch continues when a workspace API call raises HTTPError."""
+    config_file = tmp_path / "scan_config.yaml"
+    target_folder = tmp_path / "scan_results"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - ws-good
+  - ws-bad
+target_folder: {target_folder}
+interval: 1
+timeout: 10
+"""
+    )
+
+    def fake_initiate_scan(self, workspace_ids, **kwargs):
+        scan_id = "scan-y-bad" if workspace_ids == ["ws-bad"] else "scan-y-good"
+        return {"id": scan_id, "status": "Running"}
+
+    def fake_get_scan_status(self, scan_id):
+        return {"status": "Succeeded"}
+
+    def fake_get_scan_result(self, scan_id):
+        if scan_id == "scan-y-bad":
+            raise requests.HTTPError("500 Server Error")
+        return {"workspaces": [{"id": "ws-good"}]}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
         with patch(
             "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
             fake_initiate_scan,
