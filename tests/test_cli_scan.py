@@ -174,6 +174,20 @@ def test_scan_status_calls_api():
     assert output["status"] == "Succeeded"
 
 
+def test_scan_status_handles_api_error():
+    """Test that scan status surfaces expected API failures cleanly."""
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+            side_effect=ValueError("Error: {'message': 'boom'}"),
+        ):
+            result = runner.invoke(pbi, ["workspaces", "scan", "status", "scan-123"])
+
+    assert result.exit_code != 0
+    assert "boom" in result.output
+
+
 def test_scan_result_prints_to_console():
     """Test that scan result prints JSON to console when no target is given."""
     fake_result = {"workspaces": [{"id": "workspace-id-1", "name": "My Workspace"}]}
@@ -782,6 +796,25 @@ def test_scan_batch_requires_workspace_ids(tmp_path):
 
     assert result.exit_code != 0
     assert "workspace_ids" in result.output
+
+
+def test_scan_batch_rejects_invalid_boolean_config_value(tmp_path):
+    """Test scan batch rejects non-boolean YAML flag values."""
+    config_file = tmp_path / "scan_config.yaml"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - ws-1
+target_folder: {tmp_path / "scan_results"}
+lineage: "false"
+"""
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(pbi, ["workspaces", "scan", "batch", "-c", str(config_file)])
+
+    assert result.exit_code != 0
+    assert "'lineage' must be a boolean value." in result.output
 
 
 def test_scan_batch_requires_target_folder(tmp_path):

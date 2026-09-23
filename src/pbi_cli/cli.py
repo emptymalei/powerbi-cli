@@ -2032,6 +2032,14 @@ def _normalize_workspace_entries(entries: Iterable) -> list:
     return normalized
 
 
+def _parse_yaml_bool(raw_config: dict, key: str, default: bool = False) -> bool:
+    """Return a boolean config value or raise for invalid YAML types."""
+    value = raw_config.get(key, default)
+    if isinstance(value, bool):
+        return value
+    raise click.ClickException(f"'{key}' must be a boolean value.")
+
+
 @workspaces.group(name="scan", invoke_without_command=True)
 @click.pass_context
 def workspaces_scan(ctx):
@@ -2177,7 +2185,10 @@ def scan_status(scan_id: str):
     workspace_info = powerbi_admin.WorkspaceInfo(
         auth=load_auth(group="admin"), verify=False
     )
-    result = workspace_info.get_scan_status(scan_id=scan_id)
+    try:
+        result = workspace_info.get_scan_status(scan_id=scan_id)
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
     click.echo(json.dumps(result, indent=2))
 
 
@@ -2417,11 +2428,17 @@ def scan_batch(config_path: Path):
         click.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
 
-    lineage = bool(raw_config.get("lineage", False))
-    datasource_details = bool(raw_config.get("datasource_details", False))
-    dataset_schema = bool(raw_config.get("dataset_schema", False))
-    dataset_expressions = bool(raw_config.get("dataset_expressions", False))
-    get_artifact_users = bool(raw_config.get("get_artifact_users", False))
+    lineage = _parse_yaml_bool(raw_config, "lineage", default=False)
+    datasource_details = _parse_yaml_bool(
+        raw_config, "datasource_details", default=False
+    )
+    dataset_schema = _parse_yaml_bool(raw_config, "dataset_schema", default=False)
+    dataset_expressions = _parse_yaml_bool(
+        raw_config, "dataset_expressions", default=False
+    )
+    get_artifact_users = _parse_yaml_bool(
+        raw_config, "get_artifact_users", default=False
+    )
     try:
         interval = float(raw_config.get("interval", 5.0))
         timeout = float(raw_config.get("timeout", 300.0))
