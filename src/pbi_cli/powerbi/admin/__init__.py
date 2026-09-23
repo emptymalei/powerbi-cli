@@ -291,6 +291,28 @@ class WorkspaceInfo(Base):
 
         return result
 
+    def get_scan_status(self, scan_id: str) -> dict:
+        """
+        Retrieve the scan status for a given scan ID.
+
+        See https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-status
+
+        :param scan_id: the scan ID returned by :meth:`initiate_scan`
+        :return: API response as a dict containing the scan status, e.g.
+            ``{"id": ..., "createdDateTime": ..., "status": "Succeeded"}``
+        """
+        uri = f"{self._base_uri}/scanStatus/{scan_id}"
+        logger.info(f"Using API Endpoint: {uri}")
+
+        response = self._data_retriever.get(uri)
+        response.raise_for_status()
+        result = response.json()
+
+        if result.get("error"):
+            raise ValueError(f"Error: {result}")
+
+        return result
+
     def get_scan_result(self, scan_id: str) -> dict:
         """
         Retrieve the scan result for a given scan ID.

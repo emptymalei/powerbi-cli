@@ -1,3 +1,4 @@
+import builtins
 import json
 import os
 import sys
@@ -6,6 +7,8 @@ from typing import Any, Callable, Dict, Iterable, Optional, Union
 
 import click
 import pandas as pd
+import requests
+import yaml
 from loguru import logger
 from slugify import slugify
 
@@ -1929,6 +1932,114 @@ def reports_pages(group_id: str, report_id: Optional[str], target: Optional[Path
         click.secho(f"✓ Report pages saved to {target}", fg="green")
 
 
+def _run_scan(
+    workspace_info: "powerbi_admin.WorkspaceInfo",
+    workspace_ids: list,
+    lineage: bool,
+    datasource_details: bool,
+    dataset_schema: bool,
+    dataset_expressions: bool,
+    get_artifact_users: bool,
+    interval: float,
+    timeout: float,
+) -> dict:
+    """Initiate a scan, poll its status until it succeeds/fails/times out, and
+    return the scan result.
+
+    Shared by ``pbi workspaces scan get`` and ``pbi workspaces scan batch``.
+    """
+    import time
+
+    click.echo(f"Initiating scan for {workspace_ids}…")
+    try:
+        scan_response = workspace_info.initiate_scan(
+            workspace_ids=workspace_ids,
+            lineage=lineage,
+            datasource_details=datasource_details,
+            dataset_schema=dataset_schema,
+            dataset_expressions=dataset_expressions,
+            get_artifact_users=get_artifact_users,
+        )
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
+    scan_id = scan_response.get("id")
+    if not scan_id:
+        raise click.ClickException(f"Unexpected initiate response: {scan_response}")
+    click.echo(f"Scan started (id={scan_id}). Waiting for status…")
+
+    deadline = time.monotonic() + timeout
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            status_response = workspace_info.get_scan_status(scan_id=scan_id)
+        except (ValueError, requests.exceptions.RequestException) as e:
+            raise click.ClickException(str(e)) from e
+        status = status_response.get("status")
+
+        if status == "Succeeded":
+            break
+
+        if status == "Failed":
+            raise click.ClickException(
+                f"Scan {scan_id} failed: {status_response.get('error')}"
+            )
+
+        if time.monotonic() >= deadline:
+            raise click.ClickException(
+                f"Scan {scan_id} did not complete within {timeout}s "
+                f"(last status: {status})."
+            )
+        remaining = deadline - time.monotonic()
+        sleep_time = min(interval, remaining)
+        click.echo(
+            f"  Attempt {attempt}: scan status is '{status}', retrying in {sleep_time:.0f}s…"
+        )
+        time.sleep(sleep_time)
+
+    try:
+        return workspace_info.get_scan_result(scan_id=scan_id)
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
+
+
+def _normalize_workspace_entries(entries: Iterable) -> list:
+    """Normalize a config file's ``workspace_ids`` list into ``{"id", "name"}`` dicts.
+
+    Each entry may be a plain workspace ID string, or a mapping with an ``id``
+    and an optional ``name`` (used to make output filenames readable):
+
+    ```yaml
+    workspace_ids:
+      - <workspace-id-1>
+      - id: <workspace-id-2>
+        name: Finance
+    ```
+    """
+    if not isinstance(entries, builtins.list):
+        raise click.ClickException("'workspace_ids' must be a YAML list.")
+    normalized = []
+    for entry in entries:
+        if isinstance(entry, str):
+            normalized.append({"id": entry, "name": None})
+        elif isinstance(entry, builtins.dict):
+            workspace_id = entry.get("id")
+            if not workspace_id:
+                raise click.ClickException(f"Workspace entry missing 'id': {entry}")
+            normalized.append({"id": workspace_id, "name": entry.get("name")})
+        else:
+            raise click.ClickException(f"Invalid workspace entry: {entry!r}")
+    return normalized
+
+
+def _parse_yaml_bool(raw_config: dict, key: str, default: bool = False) -> bool:
+    """Return a boolean config value or raise for invalid YAML types."""
+    value = raw_config.get(key, default)
+    if isinstance(value, bool):
+        return value
+    raise click.ClickException(f"'{key}' must be a boolean value.")
+
+
 @workspaces.group(name="scan", invoke_without_command=True)
 @click.pass_context
 def workspaces_scan(ctx):
@@ -2052,6 +2163,35 @@ def scan_result(scan_id: str, target: Optional[Path]):
         click.secho(f"✓ Scan results saved to {target}", fg="green")
 
 
+@workspaces_scan.command(name="status")
+@click.argument("scan_id")
+def scan_status(scan_id: str):
+    """Get the scan status for SCAN_ID.
+
+    Retrieves the current status (e.g. ``NotStarted``, ``Running``,
+    ``Succeeded``, ``Failed``) for the given scan ID returned by
+    ``pbi workspaces scan initiate``. Check this before calling
+    ``pbi workspaces scan result``.
+
+    ```sh
+    pbi workspaces scan status <scan-id>
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    workspace_info = powerbi_admin.WorkspaceInfo(
+        auth=load_auth(group="admin"), verify=False
+    )
+    try:
+        result = workspace_info.get_scan_status(scan_id=scan_id)
+    except (ValueError, requests.exceptions.RequestException) as e:
+        raise click.ClickException(str(e)) from e
+    click.echo(json.dumps(result, indent=2))
+
+
 @workspaces_scan.command(name="get")
 @click.argument("workspace_ids", nargs=-1, required=True)
 @click.option(
@@ -2106,6 +2246,20 @@ def scan_result(scan_id: str, target: Optional[Path]):
     default=None,
     required=False,
 )
+@click.option(
+    "--target-folder",
+    "-tf",
+    type=str,
+    help=(
+        "Target folder to save scan results (absolute path or subfolder within "
+        "the default output folder). Only supported when scanning a single "
+        "workspace ID, and saves the result as <workspace_id>.json. Handy "
+        "when looping over several workspaces. Mutually exclusive with "
+        "--target."
+    ),
+    default=None,
+    required=False,
+)
 def scan_get(
     workspace_ids: tuple,
     lineage: bool,
@@ -2116,17 +2270,24 @@ def scan_get(
     interval: float,
     timeout: float,
     target: Optional[Path],
+    target_folder: Optional[str],
 ):
     """Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.
 
-    Combines ``pbi workspaces scan initiate`` and ``pbi workspaces scan result``
-    into a single step: starts the scan, polls until it completes (or times out),
-    then prints or saves the results.
+    Combines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and
+    ``pbi workspaces scan result`` into a single step: starts the scan, polls the
+    scan status until it succeeds, fails, or times out, then prints or saves the
+    results.
 
     ```sh
     pbi workspaces scan get <workspace-id>
 
     pbi workspaces scan get <workspace-id> <workspace-id> --lineage -t results.json
+
+    # Loop over workspaces, saving each result as <workspace-id>.json
+    for w in ws-1 ws-2 ws-3; do
+        pbi workspaces scan get "$w" -tf scan_results
+    done
     ```
 
     !!! warning "Requires Admin"
@@ -2134,51 +2295,207 @@ def scan_get(
         This command requires an admin account.
 
     """
-    import time
+    if target is not None and target_folder is not None:
+        raise click.UsageError("Use either --target or --target-folder, not both.")
+    if target_folder is not None and len(workspace_ids) != 1:
+        raise click.UsageError(
+            "--target-folder only supports a single workspace ID. "
+            "Use --target for multi-workspace scans."
+        )
 
     workspace_info = powerbi_admin.WorkspaceInfo(
         auth=load_auth(group="admin"), verify=False
     )
 
-    click.echo("Initiating scan…")
-    scan_response = workspace_info.initiate_scan(
+    result = _run_scan(
+        workspace_info,
         workspace_ids=[*workspace_ids],
         lineage=lineage,
         datasource_details=datasource_details,
         dataset_schema=dataset_schema,
         dataset_expressions=dataset_expressions,
         get_artifact_users=get_artifact_users,
+        interval=interval,
+        timeout=timeout,
     )
-    scan_id = scan_response.get("id")
-    if not scan_id:
-        raise click.ClickException(f"Unexpected initiate response: {scan_response}")
-    click.echo(f"Scan started (id={scan_id}). Waiting for results…")
 
-    deadline = time.monotonic() + timeout
-    attempt = 0
-    while True:
-        attempt += 1
-        try:
-            result = workspace_info.get_scan_result(scan_id=scan_id)
-            break
-        except powerbi_admin.ScanNotReadyError:
-            if time.monotonic() >= deadline:
-                raise click.ClickException(
-                    f"Scan {scan_id} did not complete within {timeout}s."
-                )
-            remaining = deadline - time.monotonic()
-            sleep_time = min(interval, remaining)
+    if target_folder is not None:
+        target_path = resolve_output_path(target_folder)
+        if target_path is None:
+            click.secho("Error: Unable to determine output folder.", fg="red")
             click.echo(
-                f"  Attempt {attempt}: scan not ready, retrying in {sleep_time:.0f}s…"
+                "Use 'pbi config set-output-folder' to set a default output folder,"
             )
-            time.sleep(sleep_time)
+            click.echo("or provide an absolute path with --target-folder.")
+            raise click.Abort()
 
-    if target is None:
+        if not target_path.exists():
+            click.secho(f"creating folder {target_path}", fg="blue")
+            target_path.mkdir(parents=True, exist_ok=True)
+
+        output_file = target_path / f"{workspace_ids[0]}.json"
+        with open(output_file, "w", encoding="utf-8") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Scan results saved to {output_file}", fg="green")
+    elif target is None:
         click.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         click.secho(f"✓ Scan results saved to {target}", fg="green")
+
+
+@workspaces_scan.command(name="batch")
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to a YAML config file listing workspace_ids and scan parameters.",
+    required=True,
+)
+def scan_batch(config_path: Path):
+    """Scan every workspace listed in a YAML config file and save each result.
+
+    Each workspace runs through its own initiate/status/result cycle so one
+    failing workspace doesn't block the rest, and each result is
+    saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
+    name is provided,
+    or ``<target_folder>/<workspace_id>.json`` otherwise.
+
+    Example config file:
+
+    ```yaml
+    workspace_ids:
+      - id: <workspace-id-1>
+        name: Finance
+      - id: <workspace-id-2>
+        name: Marketing
+      - <workspace-id-3>  # name is optional; falls back to the ID
+    target_folder: scan_results
+    lineage: true
+    datasource_details: true
+    dataset_schema: false
+    dataset_expressions: false
+    get_artifact_users: false
+    interval: 5
+    timeout: 300
+    ```
+
+    Only ``workspace_ids`` and ``target_folder`` are required; the scan flags
+    default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``
+    seconds, same as ``pbi workspaces scan get``. When an entry has a
+    ``name``, the result is saved as
+    ``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it
+    falls back to ``<target_folder>/<workspace_id>.json``.
+
+    ```sh
+    pbi workspaces scan batch --config scan_config.yaml
+    ```
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
+    with open(config_path, "r", encoding="utf-8") as fp:
+        raw_config = yaml.safe_load(fp) or {}
+
+    if not isinstance(raw_config, dict):
+        raise click.ClickException(
+            f"Config file {config_path} must contain a YAML mapping."
+        )
+
+    workspace_entries = _normalize_workspace_entries(
+        raw_config.get("workspace_ids") or []
+    )
+    if not workspace_entries:
+        raise click.ClickException(
+            f"Config file {config_path} must list at least one workspace ID "
+            "under 'workspace_ids'."
+        )
+
+    target_folder = raw_config.get("target_folder")
+    if not target_folder:
+        raise click.ClickException(
+            f"Config file {config_path} must set 'target_folder'."
+        )
+
+    target_path = resolve_output_path(str(target_folder))
+    if target_path is None:
+        click.secho("Error: Unable to determine output folder.", fg="red")
+        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        click.echo("or set 'target_folder' to an absolute path in the config file.")
+        raise click.Abort()
+
+    if not target_path.exists():
+        click.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
+
+    lineage = _parse_yaml_bool(raw_config, "lineage", default=False)
+    datasource_details = _parse_yaml_bool(
+        raw_config, "datasource_details", default=False
+    )
+    dataset_schema = _parse_yaml_bool(raw_config, "dataset_schema", default=False)
+    dataset_expressions = _parse_yaml_bool(
+        raw_config, "dataset_expressions", default=False
+    )
+    get_artifact_users = _parse_yaml_bool(
+        raw_config, "get_artifact_users", default=False
+    )
+    raw_interval = raw_config.get("interval")
+    raw_timeout = raw_config.get("timeout")
+    try:
+        interval = float(5.0 if raw_interval is None else raw_interval)
+        timeout = float(300.0 if raw_timeout is None else raw_timeout)
+    except (TypeError, ValueError) as e:
+        raise click.ClickException(
+            "'interval' and 'timeout' must be numeric values."
+        ) from e
+    if interval <= 0 or timeout <= 0:
+        raise click.ClickException("'interval' and 'timeout' must be greater than 0.")
+
+    failed = []
+    for entry in workspace_entries:
+        workspace_id = entry["id"]
+        workspace_name = entry.get("name")
+        label = f"{workspace_name} ({workspace_id})" if workspace_name else workspace_id
+        click.echo(f"\n=== Workspace {label} ===")
+        try:
+            workspace_info = powerbi_admin.WorkspaceInfo(
+                auth=load_auth(group="admin"), verify=False
+            )
+            result = _run_scan(
+                workspace_info,
+                workspace_ids=[workspace_id],
+                lineage=lineage,
+                datasource_details=datasource_details,
+                dataset_schema=dataset_schema,
+                dataset_expressions=dataset_expressions,
+                get_artifact_users=get_artifact_users,
+                interval=interval,
+                timeout=timeout,
+            )
+        except click.ClickException as e:
+            click.secho(f"✗ {label}: {e.format_message()}", fg="red")
+            failed.append(label)
+            continue
+
+        name_slug = slugify(workspace_name) if workspace_name else ""
+        file_stub = f"{name_slug}-{workspace_id}" if name_slug else workspace_id
+        output_file = target_path / f"{file_stub}.json"
+        with open(output_file, "w", encoding="utf-8") as fp:
+            json.dump(result, fp, indent=2)
+        click.secho(f"✓ Saved {output_file}", fg="green")
+
+    if failed:
+        click.secho(f"\nFailed workspaces: {', '.join(failed)}", fg="red")
+        raise click.exceptions.Exit(1)
+
+    click.secho(
+        f"\n✓ Scanned {len(workspace_entries)} workspace(s) into {target_path}",
+        fg="green",
+    )
 
 
 if __name__ == "__main__":
