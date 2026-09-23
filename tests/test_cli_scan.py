@@ -3,6 +3,7 @@
 import json
 from unittest.mock import patch
 
+import click
 import requests
 from click.testing import CliRunner
 
@@ -890,6 +891,31 @@ timeout:
         get_artifact_users=False,
     )
     assert (target_folder / "ws-1.json").exists()
+
+
+def test_scan_batch_reports_admin_auth_loading_errors(tmp_path):
+    """Test scan batch wraps admin auth failures with batch-specific context."""
+    config_file = tmp_path / "scan_config.yaml"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - ws-1
+target_folder: {tmp_path / "scan_results"}
+"""
+    )
+
+    runner = CliRunner()
+    with patch(
+        "pbi_cli.cli.load_auth",
+        side_effect=click.ClickException("No credentials found for profile 'admin'."),
+    ):
+        result = runner.invoke(
+            pbi, ["workspaces", "scan", "batch", "-c", str(config_file)]
+        )
+
+    assert result.exit_code != 0
+    assert "Unable to load admin auth for scan batch" in result.output
+    assert "No credentials found for profile 'admin'." in result.output
 
 
 def test_scan_batch_requires_target_folder(tmp_path):
