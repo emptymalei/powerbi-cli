@@ -2408,8 +2408,17 @@ def scan_batch(config_path: Path):
     dataset_schema = bool(raw_config.get("dataset_schema", False))
     dataset_expressions = bool(raw_config.get("dataset_expressions", False))
     get_artifact_users = bool(raw_config.get("get_artifact_users", False))
-    interval = float(raw_config.get("interval", 5.0))
-    timeout = float(raw_config.get("timeout", 300.0))
+    try:
+        interval = float(raw_config.get("interval", 5.0))
+        timeout = float(raw_config.get("timeout", 300.0))
+    except (TypeError, ValueError) as e:
+        raise click.ClickException(
+            "'interval' and 'timeout' must be numeric values."
+        ) from e
+    if interval <= 0 or timeout <= 0:
+        raise click.ClickException(
+            "'interval' and 'timeout' must be greater than 0."
+        )
 
     workspace_info = powerbi_admin.WorkspaceInfo(
         auth=load_auth(group="admin"), verify=False
