@@ -2443,9 +2443,11 @@ def scan_batch(config_path: Path):
     get_artifact_users = _parse_yaml_bool(
         raw_config, "get_artifact_users", default=False
     )
+    raw_interval = raw_config.get("interval")
+    raw_timeout = raw_config.get("timeout")
     try:
-        interval = float(raw_config.get("interval", 5.0))
-        timeout = float(raw_config.get("timeout", 300.0))
+        interval = float(5.0 if raw_interval is None else raw_interval)
+        timeout = float(300.0 if raw_timeout is None else raw_timeout)
     except (TypeError, ValueError) as e:
         raise click.ClickException(
             "'interval' and 'timeout' must be numeric values."

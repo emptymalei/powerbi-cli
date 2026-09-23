@@ -841,6 +841,57 @@ lineage: "false"
     assert "'lineage' must be a boolean value." in result.output
 
 
+def test_scan_batch_uses_defaults_for_null_interval_and_timeout(tmp_path):
+    """Test scan batch treats null interval/timeout values as defaults."""
+    config_file = tmp_path / "scan_config.yaml"
+    target_folder = tmp_path / "scan_results"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - ws-1
+target_folder: {target_folder}
+interval:
+timeout:
+"""
+    )
+
+    fake_init = {"id": "scan-null", "status": "Running"}
+    fake_status = {"id": "scan-null", "status": "Succeeded"}
+
+    def fake_get_scan_result(self, scan_id):
+        return {"workspaces": [{"id": "ws-1"}]}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            return_value=fake_init,
+        ) as mock_initiate:
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
+            ):
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    fake_get_scan_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "batch", "-c", str(config_file)],
+                    )
+
+    assert result.exit_code == 0, result.output
+    mock_initiate.assert_called_once_with(
+        workspace_ids=["ws-1"],
+        lineage=False,
+        datasource_details=False,
+        dataset_schema=False,
+        dataset_expressions=False,
+        get_artifact_users=False,
+    )
+    assert (target_folder / "ws-1.json").exists()
+
+
 def test_scan_batch_requires_target_folder(tmp_path):
     """Test scan batch fails with a clear error when target_folder is missing."""
     config_file = tmp_path / "scan_config.yaml"

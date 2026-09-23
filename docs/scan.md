@@ -42,7 +42,7 @@ pbi workspaces scan get <workspace-id> --lineage --datasource-details
 # Save to a single file instead of printing to console
 pbi workspaces scan get <workspace-id> -t results.json
 
-# Save to a folder, named after the workspace ID(s) -- handy inside a loop
+# Save one workspace result to a folder as <workspace-id>.json -- handy inside a loop
 pbi workspaces scan get <workspace-id> -tf scan_results
 ```
 
