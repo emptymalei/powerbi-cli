@@ -455,7 +455,8 @@ def test_scan_batch_requires_config():
 
 def test_scan_batch_saves_named_and_unnamed_workspaces(tmp_path):
     """Test scan batch scans each workspace and names files by workspace name
-    when given, falling back to the workspace ID otherwise."""
+    plus workspace ID suffix when given, falling back to the workspace ID
+    otherwise."""
     config_file = tmp_path / "scan_config.yaml"
     target_folder = tmp_path / "scan_results"
     config_file.write_text(
@@ -513,8 +514,55 @@ timeout: 10
         dataset_expressions=False,
         get_artifact_users=False,
     )
-    assert (target_folder / "finance-team.json").exists()
+    assert (target_folder / "finance-team-ws-a.json").exists()
     assert (target_folder / "ws-b.json").exists()
+
+
+def test_scan_batch_suffixes_workspace_id_to_avoid_overwrites(tmp_path):
+    """Test scan batch appends workspace IDs for named workspaces."""
+    config_file = tmp_path / "scan_config.yaml"
+    target_folder = tmp_path / "scan_results"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - id: ws-a
+    name: Shared Team
+  - id: ws-b
+    name: Shared Team
+target_folder: {target_folder}
+interval: 1
+timeout: 10
+"""
+    )
+
+    fake_init = {"id": "scan-x", "status": "Running"}
+    fake_status = {"id": "scan-x", "status": "Succeeded"}
+
+    def fake_get_scan_result(self, scan_id):
+        return {"workspaces": [{"id": "some-id"}]}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            return_value=fake_init,
+        ):
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
+            ):
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    fake_get_scan_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "batch", "-c", str(config_file)],
+                    )
+
+    assert result.exit_code == 0, result.output
+    assert (target_folder / "shared-team-ws-a.json").exists()
+    assert (target_folder / "shared-team-ws-b.json").exists()
 
 
 def test_scan_batch_continues_after_one_workspace_fails(tmp_path):

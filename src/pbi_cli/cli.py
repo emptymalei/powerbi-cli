@@ -2332,7 +2332,8 @@ def scan_batch(config_path: Path):
     """Scan every workspace listed in a YAML config file and save each result.
 
     cycle) so one failing workspace doesn't block the rest, and each result is
-    saved as ``<target_folder>/<slugified-name>.json`` when a name is provided,
+    saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
+    name is provided,
     or ``<target_folder>/<workspace_id>.json`` otherwise.
 
     Example config file:
@@ -2357,8 +2358,9 @@ def scan_batch(config_path: Path):
     Only ``workspace_ids`` and ``target_folder`` are required; the scan flags
     default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``
     seconds, same as ``pbi workspaces scan get``. When an entry has a
-    ``name``, the result is saved as ``<target_folder>/<slugified-name>.json``;
-    otherwise it falls back to ``<target_folder>/<workspace_id>.json``.
+    ``name``, the result is saved as
+    ``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it
+    falls back to ``<target_folder>/<workspace_id>.json``.
 
     ```sh
     pbi workspaces scan batch --config scan_config.yaml
@@ -2447,7 +2449,11 @@ def scan_batch(config_path: Path):
             failed.append(label)
             continue
 
-        file_stub = slugify(workspace_name) if workspace_name else workspace_id
+        file_stub = (
+            f"{slugify(workspace_name)}-{workspace_id}"
+            if workspace_name
+            else workspace_id
+        )
         output_file = target_path / f"{file_stub}.json"
         with open(output_file, "w") as fp:
             json.dump(result, fp, indent=2)
