@@ -2449,11 +2449,8 @@ def scan_batch(config_path: Path):
             failed.append(label)
             continue
 
-        file_stub = (
-            f"{slugify(workspace_name)}-{workspace_id}"
-            if workspace_name
-            else workspace_id
-        )
+        name_slug = slugify(workspace_name) if workspace_name else ""
+        file_stub = f"{name_slug}-{workspace_id}" if name_slug else workspace_id
         output_file = target_path / f"{file_stub}.json"
         with open(output_file, "w") as fp:
             json.dump(result, fp, indent=2)

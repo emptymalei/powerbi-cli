@@ -565,6 +565,51 @@ timeout: 10
     assert (target_folder / "shared-team-ws-b.json").exists()
 
 
+def test_scan_batch_falls_back_to_workspace_id_when_name_slug_is_empty(tmp_path):
+    """Test scan batch uses workspace ID if a name slugifies to empty."""
+    config_file = tmp_path / "scan_config.yaml"
+    target_folder = tmp_path / "scan_results"
+    config_file.write_text(
+        f"""
+workspace_ids:
+  - id: ws-empty
+    name: "!!!"
+target_folder: {target_folder}
+interval: 1
+timeout: 10
+"""
+    )
+
+    fake_init = {"id": "scan-z", "status": "Running"}
+    fake_status = {"id": "scan-z", "status": "Succeeded"}
+
+    def fake_get_scan_result(self, scan_id):
+        return {"workspaces": [{"id": "ws-empty"}]}
+
+    runner = CliRunner()
+    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
+        with patch(
+            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
+            return_value=fake_init,
+        ):
+            with patch(
+                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
+                return_value=fake_status,
+            ):
+                with patch(
+                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
+                    fake_get_scan_result,
+                ):
+                    result = runner.invoke(
+                        pbi,
+                        ["workspaces", "scan", "batch", "-c", str(config_file)],
+                    )
+
+    assert result.exit_code == 0, result.output
+    assert (target_folder / "ws-empty.json").exists()
+    assert not (target_folder / "-ws-empty.json").exists()
+
+
 def test_scan_batch_continues_after_one_workspace_fails(tmp_path):
     """Test scan batch reports a non-zero exit but still saves the workspaces
     that succeeded when one workspace's scan fails."""
