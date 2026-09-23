@@ -2334,13 +2334,13 @@ def scan_get(
             target_path.mkdir(parents=True, exist_ok=True)
 
         output_file = target_path / f"{workspace_ids[0]}.json"
-        with open(output_file, "w") as fp:
+        with open(output_file, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         click.secho(f"✓ Scan results saved to {output_file}", fg="green")
     elif target is None:
         click.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         click.secho(f"✓ Scan results saved to {target}", fg="green")
 
@@ -2490,12 +2490,12 @@ def scan_batch(config_path: Path):
         name_slug = slugify(workspace_name) if workspace_name else ""
         file_stub = f"{name_slug}-{workspace_id}" if name_slug else workspace_id
         output_file = target_path / f"{file_stub}.json"
-        with open(output_file, "w") as fp:
+        with open(output_file, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         click.secho(f"✓ Saved {output_file}", fg="green")
 
     if failed:
-        click.secho(f"\nFailed workspaces: {failed}", fg="red")
+        click.secho(f"\nFailed workspaces: {', '.join(failed)}", fg="red")
         raise click.exceptions.Exit(1)
 
     click.secho(
