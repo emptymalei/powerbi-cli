@@ -894,12 +894,13 @@ timeout:
 
 
 def test_scan_batch_reports_admin_auth_loading_errors(tmp_path):
-    """Test scan batch wraps admin auth failures with batch-specific context."""
+    """Test scan batch reports admin auth failures per workspace and continues."""
     config_file = tmp_path / "scan_config.yaml"
     config_file.write_text(
         f"""
 workspace_ids:
   - ws-1
+  - ws-2
 target_folder: {tmp_path / "scan_results"}
 """
     )
@@ -914,8 +915,10 @@ target_folder: {tmp_path / "scan_results"}
         )
 
     assert result.exit_code != 0
-    assert "Unable to load admin auth for scan batch" in result.output
     assert "No credentials found for profile 'admin'." in result.output
+    assert "ws-1" in result.output
+    assert "ws-2" in result.output
+    assert "Failed workspaces: ws-1, ws-2" in result.output
 
 
 def test_scan_batch_requires_target_folder(tmp_path):

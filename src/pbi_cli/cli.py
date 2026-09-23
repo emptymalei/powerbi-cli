@@ -2455,15 +2455,6 @@ def scan_batch(config_path: Path):
     if interval <= 0 or timeout <= 0:
         raise click.ClickException("'interval' and 'timeout' must be greater than 0.")
 
-    try:
-        auth = load_auth(group="admin")
-    except click.ClickException as e:
-        raise click.ClickException(
-            f"Unable to load admin auth for scan batch: {e.format_message()}"
-        ) from e
-
-    workspace_info = powerbi_admin.WorkspaceInfo(auth=auth, verify=False)
-
     failed = []
     for entry in workspace_entries:
         workspace_id = entry["id"]
@@ -2471,6 +2462,9 @@ def scan_batch(config_path: Path):
         label = f"{workspace_name} ({workspace_id})" if workspace_name else workspace_id
         click.echo(f"\n=== Workspace {label} ===")
         try:
+            workspace_info = powerbi_admin.WorkspaceInfo(
+                auth=load_auth(group="admin"), verify=False
+            )
             result = _run_scan(
                 workspace_info,
                 workspace_ids=[workspace_id],
