@@ -49,6 +49,9 @@ pbi --show-completion      # print the completion script instead
 
 ## Guides
 
+- [Authentication](auth.md): tokens, profiles and what to do when a token expires.
 - [Workspace Scans](scan.md): scan workspaces one at a time or from a config file.
-- [Cache](cache.md): reuse the results of earlier API calls.
+- [Data lake](lake.md): what the commands fetch is kept, can be browsed with `pbi lake`
+  and reused offline.
+- [Cache (legacy)](cache.md): the older cache and what replaced it.
 - [Changelog](changelog.md)

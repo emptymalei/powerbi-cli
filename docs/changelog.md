@@ -1,9 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (unreleased)
 
 ### Changed
 
+- `pbi workspaces list`, `pbi users user-access` and `pbi apps list` now use the API client
+  and keep what they fetch in the [data lake](lake.md) (the `lake` folder of the cache
+  folder). Without `--use-cache` and `--cache-only` they ask the API, as before, and store
+  the answer. `--use-cache` takes a stored answer of any age to the same request;
+  `--cache-only` never calls the API.
+- A stored answer is now the answer to one *request*: the endpoint, its parameters
+  (`--top`, `--expand`, `--odata-filter`, the user id, the role) and the tenant. The earlier
+  cache had one entry per command, so `--use-cache` could return an answer that had been
+  fetched with other options or by another tenant. Entries of the earlier cache are not
+  used or migrated; `pbi cache clear` removes them.
+- `pbi apps list --role admin` and `pbi users user-access` read every page. They used to
+  return only the first 200 apps and the first page of access entries.
+- `pbi reports list` and `pbi reports pages` use the client as well. They always ask the
+  API, store the answers in the lake, and print the same JSON as before (only the JSON).
+- When a documented quota is used up a command waits, at most two minutes, and otherwise
+  stops and says when to try again. A rejected, expired or forbidden request ends with
+  `Error: <message>` that says what to do, for example which `pbi auth` command to run.
+  The quota counters are kept in `~/.pbi_cli/quota.json`.
+- `pbi cache` is now the legacy cache, see [Cache (legacy)](cache.md). `pbi cache clear`
+  never deletes the data lake, which is the `lake` folder of the same cache folder, and
+  `lake` cannot be used as a cache key.
+- The `--help` of the commands above, and of `pbi cache`, describes the data lake.
 - The CLI is now built with [Typer](https://typer.tiangolo.com) instead of click.
   Commands, flags (including `-ft`, `-tf`, `-wi` and `-wn`), defaults, prompts and exit
   codes are unchanged. `click` is no longer a direct dependency.
@@ -25,12 +47,17 @@
 ### Added
 
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
-- `pbi_cli.core`: an API client with a local [data lake](lake.md). The commands do not use
-  it yet, so their behavior is unchanged. The client reads lists page by page, waits when
-  a documented quota is used up or the API answers `429 Retry-After`, and keeps what it
-  fetched as versioned snapshots and per-day event logs on disk or in S3. A request is
-  identified by its endpoint, its canonical parameters and the tenant, so a different
-  `$expand` or another tenant never gets somebody else's cached answer.
+- `pbi lake ls`, `pbi lake show` and `pbi lake prune`: see what the data lake holds, print a
+  stored response or its manifest, and delete old versions. They need no token and no
+  network.
+- `pbi_cli.core`: an API client with a local [data lake](lake.md). The client reads lists
+  page by page, waits when a documented quota is used up or the API answers
+  `429 Retry-After`, and keeps what it fetched as versioned snapshots and per-day event
+  logs on disk or in S3. A request is identified by its endpoint, its canonical parameters
+  and the tenant, so a different `$expand` or another tenant never gets somebody else's
+  cached answer.
+- `pbi_cli.session` builds the lake and the client from the settings (the cache folder,
+  and the quota counters in `~/.pbi_cli`), so the commands share both.
 - A registry of the read-only operations the client may call, with the quota of each taken
   from its documentation page.
 - pbi_cli reads the tenant and the expiry from a token locally (nothing is sent or
@@ -42,11 +69,19 @@
 
 ### Fixed
 
+- `pbi users user-access --target-folder` wrote nothing: the code that writes the files
+  could not run. It now writes the JSON and Excel files.
+- `pbi workspaces list --use-cache --file-type excel` crashed; it writes the Excel file.
+- `pbi workspaces list --top` below 1 is reported as a usage error.
 - `pbi apps augment` and `pbi reports users` with `--file-type excel` and a target that
   has a file extension now report a usage error. They used to crash with a `TypeError`.
 
 ### Development
 
+- Every test runs with an empty home folder and an in-memory keyring (`tests/conftest.py`).
+  Some tests stored and deleted tokens in the real keyring, so a test run overwrote or
+  removed the entries of profiles named like the ones they use (`admin-nlm`, `user-nlm`)
+  on a developer's machine.
 - `tests/test_cli_surface.py` compares every command, flag, default and `--help` output
   with recorded fixtures, so a refactor cannot silently change the CLI.
 - `tests/test_cli_docs.py` fails when `docs/references/cli.md` is out of date.

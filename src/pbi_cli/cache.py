@@ -25,7 +25,11 @@ from typing import Any, Dict, List, Optional, Union
 from cloudpathlib import AnyPath, CloudPath
 from loguru import logger
 
-__all__ = ["CacheManager", "CacheConfig"]
+__all__ = ["CacheManager", "CacheConfig", "LAKE_FOLDER"]
+
+#: Sub-folder of the cache folder that holds the data lake (see ``pbi lake``). This cache
+#: never lists it and never deletes it, even when the whole cache is cleared.
+LAKE_FOLDER = "lake"
 
 
 class CacheConfig:
@@ -293,6 +297,8 @@ class CacheManager:
 
             keys = []
             for item in self._base_path.iterdir():
+                if item.name == LAKE_FOLDER:
+                    continue
                 if item.is_dir():
                     # Check if this is a cache key directory
                     versions = self.list_versions(item.name)
@@ -308,6 +314,10 @@ class CacheManager:
     def clear(self, cache_key: Optional[str] = None, version: Optional[str] = None):
         """Clear cache data.
 
+        The data lake (the `LAKE_FOLDER` sub-folder) is never touched: clearing the whole
+        cache keeps it, and it cannot be cleared by naming it as a cache key. Use
+        ``pbi lake prune`` to tidy the lake.
+
         :param cache_key: Specific cache key to clear (clears all if None)
         :param version: Specific version to clear (clears all versions if None)
         """
@@ -315,21 +325,26 @@ class CacheManager:
             logger.warning("Cache path not configured")
             return
 
+        if cache_key == LAKE_FOLDER:
+            logger.warning(
+                f"'{LAKE_FOLDER}' is the data lake, not a cache key: nothing was cleared"
+            )
+            return
+
         try:
             if cache_key is None:
-                # Clear entire cache
+                # Clear entire cache, except the data lake
                 if self._base_path.exists():
-                    if isinstance(self._base_path, CloudPath):
-                        # For cloud paths, remove all objects
-                        for item in self._base_path.iterdir():
-                            if item.is_dir():
+                    for item in self._base_path.iterdir():
+                        if item.name == LAKE_FOLDER:
+                            continue
+                        if item.is_dir():
+                            if isinstance(item, CloudPath):
                                 item.rmtree()
                             else:
-                                item.unlink()
-                    else:
-                        # For local paths
-                        shutil.rmtree(str(self._base_path))
-                        self._base_path.mkdir(parents=True, exist_ok=True)
+                                shutil.rmtree(str(item))
+                        else:
+                            item.unlink()
                     logger.info("Cleared entire cache")
             elif version is None:
                 # Clear all versions of a specific key

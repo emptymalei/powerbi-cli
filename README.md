@@ -58,14 +58,23 @@ names such as `-ft`: existing scripts use them.
 The code that talks to the Power BI API and keeps what it fetched lives in
 `src/pbi_cli/core` and has no dependency on the command line framework: the endpoint
 registry with the documented quotas (`registry.py`), the client (`client.py`), the quota
-counters (`ratelimit.py`) and the data lake store (`store.py`). See
-`docs/lake.md`; the commands will move onto this client step by step.
+counters (`ratelimit.py`) and the data lake store (`store.py`). See `docs/lake.md`.
+
+The commands that read the API (`workspaces list`, `users user-access`, `apps list` and
+`reports list|pages`) go through that client and keep what they fetch in the data lake.
+They build it with `pbi_cli.session.open_client`, from the credentials of `load_auth`:
+see `_fetch` in `cli.py`. `pbi lake` (`src/pbi_cli/cli_lake.py`) browses the lake.
 
 ### Running the tests
 
 ```bash
 uv run pytest
 ```
+
+Every test runs with an empty home folder and an in-memory keyring (`tests/conftest.py`),
+so no test reads or changes your settings, tokens or data lake. To test a command against
+the API, script the answers with the `fake_api` fixture; `signed_in` and `cache_folder`
+give it a token and a lake (see `tests/test_cli_lake_routing.py`).
 
 ### The CLI surface snapshot
 
