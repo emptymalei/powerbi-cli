@@ -448,3 +448,94 @@ def test_events_show_up_when_browsing(store):
     store.append_events("t1", EVENTS, DAY, events("a"))
     assert store.tenants() == ["t1"]
     assert store.endpoints("t1") == [EVENTS]
+
+
+# ---------------------------------------------------------------------------
+# state documents, cursor clearing, last write of an event day
+# ---------------------------------------------------------------------------
+
+
+def test_a_state_document_round_trips(store):
+    assert store.read_state("t1", "sync") is None
+
+    store.write_state("t1", "sync", {"schema": 1, "runs": [{"id": "a"}]})
+
+    assert store.read_state("t1", "sync") == {"schema": 1, "runs": [{"id": "a"}]}
+    assert (store.root / "tenant=t1" / "_state" / "sync.json").exists()
+
+
+def test_a_state_document_is_replaced_not_merged(store):
+    store.write_state("t1", "sync", {"a": 1, "b": 2})
+    store.write_state("t1", "sync", {"a": 3})
+
+    assert store.read_state("t1", "sync") == {"a": 3}
+
+
+def test_state_documents_belong_to_their_tenant_and_name(store):
+    store.write_state("t1", "sync", {"who": "t1"})
+    store.write_state("t2", "sync", {"who": "t2"})
+    store.write_state("t1", "other", {"who": "other"})
+
+    assert store.read_state("t1", "sync") == {"who": "t1"}
+    assert store.read_state("t2", "sync") == {"who": "t2"}
+    assert store.read_state("t1", "other") == {"who": "other"}
+
+
+@pytest.mark.parametrize("content", ["{not json", "[1, 2]", ""])
+def test_an_unreadable_state_document_is_ignored(store, content):
+    store.write_state("t1", "sync", {"ok": True})
+    path = store.root / "tenant=t1" / "_state" / "sync.json"
+    path.write_text(content, encoding="utf-8")
+
+    assert store.read_state("t1", "sync") is None
+
+
+def test_state_is_not_an_endpoint_and_is_not_pruned(store):
+    write(store, {"value": []})
+    store.write_state("t1", "sync", {"a": 1})
+
+    assert store.endpoints("t1") == ["admin.groups"]
+    assert store.prune(keep=1) == 0
+    assert store.read_state("t1", "sync") == {"a": 1}
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX file modes")
+def test_a_state_document_is_readable_by_the_owner_only(store):
+    store.write_state("t1", "sync", {"a": 1})
+
+    path = store.root / "tenant=t1" / "_state" / "sync.json"
+    assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
+
+
+def test_an_empty_cursor_clears_the_cursor(store):
+    day = date(2026, 9, 29)
+    store.append_events("t1", "admin.activityevents", day, [{"Id": "1"}], cursor="c1")
+    assert store.event_day("t1", "admin.activityevents", day).cursor == "c1"
+
+    store.append_events("t1", "admin.activityevents", day, [], cursor="")
+
+    assert store.event_day("t1", "admin.activityevents", day).cursor is None
+
+
+def test_an_event_day_knows_when_it_was_last_written(store):
+    day = date(2026, 9, 29)
+    assert store.event_day("t1", "admin.activityevents", day) is None
+
+    store.append_events("t1", "admin.activityevents", day, [{"Id": "1"}])
+    written = store.event_day("t1", "admin.activityevents", day).updated_at
+
+    assert written is not None and written.tzinfo is not None
+    assert abs(datetime.now(UTC) - written) < timedelta(minutes=1)
+    store.seal_day("t1", "admin.activityevents", day)
+    assert store.event_day("t1", "admin.activityevents", day).updated_at >= written
+
+
+def test_events_are_stamped_with_the_time_they_were_received(store):
+    day = date(2026, 9, 29)
+    received = datetime(2026, 9, 30, 8, 30, tzinfo=UTC)
+    sealed = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+
+    store.append_events("t1", "admin.activityevents", day, [{"Id": "1"}], at=received)
+    assert store.event_day("t1", "admin.activityevents", day).updated_at == received
+    store.seal_day("t1", "admin.activityevents", day, at=sealed)
+    assert store.event_day("t1", "admin.activityevents", day).updated_at == sealed

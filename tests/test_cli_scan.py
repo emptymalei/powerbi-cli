@@ -3,11 +3,15 @@
 import json
 from unittest.mock import patch
 
-import requests
+import pytest
+from fake_powerbi import FakePowerBI
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app
+from pbi_cli.core.scan import run_scan
+from pbi_cli.core.store import LakeStore
 from pbi_cli.errors import PBIError
+from pbi_cli.session import quota_file
 
 
 def test_scan_group_in_workspaces_help():
@@ -480,11 +484,349 @@ def test_scan_batch_help():
     result = runner.invoke(app, ["workspaces", "scan", "batch", "--help"])
     assert result.exit_code == 0
     assert "--config" in result.output or "-c" in result.output
-    assert (
-        "Each workspace runs through its own initiate/status/result cycle"
-        in result.output
-    )
+    assert "batches of up to 100 per request" in result.output
+    assert "one by one" in result.output
     assert "Admin" in result.output
+
+
+# ---------------------------------------------------------------------------
+# scan batch: what the API answers is scripted with the fake service
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def fake(monkeypatch):
+    service = FakePowerBI(workspaces=8, reports=4, datasets=3)
+    monkeypatch.setattr("pbi_cli.core.client.make_session", service.session)
+    return service
+
+
+def batch_config(tmp_path, entries, **extra):
+    """Write a config file for scan batch; returns (config file, target folder)."""
+    target_folder = tmp_path / "scan_results"
+    settings = {
+        "workspace_ids": entries,
+        "target_folder": str(target_folder),
+        "interval": 0.2,
+        "timeout": 10,
+        **extra,
+    }
+    config_file = tmp_path / "scan_config.yaml"
+    config_file.write_text(json.dumps(settings))  # JSON is YAML
+    return config_file, target_folder
+
+
+def scan_batch(config_file):
+    return CliRunner().invoke(
+        app, ["workspaces", "scan", "batch", "-c", str(config_file)]
+    )
+
+
+def saved(folder, name):
+    return json.loads((folder / name).read_text())
+
+
+def test_scan_batch_saves_named_and_unnamed_workspaces(tmp_path, fake, signed_in):
+    """Files are named by the workspace name plus its ID, or by the ID alone."""
+    config_file, folder = batch_config(
+        tmp_path, [{"id": "ws-0001", "name": "Finance Team"}, "ws-0002"]
+    )
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert sorted(p.name for p in folder.iterdir()) == [
+        "finance-team-ws-0001.json",
+        "ws-0002.json",
+    ]
+    # each file holds the result of its own workspace
+    assert [
+        w["id"] for w in saved(folder, "finance-team-ws-0001.json")["workspaces"]
+    ] == ["ws-0001"]
+    assert [w["id"] for w in saved(folder, "ws-0002.json")["workspaces"]] == ["ws-0002"]
+
+
+def test_scan_batch_scans_workspaces_together_not_one_request_each(
+    tmp_path, fake, signed_in
+):
+    config_file, _ = batch_config(tmp_path, ["ws-0001", "ws-0002", "ws-0003"])
+
+    scan_batch(config_file)
+
+    (request,) = fake.calls_to(r"getInfo", "POST")
+    assert request.body == {"workspaces": ["ws-0001", "ws-0002", "ws-0003"]}
+
+
+def test_scan_batch_sends_at_most_100_workspaces_per_request(
+    tmp_path, monkeypatch, signed_in
+):
+    service = FakePowerBI(workspaces=250)
+    monkeypatch.setattr("pbi_cli.core.client.make_session", service.session)
+    config_file, folder = batch_config(tmp_path, [f"ws-{n:04d}" for n in range(1, 251)])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    sizes = [len(c.body["workspaces"]) for c in service.calls_to(r"getInfo", "POST")]
+    assert sizes == [100, 100, 50]
+    assert len(list(folder.iterdir())) == 250
+    assert "Scanned 250 workspace(s)" in result.output
+
+
+def test_scan_batch_passes_the_flags_and_splits_the_data_sources(
+    tmp_path, fake, signed_in
+):
+    config_file, folder = batch_config(
+        tmp_path,
+        ["ws-0001", "ws-0002"],
+        lineage=True,
+        datasource_details=True,
+    )
+
+    scan_batch(config_file)
+
+    query = fake.calls_to(r"getInfo", "POST")[0].query
+    assert query["lineage"] == "true" and query["datasourceDetails"] == "true"
+    assert query["datasetSchema"] == "false"
+    first, second = saved(folder, "ws-0001.json"), saved(folder, "ws-0002.json")
+    # each file lists the data sources its own workspace uses, not its neighbour's
+    assert [i["datasourceId"] for i in first["datasourceInstances"]] == ["dsi-ds-0001"]
+    assert [i["datasourceId"] for i in second["datasourceInstances"]] == ["dsi-ds-0002"]
+
+
+def test_scan_batch_suffixes_workspace_id_to_avoid_overwrites(
+    tmp_path, fake, signed_in
+):
+    """Test scan batch appends workspace IDs for named workspaces."""
+    config_file, folder = batch_config(
+        tmp_path,
+        [
+            {"id": "ws-0001", "name": "Shared Team"},
+            {"id": "ws-0002", "name": "Shared Team"},
+        ],
+    )
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert (folder / "shared-team-ws-0001.json").exists()
+    assert (folder / "shared-team-ws-0002.json").exists()
+
+
+def test_scan_batch_falls_back_to_workspace_id_when_name_slug_is_empty(
+    tmp_path, fake, signed_in
+):
+    """Test scan batch uses workspace ID if a name slugifies to empty."""
+    config_file, folder = batch_config(tmp_path, [{"id": "ws-0001", "name": "!!!"}])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert (folder / "ws-0001.json").exists()
+    assert not (folder / "-ws-0001.json").exists()
+
+
+def test_scan_batch_reports_progress_like_scan_get(tmp_path, fake, signed_in):
+    fake.scan_polls = 1
+    config_file, _ = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    result = scan_batch(config_file)
+
+    assert "Initiating scan for ['ws-0001', 'ws-0002']…" in result.output
+    assert "Scan started (id=scan-0001). Waiting for status…" in result.output
+    assert "Attempt 1: scan status is 'Running', retrying in 0s…" in result.output
+    assert "=== 2 workspace(s): ws-0001, ws-0002 ===" in result.output
+
+
+# -- when a batch fails ----------------------------------------------------------------
+
+
+def test_scan_batch_scans_one_by_one_when_a_batch_fails(tmp_path, fake, signed_in):
+    """Test scan batch reports a non-zero exit but still saves the workspaces
+    that succeeded when one workspace's scan fails."""
+    fake.failing_scan_workspaces = {"ws-0002"}
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-0002", "ws-0003"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code != 0
+    assert sorted(p.name for p in folder.iterdir()) == ["ws-0001.json", "ws-0003.json"]
+    assert "Scanning these 3 workspaces together failed" in result.output
+    assert "Scanning them one by one…" in result.output
+    assert (
+        "✗ ws-0002:" in result.output and "Failed workspaces: ws-0002" in result.output
+    )
+    # one scan of the three, then one of each
+    assert [c.body["workspaces"] for c in fake.calls_to(r"getInfo", "POST")] == [
+        ["ws-0001", "ws-0002", "ws-0003"],
+        ["ws-0001"],
+        ["ws-0002"],
+        ["ws-0003"],
+    ]
+
+
+def test_scan_batch_loses_nothing_when_only_the_batch_as_a_whole_fails(
+    tmp_path, fake, signed_in
+):
+    """A server error on the result of the batch does not cost any workspace."""
+    fake.fail("GET", r"scanResult/scan-0001", 500)
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert sorted(p.name for p in folder.iterdir()) == ["ws-0001.json", "ws-0002.json"]
+    assert "Scanning them one by one…" in result.output
+
+
+def test_scan_batch_continues_after_one_workspace_hits_an_api_error(
+    tmp_path, fake, signed_in
+):
+    fake.fail("GET", r"scanResult/scan-0001", 500)  # the batch
+    fake.fail("GET", r"scanResult/scan-0003", 500)  # the scan of ws-0002 alone
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code != 0
+    assert [p.name for p in folder.iterdir()] == ["ws-0001.json"]
+    assert "ws-0002" in result.output and "Failed workspaces: ws-0002" in result.output
+
+
+def test_scan_batch_saves_an_empty_result_for_a_workspace_the_api_does_not_know(
+    tmp_path, fake, signed_in
+):
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-9999"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert saved(folder, "ws-9999.json") == {
+        "workspaces": [],
+        "datasourceInstances": [],
+        "misconfiguredDatasourceInstances": [],
+    }
+    assert "ws-9999: Power BI returned nothing for this workspace" in result.output
+
+
+# -- what stops the command --------------------------------------------------------------
+
+
+def test_scan_batch_stops_at_once_without_credentials(tmp_path, fake):
+    """No token is a problem for every workspace: it is said once, nothing is scanned."""
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 1
+    assert "No active profile set for group 'admin'" in result.output
+    assert "Failed workspaces" not in result.output
+    assert fake.calls == [] and not folder.exists() or not list(folder.iterdir())
+
+
+def test_scan_batch_reports_admin_auth_loading_errors(tmp_path, fake):
+    """An error while loading the admin credentials stops the command with its message."""
+    config_file, _ = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    with patch(
+        "pbi_cli.cli.load_auth",
+        side_effect=PBIError("No credentials found for profile 'admin'."),
+    ):
+        result = scan_batch(config_file)
+
+    assert result.exit_code != 0
+    assert "No credentials found for profile 'admin'." in result.output
+    assert "Failed workspaces" not in result.output and fake.calls == []
+
+
+def test_scan_batch_stops_when_the_token_is_rejected(tmp_path, fake, signed_in):
+    fake.expire_token_after(0)
+    config_file, folder = batch_config(tmp_path, ["ws-0001", "ws-0002"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 1
+    assert (
+        "Power BI rejected the token" in result.output and "pbi auth" in result.output
+    )
+    assert len(fake.calls) == 1  # no scan of each workspace after the batch was refused
+    assert "Failed workspaces" not in result.output
+
+
+def test_scan_batch_stops_when_the_api_throttles(tmp_path, fake, signed_in):
+    fake.fail("POST", r"getInfo", 429, headers={"Retry-After": "4000"})
+    config_file, _ = batch_config(tmp_path, ["ws-0001", "ws-0002", "ws-0003"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 1
+    assert "throttling requests to admin.scan.start" in result.output
+    assert fake.count(r"getInfo", "POST") == 1  # not tried again for each workspace
+    assert "Scanning them one by one" not in result.output
+    assert (
+        "Failed workspaces" not in result.output
+    )  # the command stopped, it did not fail each
+
+
+def test_scan_batch_uses_defaults_for_null_interval_and_timeout(
+    tmp_path, fake, signed_in
+):
+    """Test scan batch treats null interval/timeout values as defaults."""
+    config_file, folder = batch_config(
+        tmp_path, ["ws-0001"], interval=None, timeout=None
+    )
+    seen = {}
+
+    def spy(client, ids, flags, **kwargs):
+        seen.update(kwargs)
+        return run_scan(client, ids, flags, **kwargs)
+
+    with patch("pbi_cli.cli.run_scan", spy):
+        result = scan_batch(config_file)
+
+    assert result.exit_code == 0, result.output
+    assert seen["interval"] == 5.0 and seen["timeout"] == 300.0
+    assert (folder / "ws-0001.json").exists()
+
+
+# -- the lake and the quota ----------------------------------------------------------------
+
+
+def test_scan_batch_keeps_the_scans_in_the_lake(
+    tmp_path, fake, signed_in, cache_folder
+):
+    config_file, _ = batch_config(tmp_path, ["ws-0003", "ws-0001"])
+
+    scan_batch(config_file)
+
+    (stored,) = LakeStore(cache_folder / "lake").parameter_sets(
+        "tenant-1", "admin.scan.result"
+    )
+    assert stored.latest.manifest["workspace_ids"] == ["ws-0001", "ws-0003"]
+    assert [w["id"] for w in stored.latest.load()["workspaces"]] == [
+        "ws-0003",
+        "ws-0001",
+    ]
+
+
+def test_scan_batch_works_without_a_lake(tmp_path, fake, signed_in):
+    config_file, folder = batch_config(tmp_path, ["ws-0001"])
+
+    result = scan_batch(config_file)
+
+    assert result.exit_code == 0 and (folder / "ws-0001.json").exists()
+
+
+def test_scan_batch_counts_its_requests_against_the_quota(tmp_path, fake, signed_in):
+    config_file, _ = batch_config(tmp_path, ["ws-0001", "ws-0002", "ws-0003"])
+
+    scan_batch(config_file)
+
+    counters = json.loads(quota_file().read_text())["calls"]
+    assert (
+        len(counters["tenant-1/admin.scan.start"]) == 1
+    )  # one request for three workspaces
+    assert len(counters["tenant-1/admin.scan.result"]) == 1
 
 
 def test_scan_batch_requires_config():
@@ -492,323 +834,6 @@ def test_scan_batch_requires_config():
     runner = CliRunner()
     result = runner.invoke(app, ["workspaces", "scan", "batch"])
     assert result.exit_code != 0
-
-
-def test_scan_batch_saves_named_and_unnamed_workspaces(tmp_path):
-    """Test scan batch scans each workspace and names files by workspace name
-    plus workspace ID suffix when given, falling back to the workspace ID
-    otherwise."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - id: ws-a
-    name: Finance Team
-  - ws-b
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    fake_init = {"id": "scan-x", "status": "Running"}
-    fake_status = {"id": "scan-x", "status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "some-id"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            return_value=fake_init,
-        ) as mock_initiate:
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                return_value=fake_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code == 0, result.output
-    assert mock_initiate.call_count == 2
-    mock_initiate.assert_any_call(
-        workspace_ids=["ws-a"],
-        lineage=False,
-        datasource_details=False,
-        dataset_schema=False,
-        dataset_expressions=False,
-        get_artifact_users=False,
-    )
-    mock_initiate.assert_any_call(
-        workspace_ids=["ws-b"],
-        lineage=False,
-        datasource_details=False,
-        dataset_schema=False,
-        dataset_expressions=False,
-        get_artifact_users=False,
-    )
-    assert (target_folder / "finance-team-ws-a.json").exists()
-    assert (target_folder / "ws-b.json").exists()
-
-
-def test_scan_batch_suffixes_workspace_id_to_avoid_overwrites(tmp_path):
-    """Test scan batch appends workspace IDs for named workspaces."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - id: ws-a
-    name: Shared Team
-  - id: ws-b
-    name: Shared Team
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    fake_init = {"id": "scan-x", "status": "Running"}
-    fake_status = {"id": "scan-x", "status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "some-id"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            return_value=fake_init,
-        ):
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                return_value=fake_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code == 0, result.output
-    assert (target_folder / "shared-team-ws-a.json").exists()
-    assert (target_folder / "shared-team-ws-b.json").exists()
-
-
-def test_scan_batch_falls_back_to_workspace_id_when_name_slug_is_empty(tmp_path):
-    """Test scan batch uses workspace ID if a name slugifies to empty."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - id: ws-empty
-    name: "!!!"
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    fake_init = {"id": "scan-z", "status": "Running"}
-    fake_status = {"id": "scan-z", "status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "ws-empty"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            return_value=fake_init,
-        ):
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                return_value=fake_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code == 0, result.output
-    assert (target_folder / "ws-empty.json").exists()
-    assert not (target_folder / "-ws-empty.json").exists()
-
-
-def test_scan_batch_continues_after_one_workspace_fails(tmp_path):
-    """Test scan batch reports a non-zero exit but still saves the workspaces
-    that succeeded when one workspace's scan fails."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - ws-good
-  - ws-bad
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    fake_init = {"id": "scan-y", "status": "Running"}
-
-    def fake_get_scan_status(self, scan_id):
-        # Simulate the "bad" workspace's scan failing, the "good" one succeeding.
-        if scan_id == "scan-y-bad":
-            return {"status": "Failed", "error": {"message": "boom"}}
-        return {"status": "Succeeded"}
-
-    def fake_initiate_scan(self, workspace_ids, **kwargs):
-        scan_id = "scan-y-bad" if workspace_ids == ["ws-bad"] else "scan-y-good"
-        return {"id": scan_id, "status": "Running"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "ws-good"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            fake_initiate_scan,
-        ):
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                fake_get_scan_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code != 0
-    assert (target_folder / "ws-good.json").exists()
-    assert not (target_folder / "ws-bad.json").exists()
-    assert "ws-bad" in result.output
-
-
-def test_scan_batch_continues_after_workspace_api_value_error(tmp_path):
-    """Test scan batch continues when a workspace API call raises ValueError."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - ws-good
-  - ws-bad
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    def fake_initiate_scan(self, workspace_ids, **kwargs):
-        scan_id = "scan-y-bad" if workspace_ids == ["ws-bad"] else "scan-y-good"
-        return {"id": scan_id, "status": "Running"}
-
-    def fake_get_scan_status(self, scan_id):
-        if scan_id == "scan-y-bad":
-            raise ValueError("Error: {'message': 'boom'}")
-        return {"status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "ws-good"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            fake_initiate_scan,
-        ):
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                fake_get_scan_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code != 0
-    assert (target_folder / "ws-good.json").exists()
-    assert not (target_folder / "ws-bad.json").exists()
-    assert "ws-bad" in result.output
-
-
-def test_scan_batch_continues_after_workspace_http_error(tmp_path):
-    """Test scan batch continues when a workspace API call raises HTTPError."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - ws-good
-  - ws-bad
-target_folder: {target_folder}
-interval: 1
-timeout: 10
-"""
-    )
-
-    def fake_initiate_scan(self, workspace_ids, **kwargs):
-        scan_id = "scan-y-bad" if workspace_ids == ["ws-bad"] else "scan-y-good"
-        return {"id": scan_id, "status": "Running"}
-
-    def fake_get_scan_status(self, scan_id):
-        return {"status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        if scan_id == "scan-y-bad":
-            raise requests.HTTPError("500 Server Error")
-        return {"workspaces": [{"id": "ws-good"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            fake_initiate_scan,
-        ):
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                fake_get_scan_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code != 0
-    assert (target_folder / "ws-good.json").exists()
-    assert not (target_folder / "ws-bad.json").exists()
-    assert "ws-bad" in result.output
 
 
 def test_scan_batch_requires_workspace_ids(tmp_path):
@@ -840,85 +865,6 @@ lineage: "false"
 
     assert result.exit_code != 0
     assert "'lineage' must be a boolean value." in result.output
-
-
-def test_scan_batch_uses_defaults_for_null_interval_and_timeout(tmp_path):
-    """Test scan batch treats null interval/timeout values as defaults."""
-    config_file = tmp_path / "scan_config.yaml"
-    target_folder = tmp_path / "scan_results"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - ws-1
-target_folder: {target_folder}
-interval:
-timeout:
-"""
-    )
-
-    fake_init = {"id": "scan-null", "status": "Running"}
-    fake_status = {"id": "scan-null", "status": "Succeeded"}
-
-    def fake_get_scan_result(self, scan_id):
-        return {"workspaces": [{"id": "ws-1"}]}
-
-    runner = CliRunner()
-    with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
-        with patch(
-            "pbi_cli.powerbi.admin.WorkspaceInfo.initiate_scan",
-            return_value=fake_init,
-        ) as mock_initiate:
-            with patch(
-                "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
-                return_value=fake_status,
-            ):
-                with patch(
-                    "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
-                    fake_get_scan_result,
-                ):
-                    result = runner.invoke(
-                        app,
-                        ["workspaces", "scan", "batch", "-c", str(config_file)],
-                    )
-
-    assert result.exit_code == 0, result.output
-    mock_initiate.assert_called_once_with(
-        workspace_ids=["ws-1"],
-        lineage=False,
-        datasource_details=False,
-        dataset_schema=False,
-        dataset_expressions=False,
-        get_artifact_users=False,
-    )
-    assert (target_folder / "ws-1.json").exists()
-
-
-def test_scan_batch_reports_admin_auth_loading_errors(tmp_path):
-    """Test scan batch reports admin auth failures per workspace and continues."""
-    config_file = tmp_path / "scan_config.yaml"
-    config_file.write_text(
-        f"""
-workspace_ids:
-  - ws-1
-  - ws-2
-target_folder: {tmp_path / "scan_results"}
-"""
-    )
-
-    runner = CliRunner()
-    with patch(
-        "pbi_cli.cli.load_auth",
-        side_effect=PBIError("No credentials found for profile 'admin'."),
-    ):
-        result = runner.invoke(
-            app, ["workspaces", "scan", "batch", "-c", str(config_file)]
-        )
-
-    assert result.exit_code != 0
-    assert "No credentials found for profile 'admin'." in result.output
-    assert "ws-1" in result.output
-    assert "ws-2" in result.output
-    assert "Failed workspaces: ws-1, ws-2" in result.output
 
 
 def test_scan_batch_requires_target_folder(tmp_path):

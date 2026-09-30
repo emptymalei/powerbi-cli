@@ -56,6 +56,10 @@ FOREVER = timedelta.max
 #: Safety net: a list that needs more pages than this is not read.
 MAX_PAGES = 10_000
 
+#: Connections the session keeps for reuse. A sync runs up to 16 requests at once; with the
+#: default of 10, the others would open a connection (and a TLS handshake) for each request.
+POOL_SIZE = 32
+
 #: Keys of a response that only steer the paging.
 _PAGING_KEYS = (
     "continuationUri",
@@ -90,7 +94,9 @@ def make_session() -> requests.Session:
         status_forcelist=(500, 502, 503, 504),
         respect_retry_after_header=False,
     )
-    adapter = HTTPAdapter(max_retries=retry)
+    adapter = HTTPAdapter(
+        max_retries=retry, pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE
+    )
     session = requests.Session()
     session.mount("https://", adapter)
     session.mount("http://", adapter)
@@ -291,6 +297,10 @@ class PowerBIClient:
         """The key the lake uses for the current credentials."""
         return self._tenant_key(self._credentials())
 
+    def profile_name(self) -> Optional[str]:
+        """The name of the profile the current credentials belong to, if they say."""
+        return self._credentials().profile
+
     # -- one request ---------------------------------------------------------------
 
     def _check_origin(self, url: str) -> None:
@@ -355,6 +365,7 @@ class PowerBIClient:
                     f"Power BI is throttling requests to {endpoint.id} (HTTP 429). "
                     f"Try again in {format_wait(wait)}.",
                     retry_after=wait,
+                    endpoint=endpoint.id,
                 )
             logger.info(f"Throttled on {endpoint.id}, waiting {format_wait(wait)}")
             if self._on_throttle is not None:

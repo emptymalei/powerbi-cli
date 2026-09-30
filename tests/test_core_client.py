@@ -6,7 +6,16 @@ from datetime import datetime, timedelta
 
 import pytest
 import requests
-from core_helpers import NOW, UTC, FakeAdapter, make_response, make_token
+from core_helpers import (
+    BASE,
+    NOW,
+    UTC,
+    FakeAdapter,
+    Time,
+    make_client,
+    make_response,
+    make_token,
+)
 from loguru import logger
 
 from pbi_cli.core import client as client_module
@@ -23,62 +32,7 @@ from pbi_cli.errors import (
     TokenExpiredError,
 )
 
-BASE = "https://api.test/v1.0/myorg"
 T0 = NOW
-
-
-class Time:
-    """One fake time for the client and its limiter."""
-
-    def __init__(self):
-        self.t = NOW.timestamp()
-        self.slept = []
-
-    def now(self) -> datetime:
-        return datetime.fromtimestamp(self.t, tz=UTC)
-
-    def time(self) -> float:
-        return self.t
-
-    def sleep(self, seconds: float) -> None:
-        self.slept.append(seconds)
-        self.t += seconds
-
-    def advance(self, **delta) -> None:
-        self.t += timedelta(**delta).total_seconds()
-
-
-def make_client(
-    adapter,
-    *,
-    clock=None,
-    store=None,
-    token=None,
-    profile="admin-nlm",
-    group="admin",
-    tenant=None,
-    quota_wait=120.0,
-    **kwargs,
-):
-    clock = clock or Time()
-    credentials = Credentials(
-        token or make_token(expires_in=timedelta(days=1)), profile=profile, group=group
-    )
-    limiter = Limiter(
-        QuotaTracker(clock=clock.time), sleep=clock.sleep, max_wait=quota_wait
-    )
-    client = PowerBIClient(
-        lambda: credentials,
-        store=store,
-        limiter=limiter,
-        tenant=tenant,
-        session=adapter.session(),
-        base_url=BASE,
-        clock=clock.now,
-        sleep=clock.sleep,
-        **kwargs,
-    )
-    return client, clock
 
 
 def ok(body, **kw):
@@ -355,13 +309,15 @@ def test_a_long_retry_after_is_not_waited_out_and_blocks_the_endpoint():
     with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
     assert excinfo.value.retry_after == 3000
+    assert excinfo.value.endpoint == "admin.groups"
     assert "50 minutes" in str(excinfo.value)
     assert clock.slept == []
     assert len(adapter.requests) == 1
 
     # the next attempt does not hit the same wall: it fails fast, locally
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as again:
         client.request("admin.groups", {"$top": 1})
+    assert again.value.endpoint == "admin.groups"
     assert len(adapter.requests) == 1
 
 
@@ -391,8 +347,10 @@ def test_a_request_fails_fast_when_the_quota_wait_is_too_long():
     client, clock = make_client(adapter, quota_wait=30)
     for _ in range(15):
         client.request("admin.groups", {"$top": 1})
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
+    assert excinfo.value.endpoint == "admin.groups"  # which quota ran out
+    assert 0 < excinfo.value.retry_after <= 60
     assert len(adapter.requests) == 15
 
 
@@ -954,3 +912,9 @@ def test_body_hash_is_stable():
     assert body_hash({"a": 1, "b": 2}) == body_hash({"b": 2, "a": 1})
     assert body_hash({"a": 1}) != body_hash({"a": 2})
     assert re.fullmatch(r"[0-9a-f]{64}", body_hash({"workspaces": ["w1"]}))
+
+
+def test_the_default_session_keeps_enough_connections_for_the_most_workers_of_a_sync():
+    adapter = client_module.make_session().get_adapter("https://api.powerbi.com")
+
+    assert adapter._pool_maxsize >= 16  # a sync may run 16 requests at once

@@ -4,6 +4,15 @@
 
 ### Changed
 
+- `pbi workspaces scan batch` scans in batches of up to 100 workspaces per request, not one
+  request per workspace: the API allows 500 scan requests an hour, so the old way ran out
+  of quota after 500 workspaces. Every workspace still gets its own file, named as before,
+  now holding the result for that workspace alone (the workspace and the data sources it
+  uses). A batch that fails is scanned again one workspace at a time, so one failing
+  workspace still does not block the rest. An expired or missing token, or Power BI asking to
+  wait, is the same for every workspace: the command stops and says so instead of listing
+  every workspace as failed. The scans are kept in the [data lake](lake.md) and count
+  against the quota.
 - `pbi workspaces list`, `pbi users user-access` and `pbi apps list` now use the API client
   and keep what they fetch in the [data lake](lake.md) (the `lake` folder of the cache
   folder). Without `--use-cache` and `--cache-only` they ask the API, as before, and store
@@ -50,6 +59,15 @@
 ### Added
 
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
+- `pbi sync plan`, `pbi sync run` and `pbi sync status` keep the tenant in the data lake:
+  the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
+  metadata scans of every workspace, 100 per request. They work within the quotas, never
+  fetch twice what is still fresh, and continue where the last run stopped after an expired
+  token, a quota that ran out, a failure or Ctrl-C. Targets that copy personal data or
+  queries run only when named. A scan continues from the last complete one with the same
+  options. See [Sync](sync.md).
+- `pbi_cli.core.scan` and `pbi_cli.core.sync`: the scan job (start, poll, collect, resume)
+  and the sync engine, for use from Python.
 - `pbi lake ls`, `pbi lake show` and `pbi lake prune`: see what the data lake holds, print a
   stored response or its manifest, and delete old versions. They need no token and no
   network.
@@ -81,6 +99,14 @@
 
 ### Development
 
+- `tests/test_sync_http.py` runs the sync engine with 16 workers against the fake service
+  behind a real local socket. It found that the HTTP session kept only 10 connections, so
+  that the workers of a busy sync opened (and logged a warning for) a new connection per
+  request: the session now keeps 32.
+- `tests/fake_powerbi.py` is an in-memory Power BI service that enforces the rules of the
+  documentation (mandatory `$top`, 1 to 100 ids per scan, events within 28 days in one UTC day,
+  the window of `modifiedSince`, results kept for 24 hours) and can inject faults and an
+  expiring token. The sync engine and the commands are tested against it.
 - Every test runs with an empty home folder and an in-memory keyring (`tests/conftest.py`).
   Some tests stored and deleted tokens in the real keyring, so a test run overwrote or
   removed the entries of profiles named like the ones they use (`admin-nlm`, `user-nlm`)

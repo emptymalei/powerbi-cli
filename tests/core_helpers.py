@@ -9,8 +9,13 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 import requests
 from requests.adapters import BaseAdapter
 
+from pbi_cli.core.auth import Credentials
+from pbi_cli.core.client import PowerBIClient
+from pbi_cli.core.ratelimit import Limiter, QuotaTracker
+
 UTC = timezone.utc
 NOW = datetime(2026, 9, 30, 12, 0, 0, tzinfo=UTC)
+BASE = "https://api.test/v1.0/myorg"
 
 
 def _b64(data: Dict[str, Any]) -> str:
@@ -130,3 +135,57 @@ class FakeClock:
     def sleep(self, seconds: float) -> None:
         self.slept.append(seconds)
         self.now += seconds
+
+
+class Time:
+    """One fake time for the client and its limiter."""
+
+    def __init__(self):
+        self.t = NOW.timestamp()
+        self.slept = []
+
+    def now(self) -> datetime:
+        return datetime.fromtimestamp(self.t, tz=UTC)
+
+    def time(self) -> float:
+        return self.t
+
+    def sleep(self, seconds: float) -> None:
+        self.slept.append(seconds)
+        self.t += seconds
+
+    def advance(self, **delta) -> None:
+        self.t += timedelta(**delta).total_seconds()
+
+
+def make_client(
+    adapter,
+    *,
+    clock=None,
+    store=None,
+    token=None,
+    profile="admin-nlm",
+    group="admin",
+    tenant=None,
+    quota_wait=120.0,
+    **kwargs,
+):
+    clock = clock or Time()
+    credentials = Credentials(
+        token or make_token(expires_in=timedelta(days=1)), profile=profile, group=group
+    )
+    limiter = Limiter(
+        QuotaTracker(clock=clock.time), sleep=clock.sleep, max_wait=quota_wait
+    )
+    client = PowerBIClient(
+        lambda: credentials,
+        store=store,
+        limiter=limiter,
+        tenant=tenant,
+        session=adapter.session(),
+        base_url=BASE,
+        clock=clock.now,
+        sleep=clock.sleep,
+        **kwargs,
+    )
+    return client, clock

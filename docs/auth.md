@@ -67,7 +67,9 @@ and store a fresh token with `pbi auth -t <token> -p admin-nlm -g admin`.
 ```
 
 The same message appears when the API rejects the token (`401 Unauthorized`). Sign in
-again and run `pbi auth` with the new token; the next command picks it up. An answer that is
+again and run `pbi auth` with the new token; the next command picks it up. A long job such
+as [`pbi sync run`](sync.md) stops when the token expires, keeps what it has done, and
+continues from there when you run it again. An answer that is
 still fresh in the [data lake](lake.md) is served even with an expired token, because
 nothing has to be sent.
 

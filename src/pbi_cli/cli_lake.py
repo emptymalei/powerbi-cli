@@ -11,7 +11,7 @@ from typing import Annotated, Any, Dict, List, Optional, Sequence
 
 import typer
 
-from pbi_cli.cli_support import command, new_app
+from pbi_cli.cli_support import command, format_age, new_app, print_table
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
@@ -68,20 +68,6 @@ def _one_tenant(store: LakeStore, wanted: Optional[str]) -> str:
     return tenants[0]
 
 
-def _age(delta: timedelta) -> str:
-    """How old something is, in the largest unit that keeps it short: 40 s, 5 min, 3 h, 2 d."""
-    seconds = max(0, int(delta.total_seconds()))
-    if seconds < 90:
-        return f"{seconds} s"
-    minutes = round(seconds / 60)
-    if minutes < 60:
-        return f"{minutes} min"
-    hours = round(seconds / 3600)
-    if hours < 48:
-        return f"{hours} h"
-    return f"{round(seconds / 86400)} d"
-
-
 def _size(count: int) -> str:
     size = float(count)
     for unit in ("B", "KB", "MB", "GB"):
@@ -93,21 +79,6 @@ def _size(count: int) -> str:
 
 def _params_text(params: Dict[str, str]) -> str:
     return " ".join(f"{key}={value}" for key, value in params.items()) or "-"
-
-
-def _print_table(header: Sequence[str], rows: Sequence[Sequence[Any]]) -> None:
-    """Print rows under a header; every column but the last is padded to its widest cell."""
-    cells = [[str(cell) for cell in row] for row in rows]
-    widths = [
-        max(len(header[i]), *(len(row[i]) for row in cells)) for i in range(len(header))
-    ]
-    for line in [list(header), *cells]:
-        typer.echo(
-            "  ".join(
-                cell if i == len(line) - 1 else cell.ljust(widths[i])
-                for i, cell in enumerate(line)
-            ).rstrip()
-        )
 
 
 def _matches(endpoint_id: str, given: str) -> bool:
@@ -211,7 +182,7 @@ def lake_ls(
                         pset.hash,
                         *([snapshot.version] if all_versions else []),
                         f"{snapshot.fetched_at:%Y-%m-%d %H:%M}",
-                        _age(snapshot.age(now)),
+                        format_age(snapshot.age(now)),
                         "-" if manifest.get("rows") is None else manifest["rows"],
                         _size(int(manifest.get("bytes", 0))),
                         *([] if all_versions else [len(versions)]),
@@ -229,7 +200,7 @@ def lake_ls(
                         "events",
                         *([stored.day.isoformat()] if all_versions else []),
                         f"{written:%Y-%m-%d %H:%M}" if written else "-",
-                        _age(now - written) if written else "-",
+                        format_age(now - written) if written else "-",
                         stored.rows if all_versions else sum(d.rows for d in days),
                         "-",
                         *([] if all_versions else [f"{len(days)} day(s)"]),
@@ -240,7 +211,7 @@ def lake_ls(
             continue
         shown += len(rows)
         typer.echo(f"\nTenant: {tenant_name}")
-        _print_table(header, rows)
+        print_table(header, rows)
     if not shown:
         typer.secho("Nothing matches.", fg="yellow")
 

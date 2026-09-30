@@ -13,6 +13,9 @@ such as Athena, DuckDB or Spark read as partitions:
     manifest.json    parts, row count, resume cursor, whether the day is complete
 ```
 
+Progress that belongs to a tenant but is not data, such as the state of a sync, is kept
+in `<root>/tenant=<tenant>/_state/<name>.json`.
+
 The manifest is written last: a snapshot without one is an interrupted write and is
 ignored. Local files are created readable by the owner only, because the lake holds
 names, e-mail addresses, IP addresses and query definitions. Tokens are never stored.
@@ -150,6 +153,12 @@ class EventDay:
     def cursor(self) -> Optional[str]:
         """Where to resume fetching (for example a continuation URI), if anything."""
         return self.manifest.get("cursor")
+
+    @property
+    def updated_at(self) -> Optional[datetime]:
+        """When events were last added to the day, or it was sealed (aware, UTC)."""
+        stamp = self.manifest.get("updated_at")
+        return _utc(datetime.fromisoformat(stamp)) if stamp else None
 
 
 class StoreError(Exception):
@@ -448,6 +457,30 @@ class LakeStore:
                             self._rmtree(day_dir)
         return removed
 
+    # -- state ---------------------------------------------------------------------
+
+    def _state_path(self, tenant: str, name: str) -> Any:
+        return self._tenant_dir(tenant) / "_state" / f"{safe_name(name)}.json"
+
+    def read_state(self, tenant: str, name: str) -> Optional[Dict[str, Any]]:
+        """A small JSON document kept beside the data of a tenant, such as sync progress.
+
+        :return: the document, or ``None`` if there is none or it cannot be read
+        """
+        path = self._state_path(tenant, name)
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            logger.warning(f"Ignoring unreadable state {path}: {error}")
+            return None
+        return data if isinstance(data, dict) else None
+
+    def write_state(self, tenant: str, name: str, data: Mapping[str, Any]) -> None:
+        """Replace a state document (written atomically, like every file of the lake)."""
+        self._write_bytes(self._state_path(tenant, name), _dump(dict(data), indent=2))
+
     # -- event logs ----------------------------------------------------------------
 
     def _day_dir(self, tenant: str, endpoint_id: str, day: date) -> Any:
@@ -505,6 +538,7 @@ class LakeStore:
         sealed: bool = False,
         profile: Optional[str] = None,
         request: Optional[Mapping[str, Any]] = None,
+        at: Optional[datetime] = None,
     ) -> int:
         """Add events to a day, skipping the ones that are already stored.
 
@@ -516,10 +550,11 @@ class LakeStore:
         :param events: the events, in the order received
         :param id_field: the field that identifies an event
         :param cursor: where to resume fetching, saved in the manifest (``None`` keeps
-            the previous cursor)
+            the previous cursor, an empty string clears it)
         :param sealed: mark the day as complete
         :param profile: name of the profile used (not the token)
         :param request: what was asked: never headers
+        :param at: when the events were received (default: now)
         :return: the number of events that were new
         :raises StoreError: if the day is already sealed
         """
@@ -570,21 +605,27 @@ class LakeStore:
                 manifest["parts"] = [*manifest["parts"], part]
                 manifest["rows"] = manifest["rows"] + len(fresh)
             if cursor is not None:
-                manifest["cursor"] = cursor
+                manifest["cursor"] = cursor or None
             manifest["sealed"] = bool(sealed)
             manifest["profile"] = profile
-            manifest["updated_at"] = datetime.now(timezone.utc).isoformat()
+            manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()
             manifest["cli_version"] = _cli_version()
             self._write_bytes(directory / MANIFEST, _dump(manifest, indent=2))
             return len(fresh)
 
-    def seal_day(self, tenant: str, endpoint_id: str, day: date) -> None:
-        """Mark a day of events as complete."""
+    def seal_day(
+        self,
+        tenant: str,
+        endpoint_id: str,
+        day: date,
+        at: Optional[datetime] = None,
+    ) -> None:
+        """Mark a day of events as complete (``at``: when, default now)."""
         with self._event_lock:
             stored = self.event_day(tenant, endpoint_id, day)
             if stored is None:
                 raise StoreError(f"No events stored for {endpoint_id} on {day}")
             manifest = dict(stored.manifest)
             manifest["sealed"] = True
-            manifest["updated_at"] = datetime.now(timezone.utc).isoformat()
+            manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()
             self._write_bytes(stored.directory / MANIFEST, _dump(manifest, indent=2))
