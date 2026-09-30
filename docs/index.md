@@ -53,5 +53,7 @@ pbi --show-completion      # print the completion script instead
 - [Workspace Scans](scan.md): scan workspaces one at a time or from a config file.
 - [Data lake](lake.md): what the commands fetch is kept, can be browsed with `pbi lake`
   and reused offline.
+- [Sync](sync.md): keep the tenant in the lake: lists, audit events and scans, within the
+  quotas, continuing where the last run stopped.
 - [Cache (legacy)](cache.md): the older cache and what replaced it.
 - [Changelog](changelog.md)

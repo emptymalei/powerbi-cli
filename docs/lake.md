@@ -2,8 +2,8 @@
 
 The data lake is a folder (or an S3 prefix) where pbi_cli keeps what it fetched from the
 Power BI REST API, exactly as the API returned it. The commands that read the API write to
-it, `pbi lake` browses it, and other tools can read it: it is plain JSON in Hive-style
-folders.
+it, [`pbi sync`](sync.md) fills it on a schedule, `pbi lake` browses it, and other tools can
+read it: it is plain JSON in Hive-style folders.
 
 ## Using it from the command line
 
@@ -30,10 +30,13 @@ either way.
 | `pbi apps list` | `user.apps`, or `admin.apps` with `--role admin` | yes |
 | `pbi reports list` | `user.group_reports` | no: always asks the API |
 | `pbi reports pages` | `user.report_pages` (and `user.group_reports` without `--report-id`) | no: always asks the API |
+| `pbi workspaces scan batch` | `admin.scan.result`, one per batch of 100 workspaces | no: always scans |
+| [`pbi sync run`](sync.md) | what its targets need: lists, audit events, scans, fan-outs | it skips what is fresh (`--max-age`, `--force`) |
 
 The endpoint ids are explained under [Endpoints and quotas](#endpoints-and-quotas). The
-other commands that call the API (the scans, `workspaces report-users`, `reports users`,
-`reports export`, `apps app`, `apps augment` and `export`) do not use the lake yet.
+other commands that call the API (`workspaces scan initiate|status|result|get`,
+`workspaces report-users`, `reports users`, `reports export`, `apps app`, `apps augment`
+and `export`) do not use the lake yet.
 
 Every call asks the API, waits when a [quota](#throttling) is used up, and adds a new
 version to the lake: nothing is overwritten. The commands that print a table say which
@@ -191,6 +194,11 @@ $ pbi lake prune --yes
         part-0000.jsonl                     one JSON object per line
         part-0001.jsonl
         manifest.json                       parts, row count, resume cursor, sealed?
+    endpoint=admin_scan_result/
+      params=5904788ae261/                  one folder per scan: its workspaces and options
+        dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
+    _state/
+      sync.json                             what `pbi sync` remembers between runs
 ```
 
 The folder names are Hive-style partitions, so tools such as Athena, DuckDB and Spark can
@@ -225,7 +233,12 @@ ignored.
 | `cli_version` | The pbi_cli version that wrote it. |
 
 The manifest of a day of events has `kind: events`, the `day`, the `parts`, the number of
-`rows`, the `id_field`, a resume `cursor` and whether the day is `sealed` (complete).
+`rows`, the `id_field`, a resume `cursor`, when it was last written (`updated_at`) and
+whether the day is `sealed` (complete).
+
+The manifest of a scan has `kind: job`. `params` holds the options of the scan and `batch`,
+which names its set of workspaces; `workspace_ids` lists them, and `scan_id` and
+`started_at` tell which scan of the API it is. `rows` is the number of workspaces.
 
 ## Snapshots, event logs and jobs
 
@@ -234,7 +247,8 @@ The manifest of a day of events has `kind: events`, the `day`, the `parts`, the 
 - An **event log** is append-only: the events of one UTC day, deduplicated by their `Id`, so
   fetching the same day twice adds only what is new. A day is sealed once it is complete.
 - A **job** is a scan: start it, poll its status, fetch its result. The result is stored
-  like a snapshot.
+  like a snapshot, one request per set of workspaces and options, so scanning the same
+  workspaces again adds a version. See [Sync](sync.md#scans).
 
 ## Freshness
 

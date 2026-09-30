@@ -314,6 +314,10 @@ class FakePowerBI(BaseAdapter):
         """Answer ``401`` to every request after ``calls`` requests (``None``: never)."""
         self._expire_after = calls
 
+    def expire_token_in(self, calls: int) -> None:
+        """Answer ``401`` to every request after the next ``calls`` requests."""
+        self._expire_after = len(self.calls) + calls
+
     def clear_faults(self) -> None:
         self._faults.clear()
         self._expire_after = None

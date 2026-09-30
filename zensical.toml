@@ -12,6 +12,7 @@ nav = [
     { "Authentication" = "auth.md" },
     { "Workspace Scans" = "scan.md" },
     { "Data lake" = "lake.md" },
+    { "Sync" = "sync.md" },
     { "Cache (legacy)" = "cache.md" },
   ] },
   { "References" = [
@@ -26,7 +27,15 @@ nav = [
         { "jwt" = "references/core/jwt.md" },
         { "ratelimit" = "references/core/ratelimit.md" },
         { "registry" = "references/core/registry.md" },
+        { "scan" = "references/core/scan.md" },
         { "store" = "references/core/store.md" },
+        { "sync" = [
+          { "engine" = "references/core/sync/engine.md" },
+          { "plan" = "references/core/sync/plan.md" },
+          { "runners" = "references/core/sync/runners.md" },
+          { "state" = "references/core/sync/state.md" },
+          { "targets" = "references/core/sync/targets.md" },
+        ] },
       ] },
       { "powerbi" = [
         { "index" = "references/powerbi/index.md" },

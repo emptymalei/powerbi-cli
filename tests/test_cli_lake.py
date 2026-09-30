@@ -549,6 +549,6 @@ def test_prune_rejects_keeping_nothing(seeded):
     ],
 )
 def test_ages_are_short(delta, text):
-    from pbi_cli.cli_lake import _age
+    from pbi_cli.cli_support import format_age
 
-    assert _age(delta) == text
+    assert format_age(delta) == text

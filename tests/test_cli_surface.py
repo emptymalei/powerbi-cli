@@ -38,6 +38,11 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi lake ls": "new: pbi lake ls",
     "pbi lake show": "new: pbi lake show",
     "pbi lake prune": "new: pbi lake prune",
+    # pbi sync: keeps the tenant in the data lake
+    "pbi sync": "new: pbi sync",
+    "pbi sync plan": "new: pbi sync plan",
+    "pbi sync run": "new: pbi sync run",
+    "pbi sync status": "new: pbi sync status",
     # Help texts only (no flag changed): they now describe the data lake.
     "pbi workspaces list/help": "says the answer is stored in the data lake and what --use-cache and --cache-only mean",
     "pbi users user-access/help": "same, and says that it reads every page and needs an admin",
@@ -47,6 +52,7 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi cache/help": "the cache is now the legacy layout; points to pbi lake",
     "pbi cache list/help": "says it lists the legacy cache only",
     "pbi cache clear/help": "says it never touches the data lake",
+    "pbi workspaces scan batch/help": "scans up to 100 workspaces per request, falls back to one by one, stops on credential errors",
 }
 
 # Key format: "<command path> --help" or "<command path> (no subcommand)". Value = reason.

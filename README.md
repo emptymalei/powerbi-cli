@@ -65,6 +65,13 @@ The commands that read the API (`workspaces list`, `users user-access`, `apps li
 They build it with `pbi_cli.session.open_client`, from the credentials of `load_auth`:
 see `_fetch` in `cli.py`. `pbi lake` (`src/pbi_cli/cli_lake.py`) browses the lake.
 
+`pbi sync` (`src/pbi_cli/cli_sync.py`) is a thin layer over the sync engine in
+`src/pbi_cli/core/sync`: the catalog of targets (`targets.py`), the planner that works out
+units of work from what the lake holds (`plan.py`), the runners (`runners.py`), the
+threaded scheduler with its error policy (`engine.py`) and the state it leaves in the lake
+(`state.py`). The scan job itself is `src/pbi_cli/core/scan.py`, which `pbi workspaces scan
+batch` uses too. See `docs/sync.md`.
+
 ### Running the tests
 
 ```bash
@@ -74,7 +81,10 @@ uv run pytest
 Every test runs with an empty home folder and an in-memory keyring (`tests/conftest.py`),
 so no test reads or changes your settings, tokens or data lake. To test a command against
 the API, script the answers with the `fake_api` fixture; `signed_in` and `cache_folder`
-give it a token and a lake (see `tests/test_cli_lake_routing.py`).
+give it a token and a lake (see `tests/test_cli_lake_routing.py`). For the sync engine and
+the scans there is a fake Power BI service, `tests/fake_powerbi.py`, that behaves like the
+admin API (paging, scans, audit events, quotas) and can inject failures; `tests/sync_helpers.py`
+puts it, a lake and an engine on one fake clock.
 
 ### The CLI surface snapshot
 

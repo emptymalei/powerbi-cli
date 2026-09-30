@@ -24,6 +24,7 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 * `lake`: Browse the data lake of fetched API results
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
+* `sync`: Keep what Power BI knows about the tenant...
 * `users`: Command group for Power BI users
 * `version`: Show the current version of the pbi CLI tool.
 * `workspaces`: Command group for Power BI workspaces
@@ -757,6 +758,169 @@ $ pbi reports users [OPTIONS]
 * `-ft, --file-type <json|excel>`: [default: json]
 * `--help`: Show this message and exit.
 
+## `pbi sync`
+
+Keep what Power BI knows about the tenant in the data lake
+
+`pbi sync run` fetches the lists of workspaces, apps, reports and more, the audit
+events, and the metadata scans of the workspaces, within the quotas of the API. Run it
+as often as you like, for example every night: it continues where the last run stopped
+and never fetches twice what is still fresh. `pbi sync plan` shows what it would do
+and `pbi sync status` how the last runs went. What was fetched is in the data lake, see
+`pbi lake`.
+
+**Usage**:
+
+```console
+$ pbi sync [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `plan`: Show what a sync would fetch and what it...
+* `run`: Fetch what the targets need into the data...
+* `status`: Show how the last runs went and what the...
+
+### `pbi sync plan`
+
+Show what a sync would fetch and what it costs, without calling the API
+
+The plan is worked out from what the lake holds: how much of each target is fresh, how
+many requests are needed, and how they compare with the quotas (which `pbi sync run`
+keeps). Where the number of requests depends on a list that is not in the lake yet,
+such as the users of every report before the reports have been fetched, it says so.
+
+```
+# What a plain sync would do
+pbi sync plan
+
+# Plus the audit events of the last week, and a scan with lineage
+pbi sync plan default activity scan --days 7 --lineage
+```
+
+!!! warning "Requires Admin"
+
+    The admin targets need an admin account; the `user-...` targets need a user account.
+
+**Usage**:
+
+```console
+$ pbi sync plan [OPTIONS] [TARGET]...
+```
+
+**Arguments**:
+
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.
+
+**Options**:
+
+* `--max-age DURATION`: Treat a stored answer younger than this as fresh, for example 30m, 6h or 2d (default: 24 hours for lists, 1 hour for audit events)
+* `--force`: Fetch again what the lake holds fresh, and scan every workspace again (a complete day of audit events cannot change and is never fetched again)
+* `--days <int range>`: Days of audit events to fetch, today included (the API keeps 28)  [default: 28; 1<=x<=28]
+* `--lineage`: Include lineage information
+* `--datasource-details`: Include datasource details
+* `--dataset-schema`: Include dataset schema
+* `--dataset-expressions`: Include dataset expressions
+* `--get-artifact-users`: Include artifact users
+* `--full-scan`: Scan every workspace, not only those that changed since the last scan
+* `--exclude-personal`: Leave personal workspaces out of scans
+* `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
+* `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--help`: Show this message and exit.
+
+### `pbi sync run`
+
+Fetch what the targets need into the data lake, within the quotas
+
+Nothing is fetched twice: what the lake holds fresh is skipped, so the command can be
+run again and again, and it continues where the last run stopped.
+
+When the token expires the run stops and keeps what is done: sign in again with
+`pbi auth` and run the command again. What a quota holds back is tried again next
+time. A unit that fails, such as a report that cannot be read, is reported and the
+run goes on; it is tried again next time. A scan that was started and not collected is
+continued, not started again.
+
+Audit events are kept one log per UTC day; a day is complete, and never fetched again,
+a day after it ended. A scan fetches metadata of 100 workspaces per request and
+continues from the start of the last complete scan with the same options; the first
+one, or one with other options, covers every workspace.
+
+```
+# The plain targets: workspaces, apps, capacities, reports, datasets, ...
+pbi sync run
+
+# Also the audit events of the last 28 days, and a scan with lineage
+pbi sync run default activity scan --lineage
+
+# Only the users of every report (it fetches the reports first)
+pbi sync run report-users
+
+# Every night, from a scheduler: the events of the last week
+pbi sync run default activity --days 7
+```
+
+!!! warning "Requires Admin"
+
+    The admin targets need an admin account; the `user-...` targets need a user account.
+
+**Usage**:
+
+```console
+$ pbi sync run [OPTIONS] [TARGET]...
+```
+
+**Arguments**:
+
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.
+
+**Options**:
+
+* `--max-age DURATION`: Treat a stored answer younger than this as fresh, for example 30m, 6h or 2d (default: 24 hours for lists, 1 hour for audit events)
+* `--force`: Fetch again what the lake holds fresh, and scan every workspace again (a complete day of audit events cannot change and is never fetched again)
+* `--days <int range>`: Days of audit events to fetch, today included (the API keeps 28)  [default: 28; 1<=x<=28]
+* `--workers <int range>`: Requests (and scans) worked on at the same time  [default: 4; 1<=x<=16]
+* `--wait <float range>`: Seconds a request may wait for quota before its unit is held back (0: never wait; the next run continues with it)  [default: 120.0; x>=0]
+* `--lineage`: Include lineage information
+* `--datasource-details`: Include datasource details
+* `--dataset-schema`: Include dataset schema
+* `--dataset-expressions`: Include dataset expressions
+* `--get-artifact-users`: Include artifact users
+* `--full-scan`: Scan every workspace, not only those that changed since the last scan
+* `--exclude-personal`: Leave personal workspaces out of scans
+* `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
+* `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--help`: Show this message and exit.
+
+### `pbi sync status`
+
+Show how the last runs went and what the lake holds
+
+Lists the latest run, the units that failed or that a quota held back, the scans that
+were started and not collected, the quota used in the last hour, and what the lake
+holds for each target. It reads the lake only, so it needs no token and no network.
+
+```
+pbi sync status
+```
+
+**Usage**:
+
+```console
+$ pbi sync status [OPTIONS]
+```
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: every tenant synced)
+* `--help`: Show this message and exit.
+
 ## `pbi users`
 
 Command group for Power BI users
@@ -991,11 +1155,14 @@ $ pbi workspaces scan [OPTIONS] COMMAND [ARGS]...
 
 Scan every workspace listed in a YAML config file and save each result.
 
-Each workspace runs through its own initiate/status/result cycle so one
-failing workspace doesn't block the rest, and each result is
-saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
-name is provided,
-or ``<target_folder>/<workspace_id>.json`` otherwise.
+Workspaces are scanned in batches of up to 100 per request: the API allows 500
+scan requests an hour, so scanning one by one would run out of quota. When a batch
+fails, its workspaces are scanned one by one, so one failing workspace doesn't
+block the rest. Each workspace gets its own file, holding the result for that
+workspace alone (the workspace and the data sources it uses), saved as
+``<target_folder>/<slugified-name>-<workspace_id>.json`` when a name is provided,
+or ``<target_folder>/<workspace_id>.json`` otherwise. The scans are also kept in
+the data lake (see `pbi lake`) when a cache folder is configured.
 
 Example config file:
 
@@ -1018,10 +1185,10 @@ timeout: 300
 
 Only ``workspace_ids`` and ``target_folder`` are required; the scan flags
 default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``
-seconds, same as ``pbi workspaces scan get``. When an entry has a
-``name``, the result is saved as
-``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it
-falls back to ``<target_folder>/<workspace_id>.json``.
+seconds for each scan, same as ``pbi workspaces scan get``.
+
+If the token has expired or the API is throttling, every workspace would fail the
+same way, so the command stops and says so instead of listing each of them.
 
 ```sh
 pbi workspaces scan batch --config scan_config.yaml

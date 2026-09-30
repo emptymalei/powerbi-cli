@@ -31,7 +31,16 @@ import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.cache import LAKE_FOLDER, CacheManager
 from pbi_cli.cli_lake import lake_app
-from pbi_cli.cli_support import command, new_app
+from pbi_cli.cli_support import (
+    ScanArtifactUsers,
+    ScanDatasetExpressions,
+    ScanDatasetSchema,
+    ScanDatasourceDetails,
+    ScanLineage,
+    command,
+    new_app,
+)
+from pbi_cli.cli_sync import sync_app
 from pbi_cli.config import (
     VALID_GROUPS,
     PBIConfig,
@@ -41,7 +50,15 @@ from pbi_cli.config import (
 from pbi_cli.core.auth import Credentials, credentials_from_headers
 from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
 from pbi_cli.core.registry import get_endpoint
-from pbi_cli.errors import ApiError, PBIError, RateLimitError
+from pbi_cli.core.scan import (
+    MAX_WORKSPACES,
+    ScanFlags,
+    chunked,
+    run_scan,
+    split_scan_result,
+    store_scan,
+)
+from pbi_cli.errors import ApiError, AuthError, PBIError, RateLimitError
 from pbi_cli.powerbi.admin import Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.session import lake_hint, lake_path, open_client
@@ -302,7 +319,7 @@ def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
     that group the function falls back to the legacy flat profile storage so that
     existing configurations continue to work.
 
-    :raises PBIError: if there is no such profile
+    :raises AuthError: if there is no such profile
     """
     pbi_config = PBIConfig()
 
@@ -322,13 +339,13 @@ def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
     if profile is None:
         profile = profiles_data.get("active_profile")
     if profile is None:
-        raise PBIError(
+        raise AuthError(
             f"No active profile set for group '{group}'. "
             f"Use 'pbi auth -g {group}' to create a profile or "
             f"'pbi profile switch -g {group}' to switch profiles."
         )
     if profile not in profiles_data.get("profiles", {}):
-        raise PBIError(
+        raise AuthError(
             f"Profile '{profile}' not found in group '{group}' or flat profiles. "
             "Use 'pbi profile list' to see available profiles."
         )
@@ -354,7 +371,7 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     # Get token from keyring or file.
     token = _get_credential(profile)
     if token is None:
-        raise PBIError(
+        raise AuthError(
             f"No credentials found for profile '{profile}'. Please re-authenticate."
         )
 
@@ -529,6 +546,7 @@ app.add_typer(profile_app, name="profile")
 app.add_typer(config_app, name="config")
 app.add_typer(cache_app, name="cache")
 app.add_typer(lake_app, name="lake")
+app.add_typer(sync_app, name="sync")
 app.add_typer(workspaces_app, name="workspaces")
 workspaces_app.add_typer(scan_app, name="scan")
 app.add_typer(users_app, name="users")
@@ -2251,21 +2269,6 @@ ScanWorkspaceIds = Annotated[
     List[str],
     typer.Argument(metavar="WORKSPACE_IDS", help="One or more workspace IDs"),
 ]
-ScanLineage = Annotated[
-    bool, typer.Option("--lineage", help="Include lineage information")
-]
-ScanDatasourceDetails = Annotated[
-    bool, typer.Option("--datasource-details", help="Include datasource details")
-]
-ScanDatasetSchema = Annotated[
-    bool, typer.Option("--dataset-schema", help="Include dataset schema")
-]
-ScanDatasetExpressions = Annotated[
-    bool, typer.Option("--dataset-expressions", help="Include dataset expressions")
-]
-ScanArtifactUsers = Annotated[
-    bool, typer.Option("--get-artifact-users", help="Include artifact users")
-]
 
 
 @command(scan_app, "initiate")
@@ -2524,11 +2527,14 @@ def scan_batch(
 ):
     """Scan every workspace listed in a YAML config file and save each result.
 
-    Each workspace runs through its own initiate/status/result cycle so one
-    failing workspace doesn't block the rest, and each result is
-    saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
-    name is provided,
-    or ``<target_folder>/<workspace_id>.json`` otherwise.
+    Workspaces are scanned in batches of up to 100 per request: the API allows 500
+    scan requests an hour, so scanning one by one would run out of quota. When a batch
+    fails, its workspaces are scanned one by one, so one failing workspace doesn't
+    block the rest. Each workspace gets its own file, holding the result for that
+    workspace alone (the workspace and the data sources it uses), saved as
+    ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a name is provided,
+    or ``<target_folder>/<workspace_id>.json`` otherwise. The scans are also kept in
+    the data lake (see `pbi lake`) when a cache folder is configured.
 
     Example config file:
 
@@ -2551,10 +2557,10 @@ def scan_batch(
 
     Only ``workspace_ids`` and ``target_folder`` are required; the scan flags
     default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``
-    seconds, same as ``pbi workspaces scan get``. When an entry has a
-    ``name``, the result is saved as
-    ``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it
-    falls back to ``<target_folder>/<workspace_id>.json``.
+    seconds for each scan, same as ``pbi workspaces scan get``.
+
+    If the token has expired or the API is throttling, every workspace would fail the
+    same way, so the command stops and says so instead of listing each of them.
 
     ```sh
     pbi workspaces scan batch --config scan_config.yaml
@@ -2616,38 +2622,44 @@ def scan_batch(
     if interval <= 0 or timeout <= 0:
         raise PBIError("'interval' and 'timeout' must be greater than 0.")
 
-    failed = []
-    for entry in workspace_entries:
-        workspace_id = entry["id"]
-        workspace_name = entry.get("name")
-        label = f"{workspace_name} ({workspace_id})" if workspace_name else workspace_id
-        typer.echo(f"\n=== Workspace {label} ===")
-        try:
-            workspace_info = powerbi_admin.WorkspaceInfo(
-                auth=load_auth(group="admin"), verify=False
-            )
-            result = _run_scan(
-                workspace_info,
-                workspace_ids=[workspace_id],
-                lineage=lineage,
-                datasource_details=datasource_details,
-                dataset_schema=dataset_schema,
-                dataset_expressions=dataset_expressions,
-                get_artifact_users=get_artifact_users,
-                interval=interval,
-                timeout=timeout,
-            )
-        except PBIError as e:
-            typer.secho(f"✗ {label}: {e}", fg="red")
-            failed.append(label)
-            continue
+    flags = ScanFlags(
+        lineage=lineage,
+        datasource_details=datasource_details,
+        dataset_schema=dataset_schema,
+        dataset_expressions=dataset_expressions,
+        get_artifact_users=get_artifact_users,
+    )
 
-        name_slug = slugify(workspace_name) if workspace_name else ""
-        file_stub = f"{name_slug}-{workspace_id}" if name_slug else workspace_id
-        output_file = target_path / f"{file_stub}.json"
-        with open(output_file, "w", encoding="utf-8") as fp:
-            json.dump(result, fp, indent=2)
-        typer.secho(f"✓ Saved {output_file}", fg="green")
+    failed: List[str] = []
+    with _client("admin") as client:
+        client.profile_name()  # no token is a problem for every workspace: say so at once
+        for chunk in chunked(workspace_entries, MAX_WORKSPACES):
+            ids = ", ".join(_entry_label(entry) for entry in chunk[:3])
+            more = f" and {len(chunk) - 3} more" if len(chunk) > 3 else ""
+            typer.echo(f"\n=== {len(chunk)} workspace(s): {ids}{more} ===")
+            scanned = _scan_entries(client, chunk, flags, interval, timeout, failed)
+            for entry in chunk:
+                if _entry_label(entry) in failed:
+                    continue
+                piece = scanned.get(entry["id"])
+                if piece is None:
+                    # The API leaves out workspaces it does not know: save the empty result
+                    piece = {
+                        "workspaces": [],
+                        "datasourceInstances": [],
+                        "misconfiguredDatasourceInstances": [],
+                    }
+                    typer.secho(
+                        f"  {_entry_label(entry)}: Power BI returned nothing for this "
+                        "workspace (an empty result is saved)",
+                        fg="yellow",
+                    )
+                name_slug = slugify(entry["name"]) if entry.get("name") else ""
+                file_stub = f"{name_slug}-{entry['id']}" if name_slug else entry["id"]
+                output_file = target_path / f"{file_stub}.json"
+                with open(output_file, "w", encoding="utf-8") as fp:
+                    json.dump(piece, fp, indent=2)
+                typer.secho(f"✓ Saved {output_file}", fg="green")
 
     if failed:
         typer.secho(f"\nFailed workspaces: {', '.join(failed)}", fg="red")
@@ -2657,6 +2669,83 @@ def scan_batch(
         f"\n✓ Scanned {len(workspace_entries)} workspace(s) into {target_path}",
         fg="green",
     )
+
+
+def _entry_label(entry: dict) -> str:
+    """How a workspace of a batch config is named in messages."""
+    name = entry.get("name")
+    return f"{name} ({entry['id']})" if name else entry["id"]
+
+
+def _scan_entries(
+    client: PowerBIClient,
+    entries: List[dict],
+    flags: ScanFlags,
+    interval: float,
+    timeout: float,
+    failed: List[str],
+) -> Dict[str, Dict[str, Any]]:
+    """Scan workspaces together; when that fails, scan them one by one.
+
+    What goes wrong for one workspace is recorded in ``failed`` and the others go on. A
+    problem that every workspace would meet, an expired token, missing credentials or
+    throttling, stops the command.
+
+    :return: the result of each workspace that was scanned, by workspace id
+    """
+    ids = [entry["id"] for entry in entries]
+    try:
+        typer.echo(
+            f"Initiating scan for {ids}…"
+            if len(ids) <= 3
+            else f"Initiating scan for {len(ids)} workspaces…"
+        )
+        run = run_scan(
+            client,
+            ids,
+            flags,
+            interval=interval,
+            timeout=timeout,
+            on_started=lambda job: typer.echo(
+                f"Scan started (id={job.scan_id}). Waiting for status…"
+            ),
+            on_poll=lambda attempt, status, wait: typer.echo(
+                f"  Attempt {attempt}: scan status is '{status}', "
+                f"retrying in {wait:.0f}s…"
+            ),
+        )
+    except (AuthError, RateLimitError):
+        raise
+    except PBIError as error:
+        if len(entries) == 1:
+            typer.secho(f"✗ {_entry_label(entries[0])}: {error}", fg="red")
+            failed.append(_entry_label(entries[0]))
+            return {}
+        typer.secho(
+            f"✗ Scanning these {len(entries)} workspaces together failed: {error}",
+            fg="red",
+        )
+        typer.echo("Scanning them one by one…")
+        scanned: Dict[str, Dict[str, Any]] = {}
+        for entry in entries:
+            scanned.update(
+                _scan_entries(client, [entry], flags, interval, timeout, failed)
+            )
+        return scanned
+
+    if client.store is not None:
+        try:
+            store_scan(
+                client.store,
+                client.tenant_key(),
+                run,
+                ids,
+                flags,
+                profile=client.profile_name(),
+            )
+        except Exception as error:  # the result is good even if it cannot be kept
+            logger.warning(f"Could not save the scan to the data lake: {error}")
+    return split_scan_result(run.result)
 
 
 if __name__ == "__main__":

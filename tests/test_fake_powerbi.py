@@ -334,3 +334,15 @@ def test_a_fault_can_be_limited_to_requests_with_certain_query_parameters():
 
     assert first.status_code == 200  # no continuationToken: not matched
     assert second.status_code == 500 and retried.status_code == 200
+
+
+def test_the_token_can_expire_a_number_of_requests_from_now(fake):
+    get(fake, "/admin/reports")
+    fake.expire_token_in(2)
+
+    assert [get(fake, "/admin/reports").status_code for _ in range(4)] == [
+        200,
+        200,
+        401,
+        401,
+    ]
