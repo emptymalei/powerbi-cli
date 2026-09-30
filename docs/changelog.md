@@ -14,8 +14,13 @@
   had a default of 1000.
 - `--interval` and `--timeout` of `pbi workspaces scan get` still reject values of 0 or
   less. The error now reads `must be greater than 0`.
+- The docs are built with [Zensical](https://zensical.org) instead of MkDocs Material.
+  `mkdocs.yml` is replaced by `zensical.toml` and the look is unchanged (the `classic`
+  theme variant). The `mkdocs-jupyter` plugin (no notebooks in the docs) and the unused
+  math scripts are gone; code blocks gain a copy button.
 - The CLI reference page is generated from the commands by `scripts/gen_cli_docs.py`
-  instead of the `mkdocs-click` plugin, which cannot read Typer commands.
+  instead of the `mkdocs-click` plugin, which cannot read Typer commands. The docs
+  workflows check that the page is up to date before they build.
 
 ### Added
 

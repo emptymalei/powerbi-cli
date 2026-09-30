@@ -82,12 +82,13 @@ Typer; only re-record it (`--write surface`) for a reviewed, intentional flag ch
 
 ### Building the docs
 
-The command reference (`docs/references/cli.md`) is generated from the commands, so
-regenerate it after changing a command, option or docstring. A test fails when it is
-stale.
+The docs are built with [Zensical](https://zensical.org); the configuration is in
+`zensical.toml`. The command reference (`docs/references/cli.md`) is generated from the
+commands, so regenerate it after changing a command, option or docstring. A test, and
+the docs workflows, fail when it is stale.
 
 ```bash
 uv run python scripts/gen_cli_docs.py   # regenerate docs/references/cli.md
-uv run mkdocs serve                     # preview the docs locally
-uv run mkdocs build                     # build them into site/
+uv run zensical serve                   # preview the docs locally
+uv run zensical build --clean           # build them into site/
 ```
