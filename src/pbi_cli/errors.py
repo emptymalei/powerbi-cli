@@ -59,5 +59,17 @@ class RateLimitError(ApiError):
         self.retry_after = retry_after
 
 
+class ScanError(ApiError):
+    """A metadata scan failed, was rejected, or did not finish in time.
+
+    :param message: what went wrong
+    :param scan_id: the id of the scan, to look it up again (when it got that far)
+    """
+
+    def __init__(self, message: str, scan_id: Optional[str] = None):
+        super().__init__(message)
+        self.scan_id = scan_id
+
+
 class OfflineCacheMiss(PBIError):
     """Offline mode was requested but the lake holds no matching snapshot."""
