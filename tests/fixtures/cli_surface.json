@@ -362,7 +362,7 @@
   },
   "pbi auth": {
     "deprecated": false,
-    "help": "Store authentication bearer token securely\n\n    ```\n    pbi auth --bearer-token <your_bearer_token>\n    ```\n\n    or with a custom profile name:\n\n    ```\n    pbi auth -t <your_bearer_token> -p production\n    ```\n\n    or scoped to a group:\n\n    ```\n    pbi auth -t <your_bearer_token> -p admin-nlm -g admin\n    pbi auth -t <your_bearer_token> -p user-nlm -g user\n    ```\n\n    :param bearer_token: Bearer token to authenticate with Power BI API\n    :param profile: Profile name to associate with this credential\n    :param group: Optional group ('user' or 'admin') to store the profile in\n    ",
+    "help": "Store authentication bearer token securely\n\n```\npbi auth --bearer-token <your_bearer_token>\n```\n\nor with a custom profile name:\n\n```\npbi auth -t <your_bearer_token> -p production\n```\n\nor scoped to a group:\n\n```\npbi auth -t <your_bearer_token> -p admin-nlm -g admin\npbi auth -t <your_bearer_token> -p user-nlm -g user\n```\n\n:param bearer_token: Bearer token to authenticate with Power BI API\n:param profile: Profile name to associate with this credential\n:param group: Optional group ('user' or 'admin') to store the profile in",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -454,7 +454,7 @@
   },
   "pbi cache clear": {
     "deprecated": false,
-    "help": "Clear cached data\n\n    ```\n    # Clear all cache\n    pbi cache clear\n\n    # Clear specific cache key\n    pbi cache clear -k workspaces\n\n    # Clear specific version\n    pbi cache clear -k workspaces -v 20240101_120000\n    ```\n\n    :param cache_key: Optional cache key to clear\n    :param version: Optional version to clear (requires cache_key)\n    ",
+    "help": "Clear cached data\n\n```\n# Clear all cache\npbi cache clear\n\n# Clear specific cache key\npbi cache clear -k workspaces\n\n# Clear specific version\npbi cache clear -k workspaces -v 20240101_120000\n```\n\n:param cache_key: Optional cache key to clear\n:param version: Optional version to clear (requires cache_key)",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -527,7 +527,7 @@
   },
   "pbi cache list": {
     "deprecated": false,
-    "help": "List cached data\n\n    ```\n    # List all cache keys\n    pbi cache list\n\n    # List versions for a specific key\n    pbi cache list -k workspaces\n    ```\n\n    :param cache_key: Optional cache key to show versions for\n    ",
+    "help": "List cached data\n\n```\n# List all cache keys\npbi cache list\n\n# List versions for a specific key\npbi cache list -k workspaces\n```\n\n:param cache_key: Optional cache key to show versions for",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -575,35 +575,35 @@
   },
   "pbi config disable-cache": {
     "deprecated": false,
-    "help": "Disable caching of API call results\n\n    ```\n    pbi config disable-cache\n    ```\n    ",
+    "help": "Disable caching of API call results\n\n```\npbi config disable-cache\n```",
     "hidden": false,
     "kind": "command",
     "params": []
   },
   "pbi config enable-cache": {
     "deprecated": false,
-    "help": "Enable caching of API call results\n\n    ```\n    pbi config enable-cache\n    ```\n    ",
+    "help": "Enable caching of API call results\n\n```\npbi config enable-cache\n```",
     "hidden": false,
     "kind": "command",
     "params": []
   },
   "pbi config get-cache-folder": {
     "deprecated": false,
-    "help": "Get the currently configured cache folder\n\n    ```\n    pbi config get-cache-folder\n    ```\n    ",
+    "help": "Get the currently configured cache folder\n\n```\npbi config get-cache-folder\n```",
     "hidden": false,
     "kind": "command",
     "params": []
   },
   "pbi config get-output-folder": {
     "deprecated": false,
-    "help": "Get the currently configured default output folder\n\n    ```\n    pbi config get-output-folder\n    ```\n    ",
+    "help": "Get the currently configured default output folder\n\n```\npbi config get-output-folder\n```",
     "hidden": false,
     "kind": "command",
     "params": []
   },
   "pbi config set-cache-folder": {
     "deprecated": false,
-    "help": "Set the cache folder for storing API call results\n\n    The cache folder can be:\n    - A local path: \"/path/to/cache\" or \"C:\\Users\\Name\\cache\"\n    - A cloud path: \"s3://bucket-name/cache-folder\"\n\n    ```\n    pbi config set-cache-folder ~/PowerBI/cache\n    ```\n\n    or with cloud storage:\n\n    ```\n    pbi config set-cache-folder s3://my-bucket/powerbi-cache\n    ```\n\n    :param folder_path: Path to the cache folder (local or remote)\n    ",
+    "help": "Set the cache folder for storing API call results\n\nThe cache folder can be:\n- A local path: \"/path/to/cache\" or \"C:\\Users\\Name\\cache\"\n- A cloud path: \"s3://bucket-name/cache-folder\"\n\n```\npbi config set-cache-folder ~/PowerBI/cache\n```\n\nor with cloud storage:\n\n```\npbi config set-cache-folder s3://my-bucket/powerbi-cache\n```\n\n:param folder_path: Path to the cache folder (local or remote)",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -633,7 +633,7 @@
   },
   "pbi config set-output-folder": {
     "deprecated": false,
-    "help": "Set the default parent folder for all command outputs\n\n    ```\n    pbi config set-output-folder ~/PowerBI/backups\n    ```\n\n    or on Windows:\n\n    ```\n    pbi config set-output-folder \"C:\\Users\\YourName\\PowerBI\\backups\"\n    ```\n\n    :param folder_path: Path to the default output folder\n    ",
+    "help": "Set the default parent folder for all command outputs\n\n```\npbi config set-output-folder ~/PowerBI/backups\n```\n\nor on Windows:\n\n```\npbi config set-output-folder \"C:\\Users\\YourName\\PowerBI\\backups\"\n```\n\n:param folder_path: Path to the default output folder",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -663,7 +663,7 @@
   },
   "pbi config show": {
     "deprecated": false,
-    "help": "Show all configuration settings\n\n    ```\n    pbi config show\n    ```\n    ",
+    "help": "Show all configuration settings\n\n```\npbi config show\n```",
     "hidden": false,
     "kind": "command",
     "params": []
@@ -764,7 +764,7 @@
   },
   "pbi profile delete": {
     "deprecated": false,
-    "help": "Delete an authentication profile\n\n    ```\n    pbi profile delete production\n    ```\n\n    or from a specific group:\n\n    ```\n    pbi profile delete admin-nlm -g admin\n    ```\n\n    :param profile: Profile name to delete\n    :param group: Optional group ('user' or 'admin') to delete from\n    ",
+    "help": "Delete an authentication profile\n\n```\npbi profile delete production\n```\n\nor from a specific group:\n\n```\npbi profile delete admin-nlm -g admin\n```\n\n:param profile: Profile name to delete\n:param group: Optional group ('user' or 'admin') to delete from",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -836,14 +836,14 @@
   },
   "pbi profile list": {
     "deprecated": false,
-    "help": "List all stored authentication profiles\n\n    ```\n    pbi profile list\n    ```\n    ",
+    "help": "List all stored authentication profiles\n\n```\npbi profile list\n```",
     "hidden": false,
     "kind": "command",
     "params": []
   },
   "pbi profile switch": {
     "deprecated": false,
-    "help": "Switch the active authentication profile\n\n    ```\n    pbi profile switch\n    ```\n\n    or specify a profile:\n\n    ```\n    pbi profile switch production\n    ```\n\n    or within a group:\n\n    ```\n    pbi profile switch admin-nlm -g admin\n    pbi profile switch user-nlm -g user\n    ```\n\n    :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)\n    :param group: Optional group ('user' or 'admin') to switch within\n    ",
+    "help": "Switch the active authentication profile\n\n```\npbi profile switch\n```\n\nor specify a profile:\n\n```\npbi profile switch production\n```\n\nor within a group:\n\n```\npbi profile switch admin-nlm -g admin\npbi profile switch user-nlm -g user\n```\n\n:param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)\n:param group: Optional group ('user' or 'admin') to switch within",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -989,7 +989,7 @@
   },
   "pbi reports list": {
     "deprecated": false,
-    "help": "List all reports in a workspace group.\n\n    Retrieves the full list of reports from the specified workspace group and\n    either prints the result to the console or saves it to a JSON file.\n    ",
+    "help": "List all reports in a workspace group.\n\nRetrieves the full list of reports from the specified workspace group and\neither prints the result to the console or saves it to a JSON file.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1047,7 +1047,7 @@
   },
   "pbi reports pages": {
     "deprecated": false,
-    "help": "Get pages of a report (or all reports) in a workspace group.\n\n    When ``--report-id`` is provided, retrieves the pages for that specific\n    report. When omitted, iterates over every report in the group and returns\n    the combined pages for all of them.\n\n    Examples::\n\n        pbi reports pages -g GROUP_ID -r REPORT_ID\n\n        pbi reports pages -g GROUP_ID\n    ",
+    "help": "Get pages of a report (or all reports) in a workspace group.\n\nWhen ``--report-id`` is provided, retrieves the pages for that specific\nreport. When omitted, iterates over every report in the group and returns\nthe combined pages for all of them.\n\nExamples::\n\n    pbi reports pages -g GROUP_ID -r REPORT_ID\n\n    pbi reports pages -g GROUP_ID",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1397,7 +1397,7 @@
   },
   "pbi workspaces format-convert": {
     "deprecated": false,
-    "help": "Convert output format of workspaces list\n    (`pbi workspaces list`)\n    from json to excel.\n\n    ```sh\n    pbi workspaces format-convert -s \"workspaces.json\" -t \"workspaces.xlsx\"\n    ```\n    ",
+    "help": "Convert output format of workspaces list\n(`pbi workspaces list`)\nfrom json to excel.\n\n```sh\npbi workspaces format-convert -s \"workspaces.json\" -t \"workspaces.xlsx\"\n```",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1486,7 +1486,7 @@
   },
   "pbi workspaces list": {
     "deprecated": false,
-    "help": "List Power BI workspaces and save them to files or print to console\n\n    The --target-folder can be:\n    - An absolute path: \"C:\\Users\\Name\\PowerBI\\backups\\2024-01-01\"\n    - A relative subfolder: \"2024-01-01\" (uses default output folder + this subfolder)\n    - Omitted: prints results as a table to the console (no files created)\n\n    ```sh\n    # Print to console as a table\n    pbi workspaces list\n\n    # Using absolute path with caching\n    pbi workspaces list -ft json -ft excel -tf \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks\n\n    # Use cached data if available (falls back to API if not cached)\n    pbi workspaces list --use-cache\n\n    # Only use cache (fails if not cached)\n    pbi workspaces list --cache-only\n\n    # Using relative subfolder (requires default output folder to be configured)\n    pbi config set-output-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\"\n    pbi workspaces list -ft json -ft excel -tf \"$(Get-Date -format 'yyyy-MM-dd')\" -e users\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "List Power BI workspaces and save them to files or print to console\n\nThe --target-folder can be:\n- An absolute path: \"C:\\Users\\Name\\PowerBI\\backups\\2024-01-01\"\n- A relative subfolder: \"2024-01-01\" (uses default output folder + this subfolder)\n- Omitted: prints results as a table to the console (no files created)\n\n```sh\n# Print to console as a table\npbi workspaces list\n\n# Using absolute path with caching\npbi workspaces list -ft json -ft excel -tf \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks\n\n# Use cached data if available (falls back to API if not cached)\npbi workspaces list --use-cache\n\n# Only use cache (fails if not cached)\npbi workspaces list --cache-only\n\n# Using relative subfolder (requires default output folder to be configured)\npbi config set-output-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\"\npbi workspaces list -ft json -ft excel -tf \"$(Get-Date -format 'yyyy-MM-dd')\" -e users\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1690,7 +1690,7 @@
   },
   "pbi workspaces report-users": {
     "deprecated": false,
-    "help": "\n    Augment Power BI Workspace data from a source file\n    and save to target file together with report users\n\n    The source `-s` should be the excel file exported from the command\n    `pbi workspaces list`\n\n    ```sh\n    # Print to console\n    pbi workspaces report-users -s \"workspaces.xlsx\" -wn $w -wi 5\n\n    # Save to folder\n    pbi workspaces report-users -s \"workspaces.xlsx\" -t \"$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n    ```\n\n    Combined with PowerShell or bash, we can automatatically\n    use different workspace names for the reports.\n\n    Here is an example using PowerShell.\n\n    ```powershell\n    $workspaces = \"AA\", \"BB\"\n    foreach ($w in $workspaces) {\n        Write-Host \"Backing up for: $w\"\n        pbi workspaces report-users -s \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\workspaces.xlsx\" --target-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n    }\n    # Wait for 300 seconds (5 minutes) before the next loop\n    Start-Sleep -Seconds 300\n    ```\n    ",
+    "help": "Augment Power BI Workspace data from a source file\nand save to target file together with report users\n\nThe source `-s` should be the excel file exported from the command\n`pbi workspaces list`\n\n```sh\n# Print to console\npbi workspaces report-users -s \"workspaces.xlsx\" -wn $w -wi 5\n\n# Save to folder\npbi workspaces report-users -s \"workspaces.xlsx\" -t \"$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n```\n\nCombined with PowerShell or bash, we can automatatically\nuse different workspace names for the reports.\n\nHere is an example using PowerShell.\n\n```powershell\n$workspaces = \"AA\", \"BB\"\nforeach ($w in $workspaces) {\n    Write-Host \"Backing up for: $w\"\n    pbi workspaces report-users -s \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\workspaces.xlsx\" --target-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n}\n# Wait for 300 seconds (5 minutes) before the next loop\nStart-Sleep -Seconds 300\n```",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1851,7 +1851,7 @@
       "status"
     ],
     "deprecated": false,
-    "help": "Command group for workspace scan operations.\n\n    !!! warning \"Requires Admin\"\n\n        All commands in this group require an admin account.\n\n    ",
+    "help": "Command group for workspace scan operations.\n\n!!! warning \"Requires Admin\"\n\n    All commands in this group require an admin account.",
     "hidden": false,
     "invoke_without_command": true,
     "kind": "group",
@@ -1860,7 +1860,7 @@
   },
   "pbi workspaces scan batch": {
     "deprecated": false,
-    "help": "Scan every workspace listed in a YAML config file and save each result.\n\n    Each workspace runs through its own initiate/status/result cycle so one\n    failing workspace doesn't block the rest, and each result is\n    saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a\n    name is provided,\n    or ``<target_folder>/<workspace_id>.json`` otherwise.\n\n    Example config file:\n\n    ```yaml\n    workspace_ids:\n      - id: <workspace-id-1>\n        name: Finance\n      - id: <workspace-id-2>\n        name: Marketing\n      - <workspace-id-3>  # name is optional; falls back to the ID\n    target_folder: scan_results\n    lineage: true\n    datasource_details: true\n    dataset_schema: false\n    dataset_expressions: false\n    get_artifact_users: false\n    interval: 5\n    timeout: 300\n    ```\n\n    Only ``workspace_ids`` and ``target_folder`` are required; the scan flags\n    default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``\n    seconds, same as ``pbi workspaces scan get``. When an entry has a\n    ``name``, the result is saved as\n    ``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it\n    falls back to ``<target_folder>/<workspace_id>.json``.\n\n    ```sh\n    pbi workspaces scan batch --config scan_config.yaml\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "Scan every workspace listed in a YAML config file and save each result.\n\nEach workspace runs through its own initiate/status/result cycle so one\nfailing workspace doesn't block the rest, and each result is\nsaved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a\nname is provided,\nor ``<target_folder>/<workspace_id>.json`` otherwise.\n\nExample config file:\n\n```yaml\nworkspace_ids:\n  - id: <workspace-id-1>\n    name: Finance\n  - id: <workspace-id-2>\n    name: Marketing\n  - <workspace-id-3>  # name is optional; falls back to the ID\ntarget_folder: scan_results\nlineage: true\ndatasource_details: true\ndataset_schema: false\ndataset_expressions: false\nget_artifact_users: false\ninterval: 5\ntimeout: 300\n```\n\nOnly ``workspace_ids`` and ``target_folder`` are required; the scan flags\ndefault to ``false`` and ``interval``/``timeout`` default to ``5``/``300``\nseconds, same as ``pbi workspaces scan get``. When an entry has a\n``name``, the result is saved as\n``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it\nfalls back to ``<target_folder>/<workspace_id>.json``.\n\n```sh\npbi workspaces scan batch --config scan_config.yaml\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -1896,7 +1896,7 @@
   },
   "pbi workspaces scan get": {
     "deprecated": false,
-    "help": "Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.\n\n    Combines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and\n    ``pbi workspaces scan result`` into a single step: starts the scan, polls the\n    scan status until it succeeds, fails, or times out, then prints or saves the\n    results.\n\n    ```sh\n    pbi workspaces scan get <workspace-id>\n\n    pbi workspaces scan get <workspace-id> <workspace-id> --lineage -t results.json\n\n    # Loop over workspaces, saving each result as <workspace-id>.json\n    for w in ws-1 ws-2 ws-3; do\n        pbi workspaces scan get \"$w\" -tf scan_results\n    done\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.\n\nCombines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and\n``pbi workspaces scan result`` into a single step: starts the scan, polls the\nscan status until it succeeds, fails, or times out, then prints or saves the\nresults.\n\n```sh\npbi workspaces scan get <workspace-id>\n\npbi workspaces scan get <workspace-id> <workspace-id> --lineage -t results.json\n\n# Loop over workspaces, saving each result as <workspace-id>.json\nfor w in ws-1 ws-2 ws-3; do\n    pbi workspaces scan get \"$w\" -tf scan_results\ndone\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -2127,7 +2127,7 @@
   },
   "pbi workspaces scan initiate": {
     "deprecated": false,
-    "help": "Initiate a workspace scan for one or more WORKSPACE_IDS.\n\n    Returns the scan ID which can be used with ``pbi workspaces scan result``.\n\n    ```sh\n    pbi workspaces scan initiate <workspace-id> <workspace-id>\n\n    pbi workspaces scan initiate <workspace-id> --lineage --datasource-details\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "Initiate a workspace scan for one or more WORKSPACE_IDS.\n\nReturns the scan ID which can be used with ``pbi workspaces scan result``.\n\n```sh\npbi workspaces scan initiate <workspace-id> <workspace-id>\n\npbi workspaces scan initiate <workspace-id> --lineage --datasource-details\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -2256,7 +2256,7 @@
   },
   "pbi workspaces scan result": {
     "deprecated": false,
-    "help": "Get scan results for SCAN_ID.\n\n    Retrieves the scan results for the given scan ID returned by\n    ``pbi workspaces scan initiate``.\n\n    ```sh\n    pbi workspaces scan result <scan-id>\n\n    pbi workspaces scan result <scan-id> -t results.json\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "Get scan results for SCAN_ID.\n\nRetrieves the scan results for the given scan ID returned by\n``pbi workspaces scan initiate``.\n\n```sh\npbi workspaces scan result <scan-id>\n\npbi workspaces scan result <scan-id> -t results.json\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [
@@ -2308,7 +2308,7 @@
   },
   "pbi workspaces scan status": {
     "deprecated": false,
-    "help": "Get the scan status for SCAN_ID.\n\n    Retrieves the current status (e.g. ``NotStarted``, ``Running``,\n    ``Succeeded``, ``Failed``) for the given scan ID returned by\n    ``pbi workspaces scan initiate``. Check this before calling\n    ``pbi workspaces scan result``.\n\n    ```sh\n    pbi workspaces scan status <scan-id>\n    ```\n\n    !!! warning \"Requires Admin\"\n\n        This command requires an admin account.\n\n    ",
+    "help": "Get the scan status for SCAN_ID.\n\nRetrieves the current status (e.g. ``NotStarted``, ``Running``,\n``Succeeded``, ``Failed``) for the given scan ID returned by\n``pbi workspaces scan initiate``. Check this before calling\n``pbi workspaces scan result``.\n\n```sh\npbi workspaces scan status <scan-id>\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
     "hidden": false,
     "kind": "command",
     "params": [

@@ -1,9 +1,10 @@
 """Tests for group-based authentication profiles."""
 
 import pytest
-from click.testing import CliRunner
+from cli_helpers import isolated_filesystem
+from typer.testing import CliRunner
 
-from pbi_cli.cli import load_auth, pbi
+from pbi_cli.cli import app, load_auth
 from pbi_cli.config import VALID_GROUPS, PBIConfig
 
 # ---------------------------------------------------------------------------
@@ -112,9 +113,9 @@ class TestAuthCommandWithGroup:
     def test_auth_with_admin_group(self, tmp_path, monkeypatch):
         """pbi auth -t <token> -p admin-nlm -g admin stores profile in admin group."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi, ["auth", "-t", "my-token", "-p", "admin-nlm", "-g", "admin"]
+                app, ["auth", "-t", "my-token", "-p", "admin-nlm", "-g", "admin"]
             )
         assert result.exit_code == 0
         assert "admin-nlm" in result.output
@@ -123,9 +124,9 @@ class TestAuthCommandWithGroup:
     def test_auth_with_user_group(self, tmp_path, monkeypatch):
         """pbi auth -t <token> -p user-nlm -g user stores profile in user group."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi, ["auth", "-t", "my-token", "-p", "user-nlm", "-g", "user"]
+                app, ["auth", "-t", "my-token", "-p", "user-nlm", "-g", "user"]
             )
         assert result.exit_code == 0
         assert "user-nlm" in result.output
@@ -133,12 +134,12 @@ class TestAuthCommandWithGroup:
     def test_auth_group_profiles_are_independent(self, tmp_path, monkeypatch):
         """Profiles in admin and user groups do not interfere with each other."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             runner.invoke(
-                pbi, ["auth", "-t", "admin-token", "-p", "admin-nlm", "-g", "admin"]
+                app, ["auth", "-t", "admin-token", "-p", "admin-nlm", "-g", "admin"]
             )
             runner.invoke(
-                pbi, ["auth", "-t", "user-token", "-p", "user-nlm", "-g", "user"]
+                app, ["auth", "-t", "user-token", "-p", "user-nlm", "-g", "user"]
             )
 
         # Check config state through PBIConfig pointing at the same tmp dir
@@ -153,9 +154,9 @@ class TestAuthCommandWithGroup:
     def test_auth_invalid_group_fails(self, tmp_path, monkeypatch):
         """pbi auth with an invalid group value is rejected."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi,
+                app,
                 ["auth", "-t", "my-token", "-p", "some-profile", "-g", "superuser"],
             )
         assert result.exit_code != 0
@@ -163,8 +164,8 @@ class TestAuthCommandWithGroup:
     def test_auth_without_group_uses_flat_profiles(self, tmp_path, monkeypatch):
         """pbi auth without -g still writes to flat profile storage (backward compat)."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(pbi, ["auth", "-t", "my-token", "-p", "my-profile"])
+        with isolated_filesystem(tmp_path):
+            result = runner.invoke(app, ["auth", "-t", "my-token", "-p", "my-profile"])
         assert result.exit_code == 0
         cfg = _cfg(tmp_path)
         assert cfg.has_profile("my-profile")
@@ -181,8 +182,8 @@ class TestProfileSwitchWithGroup:
         cfg.add_profile_to_group("admin", "admin-b")
         cfg.set_group_active_profile("admin", "admin-a")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(pbi, ["profile", "switch", "admin-b", "-g", "admin"])
+        with isolated_filesystem(tmp_path):
+            result = runner.invoke(app, ["profile", "switch", "admin-b", "-g", "admin"])
         assert result.exit_code == 0
         assert "admin-b" in result.output
         cfg.reload()
@@ -196,8 +197,8 @@ class TestProfileSwitchWithGroup:
         cfg.add_profile_to_group("user", "user-b")
         cfg.set_group_active_profile("user", "user-a")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(pbi, ["profile", "switch", "user-b", "-g", "user"])
+        with isolated_filesystem(tmp_path):
+            result = runner.invoke(app, ["profile", "switch", "user-b", "-g", "user"])
         assert result.exit_code == 0
         assert "user-b" in result.output
         cfg.reload()
@@ -213,8 +214,8 @@ class TestProfileSwitchWithGroup:
         cfg.add_profile_to_group("user", "user-a")
         cfg.set_group_active_profile("user", "user-a")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            runner.invoke(pbi, ["profile", "switch", "admin-b", "-g", "admin"])
+        with isolated_filesystem(tmp_path):
+            runner.invoke(app, ["profile", "switch", "admin-b", "-g", "admin"])
 
         cfg.reload()
         assert cfg.get_group_active_profile("admin") == "admin-b"
@@ -227,18 +228,18 @@ class TestProfileSwitchWithGroup:
         cfg = _cfg(tmp_path)
         cfg.add_profile_to_group("admin", "admin-a")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi, ["profile", "switch", "ghost-profile", "-g", "admin"]
+                app, ["profile", "switch", "ghost-profile", "-g", "admin"]
             )
         assert "not found" in result.output
 
     def test_switch_no_profiles_in_group(self, tmp_path, monkeypatch):
         """Switching within a group that has no profiles shows an appropriate message."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi, ["profile", "switch", "some-profile", "-g", "admin"]
+                app, ["profile", "switch", "some-profile", "-g", "admin"]
             )
         assert "No profiles found" in result.output or "not found" in result.output
 
@@ -249,8 +250,8 @@ class TestProfileListWithGroups:
     def test_profile_list_shows_groups(self, tmp_path, monkeypatch):
         """profile list shows admin and user group sections."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(pbi, ["profile", "list"])
+        with isolated_filesystem(tmp_path):
+            result = runner.invoke(app, ["profile", "list"])
         assert "user" in result.output
         assert "admin" in result.output
 
@@ -263,8 +264,8 @@ class TestProfileListWithGroups:
         cfg.add_profile_to_group("user", "user-nlm")
         cfg.set_group_active_profile("user", "user-nlm")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(pbi, ["profile", "list"])
+        with isolated_filesystem(tmp_path):
+            result = runner.invoke(app, ["profile", "list"])
         assert "admin-nlm" in result.output
         assert "user-nlm" in result.output
 
@@ -278,9 +279,9 @@ class TestProfileDeleteWithGroup:
         cfg = _cfg(tmp_path)
         cfg.add_profile_to_group("admin", "admin-nlm")
 
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi,
+                app,
                 ["profile", "delete", "admin-nlm", "-g", "admin"],
                 input="y\n",
             )
@@ -291,9 +292,9 @@ class TestProfileDeleteWithGroup:
     def test_delete_nonexistent_profile_from_group(self, tmp_path, monkeypatch):
         """Deleting a non-existent profile from a group shows an error."""
         runner = _isolated_runner(tmp_path, monkeypatch)
-        with runner.isolated_filesystem(temp_dir=tmp_path):
+        with isolated_filesystem(tmp_path):
             result = runner.invoke(
-                pbi,
+                app,
                 ["profile", "delete", "ghost", "-g", "admin"],
                 input="y\n",
             )
@@ -380,9 +381,9 @@ class TestLoadAuthAutoGroupResolution:
         """load_auth() raises ClickException when neither group nor flat profile exists."""
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
-        import click
+        from pbi_cli.errors import PBIError
 
-        with pytest.raises(click.ClickException):
+        with pytest.raises(PBIError):
             load_auth()
 
     def test_load_auth_explicit_profile_in_group(self, tmp_path, monkeypatch):

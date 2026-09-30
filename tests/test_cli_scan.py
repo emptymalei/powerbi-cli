@@ -3,17 +3,17 @@
 import json
 from unittest.mock import patch
 
-import click
 import requests
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from pbi_cli.cli import pbi
+from pbi_cli.cli import app
+from pbi_cli.errors import PBIError
 
 
 def test_scan_group_in_workspaces_help():
     """Test that the scan subgroup appears in workspaces group help."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "--help"])
+    result = runner.invoke(app, ["workspaces", "--help"])
     assert result.exit_code == 0
     assert "scan" in result.output
 
@@ -21,7 +21,7 @@ def test_scan_group_in_workspaces_help():
 def test_scan_group_help():
     """Test that the scan group lists initiate, status, result, get, and batch commands."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "--help"])
     assert result.exit_code == 0
     assert "initiate" in result.output
     assert "status" in result.output
@@ -33,7 +33,7 @@ def test_scan_group_help():
 def test_scan_initiate_help():
     """Test that scan initiate command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "initiate", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "initiate", "--help"])
     assert result.exit_code == 0
     assert "WORKSPACE_IDS" in result.output
     assert "--lineage" in result.output
@@ -47,7 +47,7 @@ def test_scan_initiate_help():
 def test_scan_result_help():
     """Test that scan result command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "result", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "result", "--help"])
     assert result.exit_code == 0
     assert "SCAN_ID" in result.output
     assert "--target" in result.output or "-t" in result.output
@@ -57,7 +57,7 @@ def test_scan_result_help():
 def test_scan_status_help():
     """Test that scan status command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "status", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "status", "--help"])
     assert result.exit_code == 0
     assert "SCAN_ID" in result.output
     assert "Admin" in result.output
@@ -66,7 +66,7 @@ def test_scan_status_help():
 def test_scan_get_help():
     """Test that scan get command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "get", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "get", "--help"])
     assert result.exit_code == 0
     assert "WORKSPACE_IDS" in result.output
     assert "--interval" in result.output
@@ -77,7 +77,7 @@ def test_scan_get_help():
 def test_scan_initiate_requires_workspace_id():
     """Test that scan initiate fails when no workspace IDs are provided."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "initiate"])
+    result = runner.invoke(app, ["workspaces", "scan", "initiate"])
     assert result.exit_code != 0
 
 
@@ -96,7 +96,7 @@ def test_scan_initiate_calls_api():
             return_value=fake_response,
         ) as mock_initiate:
             result = runner.invoke(
-                pbi,
+                app,
                 [
                     "workspaces",
                     "scan",
@@ -130,7 +130,7 @@ def test_scan_initiate_with_flags():
             return_value=fake_response,
         ) as mock_initiate:
             result = runner.invoke(
-                pbi,
+                app,
                 [
                     "workspaces",
                     "scan",
@@ -167,7 +167,7 @@ def test_scan_status_calls_api():
             "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
             return_value=fake_status,
         ) as mock_status:
-            result = runner.invoke(pbi, ["workspaces", "scan", "status", "scan-123"])
+            result = runner.invoke(app, ["workspaces", "scan", "status", "scan-123"])
 
     assert result.exit_code == 0
     mock_status.assert_called_once_with(scan_id="scan-123")
@@ -183,7 +183,7 @@ def test_scan_status_handles_api_error():
             "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_status",
             side_effect=ValueError("Error: {'message': 'boom'}"),
         ):
-            result = runner.invoke(pbi, ["workspaces", "scan", "status", "scan-123"])
+            result = runner.invoke(app, ["workspaces", "scan", "status", "scan-123"])
 
     assert result.exit_code != 0
     assert "boom" in result.output
@@ -199,7 +199,7 @@ def test_scan_result_prints_to_console():
             "pbi_cli.powerbi.admin.WorkspaceInfo.get_scan_result",
             return_value=fake_result,
         ) as mock_result:
-            result = runner.invoke(pbi, ["workspaces", "scan", "result", "scan-123"])
+            result = runner.invoke(app, ["workspaces", "scan", "result", "scan-123"])
 
     assert result.exit_code == 0
     mock_result.assert_called_once_with(scan_id="scan-123")
@@ -219,7 +219,7 @@ def test_scan_result_saves_to_file(tmp_path):
             return_value=fake_result,
         ):
             result = runner.invoke(
-                pbi,
+                app,
                 [
                     "workspaces",
                     "scan",
@@ -258,7 +258,7 @@ def test_scan_get_succeeds_immediately():
                     return_value=fake_result,
                 ) as mock_result:
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "get", "ws-1"],
                     )
 
@@ -293,7 +293,7 @@ def test_scan_get_retries_then_succeeds():
                 ):
                     with patch("time.sleep"):
                         result = runner.invoke(
-                            pbi,
+                            app,
                             ["workspaces", "scan", "get", "ws-2", "--interval", "1"],
                         )
 
@@ -322,7 +322,7 @@ def test_scan_get_fails():
                 return_value=fake_status,
             ):
                 result = runner.invoke(
-                    pbi,
+                    app,
                     ["workspaces", "scan", "get", "ws-y"],
                 )
 
@@ -349,7 +349,7 @@ def test_scan_get_times_out():
                     # Use a very short timeout so it expires after first failure
                     with patch("time.monotonic", side_effect=[0, 0, 999, 999]):
                         result = runner.invoke(
-                            pbi,
+                            app,
                             ["workspaces", "scan", "get", "ws-x", "--timeout", "1"],
                         )
 
@@ -379,7 +379,7 @@ def test_scan_get_saves_to_file(tmp_path):
                     return_value=fake_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "get", "ws-3", "-t", str(target_file)],
                     )
 
@@ -412,7 +412,7 @@ def test_scan_get_saves_to_target_folder_named_by_workspace_id(tmp_path):
                     return_value=fake_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         [
                             "workspaces",
                             "scan",
@@ -436,7 +436,7 @@ def test_scan_get_target_and_target_folder_mutually_exclusive(tmp_path):
     runner = CliRunner()
     with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "Bearer test"}):
         result = runner.invoke(
-            pbi,
+            app,
             [
                 "workspaces",
                 "scan",
@@ -458,7 +458,7 @@ def test_scan_get_target_folder_rejects_multiple_workspace_ids(tmp_path):
     runner = CliRunner()
     with patch("pbi_cli.cli.load_auth", return_value={"Authorization": "******"}):
         result = runner.invoke(
-            pbi,
+            app,
             [
                 "workspaces",
                 "scan",
@@ -477,7 +477,7 @@ def test_scan_get_target_folder_rejects_multiple_workspace_ids(tmp_path):
 def test_scan_batch_help():
     """Test that scan batch command shows help with expected options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "batch", "--help"])
+    result = runner.invoke(app, ["workspaces", "scan", "batch", "--help"])
     assert result.exit_code == 0
     assert "--config" in result.output or "-c" in result.output
     assert (
@@ -490,7 +490,7 @@ def test_scan_batch_help():
 def test_scan_batch_requires_config():
     """Test that scan batch fails when --config is missing."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "batch"])
+    result = runner.invoke(app, ["workspaces", "scan", "batch"])
     assert result.exit_code != 0
 
 
@@ -533,7 +533,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -597,7 +597,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -642,7 +642,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -697,7 +697,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -749,7 +749,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -801,7 +801,7 @@ timeout: 10
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -817,7 +817,7 @@ def test_scan_batch_requires_workspace_ids(tmp_path):
     config_file.write_text("target_folder: results\n")
 
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "batch", "-c", str(config_file)])
+    result = runner.invoke(app, ["workspaces", "scan", "batch", "-c", str(config_file)])
 
     assert result.exit_code != 0
     assert "workspace_ids" in result.output
@@ -836,7 +836,7 @@ lineage: "false"
     )
 
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "batch", "-c", str(config_file)])
+    result = runner.invoke(app, ["workspaces", "scan", "batch", "-c", str(config_file)])
 
     assert result.exit_code != 0
     assert "'lineage' must be a boolean value." in result.output
@@ -877,7 +877,7 @@ timeout:
                     fake_get_scan_result,
                 ):
                     result = runner.invoke(
-                        pbi,
+                        app,
                         ["workspaces", "scan", "batch", "-c", str(config_file)],
                     )
 
@@ -908,10 +908,10 @@ target_folder: {tmp_path / "scan_results"}
     runner = CliRunner()
     with patch(
         "pbi_cli.cli.load_auth",
-        side_effect=click.ClickException("No credentials found for profile 'admin'."),
+        side_effect=PBIError("No credentials found for profile 'admin'."),
     ):
         result = runner.invoke(
-            pbi, ["workspaces", "scan", "batch", "-c", str(config_file)]
+            app, ["workspaces", "scan", "batch", "-c", str(config_file)]
         )
 
     assert result.exit_code != 0
@@ -927,7 +927,7 @@ def test_scan_batch_requires_target_folder(tmp_path):
     config_file.write_text("workspace_ids:\n  - ws-1\n")
 
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "scan", "batch", "-c", str(config_file)])
+    result = runner.invoke(app, ["workspaces", "scan", "batch", "-c", str(config_file)])
 
     assert result.exit_code != 0
     assert "target_folder" in result.output

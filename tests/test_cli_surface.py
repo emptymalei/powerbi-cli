@@ -19,7 +19,20 @@ import pytest
 
 # Key format: "<command path>/<field path>", e.g. "pbi workspaces scan get/params/interval/type/name".
 # An entry covers every difference at or below that key. Value = reason.
-ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {}
+ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
+    # Typer adds shell completion to the root command.
+    "pbi/param_order": "root gains --install-completion and --show-completion",
+    "pbi/params/install_completion": "new: pbi --install-completion",
+    "pbi/params/show_completion": "new: pbi --show-completion",
+    # The folder arguments must stay plain strings: a Path would rewrite s3:// URLs.
+    "pbi config set-cache-folder/params/folder_path/type": "Typer has no str-returning path type",
+    "pbi config set-output-folder/params/folder_path/type": "Typer has no str-returning path type",
+    # --top has a default of 1000; it was (wrongly) marked required.
+    "pbi workspaces list/params/top/required": "--top has a default, so it was never required",
+    # "x > 0" is now checked by a callback: Typer only has inclusive bounds.
+    "pbi workspaces scan get/params/interval/type": "value must still be > 0, checked by a callback",
+    "pbi workspaces scan get/params/timeout/type": "value must still be > 0, checked by a callback",
+}
 
 # Key format: "<command path> --help" or "<command path> (no subcommand)". Value = reason.
 ACCEPTED_HELP_CHANGES: Dict[str, str] = {}
@@ -52,7 +65,7 @@ def _normalize_command(info: Dict[str, Any]) -> Dict[str, Any]:
 def _flatten(
     prefix: Tuple[str, ...], value: Any, out: Dict[Tuple[str, ...], Any]
 ) -> None:
-    if isinstance(value, dict) and value:
+    if isinstance(value, dict):
         for key, sub in value.items():
             _flatten(prefix + (key,), sub, out)
     else:

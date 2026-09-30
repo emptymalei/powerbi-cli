@@ -7,7 +7,8 @@ recorded from a known-good version, so a change of CLI framework (or any other
 refactor) cannot silently change flags that existing scripts depend on.
 
 The helpers only read attributes of the command objects (``.commands``,
-``.params``, ...), so they work on whatever object the CLI framework produces.
+``.params``, ...). ``cli_surface.json`` was recorded from the click based CLI that
+preceded the move to Typer; ``cli_help.json`` was re-recorded from the Typer CLI.
 
 After an *intentional* CLI change, regenerate the fixtures and review the diff::
 
@@ -16,6 +17,7 @@ After an *intentional* CLI change, regenerate the fixtures and review the diff::
 
 import argparse
 import enum
+import inspect
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple
@@ -36,20 +38,12 @@ def load_cli() -> Tuple[Any, Any, Any]:
     ``target`` is what the runner invokes; ``command`` is the root command object
     whose tree is walked.
     """
+    import typer.main
+    from typer.testing import CliRunner
+
     import pbi_cli.cli as cli
 
-    # Note: the click-based CLI has an unrelated function called ``app`` (the
-    # ``pbi apps app`` command), so detect a Typer app by its attributes.
-    app = getattr(cli, "app", None)
-    if hasattr(app, "registered_commands"):
-        import typer.main
-        from typer.testing import CliRunner
-
-        return CliRunner(), app, typer.main.get_command(app)
-
-    from click.testing import CliRunner
-
-    return CliRunner(), cli.pbi, cli.pbi
+    return CliRunner(), cli.app, typer.main.get_command(cli.app)
 
 
 def walk(
@@ -77,8 +71,18 @@ def _plain(value: Any) -> Any:
     return repr(value)
 
 
+# Frameworks name the same parameter types differently ("text" vs "str"); compare the
+# meaning, not the spelling.
+_TYPE_NAMES = {"str": "text", "int": "integer", "bool": "boolean"}
+
+
+def _clean_help(text: Any) -> Any:
+    """Dedent a help text the way it is displayed."""
+    return inspect.cleandoc(text) if isinstance(text, str) else text
+
+
 def _type_info(param_type: Any) -> Dict[str, Any]:
-    info: Dict[str, Any] = {"name": param_type.name}
+    info: Dict[str, Any] = {"name": _TYPE_NAMES.get(param_type.name, param_type.name)}
     for attr in (
         "choices",
         "case_sensitive",
@@ -119,7 +123,7 @@ def _param_info(param: Any) -> Dict[str, Any]:
                 "hidden": bool(param.hidden),
                 "prompt": _plain(param.prompt),
                 "envvar": _plain(param.envvar),
-                "help": param.help,
+                "help": _clean_help(param.help),
             }
         )
     else:
@@ -130,7 +134,7 @@ def _param_info(param: Any) -> Dict[str, Any]:
 def _command_info(command: Any) -> Dict[str, Any]:
     info: Dict[str, Any] = {
         "kind": "group" if hasattr(command, "commands") else "command",
-        "help": command.help,
+        "help": _clean_help(command.help),
         "hidden": bool(command.hidden),
         "deprecated": _plain(command.deprecated),
         "params": [_param_info(p) for p in command.params],
@@ -186,19 +190,26 @@ def _write(path: Path, data: Dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--write", action="store_true", help="overwrite the fixtures")
+    parser.add_argument(
+        "--write",
+        nargs="?",
+        const="all",
+        choices=["all", "surface", "help"],
+        help="overwrite the fixtures (default: both)",
+    )
     args = parser.parse_args()
 
     runner, target, command = load_cli()
     surface = dump_surface(command)
     helps = capture_help(runner, target, command)
 
-    if args.write:
+    if args.write in ("all", "surface"):
         _write(SURFACE_FILE, surface)
-        _write(HELP_FILE, helps)
         print(f"wrote {SURFACE_FILE} ({len(surface)} commands)")
+    if args.write in ("all", "help"):
+        _write(HELP_FILE, helps)
         print(f"wrote {HELP_FILE} ({len(helps)} outputs)")
-    else:
+    if args.write is None:
         print(json.dumps(surface, indent=2, sort_keys=True)[:2000])
 
 

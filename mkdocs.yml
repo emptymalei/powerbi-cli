@@ -56,7 +56,6 @@ markdown_extensions:
       generic: true
   - toc:
       permalink: "¤"
-  - mkdocs-click
 
 plugins:
   - autorefs
