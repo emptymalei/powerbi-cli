@@ -1,15 +1,17 @@
 """The data lake: versioned snapshots and event logs on a local folder or in S3.
 
 Everything the client fetches is kept as it came from the API, in folders that tools
-such as Athena, DuckDB or Spark read as partitions::
+such as Athena, DuckDB or Spark read as partitions:
 
-    <root>/tenant=<tenant>/endpoint=<endpoint>/params=<hash>/dt=<day>/v=<time>/
-        data.json        the response (all pages merged)
-        manifest.json    what was asked, when, by whom, and a checksum
+```text
+<root>/tenant=<tenant>/endpoint=<endpoint>/params=<hash>/dt=<day>/v=<time>/
+    data.json        the response (all pages merged)
+    manifest.json    what was asked, when, by whom, and a checksum
 
-    <root>/tenant=<tenant>/endpoint=<endpoint>/dt=<day>/
-        part-0000.jsonl  events, one JSON object per line, never the same ``Id`` twice
-        manifest.json    parts, row count, resume cursor, whether the day is complete
+<root>/tenant=<tenant>/endpoint=<endpoint>/dt=<day>/
+    part-0000.jsonl  events, one JSON object per line, never the same `Id` twice
+    manifest.json    parts, row count, resume cursor, whether the day is complete
+```
 
 The manifest is written last: a snapshot without one is an interrupted write and is
 ignored. Local files are created readable by the owner only, because the lake holds

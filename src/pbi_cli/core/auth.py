@@ -85,7 +85,7 @@ def ensure_not_expired(
     now: Optional[datetime] = None,
     leeway: timedelta = EXPIRY_LEEWAY,
 ) -> None:
-    """Raise :class:`TokenExpiredError` if the token expired or is about to.
+    """Raise `TokenExpiredError` if the token expired or is about to.
 
     Tokens whose expiry cannot be read are accepted: the API decides (``401``).
 

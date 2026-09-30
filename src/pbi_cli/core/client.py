@@ -1,13 +1,15 @@
 """The Power BI API client.
 
-It sends the requests of the :mod:`~pbi_cli.core.registry`, reads lists page by page,
-waits when the quota is used up or the API throttles (``429 Retry-After``), turns error
-answers into messages a person can act on, and writes what it fetched to the lake so the
-next call can be answered from disk::
+It sends the requests of the registry (`pbi_cli.core.registry`), reads lists page by
+page, waits when the quota is used up or the API throttles (`429 Retry-After`), turns
+error answers into messages a person can act on, and writes what it fetched to the lake
+so the next call can be answered from disk:
 
-    client = PowerBIClient(lambda: Credentials(token), store=LakeStore("~/lake"))
-    result = client.fetch("admin.groups", {"$expand": ["users"]}, max_age=timedelta(hours=1))
-    workspaces = result.data["value"]        # result.from_cache tells where it came from
+```python
+client = PowerBIClient(lambda: Credentials(token), store=LakeStore("~/lake"))
+result = client.fetch("admin.groups", {"$expand": ["users"]}, max_age=timedelta(hours=1))
+workspaces = result.data["value"]        # result.from_cache tells where it came from
+```
 
 Only read-only operations can be fetched (see the registry). Requests are identified by
 the endpoint and its *canonical* parameters, so a different ``$expand`` or another tenant
@@ -105,7 +107,7 @@ class ApiResponse:
 
 @dataclass
 class Result:
-    """What :meth:`PowerBIClient.fetch` returns.
+    """What `PowerBIClient.fetch` returns.
 
     :param data: the response, all pages merged
     :param from_cache: whether it was read from the lake instead of the API
@@ -207,10 +209,10 @@ class PowerBIClient:
     :param timeout: ``(connect, read)`` timeouts in seconds
     :param max_throttle_retries: how often a ``429`` is retried before giving up
     :param max_throttle_wait: longest ``Retry-After`` the client waits out; a longer one
-        raises :class:`~pbi_cli.errors.RateLimitError` (and blocks the endpoint locally)
+        raises `RateLimitError` (and blocks the endpoint locally)
     :param clock: returns the current time as an aware UTC datetime
     :param sleep: waits for some seconds (replaced in tests)
-    :param on_throttle: called with a :class:`Throttled` before the client waits
+    :param on_throttle: called with a `Throttled` before the client waits
     """
 
     def __init__(
@@ -314,7 +316,7 @@ class PowerBIClient:
         :param url: a continuation link the API returned for this endpoint; replaces the
             URL built from ``params``
         :param max_wait: how long the request may wait for quota (see
-            :meth:`~pbi_cli.core.ratelimit.Limiter.slot`)
+            `Limiter.slot`)
         :raises TokenExpiredError: if the token expired or was rejected (``401``)
         :raises RateLimitError: if the quota is used up or the API throttles for too long
         :raises ApiError: for any other error answer or a connection problem
@@ -590,7 +592,7 @@ class PowerBIClient:
         :param params: path placeholders and query parameters; ``$top`` caps the number
             of rows, without it every page is read
         :param max_age: a stored snapshot younger than this is used (default: the
-            endpoint's ``ttl``); :data:`FOREVER` accepts any age, ``timedelta(0)`` always fetches
+            endpoint's ``ttl``); `FOREVER` accepts any age, ``timedelta(0)`` always fetches
         :param refresh: ignore the lake and fetch (the result is still stored)
         :param offline: never call the API: answer from the lake whatever its age
             (wins over ``refresh``)

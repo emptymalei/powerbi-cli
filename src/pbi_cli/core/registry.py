@@ -88,13 +88,13 @@ class Endpoint:
     :param id: short stable name, used in the lake and on the command line
     :param title: what the operation does
     :param method: ``GET`` or ``POST``
-    :param path: path relative to :data:`BASE_URL`, with ``{placeholders}``
+    :param path: path relative to `BASE_URL`, with ``{placeholders}``
     :param scope: the kind of token the operation needs
     :param kind: how the result is stored
     :param doc_url: the documentation page of the operation
     :param limit: the documented quota, ``None`` when the documentation states none
     :param paging: how lists are read
-    :param page_size: largest page the API accepts (for :attr:`Paging.SKIP`)
+    :param page_size: largest page the API accepts (for `Paging.SKIP`)
     :param items_keys: response keys that hold the list of rows, first match wins;
         empty when the response body is the list itself
     :param query: the query parameters the operation accepts
@@ -151,7 +151,7 @@ class Endpoint:
     def split_canonical(
         self, params: Optional[Mapping[str, Any]]
     ) -> Tuple[Dict[str, str], Dict[str, str]]:
-        """Like :meth:`split_params`, with every value as a canonical string.
+        """Like `split_params`, with every value as a canonical string.
 
         Equal requests give equal results whatever the spelling: booleans are lower
         case, and lists of unordered values (``$expand``) are sorted.

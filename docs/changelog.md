@@ -25,6 +25,18 @@
 ### Added
 
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
+- `pbi_cli.core`: an API client with a local [data lake](lake.md). The commands do not use
+  it yet, so their behavior is unchanged. The client reads lists page by page, waits when
+  a documented quota is used up or the API answers `429 Retry-After`, and keeps what it
+  fetched as versioned snapshots and per-day event logs on disk or in S3. A request is
+  identified by its endpoint, its canonical parameters and the tenant, so a different
+  `$expand` or another tenant never gets somebody else's cached answer.
+- A registry of the read-only operations the client may call, with the quota of each taken
+  from its documentation page.
+- pbi_cli reads the tenant and the expiry from a token locally (nothing is sent or
+  stored), and says when a token has expired. See [Authentication](auth.md).
+- The guides [Authentication](auth.md) and [Data lake](lake.md), and the API reference of
+  `pbi_cli.core` and `pbi_cli.errors`.
 - Descriptions for the arguments of `pbi workspaces scan`, `pbi profile` and
   `pbi config` in `--help`.
 

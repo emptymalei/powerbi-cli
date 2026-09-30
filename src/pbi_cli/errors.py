@@ -6,7 +6,7 @@ from typing import Optional
 class PBIError(Exception):
     """A problem the user can act on: bad input, missing credentials, an API failure.
 
-    Commands registered with :func:`pbi_cli.cli_support.command` print the message as
+    Commands registered with `pbi_cli.cli_support.command` print the message as
     ``Error: <message>`` on stderr and exit with status 1, without a traceback.
     """
 

@@ -229,7 +229,7 @@ class Limiter:
     :param tracker: where the requests are counted
     :param sleep: waits for some seconds; replaced in tests
     :param max_wait: longest time one request may wait for quota before
-        :class:`~pbi_cli.errors.RateLimitError` is raised; ``None`` waits as long as
+        `RateLimitError` is raised; ``None`` waits as long as
         needed
     """
 
