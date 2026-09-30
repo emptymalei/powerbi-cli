@@ -164,7 +164,10 @@ class LakeStore:
     """
 
     def __init__(self, root: Union[str, os.PathLike, CloudPath]):
-        self.root = AnyPath(root)
+        path = AnyPath(root)
+        if not isinstance(path, CloudPath):
+            path = path.expanduser()  # "~/lake" means the home folder, not a folder "~"
+        self.root = path
         self._event_lock = threading.Lock()
 
     # -- paths ---------------------------------------------------------------------

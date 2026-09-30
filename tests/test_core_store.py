@@ -229,6 +229,16 @@ def test_files_and_the_lake_folder_are_private(store):
     assert stat.S_IMODE(os.stat(store.root).st_mode) == 0o700
 
 
+def test_a_home_relative_root_means_the_home_folder(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))  # Windows
+    store = LakeStore("~/PowerBI/lake")
+    assert store.root == tmp_path / "PowerBI" / "lake"
+    write(store, {"n": 1})
+    assert (tmp_path / "PowerBI" / "lake" / "tenant=t1").is_dir()
+    assert not (tmp_path / "~").exists()
+
+
 def test_cloud_urls_give_a_cloud_root():
     store = LakeStore("s3://some-bucket/powerbi/lake")
     assert isinstance(store.root, CloudPath)
