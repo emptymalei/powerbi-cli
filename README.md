@@ -45,3 +45,25 @@ Or activate the virtual environment and use the command directly:
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pbi --help
 ```
+
+### Running the tests
+
+```bash
+uv run pytest
+```
+
+### The CLI surface snapshot
+
+Existing scripts depend on the exact flags of the CLI (for example `-ft`, `-tf`, `-wn`
+and `-wi`). `tests/test_cli_surface.py` guards them: it walks the whole command tree and
+compares every command, flag, type, default and `--help` output with the fixtures in
+`tests/fixtures/` (`cli_surface.json` and `cli_help.json`).
+
+If the test fails, the CLI changed. If the change was intentional, record it in
+`ACCEPTED_SURFACE_CHANGES` or `ACCEPTED_HELP_CHANGES` in that test with the reason (and
+add a line to `docs/changelog.md`). Regenerate the fixtures only after a reviewed,
+intentional change:
+
+```bash
+uv run python tests/cli_surface.py --write
+```
