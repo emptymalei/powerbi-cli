@@ -99,6 +99,10 @@
 
 ### Development
 
+- `tests/test_sync_http.py` runs the sync engine with 16 workers against the fake service
+  behind a real local socket. It found that the HTTP session kept only 10 connections, so
+  that the workers of a busy sync opened (and logged a warning for) a new connection per
+  request: the session now keeps 32.
 - `tests/fake_powerbi.py` is an in-memory Power BI service that enforces the rules of the
   documentation (mandatory `$top`, 1 to 100 ids per scan, events within 28 days in one UTC day,
   the window of `modifiedSince`, results kept for 24 hours) and can inject faults and an

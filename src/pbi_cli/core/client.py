@@ -56,6 +56,10 @@ FOREVER = timedelta.max
 #: Safety net: a list that needs more pages than this is not read.
 MAX_PAGES = 10_000
 
+#: Connections the session keeps for reuse. A sync runs up to 16 requests at once; with the
+#: default of 10, the others would open a connection (and a TLS handshake) for each request.
+POOL_SIZE = 32
+
 #: Keys of a response that only steer the paging.
 _PAGING_KEYS = (
     "continuationUri",
@@ -90,7 +94,9 @@ def make_session() -> requests.Session:
         status_forcelist=(500, 502, 503, 504),
         respect_retry_after_header=False,
     )
-    adapter = HTTPAdapter(max_retries=retry)
+    adapter = HTTPAdapter(
+        max_retries=retry, pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE
+    )
     session = requests.Session()
     session.mount("https://", adapter)
     session.mount("http://", adapter)

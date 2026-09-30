@@ -912,3 +912,9 @@ def test_body_hash_is_stable():
     assert body_hash({"a": 1, "b": 2}) == body_hash({"b": 2, "a": 1})
     assert body_hash({"a": 1}) != body_hash({"a": 2})
     assert re.fullmatch(r"[0-9a-f]{64}", body_hash({"workspaces": ["w1"]}))
+
+
+def test_the_default_session_keeps_enough_connections_for_the_most_workers_of_a_sync():
+    adapter = client_module.make_session().get_adapter("https://api.powerbi.com")
+
+    assert adapter._pool_maxsize >= 16  # a sync may run 16 requests at once
