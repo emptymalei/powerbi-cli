@@ -148,19 +148,33 @@ class Endpoint:
             )
         return path_params, given
 
-    def canonical_params(self, params: Optional[Mapping[str, Any]]) -> Dict[str, str]:
-        """Path and query parameters as sorted strings.
+    def split_canonical(
+        self, params: Optional[Mapping[str, Any]]
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """Like :meth:`split_params`, with every value as a canonical string.
 
         Equal requests give equal results whatever the spelling: booleans are lower
-        case, and lists of unordered values (``$expand``) are sorted. This is what
-        identifies a request in the lake.
+        case, and lists of unordered values (``$expand``) are sorted.
         """
         path_params, query = self.split_params(params)
-        merged = {**path_params, **query}
-        return {
-            key: _canonical_value(key, value, key in self.multi_value)
-            for key, value in sorted(merged.items())
-        }
+        return (
+            {
+                key: _canonical_value(key, value, False)
+                for key, value in sorted(path_params.items())
+            },
+            {
+                key: _canonical_value(key, value, key in self.multi_value)
+                for key, value in sorted(query.items())
+            },
+        )
+
+    def canonical_params(self, params: Optional[Mapping[str, Any]]) -> Dict[str, str]:
+        """Path and query parameters together as sorted canonical strings.
+
+        This is what identifies a request in the lake.
+        """
+        path_params, query = self.split_canonical(params)
+        return dict(sorted({**path_params, **query}.items()))
 
     def build_url(
         self,

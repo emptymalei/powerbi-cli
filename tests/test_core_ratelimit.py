@@ -257,3 +257,55 @@ def test_concurrency_is_limited():
 )
 def test_format_wait(seconds, expected):
     assert format_wait(seconds) == expected
+
+
+# ---------------------------------------------------------------------------
+# blocking (the API asked to wait)
+# ---------------------------------------------------------------------------
+
+
+def test_a_blocked_endpoint_waits_until_the_block_ends():
+    clock = FakeClock()
+    limiter, _ = make_limiter(clock, max_wait=None)
+    limiter.block(GROUPS, "t1", 90)
+    assert limiter.wait_time(GROUPS, "t1") == pytest.approx(90)
+    with limiter.slot(GROUPS, "t1"):
+        pass
+    assert clock.slept == [pytest.approx(90)]
+    assert limiter.wait_time(GROUPS, "t1") == 0
+
+
+def test_a_block_applies_to_endpoints_without_a_documented_quota_too():
+    clock = FakeClock()
+    limiter, _ = make_limiter(clock, max_wait=10)
+    limiter.block(USER_APPS, "t1", 600)
+    with pytest.raises(RateLimitError) as excinfo:
+        with limiter.slot(USER_APPS, "t1"):
+            pass
+    assert excinfo.value.retry_after == pytest.approx(600)
+    assert "user.apps" in str(excinfo.value)
+    # other tenants and endpoints are not affected
+    with limiter.slot(USER_APPS, "t2"):
+        pass
+    with limiter.slot(get_endpoint("user.groups"), "t1"):
+        pass
+
+
+def test_a_block_is_kept_between_runs_and_expires(tmp_path):
+    path = tmp_path / "quota.json"
+    clock = FakeClock()
+    first = QuotaTracker(path, clock=clock)
+    first.block("t1/admin.groups", 300)
+
+    second = QuotaTracker(path, clock=clock)  # the next run of the command line
+    assert second.next_slot("t1/admin.groups", None) == pytest.approx(300)
+    clock.now += 301
+    assert second.next_slot("t1/admin.groups", None) == 0
+
+
+def test_a_shorter_block_does_not_shorten_a_longer_one():
+    clock = FakeClock()
+    tracker = QuotaTracker(clock=clock)
+    tracker.block("k", 600)
+    tracker.block("k", 30)
+    assert tracker.next_slot("k", None) == pytest.approx(600)

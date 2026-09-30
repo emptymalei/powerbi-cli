@@ -4,7 +4,9 @@ The Power BI admin APIs allow few requests (for example 50 per hour for the work
 list), the quotas are shared by everyone using the tenant, and the ``429`` answer is the
 only authority. The counters here are therefore an *estimate* made from the requests this
 machine sent: they let the client wait instead of being throttled, and let the UI show
-how much of a quota is left. The client still honors ``429 Retry-After``.
+how much of a quota is left. When the API does answer ``429 Retry-After`` with a long
+wait, the endpoint is marked as blocked until then, so the next run does not hit the same
+wall.
 
 The counters are kept in a small JSON file so separate runs of the command line add up.
 """
@@ -32,6 +34,9 @@ class _DefaultMaxWait:
 
 
 DEFAULT_MAX_WAIT = _DefaultMaxWait()
+
+#: How long one request may wait for quota: seconds, ``None`` (forever) or the default.
+MaxWait = Union[float, None, _DefaultMaxWait]
 
 
 def format_wait(seconds: float) -> str:
@@ -86,6 +91,7 @@ class QuotaTracker:
         self._clock = clock
         self._lock = threading.Lock()
         self._calls: Dict[str, List[float]] = {}
+        self._blocked: Dict[str, float] = {}
         self._mtime: Optional[int] = None
         self._load()
 
@@ -108,21 +114,22 @@ class QuotaTracker:
                 for key, stamps in data.get("calls", {}).items()
                 if isinstance(stamps, list)
             }
+            self._blocked = {
+                key: float(until) for key, until in data.get("blocked", {}).items()
+            }
         except (OSError, ValueError, TypeError, AttributeError):
             logger.warning(f"Ignoring unreadable quota counters in {self._path}")
-            self._calls = {}
+            self._calls, self._blocked = {}, {}
         self._mtime = mtime
 
     def _save(self) -> None:
         if self._path is None:
             return
+        state = {"version": 1, "calls": self._calls, "blocked": self._blocked}
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self._path.with_name(self._path.name + ".tmp")
-            tmp.write_text(
-                json.dumps({"version": 1, "calls": self._calls}, separators=(",", ":")),
-                encoding="utf-8",
-            )
+            tmp.write_text(json.dumps(state, separators=(",", ":")), encoding="utf-8")
             os.replace(tmp, self._path)
             self._mtime = self._path.stat().st_mtime_ns
         except OSError as error:
@@ -138,6 +145,7 @@ class QuotaTracker:
                 self._calls[key] = kept
             else:
                 del self._calls[key]
+        self._blocked = {k: until for k, until in self._blocked.items() if until > now}
 
     # -- use -----------------------------------------------------------------------
 
@@ -147,6 +155,15 @@ class QuotaTracker:
             self._load()
             now = self._clock()
             self._calls.setdefault(key, []).append(now if at is None else at)
+            self._trim(now)
+            self._save()
+
+    def block(self, key: str, seconds: float) -> None:
+        """Refuse requests for ``seconds`` (the API asked to wait that long)."""
+        with self._lock:
+            self._load()
+            now = self._clock()
+            self._blocked[key] = max(self._blocked.get(key, 0.0), now + seconds)
             self._trim(now)
             self._save()
 
@@ -160,15 +177,21 @@ class QuotaTracker:
         return sum(1 for t in self._calls.get(key, []) if t > now - window)
 
     def next_slot(
-        self, key: str, limit: RateLimit, now: Optional[float] = None
+        self, key: str, limit: Optional[RateLimit], now: Optional[float] = None
     ) -> float:
-        """Seconds to wait until a request fits in every window of ``limit`` (0: now)."""
+        """Seconds to wait until a request is allowed (0: now).
+
+        A request is allowed when it fits every window of ``limit`` and the key is not
+        blocked.
+        """
         with self._lock:
             self._load()
             return self._next_slot(key, limit, self._clock() if now is None else now)
 
-    def _next_slot(self, key: str, limit: RateLimit, now: float) -> float:
-        wait = 0.0
+    def _next_slot(self, key: str, limit: Optional[RateLimit], now: float) -> float:
+        wait = max(0.0, self._blocked.get(key, 0.0) - now)
+        if limit is None:
+            return wait
         stamps = sorted(self._calls.get(key, []))
         for allowed, seconds in limit.windows:
             inside = [t for t in stamps if t > now - seconds]
@@ -241,10 +264,12 @@ class Limiter:
         return self.tracker.remaining(self.key(endpoint, tenant), endpoint.limit)
 
     def wait_time(self, endpoint: Endpoint, tenant: str) -> float:
-        """Seconds until the next request fits the quota; 0 when it fits now."""
-        if endpoint.limit is None:
-            return 0.0
+        """Seconds until the next request is allowed; 0 when it is allowed now."""
         return self.tracker.next_slot(self.key(endpoint, tenant), endpoint.limit)
+
+    def block(self, endpoint: Endpoint, tenant: str, seconds: float) -> None:
+        """Refuse requests to an endpoint for ``seconds``: the API asked to wait."""
+        self.tracker.block(self.key(endpoint, tenant), seconds)
 
     def _semaphore(self, key: str, size: int) -> threading.BoundedSemaphore:
         with self._semaphore_lock:
@@ -257,7 +282,7 @@ class Limiter:
         self,
         endpoint: Endpoint,
         tenant: str,
-        max_wait: Union[float, None, _DefaultMaxWait] = DEFAULT_MAX_WAIT,
+        max_wait: MaxWait = DEFAULT_MAX_WAIT,
     ) -> Iterator[None]:
         """Wait for quota, count the request, and hold a concurrency slot meanwhile.
 
@@ -265,25 +290,18 @@ class Limiter:
 
         :param max_wait: overrides the limiter's ``max_wait`` for this request (``None``
             waits as long as needed)
-        :raises RateLimitError: if the quota is used up and waiting would take longer
-            than ``max_wait``
+        :raises RateLimitError: if the quota is used up (or the API asked to wait) and
+            waiting would take longer than ``max_wait``
         """
         limit = endpoint.limit
         key = self.key(endpoint, tenant)
-        if limit is None:
-            self.tracker.record(key)
-            yield
-            return
+        allowed = self._max_wait if isinstance(max_wait, _DefaultMaxWait) else max_wait
 
-        semaphore = (
-            self._semaphore(key, limit.max_concurrent) if limit.max_concurrent else None
-        )
+        concurrency = limit.max_concurrent if limit else None
+        semaphore = self._semaphore(key, concurrency) if concurrency else None
         if semaphore is not None:
             semaphore.acquire()
         try:
-            allowed = (
-                self._max_wait if isinstance(max_wait, _DefaultMaxWait) else max_wait
-            )
             self._wait_for_quota(endpoint, key, limit, allowed)
             yield
         finally:
@@ -294,7 +312,7 @@ class Limiter:
         self,
         endpoint: Endpoint,
         key: str,
-        limit: RateLimit,
+        limit: Optional[RateLimit],
         max_wait: Optional[float],
     ) -> None:
         waited = 0.0
@@ -305,16 +323,17 @@ class Limiter:
                     self.tracker.record(key)
                     return
             if max_wait is not None and waited + wait > max_wait:
+                quota = f" ({limit.describe()})" if limit else ""
                 raise RateLimitError(
-                    f"The quota for {endpoint.id} ({limit.describe()}) is used up. "
-                    f"The next request fits in {format_wait(wait)}; run the command "
-                    "again later.",
+                    f"No request to {endpoint.id} is possible right now{quota}: the "
+                    f"quota is used up or Power BI asked to wait. The next request fits "
+                    f"in {format_wait(wait)}; run the command again later.",
                     status=None,
                     retry_after=wait,
                 )
             logger.info(
-                f"Quota for {endpoint.id} ({limit.describe()}) is used up, "
-                f"waiting {format_wait(wait)}"
+                f"Waiting {format_wait(wait)} before calling {endpoint.id} "
+                "(quota used up or throttled)"
             )
             self._sleep(wait)
             waited += wait
