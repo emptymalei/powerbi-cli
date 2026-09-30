@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pytest
 import requests
 from core_helpers import NOW, UTC, FakeAdapter, make_response, make_token
+from loguru import logger
 
 from pbi_cli.core import client as client_module
 from pbi_cli.core.auth import Credentials
@@ -14,7 +15,13 @@ from pbi_cli.core.client import FOREVER, PowerBIClient, Throttled, body_hash, ro
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore
-from pbi_cli.errors import ApiError, OfflineCacheMiss, RateLimitError, TokenExpiredError
+from pbi_cli.errors import (
+    ApiError,
+    OfflineCacheMiss,
+    PBIError,
+    RateLimitError,
+    TokenExpiredError,
+)
 
 BASE = "https://api.test/v1.0/myorg"
 T0 = NOW
@@ -829,6 +836,67 @@ def test_a_lake_that_cannot_be_written_does_not_lose_the_answer(tmp_path):
     result = client.fetch("user.apps")
     assert result.data == {"value": [1]}
     assert result.snapshot is None and result.from_cache is False
+
+
+class UnreadableStore(LakeStore):
+    def latest(self, *args, **kwargs):
+        raise OSError("S3 is not reachable")
+
+
+def test_a_lake_that_cannot_be_read_does_not_stop_a_call_the_api_can_answer(tmp_path):
+    adapter = apps_adapter({"value": [1]})
+    client, _ = make_client(
+        adapter, store=UnreadableStore(tmp_path / "lake"), group="user"
+    )
+    messages = []
+    sink = logger.add(lambda message: messages.append(str(message)), level="WARNING")
+    try:
+        result = client.fetch("user.apps", max_age=FOREVER)
+    finally:
+        logger.remove(sink)
+
+    assert result.from_cache is False and result.data == {"value": [1]}
+    assert len(adapter.requests) == 1
+    assert any("Could not read user.apps from the lake" in m for m in messages)
+    assert any("S3 is not reachable" in m for m in messages)
+
+
+def test_a_damaged_stored_answer_is_fetched_again_and_replaced(store):
+    adapter = apps_adapter({"value": [1]}, {"value": [2]})
+    client, _ = make_client(adapter, store=store, group="user")
+    first = client.fetch("user.apps")
+    (first.snapshot.directory / "data.json").write_text("{not json", encoding="utf-8")
+
+    second = client.fetch("user.apps")  # fresh by age, but it cannot be read
+
+    assert second.from_cache is False and second.data == {"value": [2]}
+    assert len(adapter.requests) == 2
+    assert len(store.versions("tenant-1", "user.apps", {})) == 2
+    assert client.fetch("user.apps").data == {"value": [2]}  # the new one is served
+
+
+def test_offline_with_a_lake_that_cannot_be_read_says_why(tmp_path):
+    adapter = FakeAdapter()
+    client, _ = make_client(
+        adapter, store=UnreadableStore(tmp_path / "lake"), group="user"
+    )
+    with pytest.raises(
+        PBIError, match="could not be read: S3 is not reachable"
+    ) as info:
+        client.fetch("user.apps", offline=True)
+    assert not isinstance(info.value, OfflineCacheMiss)
+    assert adapter.requests == []
+
+
+def test_offline_with_a_damaged_stored_answer_says_why(store):
+    adapter = apps_adapter({"value": [1]})
+    client, _ = make_client(adapter, store=store, group="user")
+    first = client.fetch("user.apps")
+    (first.snapshot.directory / "data.json").write_text("", encoding="utf-8")
+
+    with pytest.raises(PBIError, match="The data lake could not be read"):
+        client.fetch("user.apps", offline=True)
+    assert len(adapter.requests) == 1
 
 
 def test_the_token_never_reaches_the_lake(store, tmp_path):

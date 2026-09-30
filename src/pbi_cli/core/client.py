@@ -42,7 +42,13 @@ from pbi_cli.core.ratelimit import (
 )
 from pbi_cli.core.registry import BASE_URL, Endpoint, Kind, Paging, get_endpoint
 from pbi_cli.core.store import LakeStore, Snapshot, safe_name
-from pbi_cli.errors import ApiError, OfflineCacheMiss, RateLimitError, TokenExpiredError
+from pbi_cli.errors import (
+    ApiError,
+    OfflineCacheMiss,
+    PBIError,
+    RateLimitError,
+    TokenExpiredError,
+)
 
 #: ``max_age`` meaning "any age is fine".
 FOREVER = timedelta.max
@@ -598,6 +604,8 @@ class PowerBIClient:
             (wins over ``refresh``)
         :param max_wait: how long requests may wait for quota
         :raises OfflineCacheMiss: if ``offline`` and nothing is stored for this request
+        :raises PBIError: if ``offline`` and the lake cannot be read (without ``offline``
+            an unreadable lake is skipped and the API is asked)
         :raises ValueError: if the endpoint is not a read-only snapshot endpoint
         """
         endpoint = get_endpoint(endpoint_id)
@@ -616,17 +624,27 @@ class PowerBIClient:
             tenant = self._tenant_key(credentials)
 
         if self._store is not None and (offline or not refresh):
-            snapshot = self._store.latest(tenant, endpoint.id, canonical)
-            if snapshot is not None:
-                limit = max_age if max_age is not None else endpoint.ttl
-                if offline or snapshot.age(self._clock()) < limit:
-                    return Result(
-                        data=snapshot.load(),
-                        from_cache=True,
-                        fetched_at=snapshot.fetched_at,
-                        manifest=snapshot.manifest,
-                        snapshot=snapshot,
-                    )
+            try:
+                snapshot = self._store.latest(tenant, endpoint.id, canonical)
+                if snapshot is not None:
+                    limit = max_age if max_age is not None else endpoint.ttl
+                    if offline or snapshot.age(self._clock()) < limit:
+                        return Result(
+                            data=snapshot.load(),
+                            from_cache=True,
+                            fetched_at=snapshot.fetched_at,
+                            manifest=snapshot.manifest,
+                            snapshot=snapshot,
+                        )
+            except Exception as error:  # an unreadable lake is not a reason to fail
+                if offline:
+                    raise PBIError(
+                        f"The data lake could not be read: {error}"
+                    ) from error
+                logger.warning(
+                    f"Could not read {endpoint.id} from the lake, asking the API "
+                    f"instead: {error}"
+                )
         if offline:
             raise OfflineCacheMiss(
                 f"Nothing is stored for {endpoint.id} with these parameters"

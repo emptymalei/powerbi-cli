@@ -292,6 +292,49 @@ def test_workspaces_list_does_not_store_when_caching_is_disabled(
     assert not cache_folder.exists() or not list(cache_folder.rglob("tenant=*"))
 
 
+def damage_what_is_stored(cache_folder: Path) -> None:
+    """Truncate every stored response, as a crash or an editor might."""
+    files = list((cache_folder / "lake").rglob("data.json"))
+    assert files
+    for file in files:
+        file.write_text("{not json", encoding="utf-8")
+
+
+def test_workspaces_list_use_cache_asks_the_api_when_the_lake_cannot_be_read(
+    cache_folder, fake_api, signed_in
+):
+    fake_api.add(
+        "GET",
+        GROUPS,
+        make_response(200, groups_body("Damaged")),
+        make_response(200, groups_body("Fresh")),
+    )
+    run("workspaces", "list")
+    damage_what_is_stored(cache_folder)
+
+    result = run("workspaces", "list", "--use-cache")
+
+    assert result.exit_code == 0
+    assert "Fresh" in result.stdout
+    assert len(fake_api.calls()) == 2
+    assert "Saved to the data lake" in result.stdout
+
+
+def test_workspaces_list_cache_only_says_why_the_lake_cannot_be_read(
+    cache_folder, fake_api, signed_in
+):
+    fake_api.add("GET", GROUPS, make_response(200, groups_body("Damaged")))
+    run("workspaces", "list")
+    damage_what_is_stored(cache_folder)
+
+    result = run("workspaces", "list", "--cache-only")
+
+    assert result.exit_code == 1
+    assert "Error: The data lake could not be read" in result.output
+    assert "Traceback" not in result.output
+    assert len(fake_api.calls()) == 1
+
+
 # -- the stored answer is the answer to *this* request -----------------------------
 
 

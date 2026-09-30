@@ -62,6 +62,9 @@ pbi workspaces list --cache-only
   is yours. An expired token is fine, as nothing is sent.
 - Without a lake (no cache folder, or caching disabled) `--cache-only` stops and says how
   to set one up; `--use-cache` just asks the API.
+- A lake that cannot be read (a damaged file, S3 not reachable) does not stop `--use-cache`:
+  the command warns and asks the API, which stores a fresh answer. `--cache-only` has no API
+  to fall back on, so it stops and says why.
 
 ### Look into the lake: `pbi lake`
 

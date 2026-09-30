@@ -14,6 +14,9 @@
   cache had one entry per command, so `--use-cache` could return an answer that had been
   fetched with other options or by another tenant. Entries of the earlier cache are not
   used or migrated; `pbi cache clear` removes them.
+- A lake that cannot be read (a damaged file, S3 not reachable) does not stop `--use-cache`:
+  the command warns and asks the API. `--cache-only` has no API to fall back on, so it
+  stops and says why.
 - `pbi apps list --role admin` and `pbi users user-access` read every page. They used to
   return only the first 200 apps and the first page of access entries.
 - `pbi reports list` and `pbi reports pages` use the client as well. They always ask the
