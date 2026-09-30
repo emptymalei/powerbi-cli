@@ -1,0 +1,2456 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for pbi_cli - a command line interface for Power BI.">
+      
+      
+      
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/lake/">
+      
+      
+        <link rel="prev" href="../scan/">
+      
+      
+        <link rel="next" href="../sync/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.67">
+    
+    
+      
+        <title>Data lake - pbi_cli Documentation</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/classic/main.cfc7948b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/classic/palette.bf1c5cd6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-lake" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="pbi_cli Documentation" class="md-header__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pbi_cli Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data lake
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="red"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../auth/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../references/" class="md-tabs__link">
+          
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="pbi_cli Documentation" class="md-nav__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    pbi_cli Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Workspace Scans
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data lake
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data lake
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-it-from-the-command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Using it from the command line
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using it from the command line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#turn-it-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Turn it on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-commands-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the commands store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reuse-what-is-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reuse what is stored
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#look-into-the-lake-pbi-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Look into the lake: <code>pbi lake</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Layout
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-manifest-of-a-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The manifest of a snapshot
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots-event-logs-and-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Snapshots, event logs and jobs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freshness" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Freshness
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints-and-quotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Endpoints and quotas
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throttling" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Throttling
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sensitive data
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-it-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Using it from Python
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Cache (legacy)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  References
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  References
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  pbi_cli
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  pbi_cli
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  cli
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  errors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  session
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  core
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  core
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/ratelimit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ratelimit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  registry
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4_8" id="__nav_3_2_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sync
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  sync
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  engine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/runners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  runners
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  state
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  targets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powerbi
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  powerbi
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  index
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  admin
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  app
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  io
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-it-from-the-command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Using it from the command line
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using it from the command line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#turn-it-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Turn it on
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-commands-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the commands store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reuse-what-is-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reuse what is stored
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#look-into-the-lake-pbi-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Look into the lake: <code>pbi lake</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Layout
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-manifest-of-a-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The manifest of a snapshot
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots-event-logs-and-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Snapshots, event logs and jobs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freshness" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Freshness
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints-and-quotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Endpoints and quotas
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throttling" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Throttling
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensitive-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sensitive data
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-it-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Using it from Python
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="data-lake">Data lake<a class="headerlink" href="#data-lake" title="Permanent link">¤</a></h1>
+<p>The data lake is a folder (or an S3 prefix) where pbi_cli keeps what it fetched from the
+Power BI REST API, exactly as the API returned it. The commands that read the API write to
+it, <a href="../sync/"><code>pbi sync</code></a> fills it on a schedule, <code>pbi lake</code> browses it, and other tools can
+read it: it is plain JSON in Hive-style folders.</p>
+<h2 id="using-it-from-the-command-line">Using it from the command line<a class="headerlink" href="#using-it-from-the-command-line" title="Permanent link">¤</a></h2>
+<h3 id="turn-it-on">Turn it on<a class="headerlink" href="#turn-it-on" title="Permanent link">¤</a></h3>
+<p>The lake is the <code>lake</code> folder inside the cache folder. Set the cache folder once:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>config<span class="w"> </span>set-cache-folder<span class="w"> </span>~/PowerBI/cache<span class="w">           </span><span class="c1"># the lake is ~/PowerBI/cache/lake</span>
+pbi<span class="w"> </span>config<span class="w"> </span>set-cache-folder<span class="w"> </span>s3://my-bucket/powerbi<span class="w">    </span><span class="c1"># or a prefix in S3</span>
+</code></pre></div>
+<p>Without a cache folder nothing is stored and the commands work as they always did.
+<code>pbi config disable-cache</code> stops the commands from using the lake without forgetting the
+folder, and <code>pbi config enable-cache</code> switches it back on. Browsing with <code>pbi lake</code> works
+either way.</p>
+<h3 id="what-the-commands-store">What the commands store<a class="headerlink" href="#what-the-commands-store" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What is stored</th>
+<th><code>--use-cache</code>, <code>--cache-only</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pbi workspaces list</code></td>
+<td><code>admin.groups</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pbi users user-access</code></td>
+<td><code>admin.users.artifact_access</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pbi apps list</code></td>
+<td><code>user.apps</code>, or <code>admin.apps</code> with <code>--role admin</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pbi reports list</code></td>
+<td><code>user.group_reports</code></td>
+<td>no: always asks the API</td>
+</tr>
+<tr>
+<td><code>pbi reports pages</code></td>
+<td><code>user.report_pages</code> (and <code>user.group_reports</code> without <code>--report-id</code>)</td>
+<td>no: always asks the API</td>
+</tr>
+<tr>
+<td><code>pbi workspaces scan batch</code></td>
+<td><code>admin.scan.result</code>, one per batch of 100 workspaces</td>
+<td>no: always scans</td>
+</tr>
+<tr>
+<td><a href="../sync/"><code>pbi sync run</code></a></td>
+<td>what its targets need: lists, audit events, scans, fan-outs</td>
+<td>it skips what is fresh (<code>--max-age</code>, <code>--force</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>The endpoint ids are explained under <a href="#endpoints-and-quotas">Endpoints and quotas</a>. The
+other commands that call the API (<code>workspaces scan initiate|status|result|get</code>,
+<code>workspaces report-users</code>, <code>reports users</code>, <code>reports export</code>, <code>apps app</code>, <code>apps augment</code>
+and <code>export</code>) do not use the lake yet.</p>
+<p>Every call asks the API, waits when a <a href="#throttling">quota</a> is used up, and adds a new
+version to the lake: nothing is overwritten. The commands that print a table say which
+version they stored (<code>Saved to the data lake (version: 20260930T214332941747Z)</code>); the
+commands that print JSON, such as <code>pbi reports list</code>, print only the JSON so that it can be
+piped, and store silently.</p>
+<h3 id="reuse-what-is-stored">Reuse what is stored<a class="headerlink" href="#reuse-what-is-stored" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># A stored answer to this very request, of any age; the API only if there is none</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>list<span class="w"> </span>--use-cache
+
+<span class="c1"># Only a stored answer: fails if there is none, never calls the API</span>
+pbi<span class="w"> </span>workspaces<span class="w"> </span>list<span class="w"> </span>--cache-only
+</code></pre></div>
+<ul>
+<li>A stored answer belongs to a <em>request</em>: the endpoint, its parameters (<code>--top</code>,
+  <code>--expand</code>, <code>--odata-filter</code>, the user id, the role) and the tenant. <code>--use-cache</code> with
+  another <code>--top</code> or <code>--expand</code> does not return the answer to the first one: it asks the
+  API. The order of the <code>--expand</code> values does not matter. (The earlier
+  <a href="../cache/">cache</a> kept one entry per command, so it could answer with data that had been
+  fetched with other options, or by another tenant.)</li>
+<li>With <code>--use-cache</code> and <code>--cache-only</code> together, <code>--cache-only</code> wins.</li>
+<li>The commands read your stored token even for <code>--cache-only</code>: its tenant tells which data
+  is yours. An expired token is fine, as nothing is sent.</li>
+<li>Without a lake (no cache folder, or caching disabled) <code>--cache-only</code> stops and says how
+  to set one up; <code>--use-cache</code> just asks the API.</li>
+<li>A lake that cannot be read (a damaged file, S3 not reachable) does not stop <code>--use-cache</code>:
+  the command warns and asks the API, which stores a fresh answer. <code>--cache-only</code> has no API
+  to fall back on, so it stops and says why.</li>
+</ul>
+<h3 id="look-into-the-lake-pbi-lake">Look into the lake: <code>pbi lake</code><a class="headerlink" href="#look-into-the-lake-pbi-lake" title="Permanent link">¤</a></h3>
+<p><code>pbi lake</code> reads the lake only: it needs no token and no network, so it works offline and
+with an expired token.</p>
+<p><code>pbi lake ls</code> lists what is stored, one line per request (an endpoint with one set of
+parameters), with its <code>REF</code>: the name of its <code>params=</code> folder. <code>--all-versions</code> lists
+every stored version instead of the newest of each request.</p>
+<div class="highlight"><pre><span></span><code>$ pbi lake ls
+Data lake: ~/PowerBI/cache/lake
+
+Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
+ENDPOINT              REF           FETCHED (UTC)     AGE     ROWS  SIZE   VERSIONS  PARAMETERS
+admin.activityevents  events        2026-09-30 21:56  0 s     1     -      1 day(s)  newest day 2026-09-28 (sealed)
+admin.groups          60177fd656f3  2026-09-30 21:44  12 min  4     143 B  2         $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups          9a414e1d2726  2026-09-30 18:56  3 h     1     44 B   1         $top=50
+user.apps             44136fa355b3  2026-09-30 20:56  1 h     1     42 B   1         -
+
+$ pbi lake ls -e admin.groups --all-versions
+Data lake: ~/PowerBI/cache/lake
+
+Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
+ENDPOINT      REF           VERSION                 FETCHED (UTC)     AGE     ROWS  SIZE   PARAMETERS
+admin.groups  60177fd656f3  20260930T214424436365Z  2026-09-30 21:44  12 min  4     143 B  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups  60177fd656f3  20260928T215624436365Z  2026-09-28 21:56  2 d     3     110 B  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups  9a414e1d2726  20260930T185624436365Z  2026-09-30 18:56  3 h     1     44 B   $top=50
+</code></pre></div>
+<p><code>pbi lake show ENDPOINT</code> prints a stored response as JSON. When an endpoint was fetched
+with several sets of parameters, say which one with <code>-p KEY=VALUE</code> (as shown under
+<code>PARAMETERS</code>; the order of the values of <code>$expand</code> does not matter) or with <code>--ref</code>.
+<code>--version</code> picks an older version and <code>--manifest</code> prints what was asked, when, by which
+profile and a checksum, instead of the data.</p>
+<div class="highlight"><pre><span></span><code>$ pbi lake show admin.groups
+Error: 2 stored requests of admin.groups match; choose one with -p KEY=VALUE or --ref:
+  60177fd656f3  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+  9a414e1d2726  $top=50
+
+$ pbi lake show admin.groups -p '$top=50'
+{
+  "value": [
+    {
+      "id": "g0",
+      "name": "Workspace 0"
+    }
+  ]
+}
+
+$ pbi lake show admin.groups -p '$top=50' --manifest
+{
+  "schema": 1,
+  "kind": "snapshot",
+  "endpoint": "admin.groups",
+  "tenant": "0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40",
+  "profile": "admin-nlm",
+  "fetched_at": "2026-09-30T18:56:24.436365+00:00",
+  "request": {
+    "method": "GET",
+    "path": "/admin/groups",
+    "params": {
+      "$top": "50"
+    }
+  },
+  "params": {
+    "$top": "50"
+  },
+  "params_hash": "9a414e1d2726",
+  "status": 200,
+  "pages": 1,
+  "rows": 1,
+  "data_file": "data.json",
+  "bytes": 44,
+  "sha256": "ecf45bef6dda1dbfac0201cd0cd4596ad7481b9ab4ab982b27cbdf0072500695",
+  "cli_version": "0.4.0"
+}
+</code></pre></div>
+<p>Event logs are kept per UTC day: choose the day with <code>--day</code>. The events are printed one
+per line.</p>
+<div class="highlight"><pre><span></span><code>$ pbi lake show admin.activityevents --day 2026-09-28
+{"Id": "e1", "Activity": "ViewReport", "UserId": "alice@example.com"}
+</code></pre></div>
+<p>The lake grows, because every call adds a version. <code>pbi lake prune</code> deletes old versions
+and keeps the newest of each request (<code>--keep N</code> keeps more; <code>--endpoint</code> and <code>--tenant</code>
+narrow it down). It asks first, or pass <code>--yes</code>. Event logs are never pruned.</p>
+<div class="highlight"><pre><span></span><code>$ pbi lake prune --yes
+✓ Deleted 1 old version(s), kept the newest 1 of each request
+</code></pre></div>
+<p><code>pbi cache clear</code> never touches the lake; see <a href="../cache/">Cache (legacy)</a>.</p>
+<h2 id="why">Why<a class="headerlink" href="#why" title="Permanent link">¤</a></h2>
+<ul>
+<li>The admin APIs allow few requests. The workspace list, for example, allows 50 per hour
+  for the whole tenant, so asking again for something you already have is expensive.</li>
+<li>Some data disappears from the API: audit activity events only go back 28 days, and
+  the list of modified workspaces only 30 days. A lake is the only way to keep a history.</li>
+<li>What was fetched is useful on its own: to browse offline, to compare two days, or as
+  input for other tools.</li>
+</ul>
+<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code>&lt;root&gt;/
+  tenant=&lt;tenant id&gt;/
+    endpoint=admin_groups/
+      params=ab8d3b0ee9eb/                  one folder per set of request parameters
+        dt=2026-09-30/
+          v=20260930T204900123456Z/         one folder per fetch
+            data.json                       the response, all pages merged
+            manifest.json                   what was asked, when, by whom, a checksum
+    endpoint=admin_activityevents/
+      dt=2026-09-29/                        events are kept per UTC day
+        part-0000.jsonl                     one JSON object per line
+        part-0001.jsonl
+        manifest.json                       parts, row count, resume cursor, sealed?
+    endpoint=admin_scan_result/
+      params=5904788ae261/                  one folder per scan: its workspaces and options
+        dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
+    _state/
+      sync.json                             what `pbi sync` remembers between runs
+</code></pre></div>
+<p>The folder names are Hive-style partitions, so tools such as Athena, DuckDB and Spark can
+read them. The tenant comes from the token (see <a href="../auth/">authentication</a>); a token that
+does not name a tenant is filed under its profile instead (<code>tenant=profile-&lt;name&gt;</code>), never
+under a guess. <code>params=&lt;hash&gt;</code> is the first 12 hex digits of the SHA-256 of the canonical
+request parameters; the manifest spells them out.</p>
+<p>A request is identified by its endpoint and its <em>canonical</em> parameters: booleans are lower
+case and lists of unordered values, such as <code>$expand</code>, are sorted. Asking for
+<code>$expand=users,reports</code> and <code>$expand=reports, users</code> is the same request; asking for a
+different <code>$expand</code>, or as another tenant, never returns somebody else's answer.</p>
+<p>The manifest is written last. A version folder without one is an interrupted write and is
+ignored.</p>
+<h3 id="the-manifest-of-a-snapshot">The manifest of a snapshot<a class="headerlink" href="#the-manifest-of-a-snapshot" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema</code></td>
+<td>Version of this layout (currently 1).</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>snapshot</code>, or <code>job</code> for the result of an asynchronous job.</td>
+</tr>
+<tr>
+<td><code>endpoint</code></td>
+<td>The endpoint id (see the table below).</td>
+</tr>
+<tr>
+<td><code>tenant</code>, <code>profile</code></td>
+<td>The tenant, and the name of the profile used. The token is never stored.</td>
+</tr>
+<tr>
+<td><code>fetched_at</code></td>
+<td>When the response was received, in UTC.</td>
+</tr>
+<tr>
+<td><code>request</code></td>
+<td>Method, path and canonical parameters that were sent, and a hash of the body. Never headers.</td>
+</tr>
+<tr>
+<td><code>params</code>, <code>params_hash</code></td>
+<td>The canonical parameters and the hash that names the <code>params=</code> folder.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>The HTTP status of the answer.</td>
+</tr>
+<tr>
+<td><code>pages</code></td>
+<td>How many API pages were merged into <code>data.json</code>.</td>
+</tr>
+<tr>
+<td><code>rows</code></td>
+<td>How many rows the response holds, when it is a list.</td>
+</tr>
+<tr>
+<td><code>data_file</code>, <code>bytes</code>, <code>sha256</code></td>
+<td>The data file, its size and its SHA-256.</td>
+</tr>
+<tr>
+<td><code>cli_version</code></td>
+<td>The pbi_cli version that wrote it.</td>
+</tr>
+</tbody>
+</table>
+<p>The manifest of a day of events has <code>kind: events</code>, the <code>day</code>, the <code>parts</code>, the number of
+<code>rows</code>, the <code>id_field</code>, a resume <code>cursor</code>, when it was last written (<code>updated_at</code>) and
+whether the day is <code>sealed</code> (complete).</p>
+<p>The manifest of a scan has <code>kind: job</code>. <code>params</code> holds the options of the scan and <code>batch</code>,
+which names its set of workspaces; <code>workspace_ids</code> lists them, and <code>scan_id</code> and
+<code>started_at</code> tell which scan of the API it is. <code>rows</code> is the number of workspaces.</p>
+<h2 id="snapshots-event-logs-and-jobs">Snapshots, event logs and jobs<a class="headerlink" href="#snapshots-event-logs-and-jobs" title="Permanent link">¤</a></h2>
+<ul>
+<li>A <strong>snapshot</strong> is one response. Every fetch adds a version; nothing is overwritten.
+  Old versions can be pruned, keeping the newest of each request.</li>
+<li>An <strong>event log</strong> is append-only: the events of one UTC day, deduplicated by their <code>Id</code>, so
+  fetching the same day twice adds only what is new. A day is sealed once it is complete.</li>
+<li>A <strong>job</strong> is a scan: start it, poll its status, fetch its result. The result is stored
+  like a snapshot, one request per set of workspaces and options, so scanning the same
+  workspaces again adds a version. See <a href="../sync/#scans">Sync</a>.</li>
+</ul>
+<h2 id="freshness">Freshness<a class="headerlink" href="#freshness" title="Permanent link">¤</a></h2>
+<p>A stored snapshot is used when it is younger than the <code>max_age</code> you ask for; the default is
+the <code>ttl</code> of the endpoint (24 hours for the admin inventories, 1 hour for what a user can
+see). Three modes change that: <code>refresh</code> ignores the lake and fetches (the answer is still
+stored), <code>offline</code> never calls the API and answers from the lake whatever the age, and
+<code>max_age=timedelta(0)</code> always fetches. A fresh snapshot is served even when the token has
+since expired.</p>
+<p>The commands do not use the <code>ttl</code>: they ask the API unless you pass <code>--use-cache</code> (a
+stored answer of any age) or <code>--cache-only</code> (<code>offline</code>). The <code>ttl</code> applies to
+<code>client.fetch</code> calls that pass no <code>max_age</code>, as in the Python example below.</p>
+<h2 id="endpoints-and-quotas">Endpoints and quotas<a class="headerlink" href="#endpoints-and-quotas" title="Permanent link">¤</a></h2>
+<p>These are the operations pbi_cli may call. Only reads are listed, plus the scanner API
+whose start request is a <code>POST</code> that only asks for metadata. Operations that change things
+(refresh, delete, add user, ...) and operations that return business data (<code>Execute
+Queries</code>) are left out on purpose.</p>
+<p>The quotas are copied from the documentation page of each operation (checked on
+2026-09-30). A dash means the page states no quota; those endpoints are not throttled
+locally and rely on the <code>429</code> answer of the API.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Operation</th>
+<th>Needs</th>
+<th>Quota</th>
+<th>Stored as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>admin.groups</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/groups-get-groups-as-admin">Workspaces of the tenant</a></td>
+<td>admin</td>
+<td>50/h, 15/min</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.apps</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/apps-get-apps-as-admin">Apps of the tenant</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.reports</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/reports-get-reports-as-admin">Reports of the tenant</a></td>
+<td>admin</td>
+<td>50/h, 5/min</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.datasets</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-datasets-as-admin">Datasets of the tenant</a></td>
+<td>admin</td>
+<td>50/h, 5/min</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.dashboards</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dashboards-get-dashboards-as-admin">Dashboards of the tenant</a></td>
+<td>admin</td>
+<td>50/h, 5/min</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.dataflows</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflows-as-admin">Dataflows of the tenant</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.capacities</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-capacities-as-admin">Capacities of the tenant</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.users.artifact_access</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/users-get-user-artifact-access-as-admin">Items a user has access to</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.reports.users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/reports-get-report-users-as-admin">Users of a report</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.datasets.datasources</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-datasources-as-admin">Data sources of a dataset</a></td>
+<td>admin</td>
+<td>300/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.workspaces.modified</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-modified-workspaces">IDs of the workspaces modified since a time</a></td>
+<td>admin</td>
+<td>30/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.activityevents</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-activity-events">Audit activity events of one UTC day</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>events</td>
+</tr>
+<tr>
+<td><code>admin.scan.start</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info">Start a metadata scan of up to 100 workspaces</a></td>
+<td>admin</td>
+<td>500/h, 16 concurrent</td>
+<td>job</td>
+</tr>
+<tr>
+<td><code>admin.scan.status</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-status">Status of a scan</a></td>
+<td>admin</td>
+<td>10000/h</td>
+<td>job</td>
+</tr>
+<tr>
+<td><code>admin.scan.result</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-scan-result">Result of a finished scan</a></td>
+<td>admin</td>
+<td>500/h</td>
+<td>job</td>
+</tr>
+<tr>
+<td><code>user.groups</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-groups">Workspaces the user has access to</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.apps</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/apps/get-apps">Apps installed by the user</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.group_reports</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-reports-in-group">Reports of a workspace</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.report_pages</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-pages-in-group">Pages of a report</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+</tbody>
+</table>
+<h2 id="throttling">Throttling<a class="headerlink" href="#throttling" title="Permanent link">¤</a></h2>
+<p>The client counts the requests it sends (the commands keep the counts in
+<code>~/.pbi_cli/quota.json</code>, so a second run knows what the first one used) and waits when a
+documented quota is used up, instead of being refused. A command waits at most two minutes
+for quota; if that is not enough it stops and says when to run it again. The
+counts are an estimate: other people and tools share the same quota, so the <code>429 Too Many
+Requests</code> answer of the API always wins. On a <code>429</code> the client waits for the time the API
+asks for (<code>Retry-After</code>). If that is longer than five minutes it does not wait: it
+reports when to try again and remembers it, so the next run does not hit the same wall.</p>
+<h2 id="sensitive-data">Sensitive data<a class="headerlink" href="#sensitive-data" title="Permanent link">¤</a></h2>
+<p>The lake holds what the API returns, and that includes names, e-mail addresses, the users
+of each report, IP addresses in activity events and, with the right scan options, the
+queries behind datasets. Treat it like the tenant's administration data.</p>
+<ul>
+<li>Tokens are never written to the lake, to logs or to error messages.</li>
+<li>On a local disk the lake folder is readable by its owner only and so is every file in it.</li>
+<li>In S3 access is governed by the bucket policy; use a private bucket and encryption.</li>
+<li>Keep a lake out of version control.</li>
+</ul>
+<h2 id="using-it-from-python">Using it from Python<a class="headerlink" href="#using-it-from-python" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pbi_cli.core.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Credentials</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pbi_cli.core.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">PowerBIClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pbi_cli.core.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">LakeStore</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">PowerBIClient</span><span class="p">(</span>
+    <span class="k">lambda</span><span class="p">:</span> <span class="n">Credentials</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="s2">"&lt;your token&gt;"</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="s2">"admin-nlm"</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">"admin"</span><span class="p">),</span>
+    <span class="n">store</span><span class="o">=</span><span class="n">LakeStore</span><span class="p">(</span><span class="s2">"~/PowerBI/lake"</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span>
+    <span class="s2">"admin.groups"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"$expand"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"users"</span><span class="p">,</span> <span class="s2">"reports"</span><span class="p">]},</span> <span class="n">max_age</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">from_cache</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]))</span>
+
+<span class="c1"># Later, without the network:</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"admin.groups"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"$expand"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"users"</span><span class="p">,</span> <span class="s2">"reports"</span><span class="p">]},</span> <span class="n">offline</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>The commands build their client with <code>pbi_cli.session.open_client</code>, which finds the lake
+from the cache folder of the settings and keeps the quota counters in
+<code>~/.pbi_cli/quota.json</code>. The reference of the modules is under
+<a href="../references/core/client/">References</a> and <a href="../references/session/"><code>pbi_cli.session</code></a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.tabs"],"redirect":null,"search":"../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.67a597eb.min.js"></script>
+      
+    
+  </body>
+</html>
