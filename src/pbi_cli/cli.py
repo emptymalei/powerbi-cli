@@ -1,13 +1,13 @@
-import builtins
 import json
 import os
 import sys
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import Annotated, Any, Callable, Dict, Iterable, List, Optional, Union
 
-import click
 import pandas as pd
 import requests
+import typer
 import yaml
 from loguru import logger
 from slugify import slugify
@@ -19,12 +19,14 @@ import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
 from pbi_cli.cache import CacheManager
+from pbi_cli.cli_support import command, new_app
 from pbi_cli.config import (
     VALID_GROUPS,
     PBIConfig,
     migrate_legacy_config,
     resolve_output_path,
 )
+from pbi_cli.errors import PBIError
 from pbi_cli.powerbi.admin import User, Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
 from pbi_cli.web import DataRetriever
@@ -76,7 +78,7 @@ def _handle_cache_load(
     """Handle loading data from cache.
 
     Returns the cached data if available, or None if not cached.
-    Raises click.Abort if cache_only is True but cache is not available.
+    Raises typer.Abort if cache_only is True but cache is not available.
     """
     if not (use_cache or cache_only):
         return None
@@ -88,25 +90,25 @@ def _handle_cache_load(
         if cached_data:
             cache_version = cached_data.get("version", "unknown")
             cache_time = cached_data.get("cached_at", "unknown")
-            click.secho(
+            typer.secho(
                 f"Using cached data from {cache_time} (version: {cache_version})",
                 fg="cyan",
             )
             return cached_data.get("data")
         elif cache_only:
-            click.secho(
+            typer.secho(
                 "Error: Cache not available and --cache-only was specified", fg="red"
             )
-            raise click.Abort()
+            raise typer.Abort()
         else:
-            click.secho("Cache not available, fetching from API...", fg="yellow")
+            typer.secho("Cache not available, fetching from API...", fg="yellow")
             return None
     elif cache_only:
-        click.secho(
+        typer.secho(
             "Error: Cache not configured and --cache-only was specified", fg="red"
         )
-        click.echo("Use 'pbi config set-cache-folder' to configure caching.")
-        raise click.Abort()
+        typer.echo("Use 'pbi config set-cache-folder' to configure caching.")
+        raise typer.Abort()
 
     return None
 
@@ -119,7 +121,7 @@ def _handle_cache_save(
         cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
         version = cache_manager.save(cache_key, data, metadata=metadata)
         if version:
-            click.secho(f"Cached data (version: {version})", fg="green")
+            typer.secho(f"Cached data (version: {version})", fg="green")
 
 
 def _display_table(
@@ -133,7 +135,7 @@ def _display_table(
         display_cols: Optional list of column names to display
     """
     if not data or "value" not in data or len(data["value"]) == 0:
-        click.echo(f"No {title.lower()} found.")
+        typer.echo(f"No {title.lower()} found.")
         return
 
     df = pd.json_normalize(data["value"])
@@ -144,11 +146,11 @@ def _display_table(
         if available_cols:
             df = df[available_cols]
 
-    click.echo("\n" + "=" * 80)
-    click.echo(f"{title}: {len(df)} record(s)")
-    click.echo("=" * 80)
-    click.echo(df.to_string(index=False))
-    click.echo("=" * 80)
+    typer.echo("\n" + "=" * 80)
+    typer.echo(f"{title}: {len(df)} record(s)")
+    typer.echo("=" * 80)
+    typer.echo(df.to_string(index=False))
+    typer.echo("=" * 80)
 
 
 def _check_keyring_availability():
@@ -361,13 +363,13 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
         if profile is None:
             profile = profiles_data.get("active_profile")
         if profile is None:
-            raise click.ClickException(
+            raise PBIError(
                 f"No active profile set for group '{group}'. "
                 f"Use 'pbi auth -g {group}' to create a profile or "
                 f"'pbi profile switch -g {group}' to switch profiles."
             )
         if profile not in profiles_data.get("profiles", {}):
-            raise click.ClickException(
+            raise PBIError(
                 f"Profile '{profile}' not found in group '{group}' or flat profiles. "
                 "Use 'pbi profile list' to see available profiles."
             )
@@ -375,48 +377,116 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     # Get token from keyring or file.
     token = _get_credential(profile)
     if token is None:
-        raise click.ClickException(
+        raise PBIError(
             f"No credentials found for profile '{profile}'. Please re-authenticate."
         )
 
     return {"Authorization": f"Bearer {token}"}
 
 
-@click.group(invoke_without_command=True)
-@click.pass_context
-def pbi(ctx):
+class AuthGroup(str, Enum):
+    """Auth groups a profile can live in (mirrors ``pbi_cli.config.VALID_GROUPS``)."""
+
+    user = "user"
+    admin = "admin"
+
+
+class FileType(str, Enum):
+    """Output formats of the commands that save results to files."""
+
+    json = "json"
+    excel = "excel"
+
+
+class ConvertFormat(str, Enum):
+    """Target formats of ``pbi workspaces format-convert``."""
+
+    excel = "excel"
+
+
+class AppRole(str, Enum):
+    """Whose view of the apps ``pbi apps list`` shows."""
+
+    admin = "admin"
+    user = "user"
+
+
+class Expand(str, Enum):
+    """Items that can be expanded inline when listing workspaces."""
+
+    users = "users"
+    reports = "reports"
+    dashboards = "dashboards"
+    datasets = "datasets"
+    dataflows = "dataflows"
+    workbooks = "workbooks"
+
+
+def _values(choices: Iterable[Enum]) -> List[Any]:
+    """Return the plain values of enum choices received from Typer."""
+    return [choice.value for choice in choices]
+
+
+def _positive_float(value: float) -> float:
+    """Typer callback: only accept numbers greater than zero."""
+    if value <= 0:
+        raise typer.BadParameter("must be greater than 0")
+    return value
+
+
+app = new_app("pbi", add_completion=True)
+profile_app = new_app("profile")
+config_app = new_app("config")
+cache_app = new_app("cache")
+workspaces_app = new_app("workspaces")
+scan_app = new_app("scan")
+users_app = new_app("users")
+apps_app = new_app("apps")
+reports_app = new_app("reports")
+
+app.add_typer(profile_app, name="profile")
+app.add_typer(config_app, name="config")
+app.add_typer(cache_app, name="cache")
+app.add_typer(workspaces_app, name="workspaces")
+workspaces_app.add_typer(scan_app, name="scan")
+app.add_typer(users_app, name="users")
+app.add_typer(apps_app, name="apps")
+app.add_typer(reports_app, name="reports")
+
+
+@app.callback(invoke_without_command=True)
+def root(ctx: typer.Context):
     if ctx.invoked_subcommand is None:
-        click.echo("Hello {}".format(os.environ.get("USER", "")))
-        click.echo("Welcome to pbi cli. Use pbi --help for help.")
-    else:
-        pass
+        typer.echo("Hello {}".format(os.environ.get("USER", "")))
+        typer.echo("Welcome to pbi cli. Use pbi --help for help.")
 
 
-@pbi.command()
+@command(app, "version")
 def version():
     """Show the current version of the pbi CLI tool."""
     from importlib.metadata import version as _version
 
-    click.echo(_version("pbi_cli"))
+    typer.echo(_version("pbi_cli"))
 
 
-@pbi.command()
-@click.option("--bearer-token", "-t", help="Bearer token", required=True)
-@click.option(
-    "--profile",
-    "-p",
-    help="Profile name for this credential set",
-    default="default",
-)
-@click.option(
-    "--group",
-    "-g",
-    help="Group to store this profile in ('user' or 'admin')",
-    type=click.Choice(list(VALID_GROUPS)),
-    default=None,
-    required=False,
-)
-def auth(bearer_token: str, profile: str, group: Optional[str]):
+@command(app, "auth")
+def auth(
+    bearer_token: Annotated[
+        str, typer.Option("--bearer-token", "-t", help="Bearer token")
+    ],
+    profile: Annotated[
+        str,
+        typer.Option("--profile", "-p", help="Profile name for this credential set"),
+    ] = "default",
+    group: Annotated[
+        Optional[AuthGroup],
+        typer.Option(
+            "--group",
+            "-g",
+            help="Group to store this profile in ('user' or 'admin')",
+        ),
+    ] = None,
+):
     """Store authentication bearer token securely
 
     ```
@@ -453,21 +523,23 @@ def auth(bearer_token: str, profile: str, group: Optional[str]):
     # Store token securely (keyed by profile name)
     _set_credential(profile, bearer_token)
 
-    if group is not None:
+    group_name = group.value if group is not None else None
+    if group_name is not None:
         # Store in group-based config
         pbi_config = PBIConfig()
-        pbi_config.add_profile_to_group(group, profile, {"name": profile})
+        pbi_config.add_profile_to_group(group_name, profile, {"name": profile})
         # Activate this profile in the group if none is set yet
-        if not pbi_config.get_group_active_profile(group):
-            pbi_config.set_group_active_profile(group, profile)
-        active_in_group = pbi_config.get_group_active_profile(group)
-        click.secho(
-            f"✓ Credentials saved securely for profile '{profile}' in group '{group}'",
+        if not pbi_config.get_group_active_profile(group_name):
+            pbi_config.set_group_active_profile(group_name, profile)
+        active_in_group = pbi_config.get_group_active_profile(group_name)
+        typer.secho(
+            f"✓ Credentials saved securely for profile '{profile}' in group '{group_name}'",
             fg="green",
         )
         if active_in_group == profile:
-            click.secho(
-                f"✓ Profile '{profile}' is now active in group '{group}'", fg="green"
+            typer.secho(
+                f"✓ Profile '{profile}' is now active in group '{group_name}'",
+                fg="green",
             )
     else:
         # Legacy: store in flat profiles
@@ -483,30 +555,36 @@ def auth(bearer_token: str, profile: str, group: Optional[str]):
 
         _save_profiles(profiles_data)
 
-        click.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
+        typer.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
         if profiles_data["active_profile"] == profile:
-            click.secho(f"✓ Profile '{profile}' is now active", fg="green")
+            typer.secho(f"✓ Profile '{profile}' is now active", fg="green")
 
 
-@pbi.group(name="profile", invoke_without_command=True)
-@click.pass_context
-def profile_group(ctx):
+@profile_app.callback(invoke_without_command=True)
+def profile_group(ctx: typer.Context):
     """Manage authentication profiles"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi profile --help for help.")
+        typer.echo("Use pbi profile --help for help.")
 
 
-@profile_group.command(name="switch")
-@click.argument("profile_name", required=False)
-@click.option(
-    "--group",
-    "-g",
-    help="Group to switch profile in ('user' or 'admin')",
-    type=click.Choice(list(VALID_GROUPS)),
-    default=None,
-    required=False,
-)
-def switch_profile_cmd(profile_name: Optional[str] = None, group: Optional[str] = None):
+@command(profile_app, "switch")
+def switch_profile_cmd(
+    profile_name: Annotated[
+        Optional[str],
+        typer.Argument(
+            metavar="PROFILE_NAME",
+            help="Profile to switch to (you are asked to choose when omitted)",
+        ),
+    ] = None,
+    group: Annotated[
+        Optional[AuthGroup],
+        typer.Option(
+            "--group",
+            "-g",
+            help="Group to switch profile in ('user' or 'admin')",
+        ),
+    ] = None,
+):
     """Switch the active authentication profile
 
     ```
@@ -529,49 +607,51 @@ def switch_profile_cmd(profile_name: Optional[str] = None, group: Optional[str] 
     :param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)
     :param group: Optional group ('user' or 'admin') to switch within
     """
-    if group is not None:
+    group_name = group.value if group is not None else None
+    if group_name is not None:
         pbi_config = PBIConfig()
-        group_profiles = pbi_config.get_group_profiles(group)
+        group_profiles = pbi_config.get_group_profiles(group_name)
         available_profiles = tuple(group_profiles.keys())
 
         if not available_profiles:
-            click.secho(
-                f"No profiles found in group '{group}'. "
-                f"Use 'pbi auth -g {group}' to create a profile.",
+            typer.secho(
+                f"No profiles found in group '{group_name}'. "
+                f"Use 'pbi auth -g {group_name}' to create a profile.",
                 fg="yellow",
             )
             return
 
         if profile_name is None:
-            click.echo(f"Available profiles in group '{group}':")
+            typer.echo(f"Available profiles in group '{group_name}':")
             for idx, prof in enumerate(available_profiles, 1):
                 active_marker = (
                     " (active)"
-                    if prof == pbi_config.get_group_active_profile(group)
+                    if prof == pbi_config.get_group_active_profile(group_name)
                     else ""
                 )
-                click.echo(f"  {idx}. {prof}{active_marker}")
+                typer.echo(f"  {idx}. {prof}{active_marker}")
 
-            choice = click.prompt(
+            choice = typer.prompt(
                 "Select profile number", type=int, default=1, show_default=True
             )
             if 1 <= choice <= len(available_profiles):
                 profile_name = available_profiles[choice - 1]
             else:
-                click.secho("Invalid selection", fg="red")
+                typer.secho("Invalid selection", fg="red")
                 return
 
         if profile_name not in available_profiles:
-            click.secho(
-                f"Profile '{profile_name}' not found in group '{group}'. "
+            typer.secho(
+                f"Profile '{profile_name}' not found in group '{group_name}'. "
                 "Use 'pbi profile list' to see available profiles.",
                 fg="red",
             )
             return
 
-        pbi_config.set_group_active_profile(group, profile_name)
-        click.secho(
-            f"✓ Switched to profile '{profile_name}' in group '{group}'", fg="green"
+        pbi_config.set_group_active_profile(group_name, profile_name)
+        typer.secho(
+            f"✓ Switched to profile '{profile_name}' in group '{group_name}'",
+            fg="green",
         )
         return
 
@@ -581,31 +661,31 @@ def switch_profile_cmd(profile_name: Optional[str] = None, group: Optional[str] 
     available_profiles = tuple(profiles_data.get("profiles", {}).keys())
 
     if not available_profiles:
-        click.secho(
+        typer.secho(
             "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
         )
         return
 
     # If no profile specified, show interactive selection
     if profile_name is None:
-        click.echo("Available profiles:")
+        typer.echo("Available profiles:")
         for idx, prof in enumerate(available_profiles, 1):
             active_marker = (
                 " (active)" if prof == profiles_data.get("active_profile") else ""
             )
-            click.echo(f"  {idx}. {prof}{active_marker}")
+            typer.echo(f"  {idx}. {prof}{active_marker}")
 
-        choice = click.prompt(
+        choice = typer.prompt(
             "Select profile number", type=int, default=1, show_default=True
         )
         if 1 <= choice <= len(available_profiles):
             profile_name = available_profiles[choice - 1]
         else:
-            click.secho("Invalid selection", fg="red")
+            typer.secho("Invalid selection", fg="red")
             return
 
     if profile_name not in available_profiles:
-        click.secho(
+        typer.secho(
             f"Profile '{profile_name}' not found. Use 'pbi profile list' to see available profiles.",
             fg="red",
         )
@@ -614,10 +694,10 @@ def switch_profile_cmd(profile_name: Optional[str] = None, group: Optional[str] 
     profiles_data["active_profile"] = profile_name
     _save_profiles(profiles_data)
 
-    click.secho(f"✓ Switched to profile '{profile_name}'", fg="green")
+    typer.secho(f"✓ Switched to profile '{profile_name}'", fg="green")
 
 
-@profile_group.command(name="list")
+@command(profile_app, "list")
 def list_auth():
     """List all stored authentication profiles
 
@@ -633,58 +713,68 @@ def list_auth():
 
     # Show flat (legacy) profiles
     if profiles:
-        click.echo("Stored authentication profiles (ungrouped):")
+        typer.echo("Stored authentication profiles (ungrouped):")
         for profile_name in profiles.keys():
             active_marker = " (active)" if profile_name == active_profile else ""
             token_exists = _get_credential(profile_name) is not None
             status = "✓" if token_exists else "✗"
-            click.echo(f"  {status} {profile_name}{active_marker}")
-        click.echo()
-        click.echo(f"Active profile: {active_profile or 'None'}")
+            typer.echo(f"  {status} {profile_name}{active_marker}")
+        typer.echo()
+        typer.echo(f"Active profile: {active_profile or 'None'}")
     else:
-        click.secho(
+        typer.secho(
             "No ungrouped profiles found. Use 'pbi auth' to create a profile.",
             fg="yellow",
         )
 
     # Show group profiles
-    click.echo()
+    typer.echo()
     for group in VALID_GROUPS:
         group_profiles = pbi_config.get_group_profiles(group)
         group_active = pbi_config.get_group_active_profile(group)
         if group_profiles:
-            click.echo(f"Group '{group}':")
+            typer.echo(f"Group '{group}':")
             for profile_name in group_profiles.keys():
                 active_marker = " (active)" if profile_name == group_active else ""
                 token_exists = _get_credential(profile_name) is not None
                 status = "✓" if token_exists else "✗"
-                click.echo(f"  {status} {profile_name}{active_marker}")
-            click.echo(f"  Active: {group_active or 'None'}")
+                typer.echo(f"  {status} {profile_name}{active_marker}")
+            typer.echo(f"  Active: {group_active or 'None'}")
         else:
-            click.secho(
+            typer.secho(
                 f"No profiles found in group '{group}'. "
                 f"Use 'pbi auth -g {group}' to create one.",
                 fg="yellow",
             )
 
     if not profiles and not any(pbi_config.get_group_profiles(g) for g in VALID_GROUPS):
-        click.secho(
+        typer.secho(
             "No profiles found. Use 'pbi auth' to create a profile.", fg="yellow"
         )
 
 
-@profile_group.command(name="delete")
-@click.argument("profile")
-@click.option(
-    "--group",
-    "-g",
-    help="Group to delete the profile from ('user' or 'admin')",
-    type=click.Choice(list(VALID_GROUPS)),
-    default=None,
-    required=False,
-)
-@click.confirmation_option(prompt="Are you sure you want to delete this profile?")
-def delete_auth(profile: str, group: Optional[str]):
+@command(profile_app, "delete")
+def delete_auth(
+    profile: Annotated[
+        str, typer.Argument(metavar="PROFILE", help="Name of the profile to delete")
+    ],
+    group: Annotated[
+        Optional[AuthGroup],
+        typer.Option(
+            "--group",
+            "-g",
+            help="Group to delete the profile from ('user' or 'admin')",
+        ),
+    ] = None,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes",
+            prompt="Are you sure you want to delete this profile?",
+            help="Confirm the action without prompting.",
+        ),
+    ] = False,
+):
     """Delete an authentication profile
 
     ```
@@ -700,30 +790,37 @@ def delete_auth(profile: str, group: Optional[str]):
     :param profile: Profile name to delete
     :param group: Optional group ('user' or 'admin') to delete from
     """
-    if group is not None:
+    if not yes:
+        raise typer.Abort()
+
+    group_name = group.value if group is not None else None
+    if group_name is not None:
         pbi_config = PBIConfig()
-        if not pbi_config.has_profile_in_group(group, profile):
-            click.secho(
-                f"Profile '{profile}' not found in group '{group}'. "
+        if not pbi_config.has_profile_in_group(group_name, profile):
+            typer.secho(
+                f"Profile '{profile}' not found in group '{group_name}'. "
                 "Use 'pbi profile list' to see available profiles.",
                 fg="red",
             )
             return
 
         _delete_credential(profile)
-        pbi_config.remove_profile_from_group(group, profile)
-        click.secho(f"✓ Profile '{profile}' deleted from group '{group}'", fg="green")
-        new_active = pbi_config.get_group_active_profile(group)
+        pbi_config.remove_profile_from_group(group_name, profile)
+        typer.secho(
+            f"✓ Profile '{profile}' deleted from group '{group_name}'", fg="green"
+        )
+        new_active = pbi_config.get_group_active_profile(group_name)
         if new_active:
-            click.secho(
-                f"Active profile in group '{group}' is now '{new_active}'", fg="yellow"
+            typer.secho(
+                f"Active profile in group '{group_name}' is now '{new_active}'",
+                fg="yellow",
             )
         return
 
     profiles_data = _load_profiles()
 
     if profile not in profiles_data.get("profiles", {}):
-        click.secho(
+        typer.secho(
             f"Profile '{profile}' not found. Use 'pbi profile list' to see available profiles.",
             fg="red",
         )
@@ -745,24 +842,30 @@ def delete_auth(profile: str, group: Optional[str]):
 
     _save_profiles(profiles_data)
 
-    click.secho(f"✓ Profile '{profile}' deleted successfully", fg="green")
+    typer.secho(f"✓ Profile '{profile}' deleted successfully", fg="green")
     if profiles_data.get("active_profile"):
-        click.secho(
+        typer.secho(
             f"Active profile is now '{profiles_data['active_profile']}'", fg="yellow"
         )
 
 
-@pbi.group(name="config", invoke_without_command=True)
-@click.pass_context
-def config_group(ctx):
+@config_app.callback(invoke_without_command=True)
+def config_group(ctx: typer.Context):
     """Manage pbi-cli configuration settings"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi config --help for help.")
+        typer.echo("Use pbi config --help for help.")
 
 
-@config_group.command(name="set-output-folder")
-@click.argument("folder_path", type=click.Path())
-def set_output_folder(folder_path: str):
+@command(config_app, "set-output-folder")
+def set_output_folder(
+    folder_path: Annotated[
+        str,
+        typer.Argument(
+            metavar="FOLDER_PATH",
+            help="Folder that holds the output of commands",
+        ),
+    ],
+):
     """Set the default parent folder for all command outputs
 
     ```
@@ -782,13 +885,13 @@ def set_output_folder(folder_path: str):
     folder_path_clean = folder_path.strip('"').strip("'")
     pbi_config.default_output_folder = folder_path_clean
     resolved_path = Path(folder_path_clean).expanduser().absolute()
-    click.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
-    click.secho(
+    typer.secho(f"✓ Default output folder set to: {resolved_path}", fg="green")
+    typer.secho(
         "  Commands will now use subfolders within this folder by default.", fg="blue"
     )
 
 
-@config_group.command(name="get-output-folder")
+@command(config_app, "get-output-folder")
 def get_output_folder():
     """Get the currently configured default output folder
 
@@ -799,13 +902,13 @@ def get_output_folder():
     pbi_config = PBIConfig()
     folder = pbi_config.default_output_folder
     if folder:
-        click.echo(f"Default output folder: {folder}")
+        typer.echo(f"Default output folder: {folder}")
     else:
-        click.secho("No default output folder configured.", fg="yellow")
-        click.echo("Use 'pbi config set-output-folder' to set one.")
+        typer.secho("No default output folder configured.", fg="yellow")
+        typer.echo("Use 'pbi config set-output-folder' to set one.")
 
 
-@config_group.command(name="show")
+@command(config_app, "show")
 def show_config():
     """Show all configuration settings
 
@@ -815,34 +918,41 @@ def show_config():
     """
     pbi_config = PBIConfig()
 
-    click.echo("Current configuration:")
-    click.echo(f"  Active profile: {pbi_config.active_profile or 'None'}")
-    click.echo(
+    typer.echo("Current configuration:")
+    typer.echo(f"  Active profile: {pbi_config.active_profile or 'None'}")
+    typer.echo(
         f"  Default output folder: {pbi_config.default_output_folder or 'Not set'}"
     )
-    click.echo(f"  Cache folder: {pbi_config.cache_folder or 'Not set'}")
-    click.echo(f"  Cache enabled: {pbi_config.cache_enabled}")
-    click.echo(f"  Profiles: {len(pbi_config.profiles)}")
+    typer.echo(f"  Cache folder: {pbi_config.cache_folder or 'Not set'}")
+    typer.echo(f"  Cache enabled: {pbi_config.cache_enabled}")
+    typer.echo(f"  Profiles: {len(pbi_config.profiles)}")
 
     if pbi_config.profiles:
-        click.echo("\n  Available profiles (ungrouped):")
+        typer.echo("\n  Available profiles (ungrouped):")
         for profile_name in pbi_config.profiles.keys():
             active = " (active)" if profile_name == pbi_config.active_profile else ""
-            click.echo(f"    - {profile_name}{active}")
+            typer.echo(f"    - {profile_name}{active}")
 
-    click.echo()
-    click.echo("  Groups:")
+    typer.echo()
+    typer.echo("  Groups:")
     for group in VALID_GROUPS:
         group_profiles = pbi_config.get_group_profiles(group)
         group_active = pbi_config.get_group_active_profile(group)
-        click.echo(
+        typer.echo(
             f"    {group}: {len(group_profiles)} profile(s), active='{group_active or 'None'}'"
         )
 
 
-@config_group.command(name="set-cache-folder")
-@click.argument("folder_path", type=click.Path())
-def set_cache_folder(folder_path: str):
+@command(config_app, "set-cache-folder")
+def set_cache_folder(
+    folder_path: Annotated[
+        str,
+        typer.Argument(
+            metavar="FOLDER_PATH",
+            help="Local path or cloud URL (s3://, gs://, az://) of the cache folder",
+        ),
+    ],
+):
     """Set the cache folder for storing API call results
 
     The cache folder can be:
@@ -868,17 +978,17 @@ def set_cache_folder(folder_path: str):
 
     # Handle cloud paths differently for display
     if folder_path_clean.startswith(("s3://", "gs://", "az://")):
-        click.secho(f"✓ Cache folder set to: {folder_path_clean}", fg="green")
+        typer.secho(f"✓ Cache folder set to: {folder_path_clean}", fg="green")
     else:
         from pathlib import Path
 
         resolved_path = Path(folder_path_clean).expanduser().absolute()
-        click.secho(f"✓ Cache folder set to: {resolved_path}", fg="green")
+        typer.secho(f"✓ Cache folder set to: {resolved_path}", fg="green")
 
-    click.secho("  API call results will be cached in this folder.", fg="blue")
+    typer.secho("  API call results will be cached in this folder.", fg="blue")
 
 
-@config_group.command(name="get-cache-folder")
+@command(config_app, "get-cache-folder")
 def get_cache_folder():
     """Get the currently configured cache folder
 
@@ -889,14 +999,14 @@ def get_cache_folder():
     pbi_config = PBIConfig()
     folder = pbi_config.cache_folder
     if folder:
-        click.echo(f"Cache folder: {folder}")
-        click.echo(f"Cache enabled: {pbi_config.cache_enabled}")
+        typer.echo(f"Cache folder: {folder}")
+        typer.echo(f"Cache enabled: {pbi_config.cache_enabled}")
     else:
-        click.secho("No cache folder configured.", fg="yellow")
-        click.echo("Use 'pbi config set-cache-folder' to set one.")
+        typer.secho("No cache folder configured.", fg="yellow")
+        typer.echo("Use 'pbi config set-cache-folder' to set one.")
 
 
-@config_group.command(name="enable-cache")
+@command(config_app, "enable-cache")
 def enable_cache():
     """Enable caching of API call results
 
@@ -906,10 +1016,10 @@ def enable_cache():
     """
     pbi_config = PBIConfig()
     pbi_config.cache_enabled = True
-    click.secho("✓ Cache enabled", fg="green")
+    typer.secho("✓ Cache enabled", fg="green")
 
 
-@config_group.command(name="disable-cache")
+@command(config_app, "disable-cache")
 def disable_cache():
     """Disable caching of API call results
 
@@ -919,25 +1029,25 @@ def disable_cache():
     """
     pbi_config = PBIConfig()
     pbi_config.cache_enabled = False
-    click.secho("✓ Cache disabled", fg="yellow")
+    typer.secho("✓ Cache disabled", fg="yellow")
 
 
-@pbi.group(name="cache", invoke_without_command=True)
-@click.pass_context
-def cache_group(ctx):
+@cache_app.callback(invoke_without_command=True)
+def cache_group(ctx: typer.Context):
     """Manage cached API call results"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi cache --help for help.")
+        typer.echo("Use pbi cache --help for help.")
 
 
-@cache_group.command(name="list")
-@click.option(
-    "--cache-key",
-    "-k",
-    help="Show versions for a specific cache key",
-    default=None,
-)
-def list_cache(cache_key: Optional[str] = None):
+@command(cache_app, "list")
+def list_cache(
+    cache_key: Annotated[
+        Optional[str],
+        typer.Option(
+            "--cache-key", "-k", help="Show versions for a specific cache key"
+        ),
+    ] = None,
+):
     """List cached data
 
     ```
@@ -954,8 +1064,8 @@ def list_cache(cache_key: Optional[str] = None):
     cache_folder = pbi_config.cache_folder
 
     if not cache_folder:
-        click.secho("Cache folder not configured.", fg="yellow")
-        click.echo("Use 'pbi config set-cache-folder' to set one.")
+        typer.secho("Cache folder not configured.", fg="yellow")
+        typer.echo("Use 'pbi config set-cache-folder' to set one.")
         return
 
     cache_manager = CacheManager(cache_folder=cache_folder)
@@ -964,38 +1074,50 @@ def list_cache(cache_key: Optional[str] = None):
         # List versions for specific key
         versions = cache_manager.list_versions(cache_key)
         if versions:
-            click.echo(f"Cached versions for '{cache_key}':")
+            typer.echo(f"Cached versions for '{cache_key}':")
             for version in versions:
-                click.echo(f"  - {version}")
+                typer.echo(f"  - {version}")
         else:
-            click.secho(f"No cached versions found for '{cache_key}'", fg="yellow")
+            typer.secho(f"No cached versions found for '{cache_key}'", fg="yellow")
     else:
         # List all cache keys
         keys = cache_manager.list_keys()
         if keys:
-            click.echo("Cached data:")
+            typer.echo("Cached data:")
             for key in keys:
                 versions = cache_manager.list_versions(key)
-                click.echo(f"  - {key} ({len(versions)} version(s))")
+                typer.echo(f"  - {key} ({len(versions)} version(s))")
         else:
-            click.secho("No cached data found.", fg="yellow")
+            typer.secho("No cached data found.", fg="yellow")
 
 
-@cache_group.command(name="clear")
-@click.option(
-    "--cache-key",
-    "-k",
-    help="Clear specific cache key (clears all if omitted)",
-    default=None,
-)
-@click.option(
-    "--version",
-    "-v",
-    help="Clear specific version (requires --cache-key)",
-    default=None,
-)
-@click.confirmation_option(prompt="Are you sure you want to clear the cache?")
-def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
+@command(cache_app, "clear")
+def clear_cache(
+    cache_key: Annotated[
+        Optional[str],
+        typer.Option(
+            "--cache-key",
+            "-k",
+            help="Clear specific cache key (clears all if omitted)",
+        ),
+    ] = None,
+    version: Annotated[
+        Optional[str],
+        typer.Option(
+            "--version",
+            "-v",
+            help="Clear specific version (requires --cache-key)",
+        ),
+    ] = None,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes",
+            prompt="Are you sure you want to clear the cache?",
+            help="Confirm the action without prompting.",
+        ),
+    ] = False,
+):
     """Clear cached data
 
     ```
@@ -1012,41 +1134,45 @@ def clear_cache(cache_key: Optional[str] = None, version: Optional[str] = None):
     :param cache_key: Optional cache key to clear
     :param version: Optional version to clear (requires cache_key)
     """
+    if not yes:
+        raise typer.Abort()
+
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
 
     if not cache_folder:
-        click.secho("Cache folder not configured.", fg="yellow")
-        click.echo("Use 'pbi config set-cache-folder' to set one.")
+        typer.secho("Cache folder not configured.", fg="yellow")
+        typer.echo("Use 'pbi config set-cache-folder' to set one.")
         return
 
     if version and not cache_key:
-        click.secho("Error: --version requires --cache-key", fg="red")
+        typer.secho("Error: --version requires --cache-key", fg="red")
         return
 
     cache_manager = CacheManager(cache_folder=cache_folder)
     cache_manager.clear(cache_key=cache_key, version=version)
 
     if cache_key and version:
-        click.secho(f"✓ Cleared {cache_key} version {version}", fg="green")
+        typer.secho(f"✓ Cleared {cache_key} version {version}", fg="green")
     elif cache_key:
-        click.secho(f"✓ Cleared all versions of {cache_key}", fg="green")
+        typer.secho(f"✓ Cleared all versions of {cache_key}", fg="green")
     else:
-        click.secho("✓ Cleared entire cache", fg="green")
+        typer.secho("✓ Cleared entire cache", fg="green")
 
 
-@pbi.command()
-@click.option("--group-id", "-g", help="Group ID", required=True)
-@click.option("--report-id", "-r", help="Report ID", required=True)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False),
-    help="target file (if omitted, prints info to console)",
-    default=None,
-    required=False,
-)
-def export(group_id: str, report_id: str, target: Optional[Path]):
+@command(app, "export")
+def export_report(
+    group_id: Annotated[str, typer.Option("--group-id", "-g", help="Group ID")],
+    report_id: Annotated[str, typer.Option("--report-id", "-r", help="Report ID")],
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="target file (if omitted, prints info to console)",
+        ),
+    ] = None,
+):
     """export report based on id"""
     dr = DataRetriever(session_query_configs={"headers": load_auth(), "verify": False})
 
@@ -1057,79 +1183,62 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
     if target is None:
         # For binary export data, we can't print it directly to console
         # Instead, show information about the export
-        click.echo("\n" + "=" * 80)
-        click.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
-        click.echo("=" * 80)
-        click.echo(f"Content size: {len(result.content)} bytes")
-        click.echo(f"Content type: {result.headers.get('content-type', 'unknown')}")
-        click.echo("\nUse --target option to save the export to a file.")
-        click.echo("=" * 80)
+        typer.echo("\n" + "=" * 80)
+        typer.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
+        typer.echo("=" * 80)
+        typer.echo(f"Content size: {len(result.content)} bytes")
+        typer.echo(f"Content type: {result.headers.get('content-type', 'unknown')}")
+        typer.echo("\nUse --target option to save the export to a file.")
+        typer.echo("=" * 80)
     else:
         with open(target, "wb") as fp:
             fp.write(result.content)
-        click.secho(f"✓ Export saved to {target}", fg="green")
+        typer.secho(f"✓ Export saved to {target}", fg="green")
 
 
-@pbi.group(invoke_without_command=True)
-@click.pass_context
-def workspaces(ctx):
+@workspaces_app.callback(invoke_without_command=True)
+def workspaces_group(ctx: typer.Context):
     """Command group for Power BI workspaces"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi workspaces --help for help.")
-    else:
-        pass
+        typer.echo("Use pbi workspaces --help for help.")
 
 
-@workspaces.command()
-@click.option("--top", help="top n results", type=int, default=1000, required=True)
-@click.option(
-    "--expand",
-    "-e",
-    type=click.Choice(
-        ["users", "reports", "dashboards", "datasets", "dataflows", "workbooks"]
-    ),
-    default=["users", "reports", "dashboards", "datasets", "dataflows", "workbooks"],
-    multiple=True,
-    show_default=True,
-)
-@click.option(
-    "--file-type",
-    "-ft",
-    type=click.Choice(["json", "excel"]),
-    default=["json"],
-    multiple=True,
-)
-@click.option("--odata-filter", "-f", type=str, help="odata filter", required=False)
-@click.option(
-    "--target-folder",
-    "-tf",
-    type=str,
-    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
-    default=None,
-    required=False,
-)
-@click.option("--file-name", "-n", type=str, help="file name", default="workspaces")
-@click.option(
-    "--use-cache",
-    is_flag=True,
-    help="Use cached data if available instead of making API call",
-    default=False,
-)
-@click.option(
-    "--cache-only",
-    is_flag=True,
-    help="Only use cache, fail if cache not available",
-    default=False,
-)
-def list(
-    top: int,
-    expand: list,
-    file_type: list[str],
-    odata_filter: Optional[str],
-    target_folder: Optional[str],
-    file_name: str = "workspaces",
-    use_cache: bool = False,
-    cache_only: bool = False,
+@command(workspaces_app, "list")
+def workspaces_list(
+    top: Annotated[int, typer.Option("--top", help="top n results")] = 1000,
+    expand: Annotated[
+        List[Expand], typer.Option("--expand", "-e", show_default=True)
+    ] = list(Expand),
+    file_type: Annotated[List[FileType], typer.Option("--file-type", "-ft")] = [
+        FileType.json
+    ],
+    odata_filter: Annotated[
+        Optional[str], typer.Option("--odata-filter", "-f", help="odata filter")
+    ] = None,
+    target_folder: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target-folder",
+            "-tf",
+            help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        ),
+    ] = None,
+    file_name: Annotated[
+        str, typer.Option("--file-name", "-n", help="file name")
+    ] = "workspaces",
+    use_cache: Annotated[
+        bool,
+        typer.Option(
+            "--use-cache",
+            help="Use cached data if available instead of making API call",
+        ),
+    ] = False,
+    cache_only: Annotated[
+        bool,
+        typer.Option(
+            "--cache-only", help="Only use cache, fail if cache not available"
+        ),
+    ] = False,
 ):
     r"""List Power BI workspaces and save them to files or print to console
 
@@ -1161,6 +1270,8 @@ def list(
         This command requires an admin account.
 
     """
+    expand = tuple(_values(expand))
+    file_type = tuple(_values(file_type))
     pbi_config = PBIConfig()
     cache_key = "workspaces"
 
@@ -1170,7 +1281,7 @@ def list(
     # Fetch from API if not using cache
     if result is None:
         workspaces = Workspaces(auth=load_auth(group="admin"), verify=False)
-        click.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
+        typer.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
         result = workspaces(top=top, expand=expand, filter=odata_filter)
 
         # Save to cache
@@ -1199,13 +1310,13 @@ def list(
 
     # Check if path resolution failed
     if target_path is None:
-        click.secho("Error: Unable to determine output folder.", fg="red")
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        click.echo("or provide an absolute path with --target-folder.")
-        raise click.Abort()
+        typer.secho("Error: Unable to determine output folder.", fg="red")
+        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        typer.echo("or provide an absolute path with --target-folder.")
+        raise typer.Abort()
 
     if not target_path.exists():
-        click.secho(f"creating folder {target_path}", fg="blue")
+        typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
 
     if "json" in file_type:
@@ -1221,29 +1332,16 @@ def list(
         multi_group_dict_to_excel(flattened, excel_file_path)
 
 
-@workspaces.command()
-@click.option(
-    "--source",
-    "-s",
-    type=click.Path(exists=True, path_type=Path),
-    help="source file",
-    required=True,
-)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file",
-    required=True,
-)
-@click.option(
-    "--format",
-    type=click.Choice(["excel"]),
-    help="format of the file",
-    default="excel",
-    required=False,
-)
-def format_convert(source: Path, target: Path, format):
+@command(workspaces_app, "format-convert")
+def format_convert(
+    source: Annotated[
+        Path, typer.Option("--source", "-s", exists=True, help="source file")
+    ],
+    target: Annotated[Path, typer.Option("--target", "-t", help="target file")],
+    format: Annotated[
+        ConvertFormat, typer.Option("--format", help="format of the file")
+    ] = ConvertFormat.excel,
+):
     """Convert output format of workspaces list
     (`pbi workspaces list`)
     from json to excel.
@@ -1252,9 +1350,10 @@ def format_convert(source: Path, target: Path, format):
     pbi workspaces format-convert -s "workspaces.json" -t "workspaces.xlsx"
     ```
     """
+    format = format.value
     workspaces = Workspaces(auth={}, verify=False)
 
-    click.echo(f"Converting to {format=}: {source=} -> {target}")
+    typer.echo(f"Converting to {format=}: {source=} -> {target}")
 
     with open(source, "r") as fp:
         workspaces_data = json.load(fp)
@@ -1264,64 +1363,49 @@ def format_convert(source: Path, target: Path, format):
     multi_group_dict_to_excel(flattened, target)
 
 
-@workspaces.command()
-@click.option(
-    "--source",
-    "-s",
-    type=click.Path(exists=True, path_type=Path),
-    help="source json/excel file that contains all workspace information",
-    required=True,
-)
-@click.option(
-    "--target-folder",
-    "-t",
-    type=str,
-    help=(
-        "target folder (absolute path or subfolder within default output folder). "
-        "If omitted, prints results to console as a table. "
-        "Do not include the trailing (back)slash"
-    ),
-    default=None,
-    required=False,
-)
-@click.option(
-    "--file-type",
-    "-ft",
-    help="file type to save the results as",
-    type=click.Choice(["json", "excel"]),
-    default=["json", "excel"],
-    multiple=True,
-)
-@click.option(
-    "--wait-interval",
-    "-wi",
-    help="number of seconds to wait between requests",
-    type=int,
-    default=3,
-)
-@click.option(
-    "--file-name",
-    "-n",
-    type=str,
-    help="file name without extension",
-    default="workspaces_reports_users",
-)
-@click.option(
-    "--workspace-name",
-    "-wn",
-    help="workspace names to download",
-    type=str,
-    default=None,
-    multiple=True,
-    required=False,
-)
+@command(workspaces_app, "report-users")
 def report_users(
-    source: Path,
-    target_folder: Optional[str],
-    file_type: list = ["json", "excel"],
-    wait_interval: int = 3,
-    file_name: str = "workspaces_reports_users",
-    workspace_name: Optional[list] = None,
+    source: Annotated[
+        Path,
+        typer.Option(
+            "--source",
+            "-s",
+            exists=True,
+            help="source json/excel file that contains all workspace information",
+        ),
+    ],
+    target_folder: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target-folder",
+            "-t",
+            help=(
+                "target folder (absolute path or subfolder within default output folder). "
+                "If omitted, prints results to console as a table. "
+                "Do not include the trailing (back)slash"
+            ),
+        ),
+    ] = None,
+    file_type: Annotated[
+        List[FileType],
+        typer.Option("--file-type", "-ft", help="file type to save the results as"),
+    ] = [FileType.json, FileType.excel],
+    wait_interval: Annotated[
+        int,
+        typer.Option(
+            "--wait-interval",
+            "-wi",
+            help="number of seconds to wait between requests",
+        ),
+    ] = 3,
+    file_name: Annotated[
+        str,
+        typer.Option("--file-name", "-n", help="file name without extension"),
+    ] = "workspaces_reports_users",
+    workspace_name: Annotated[
+        Optional[List[str]],
+        typer.Option("--workspace-name", "-wn", help="workspace names to download"),
+    ] = None,
 ):
     r"""
     Augment Power BI Workspace data from a source file
@@ -1353,7 +1437,11 @@ def report_users(
     Start-Sleep -Seconds 300
     ```
     """
-    click.secho("getting report user details requires admin token")
+    file_type = tuple(_values(file_type))
+    # Like click, an omitted -wn means "no workspace names", not "all workspaces".
+    workspace_name = tuple(workspace_name or ())
+
+    typer.secho("getting report user details requires admin token")
 
     pbi_workspaces = powerbi_workspace.Workspaces(
         auth=load_auth(group="admin"), verify=False, cache_file=source
@@ -1388,18 +1476,18 @@ def report_users(
 
                 if all_reports:
                     df = pd.DataFrame(all_reports)
-                    click.echo("\n" + "=" * 80)
-                    click.echo(f"Found {len(all_reports)} report(s) across workspaces")
-                    click.echo("=" * 80)
-                    click.echo(df.to_string(index=False))
-                    click.echo("=" * 80)
+                    typer.echo("\n" + "=" * 80)
+                    typer.echo(f"Found {len(all_reports)} report(s) across workspaces")
+                    typer.echo("=" * 80)
+                    typer.echo(df.to_string(index=False))
+                    typer.echo("=" * 80)
                 else:
-                    click.echo("No reports found.")
+                    typer.echo("No reports found.")
             except Exception as e:
                 # Fallback to JSON if table formatting fails
-                click.echo(json.dumps(report_users, indent=4))
+                typer.echo(json.dumps(report_users, indent=4))
         else:
-            click.echo("No report users data found.")
+            typer.echo("No report users data found.")
         return
 
     # Resolve the target folder path (handles absolute/relative paths)
@@ -1407,16 +1495,16 @@ def report_users(
 
     # Check if path resolution failed
     if target_path is None:
-        click.secho("Error: Unable to determine output folder.", fg="red")
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        click.echo("or provide an absolute path with --target-folder.")
-        raise click.Abort()
+        typer.secho("Error: Unable to determine output folder.", fg="red")
+        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        typer.echo("or provide an absolute path with --target-folder.")
+        raise typer.Abort()
 
     if not target_path.exists():
-        click.secho(f"creating folder {target_path}", fg="blue")
+        typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
 
-    click.secho(f"Writing results to the folder {target_path}")
+    typer.secho(f"Writing results to the folder {target_path}")
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
@@ -1437,57 +1525,47 @@ def report_users(
 #######################
 
 
-@pbi.group(invoke_without_command=True)
-@click.pass_context
-def users(ctx):
+@users_app.callback(invoke_without_command=True)
+def users_group(ctx: typer.Context):
     """Command group for Power BI users"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi users --help.")
-    else:
-        pass
+        typer.echo("Use pbi users --help.")
 
 
-@users.command()
-@click.option("--user-id", "-u", help="user id", type=str, required=True)
-@click.option(
-    "--target-folder",
-    "-tf",
-    type=str,
-    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
-    required=False,
-)
-@click.option(
-    "--file-types",
-    "-ft",
-    type=click.Choice(["json", "excel"]),
-    multiple=True,
-    default=["json"],
-    required=False,
-)
-@click.option(
-    "--file-name", "-n", type=str, help="file name without extension", default=None
-)
-@click.option(
-    "--use-cache",
-    is_flag=True,
-    help="Use cached data if available instead of making API call",
-    default=False,
-)
-@click.option(
-    "--cache-only",
-    is_flag=True,
-    help="Only use cache, fail if cache not available",
-    default=False,
-)
+@command(users_app, "user-access")
 def user_access(
-    user_id: str,
-    target_folder: Optional[str],
-    file_types: list,
-    file_name: Optional[str] = None,
-    use_cache: bool = False,
-    cache_only: bool = False,
+    user_id: Annotated[str, typer.Option("--user-id", "-u", help="user id")],
+    target_folder: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target-folder",
+            "-tf",
+            help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        ),
+    ] = None,
+    file_types: Annotated[List[FileType], typer.Option("--file-types", "-ft")] = [
+        FileType.json
+    ],
+    file_name: Annotated[
+        Optional[str],
+        typer.Option("--file-name", "-n", help="file name without extension"),
+    ] = None,
+    use_cache: Annotated[
+        bool,
+        typer.Option(
+            "--use-cache",
+            help="Use cached data if available instead of making API call",
+        ),
+    ] = False,
+    cache_only: Annotated[
+        bool,
+        typer.Option(
+            "--cache-only", help="Only use cache, fail if cache not available"
+        ),
+    ] = False,
 ):
     """Get user access information from Power BI API"""
+    file_types = tuple(_values(file_types))
     if file_name is None:
         file_name = slugify(user_id)
 
@@ -1511,29 +1589,29 @@ def user_access(
         if isinstance(result, dict):
             try:
                 df = pd.json_normalize(result)
-                click.echo("\n" + "=" * 80)
-                click.echo(f"User Access Information for: {user_id}")
-                click.echo("=" * 80)
-                click.echo(df.to_string(index=False))
-                click.echo("=" * 80)
+                typer.echo("\n" + "=" * 80)
+                typer.echo(f"User Access Information for: {user_id}")
+                typer.echo("=" * 80)
+                typer.echo(df.to_string(index=False))
+                typer.echo("=" * 80)
             except Exception:
-                click.echo(json.dumps(result, indent=4))
+                typer.echo(json.dumps(result, indent=4))
         else:
-            click.echo(json.dumps(result, indent=4))
+            typer.echo(json.dumps(result, indent=4))
         return
         # Resolve the target folder path
         target_path = resolve_output_path(target_folder)
 
         if target_path is None:
-            click.secho("Error: Unable to determine output folder.", fg="red")
-            click.echo(
+            typer.secho("Error: Unable to determine output folder.", fg="red")
+            typer.echo(
                 "Use 'pbi config set-output-folder' to set a default output folder,"
             )
-            click.echo("or provide an absolute path with --target-folder.")
-            raise click.Abort()
+            typer.echo("or provide an absolute path with --target-folder.")
+            raise typer.Abort()
 
         if not target_path.exists():
-            click.secho(f"creating folder {target_path}", fg="blue")
+            typer.secho(f"creating folder {target_path}", fg="blue")
             target_path.mkdir(parents=True, exist_ok=True)
 
         if "json" in file_types:
@@ -1548,55 +1626,47 @@ def user_access(
             df.to_excel(excel_file_path)
 
 
-@pbi.group(invoke_without_command=True)
-@click.pass_context
-def apps(ctx):
+@apps_app.callback(invoke_without_command=True)
+def apps_group(ctx: typer.Context):
     """Power BI Apps Command Group"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi apps --help.")
-    else:
-        pass
+        typer.echo("Use pbi apps --help.")
 
 
-@apps.command()
-@click.option(
-    "--target-folder",
-    "-tf",
-    type=str,
-    help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--file-type",
-    "-ft",
-    type=click.Choice(["json", "excel"]),
-    default=["json"],
-    multiple=True,
-)
-@click.option("--role", "-r", type=click.Choice(["admin", "user"]), default="user")
-@click.option("--file-name", "-n", type=str, help="file name", default="apps")
-@click.option(
-    "--use-cache",
-    is_flag=True,
-    help="Use cached data if available instead of making API call",
-    default=False,
-)
-@click.option(
-    "--cache-only",
-    is_flag=True,
-    help="Only use cache, fail if cache not available",
-    default=False,
-)
-def list(
-    target_folder: Optional[str],
-    role: str,
-    file_type: tuple = ("json", "excel"),
-    file_name: str = "apps",
-    use_cache: bool = False,
-    cache_only: bool = False,
+@command(apps_app, "list")
+def apps_list(
+    target_folder: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target-folder",
+            "-tf",
+            help="target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        ),
+    ] = None,
+    file_type: Annotated[List[FileType], typer.Option("--file-type", "-ft")] = [
+        FileType.json
+    ],
+    role: Annotated[AppRole, typer.Option("--role", "-r")] = AppRole.user,
+    file_name: Annotated[
+        str, typer.Option("--file-name", "-n", help="file name")
+    ] = "apps",
+    use_cache: Annotated[
+        bool,
+        typer.Option(
+            "--use-cache",
+            help="Use cached data if available instead of making API call",
+        ),
+    ] = False,
+    cache_only: Annotated[
+        bool,
+        typer.Option(
+            "--cache-only", help="Only use cache, fail if cache not available"
+        ),
+    ] = False,
 ):
     """List Power BI Apps and save them to files or print to console"""
+    role = role.value
+    file_type = tuple(_values(file_type))
     pbi_config = PBIConfig()
     cache_key = f"apps_{role}"
 
@@ -1605,7 +1675,7 @@ def list(
 
     # Fetch from API if not using cache
     if result is None:
-        click.echo(f"Listing Apps as {role}")
+        typer.echo(f"Listing Apps as {role}")
         if role == "user":
             user = powerbi_app.Apps(auth=load_auth(group="user"), verify=False)
         else:  # admin
@@ -1626,13 +1696,13 @@ def list(
 
     # Check if path resolution failed
     if target_path is None:
-        click.secho("Error: Unable to determine output folder.", fg="red")
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        click.echo("or provide an absolute path with --target-folder.")
-        raise click.Abort()
+        typer.secho("Error: Unable to determine output folder.", fg="red")
+        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        typer.echo("or provide an absolute path with --target-folder.")
+        raise typer.Abort()
 
     if not target_path.exists():
-        click.secho(f"creating folder {target_path}", fg="blue")
+        typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
 
     if "json" in file_type:
@@ -1648,71 +1718,61 @@ def list(
         df.to_excel(excel_file_path)
 
 
-@apps.command()
-@click.option("--app-id", "-a", help="app id", type=str, required=True)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False),
-    help="target file (if omitted, prints to console)",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
-)
-def app(app_id: str, target: Optional[Path], file_type: str = "json"):
+@command(apps_app, "app")
+def app_info(
+    app_id: Annotated[str, typer.Option("--app-id", "-a", help="app id")],
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target", "-t", help="target file (if omitted, prints to console)"
+        ),
+    ] = None,
+    file_type: Annotated[FileType, typer.Option("--file-type", "-ft")] = FileType.json,
+):
     """Retrieve information about a specific Power BI App"""
-    click.echo(f"Investigating {app_id}")
+    file_type = file_type.value
+    typer.echo(f"Investigating {app_id}")
 
     a_app = powerbi_app.App(auth=load_auth(), verify=False, app_id=app_id)
     app_data = a_app()
 
     if target is None:
         # Print to console
-        click.echo("\n" + "=" * 80)
-        click.echo(f"App: {app_data.get('name', 'N/A')} (ID: {app_id})")
-        click.echo("=" * 80)
-        click.echo(json.dumps(app_data, indent=2))
-        click.echo("=" * 80)
+        typer.echo("\n" + "=" * 80)
+        typer.echo(f"App: {app_data.get('name', 'N/A')} (ID: {app_id})")
+        typer.echo("=" * 80)
+        typer.echo(json.dumps(app_data, indent=2))
+        typer.echo("=" * 80)
     else:
         # Save to file
         if file_type == "json":
             with open(target, "w") as fp:
                 json.dump(app_data, fp)
-            click.secho(f"✓ Saved to {target}", fg="green")
+            typer.secho(f"✓ Saved to {target}", fg="green")
         elif file_type == "excel":
             app_data_flattened = a_app.flatten_app(app_data)
             multi_group_dict_to_excel(app_data_flattened, target)
-            click.secho(f"✓ Saved to {target}", fg="green")
+            typer.secho(f"✓ Saved to {target}", fg="green")
 
 
-@apps.command()
-@click.option(
-    "--source",
-    "-s",
-    type=click.Path(exists=True, path_type=Path),
-    help="source file",
-    required=True,
-)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file",
-    required=True,
-)
-@click.option(
-    "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
-)
-def augment(source: Path, target: Path, file_type: str = "json"):
+@command(apps_app, "augment")
+def augment(
+    source: Annotated[
+        Path, typer.Option("--source", "-s", exists=True, help="source file")
+    ],
+    target: Annotated[Path, typer.Option("--target", "-t", help="target file")],
+    file_type: Annotated[FileType, typer.Option("--file-type", "-ft")] = FileType.json,
+):
     """Augment Power BI Apps data from a source file and save to target file"""
+    file_type = file_type.value
     if file_type == "excel":
         if target.suffix:
-            click.echo("Use path as target for excel output")
-            raise click.BadOptionUsage(message=f"{target=}")
+            raise typer.BadParameter(
+                "Use a folder (a path without a file extension) as target for excel output",
+                param_hint="--target",
+            )
         else:
-            click.secho(f"creating folder {target}", fg="blue")
+            typer.secho(f"creating folder {target}", fg="blue")
             target.mkdir(parents=True, exist_ok=True)
 
     pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
@@ -1722,7 +1782,7 @@ def augment(source: Path, target: Path, file_type: str = "json"):
         try:
             apps_data.append(a())
         except ValueError as e:
-            click.secho(f"Cannot download {a.app_info}", fg="red")
+            typer.secho(f"Cannot download {a.app_info}", fg="red")
 
     if file_type == "json":
         with open(target, "w") as fp:
@@ -1737,45 +1797,34 @@ def augment(source: Path, target: Path, file_type: str = "json"):
             )
 
 
-@pbi.group(invoke_without_command=True)
-@click.pass_context
-def reports(ctx):
+@reports_app.callback(invoke_without_command=True)
+def reports_group(ctx: typer.Context):
     """Reports Command Group"""
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi reports --help.")
-    else:
-        pass
+        typer.echo("Use pbi reports --help.")
 
 
-@reports.command()
-@click.option(
-    "--source",
-    "-s",
-    type=click.Path(exists=True, path_type=Path),
-    help="source file",
-    required=True,
-)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file",
-    required=True,
-)
-@click.option(
-    "--file-type", "-ft", type=click.Choice(["json", "excel"]), default="json"
-)
-def users(source: Path, target: Path, file_type: str = "json"):
+@command(reports_app, "users")
+def reports_users(
+    source: Annotated[
+        Path, typer.Option("--source", "-s", exists=True, help="source file")
+    ],
+    target: Annotated[Path, typer.Option("--target", "-t", help="target file")],
+    file_type: Annotated[FileType, typer.Option("--file-type", "-ft")] = FileType.json,
+):
     """Augment Power BI Apps data from a source file and save to target file together with report users"""
+    file_type = file_type.value
 
-    click.secho("getting report user details requires admin token")
+    typer.secho("getting report user details requires admin token")
 
     if file_type == "excel":
         if target.suffix:
-            click.echo("Use path as target for excel output")
-            raise click.BadOptionUsage(message=f"{target=}")
+            raise typer.BadParameter(
+                "Use a folder (a path without a file extension) as target for excel output",
+                param_hint="--target",
+            )
         else:
-            click.secho(f"creating folder {target}", fg="blue")
+            typer.secho(f"creating folder {target}", fg="blue")
             target.mkdir(parents=True, exist_ok=True)
 
     pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
@@ -1785,7 +1834,7 @@ def users(source: Path, target: Path, file_type: str = "json"):
         try:
             apps_data.append(a())
         except ValueError as e:
-            click.secho(f"Can not download {a.app_info}", fg="red")
+            typer.secho(f"Can not download {a.app_info}", fg="red")
 
     updated_apps_data = []
     for a in apps_data:
@@ -1819,18 +1868,19 @@ def users(source: Path, target: Path, file_type: str = "json"):
             )
 
 
-@reports.command()
-@click.option("--group-id", "-g", help="Group ID", required=True)
-@click.option("--report-id", "-r", help="Report ID", required=True)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file (if omitted, prints info to console)",
-    default=None,
-    required=False,
-)
-def export(group_id: str, report_id: str, target: Optional[Path]):
+@command(reports_app, "export")
+def reports_export(
+    group_id: Annotated[str, typer.Option("--group-id", "-g", help="Group ID")],
+    report_id: Annotated[str, typer.Option("--report-id", "-r", help="Report ID")],
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="target file (if omitted, prints info to console)",
+        ),
+    ] = None,
+):
     """Export report as file"""
 
     pbi_report = powerbi_report.Report(
@@ -1842,29 +1892,32 @@ def export(group_id: str, report_id: str, target: Optional[Path]):
     if target is None:
         # For binary export data, we can't print it directly to console
         # Instead, show information about the export
-        click.echo("\n" + "=" * 80)
-        click.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
-        click.echo("=" * 80)
-        click.echo(f"Content size: {len(result)} bytes")
-        click.echo("\nUse --target option to save the export to a file.")
-        click.echo("=" * 80)
+        typer.echo("\n" + "=" * 80)
+        typer.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
+        typer.echo("=" * 80)
+        typer.echo(f"Content size: {len(result)} bytes")
+        typer.echo("\nUse --target option to save the export to a file.")
+        typer.echo("=" * 80)
     else:
         with open(target, "wb") as fp:
             fp.write(result)
-        click.secho(f"✓ Export saved to {target}", fg="green")
+        typer.secho(f"✓ Export saved to {target}", fg="green")
 
 
-@reports.command(name="list")
-@click.option("--group-id", "-g", help="Group (workspace) ID", required=True)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file (if omitted, prints info to console)",
-    default=None,
-    required=False,
-)
-def reports_list_group(group_id: str, target: Optional[Path]):
+@command(reports_app, "list")
+def reports_list_group(
+    group_id: Annotated[
+        str, typer.Option("--group-id", "-g", help="Group (workspace) ID")
+    ],
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="target file (if omitted, prints info to console)",
+        ),
+    ] = None,
+):
     """List all reports in a workspace group.
 
     Retrieves the full list of reports from the specified workspace group and
@@ -1876,31 +1929,35 @@ def reports_list_group(group_id: str, target: Optional[Path]):
     result = group_reports.reports
 
     if target is None:
-        click.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2))
     else:
         with open(target, "w") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Reports list saved to {target}", fg="green")
+        typer.secho(f"✓ Reports list saved to {target}", fg="green")
 
 
-@reports.command(name="pages")
-@click.option("--group-id", "-g", help="Group (workspace) ID", required=True)
-@click.option(
-    "--report-id",
-    "-r",
-    help="Report ID. If omitted, pages for all reports in the group are returned.",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="target file (if omitted, prints info to console)",
-    default=None,
-    required=False,
-)
-def reports_pages(group_id: str, report_id: Optional[str], target: Optional[Path]):
+@command(reports_app, "pages")
+def reports_pages(
+    group_id: Annotated[
+        str, typer.Option("--group-id", "-g", help="Group (workspace) ID")
+    ],
+    report_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--report-id",
+            "-r",
+            help="Report ID. If omitted, pages for all reports in the group are returned.",
+        ),
+    ] = None,
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="target file (if omitted, prints info to console)",
+        ),
+    ] = None,
+):
     """Get pages of a report (or all reports) in a workspace group.
 
     When ``--report-id`` is provided, retrieves the pages for that specific
@@ -1925,11 +1982,11 @@ def reports_pages(group_id: str, report_id: Optional[str], target: Optional[Path
         result = group_reports.all_pages()
 
     if target is None:
-        click.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2))
     else:
         with open(target, "w") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Report pages saved to {target}", fg="green")
+        typer.secho(f"✓ Report pages saved to {target}", fg="green")
 
 
 def _run_scan(
@@ -1950,7 +2007,7 @@ def _run_scan(
     """
     import time
 
-    click.echo(f"Initiating scan for {workspace_ids}…")
+    typer.echo(f"Initiating scan for {workspace_ids}…")
     try:
         scan_response = workspace_info.initiate_scan(
             workspace_ids=workspace_ids,
@@ -1961,11 +2018,11 @@ def _run_scan(
             get_artifact_users=get_artifact_users,
         )
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise click.ClickException(str(e)) from e
+        raise PBIError(str(e)) from e
     scan_id = scan_response.get("id")
     if not scan_id:
-        raise click.ClickException(f"Unexpected initiate response: {scan_response}")
-    click.echo(f"Scan started (id={scan_id}). Waiting for status…")
+        raise PBIError(f"Unexpected initiate response: {scan_response}")
+    typer.echo(f"Scan started (id={scan_id}). Waiting for status…")
 
     deadline = time.monotonic() + timeout
     attempt = 0
@@ -1974,25 +2031,23 @@ def _run_scan(
         try:
             status_response = workspace_info.get_scan_status(scan_id=scan_id)
         except (ValueError, requests.exceptions.RequestException) as e:
-            raise click.ClickException(str(e)) from e
+            raise PBIError(str(e)) from e
         status = status_response.get("status")
 
         if status == "Succeeded":
             break
 
         if status == "Failed":
-            raise click.ClickException(
-                f"Scan {scan_id} failed: {status_response.get('error')}"
-            )
+            raise PBIError(f"Scan {scan_id} failed: {status_response.get('error')}")
 
         if time.monotonic() >= deadline:
-            raise click.ClickException(
+            raise PBIError(
                 f"Scan {scan_id} did not complete within {timeout}s "
                 f"(last status: {status})."
             )
         remaining = deadline - time.monotonic()
         sleep_time = min(interval, remaining)
-        click.echo(
+        typer.echo(
             f"  Attempt {attempt}: scan status is '{status}', retrying in {sleep_time:.0f}s…"
         )
         time.sleep(sleep_time)
@@ -2000,7 +2055,7 @@ def _run_scan(
     try:
         return workspace_info.get_scan_result(scan_id=scan_id)
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise click.ClickException(str(e)) from e
+        raise PBIError(str(e)) from e
 
 
 def _normalize_workspace_entries(entries: Iterable) -> list:
@@ -2016,19 +2071,19 @@ def _normalize_workspace_entries(entries: Iterable) -> list:
         name: Finance
     ```
     """
-    if not isinstance(entries, builtins.list):
-        raise click.ClickException("'workspace_ids' must be a YAML list.")
+    if not isinstance(entries, list):
+        raise PBIError("'workspace_ids' must be a YAML list.")
     normalized = []
     for entry in entries:
         if isinstance(entry, str):
             normalized.append({"id": entry, "name": None})
-        elif isinstance(entry, builtins.dict):
+        elif isinstance(entry, dict):
             workspace_id = entry.get("id")
             if not workspace_id:
-                raise click.ClickException(f"Workspace entry missing 'id': {entry}")
+                raise PBIError(f"Workspace entry missing 'id': {entry}")
             normalized.append({"id": workspace_id, "name": entry.get("name")})
         else:
-            raise click.ClickException(f"Invalid workspace entry: {entry!r}")
+            raise PBIError(f"Invalid workspace entry: {entry!r}")
     return normalized
 
 
@@ -2037,12 +2092,11 @@ def _parse_yaml_bool(raw_config: dict, key: str, default: bool = False) -> bool:
     value = raw_config.get(key, default)
     if isinstance(value, bool):
         return value
-    raise click.ClickException(f"'{key}' must be a boolean value.")
+    raise PBIError(f"'{key}' must be a boolean value.")
 
 
-@workspaces.group(name="scan", invoke_without_command=True)
-@click.pass_context
-def workspaces_scan(ctx):
+@scan_app.callback(invoke_without_command=True)
+def workspaces_scan(ctx: typer.Context):
     """Command group for workspace scan operations.
 
     !!! warning "Requires Admin"
@@ -2051,48 +2105,39 @@ def workspaces_scan(ctx):
 
     """
     if ctx.invoked_subcommand is None:
-        click.echo("Use pbi workspaces scan --help for help.")
+        typer.echo("Use pbi workspaces scan --help for help.")
 
 
-@workspaces_scan.command(name="initiate")
-@click.argument("workspace_ids", nargs=-1, required=True)
-@click.option(
-    "--lineage",
-    is_flag=True,
-    default=False,
-    help="Include lineage information",
-)
-@click.option(
-    "--datasource-details",
-    is_flag=True,
-    default=False,
-    help="Include datasource details",
-)
-@click.option(
-    "--dataset-schema",
-    is_flag=True,
-    default=False,
-    help="Include dataset schema",
-)
-@click.option(
-    "--dataset-expressions",
-    is_flag=True,
-    default=False,
-    help="Include dataset expressions",
-)
-@click.option(
-    "--get-artifact-users",
-    is_flag=True,
-    default=False,
-    help="Include artifact users",
-)
+# Arguments and options shared by the scan commands.
+ScanWorkspaceIds = Annotated[
+    List[str],
+    typer.Argument(metavar="WORKSPACE_IDS", help="One or more workspace IDs"),
+]
+ScanLineage = Annotated[
+    bool, typer.Option("--lineage", help="Include lineage information")
+]
+ScanDatasourceDetails = Annotated[
+    bool, typer.Option("--datasource-details", help="Include datasource details")
+]
+ScanDatasetSchema = Annotated[
+    bool, typer.Option("--dataset-schema", help="Include dataset schema")
+]
+ScanDatasetExpressions = Annotated[
+    bool, typer.Option("--dataset-expressions", help="Include dataset expressions")
+]
+ScanArtifactUsers = Annotated[
+    bool, typer.Option("--get-artifact-users", help="Include artifact users")
+]
+
+
+@command(scan_app, "initiate")
 def scan_initiate(
-    workspace_ids: tuple,
-    lineage: bool,
-    datasource_details: bool,
-    dataset_schema: bool,
-    dataset_expressions: bool,
-    get_artifact_users: bool,
+    workspace_ids: ScanWorkspaceIds,
+    lineage: ScanLineage = False,
+    datasource_details: ScanDatasourceDetails = False,
+    dataset_schema: ScanDatasetSchema = False,
+    dataset_expressions: ScanDatasetExpressions = False,
+    get_artifact_users: ScanArtifactUsers = False,
 ):
     """Initiate a workspace scan for one or more WORKSPACE_IDS.
 
@@ -2120,20 +2165,27 @@ def scan_initiate(
         dataset_expressions=dataset_expressions,
         get_artifact_users=get_artifact_users,
     )
-    click.echo(json.dumps(result, indent=2))
+    typer.echo(json.dumps(result, indent=2))
 
 
-@workspaces_scan.command(name="result")
-@click.argument("scan_id")
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="Target file to save scan results (if omitted, prints to console)",
-    default=None,
-    required=False,
-)
-def scan_result(scan_id: str, target: Optional[Path]):
+@command(scan_app, "result")
+def scan_result(
+    scan_id: Annotated[
+        str,
+        typer.Argument(
+            metavar="SCAN_ID",
+            help="Scan ID returned by `pbi workspaces scan initiate`",
+        ),
+    ],
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="Target file to save scan results (if omitted, prints to console)",
+        ),
+    ] = None,
+):
     """Get scan results for SCAN_ID.
 
     Retrieves the scan results for the given scan ID returned by
@@ -2156,16 +2208,23 @@ def scan_result(scan_id: str, target: Optional[Path]):
     result = workspace_info.get_scan_result(scan_id=scan_id)
 
     if target is None:
-        click.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2))
     else:
         with open(target, "w") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Scan results saved to {target}", fg="green")
+        typer.secho(f"✓ Scan results saved to {target}", fg="green")
 
 
-@workspaces_scan.command(name="status")
-@click.argument("scan_id")
-def scan_status(scan_id: str):
+@command(scan_app, "status")
+def scan_status(
+    scan_id: Annotated[
+        str,
+        typer.Argument(
+            metavar="SCAN_ID",
+            help="Scan ID returned by `pbi workspaces scan initiate`",
+        ),
+    ],
+):
     """Get the scan status for SCAN_ID.
 
     Retrieves the current status (e.g. ``NotStarted``, ``Running``,
@@ -2188,89 +2247,57 @@ def scan_status(scan_id: str):
     try:
         result = workspace_info.get_scan_status(scan_id=scan_id)
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise click.ClickException(str(e)) from e
-    click.echo(json.dumps(result, indent=2))
+        raise PBIError(str(e)) from e
+    typer.echo(json.dumps(result, indent=2))
 
 
-@workspaces_scan.command(name="get")
-@click.argument("workspace_ids", nargs=-1, required=True)
-@click.option(
-    "--lineage",
-    is_flag=True,
-    default=False,
-    help="Include lineage information",
-)
-@click.option(
-    "--datasource-details",
-    is_flag=True,
-    default=False,
-    help="Include datasource details",
-)
-@click.option(
-    "--dataset-schema",
-    is_flag=True,
-    default=False,
-    help="Include dataset schema",
-)
-@click.option(
-    "--dataset-expressions",
-    is_flag=True,
-    default=False,
-    help="Include dataset expressions",
-)
-@click.option(
-    "--get-artifact-users",
-    is_flag=True,
-    default=False,
-    help="Include artifact users",
-)
-@click.option(
-    "--interval",
-    type=click.FloatRange(min=0, min_open=True),
-    default=5.0,
-    show_default=True,
-    help="Seconds to wait between status checks",
-)
-@click.option(
-    "--timeout",
-    type=click.FloatRange(min=0, min_open=True),
-    default=300.0,
-    show_default=True,
-    help="Maximum seconds to wait for scan completion",
-)
-@click.option(
-    "--target",
-    "-t",
-    type=click.Path(exists=False, path_type=Path),
-    help="Target file to save scan results (if omitted, prints to console)",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--target-folder",
-    "-tf",
-    type=str,
-    help=(
-        "Target folder to save scan results (absolute path or subfolder within "
-        "the default output folder). Only supported when scanning a single "
-        "workspace ID, and saves the result as <workspace_id>.json. Handy "
-        "when looping over several workspaces. Mutually exclusive with "
-        "--target."
-    ),
-    default=None,
-    required=False,
-)
+@command(scan_app, "get")
 def scan_get(
-    workspace_ids: tuple,
-    lineage: bool,
-    datasource_details: bool,
-    dataset_schema: bool,
-    dataset_expressions: bool,
-    get_artifact_users: bool,
-    interval: float,
-    timeout: float,
-    target: Optional[Path],
-    target_folder: Optional[str],
+    ctx: typer.Context,
+    workspace_ids: ScanWorkspaceIds,
+    lineage: ScanLineage = False,
+    datasource_details: ScanDatasourceDetails = False,
+    dataset_schema: ScanDatasetSchema = False,
+    dataset_expressions: ScanDatasetExpressions = False,
+    get_artifact_users: ScanArtifactUsers = False,
+    interval: Annotated[
+        float,
+        typer.Option(
+            "--interval",
+            callback=_positive_float,
+            help="Seconds to wait between status checks",
+        ),
+    ] = 5.0,
+    timeout: Annotated[
+        float,
+        typer.Option(
+            "--timeout",
+            callback=_positive_float,
+            help="Maximum seconds to wait for scan completion",
+        ),
+    ] = 300.0,
+    target: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--target",
+            "-t",
+            help="Target file to save scan results (if omitted, prints to console)",
+        ),
+    ] = None,
+    target_folder: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target-folder",
+            "-tf",
+            help=(
+                "Target folder to save scan results (absolute path or subfolder within "
+                "the default output folder). Only supported when scanning a single "
+                "workspace ID, and saves the result as <workspace_id>.json. Handy "
+                "when looping over several workspaces. Mutually exclusive with "
+                "--target."
+            ),
+        ),
+    ] = None,
 ):
     """Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.
 
@@ -2296,9 +2323,9 @@ def scan_get(
 
     """
     if target is not None and target_folder is not None:
-        raise click.UsageError("Use either --target or --target-folder, not both.")
+        ctx.fail("Use either --target or --target-folder, not both.")
     if target_folder is not None and len(workspace_ids) != 1:
-        raise click.UsageError(
+        ctx.fail(
             "--target-folder only supports a single workspace ID. "
             "Use --target for multi-workspace scans."
         )
@@ -2322,39 +2349,41 @@ def scan_get(
     if target_folder is not None:
         target_path = resolve_output_path(target_folder)
         if target_path is None:
-            click.secho("Error: Unable to determine output folder.", fg="red")
-            click.echo(
+            typer.secho("Error: Unable to determine output folder.", fg="red")
+            typer.echo(
                 "Use 'pbi config set-output-folder' to set a default output folder,"
             )
-            click.echo("or provide an absolute path with --target-folder.")
-            raise click.Abort()
+            typer.echo("or provide an absolute path with --target-folder.")
+            raise typer.Abort()
 
         if not target_path.exists():
-            click.secho(f"creating folder {target_path}", fg="blue")
+            typer.secho(f"creating folder {target_path}", fg="blue")
             target_path.mkdir(parents=True, exist_ok=True)
 
         output_file = target_path / f"{workspace_ids[0]}.json"
         with open(output_file, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Scan results saved to {output_file}", fg="green")
+        typer.secho(f"✓ Scan results saved to {output_file}", fg="green")
     elif target is None:
-        click.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(result, indent=2))
     else:
         with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Scan results saved to {target}", fg="green")
+        typer.secho(f"✓ Scan results saved to {target}", fg="green")
 
 
-@workspaces_scan.command(name="batch")
-@click.option(
-    "--config",
-    "-c",
-    "config_path",
-    type=click.Path(exists=True, path_type=Path),
-    help="Path to a YAML config file listing workspace_ids and scan parameters.",
-    required=True,
-)
-def scan_batch(config_path: Path):
+@command(scan_app, "batch")
+def scan_batch(
+    config_path: Annotated[
+        Path,
+        typer.Option(
+            "--config",
+            "-c",
+            exists=True,
+            help="Path to a YAML config file listing workspace_ids and scan parameters.",
+        ),
+    ],
+):
     """Scan every workspace listed in a YAML config file and save each result.
 
     Each workspace runs through its own initiate/status/result cycle so one
@@ -2402,34 +2431,30 @@ def scan_batch(config_path: Path):
         raw_config = yaml.safe_load(fp) or {}
 
     if not isinstance(raw_config, dict):
-        raise click.ClickException(
-            f"Config file {config_path} must contain a YAML mapping."
-        )
+        raise PBIError(f"Config file {config_path} must contain a YAML mapping.")
 
     workspace_entries = _normalize_workspace_entries(
         raw_config.get("workspace_ids") or []
     )
     if not workspace_entries:
-        raise click.ClickException(
+        raise PBIError(
             f"Config file {config_path} must list at least one workspace ID "
             "under 'workspace_ids'."
         )
 
     target_folder = raw_config.get("target_folder")
     if not target_folder:
-        raise click.ClickException(
-            f"Config file {config_path} must set 'target_folder'."
-        )
+        raise PBIError(f"Config file {config_path} must set 'target_folder'.")
 
     target_path = resolve_output_path(str(target_folder))
     if target_path is None:
-        click.secho("Error: Unable to determine output folder.", fg="red")
-        click.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        click.echo("or set 'target_folder' to an absolute path in the config file.")
-        raise click.Abort()
+        typer.secho("Error: Unable to determine output folder.", fg="red")
+        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        typer.echo("or set 'target_folder' to an absolute path in the config file.")
+        raise typer.Abort()
 
     if not target_path.exists():
-        click.secho(f"creating folder {target_path}", fg="blue")
+        typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
 
     lineage = _parse_yaml_bool(raw_config, "lineage", default=False)
@@ -2449,18 +2474,16 @@ def scan_batch(config_path: Path):
         interval = float(5.0 if raw_interval is None else raw_interval)
         timeout = float(300.0 if raw_timeout is None else raw_timeout)
     except (TypeError, ValueError) as e:
-        raise click.ClickException(
-            "'interval' and 'timeout' must be numeric values."
-        ) from e
+        raise PBIError("'interval' and 'timeout' must be numeric values.") from e
     if interval <= 0 or timeout <= 0:
-        raise click.ClickException("'interval' and 'timeout' must be greater than 0.")
+        raise PBIError("'interval' and 'timeout' must be greater than 0.")
 
     failed = []
     for entry in workspace_entries:
         workspace_id = entry["id"]
         workspace_name = entry.get("name")
         label = f"{workspace_name} ({workspace_id})" if workspace_name else workspace_id
-        click.echo(f"\n=== Workspace {label} ===")
+        typer.echo(f"\n=== Workspace {label} ===")
         try:
             workspace_info = powerbi_admin.WorkspaceInfo(
                 auth=load_auth(group="admin"), verify=False
@@ -2476,8 +2499,8 @@ def scan_batch(config_path: Path):
                 interval=interval,
                 timeout=timeout,
             )
-        except click.ClickException as e:
-            click.secho(f"✗ {label}: {e.format_message()}", fg="red")
+        except PBIError as e:
+            typer.secho(f"✗ {label}: {e}", fg="red")
             failed.append(label)
             continue
 
@@ -2486,17 +2509,17 @@ def scan_batch(config_path: Path):
         output_file = target_path / f"{file_stub}.json"
         with open(output_file, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
-        click.secho(f"✓ Saved {output_file}", fg="green")
+        typer.secho(f"✓ Saved {output_file}", fg="green")
 
     if failed:
-        click.secho(f"\nFailed workspaces: {', '.join(failed)}", fg="red")
-        raise click.exceptions.Exit(1)
+        typer.secho(f"\nFailed workspaces: {', '.join(failed)}", fg="red")
+        raise typer.Exit(1)
 
-    click.secho(
+    typer.secho(
         f"\n✓ Scanned {len(workspace_entries)} workspace(s) into {target_path}",
         fg="green",
     )
 
 
 if __name__ == "__main__":
-    pbi()
+    app()

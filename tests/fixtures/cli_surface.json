@@ -1,0 +1,2333 @@
+{
+  "pbi": {
+    "command_order": [
+      "apps",
+      "auth",
+      "cache",
+      "config",
+      "export",
+      "profile",
+      "reports",
+      "users",
+      "version",
+      "workspaces"
+    ],
+    "deprecated": false,
+    "help": null,
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi apps": {
+    "command_order": [
+      "app",
+      "augment",
+      "list"
+    ],
+    "deprecated": false,
+    "help": "Power BI Apps Command Group",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi apps app": {
+    "deprecated": false,
+    "help": "Retrieve information about a specific Power BI App",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "app id",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "app_id",
+        "nargs": 1,
+        "opts": [
+          "--app-id",
+          "-a"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file (if omitted, prints to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": "json",
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi apps augment": {
+    "deprecated": false,
+    "help": "Augment Power BI Apps data from a source file and save to target file",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "source file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "source",
+        "nargs": 1,
+        "opts": [
+          "--source",
+          "-s"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": true,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": "json",
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi apps list": {
+    "deprecated": false,
+    "help": "List Power BI Apps and save them to files or print to console",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target_folder",
+        "nargs": 1,
+        "opts": [
+          "--target-folder",
+          "-tf"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": [
+          "json"
+        ],
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": "user",
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "role",
+        "nargs": 1,
+        "opts": [
+          "--role",
+          "-r"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "admin",
+            "user"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": "apps",
+        "envvar": null,
+        "help": "file name",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_name",
+        "nargs": 1,
+        "opts": [
+          "--file-name",
+          "-n"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Use cached data if available instead of making API call",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "use_cache",
+        "nargs": 1,
+        "opts": [
+          "--use-cache"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Only use cache, fail if cache not available",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "cache_only",
+        "nargs": 1,
+        "opts": [
+          "--cache-only"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi auth": {
+    "deprecated": false,
+    "help": "Store authentication bearer token securely\n\n```\npbi auth --bearer-token <your_bearer_token>\n```\n\nor with a custom profile name:\n\n```\npbi auth -t <your_bearer_token> -p production\n```\n\nor scoped to a group:\n\n```\npbi auth -t <your_bearer_token> -p admin-nlm -g admin\npbi auth -t <your_bearer_token> -p user-nlm -g user\n```\n\n:param bearer_token: Bearer token to authenticate with Power BI API\n:param profile: Profile name to associate with this credential\n:param group: Optional group ('user' or 'admin') to store the profile in",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Bearer token",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "bearer_token",
+        "nargs": 1,
+        "opts": [
+          "--bearer-token",
+          "-t"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": "default",
+        "envvar": null,
+        "help": "Profile name for this credential set",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "profile",
+        "nargs": 1,
+        "opts": [
+          "--profile",
+          "-p"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group to store this profile in ('user' or 'admin')",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group",
+        "nargs": 1,
+        "opts": [
+          "--group",
+          "-g"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "user",
+            "admin"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi cache": {
+    "command_order": [
+      "clear",
+      "list"
+    ],
+    "deprecated": false,
+    "help": "Manage cached API call results",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi cache clear": {
+    "deprecated": false,
+    "help": "Clear cached data\n\n```\n# Clear all cache\npbi cache clear\n\n# Clear specific cache key\npbi cache clear -k workspaces\n\n# Clear specific version\npbi cache clear -k workspaces -v 20240101_120000\n```\n\n:param cache_key: Optional cache key to clear\n:param version: Optional version to clear (requires cache_key)",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Clear specific cache key (clears all if omitted)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "cache_key",
+        "nargs": 1,
+        "opts": [
+          "--cache-key",
+          "-k"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Clear specific version (requires --cache-key)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "version",
+        "nargs": 1,
+        "opts": [
+          "--version",
+          "-v"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Confirm the action without prompting.",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "yes",
+        "nargs": 1,
+        "opts": [
+          "--yes"
+        ],
+        "prompt": "Are you sure you want to clear the cache?",
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi cache list": {
+    "deprecated": false,
+    "help": "List cached data\n\n```\n# List all cache keys\npbi cache list\n\n# List versions for a specific key\npbi cache list -k workspaces\n```\n\n:param cache_key: Optional cache key to show versions for",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Show versions for a specific cache key",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "cache_key",
+        "nargs": 1,
+        "opts": [
+          "--cache-key",
+          "-k"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      }
+    ]
+  },
+  "pbi config": {
+    "command_order": [
+      "disable-cache",
+      "enable-cache",
+      "get-cache-folder",
+      "get-output-folder",
+      "set-cache-folder",
+      "set-output-folder",
+      "show"
+    ],
+    "deprecated": false,
+    "help": "Manage pbi-cli configuration settings",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi config disable-cache": {
+    "deprecated": false,
+    "help": "Disable caching of API call results\n\n```\npbi config disable-cache\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi config enable-cache": {
+    "deprecated": false,
+    "help": "Enable caching of API call results\n\n```\npbi config enable-cache\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi config get-cache-folder": {
+    "deprecated": false,
+    "help": "Get the currently configured cache folder\n\n```\npbi config get-cache-folder\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi config get-output-folder": {
+    "deprecated": false,
+    "help": "Get the currently configured default output folder\n\n```\npbi config get-output-folder\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi config set-cache-folder": {
+    "deprecated": false,
+    "help": "Set the cache folder for storing API call results\n\nThe cache folder can be:\n- A local path: \"/path/to/cache\" or \"C:\\Users\\Name\\cache\"\n- A cloud path: \"s3://bucket-name/cache-folder\"\n\n```\npbi config set-cache-folder ~/PowerBI/cache\n```\n\nor with cloud storage:\n\n```\npbi config set-cache-folder s3://my-bucket/powerbi-cache\n```\n\n:param folder_path: Path to the cache folder (local or remote)",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "FOLDER_PATH",
+        "multiple": false,
+        "name": "folder_path",
+        "nargs": 1,
+        "opts": [
+          "folder_path"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi config set-output-folder": {
+    "deprecated": false,
+    "help": "Set the default parent folder for all command outputs\n\n```\npbi config set-output-folder ~/PowerBI/backups\n```\n\nor on Windows:\n\n```\npbi config set-output-folder \"C:\\Users\\YourName\\PowerBI\\backups\"\n```\n\n:param folder_path: Path to the default output folder",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "FOLDER_PATH",
+        "multiple": false,
+        "name": "folder_path",
+        "nargs": 1,
+        "opts": [
+          "folder_path"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi config show": {
+    "deprecated": false,
+    "help": "Show all configuration settings\n\n```\npbi config show\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi export": {
+    "deprecated": false,
+    "help": "export report based on id",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group_id",
+        "nargs": 1,
+        "opts": [
+          "--group-id",
+          "-g"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Report ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "report_id",
+        "nargs": 1,
+        "opts": [
+          "--report-id",
+          "-r"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file (if omitted, prints info to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi profile": {
+    "command_order": [
+      "delete",
+      "list",
+      "switch"
+    ],
+    "deprecated": false,
+    "help": "Manage authentication profiles",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi profile delete": {
+    "deprecated": false,
+    "help": "Delete an authentication profile\n\n```\npbi profile delete production\n```\n\nor from a specific group:\n\n```\npbi profile delete admin-nlm -g admin\n```\n\n:param profile: Profile name to delete\n:param group: Optional group ('user' or 'admin') to delete from",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "PROFILE",
+        "multiple": false,
+        "name": "profile",
+        "nargs": 1,
+        "opts": [
+          "profile"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group to delete the profile from ('user' or 'admin')",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group",
+        "nargs": 1,
+        "opts": [
+          "--group",
+          "-g"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "user",
+            "admin"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Confirm the action without prompting.",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "yes",
+        "nargs": 1,
+        "opts": [
+          "--yes"
+        ],
+        "prompt": "Are you sure you want to delete this profile?",
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi profile list": {
+    "deprecated": false,
+    "help": "List all stored authentication profiles\n\n```\npbi profile list\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi profile switch": {
+    "deprecated": false,
+    "help": "Switch the active authentication profile\n\n```\npbi profile switch\n```\n\nor specify a profile:\n\n```\npbi profile switch production\n```\n\nor within a group:\n\n```\npbi profile switch admin-nlm -g admin\npbi profile switch user-nlm -g user\n```\n\n:param profile_name: Profile name to switch to (optional, will show interactive selection if not provided)\n:param group: Optional group ('user' or 'admin') to switch within",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "PROFILE_NAME",
+        "multiple": false,
+        "name": "profile_name",
+        "nargs": 1,
+        "opts": [
+          "profile_name"
+        ],
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group to switch profile in ('user' or 'admin')",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group",
+        "nargs": 1,
+        "opts": [
+          "--group",
+          "-g"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "user",
+            "admin"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi reports": {
+    "command_order": [
+      "export",
+      "list",
+      "pages",
+      "users"
+    ],
+    "deprecated": false,
+    "help": "Reports Command Group",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi reports export": {
+    "deprecated": false,
+    "help": "Export report as file",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group_id",
+        "nargs": 1,
+        "opts": [
+          "--group-id",
+          "-g"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Report ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "report_id",
+        "nargs": 1,
+        "opts": [
+          "--report-id",
+          "-r"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file (if omitted, prints info to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi reports list": {
+    "deprecated": false,
+    "help": "List all reports in a workspace group.\n\nRetrieves the full list of reports from the specified workspace group and\neither prints the result to the console or saves it to a JSON file.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group (workspace) ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group_id",
+        "nargs": 1,
+        "opts": [
+          "--group-id",
+          "-g"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file (if omitted, prints info to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi reports pages": {
+    "deprecated": false,
+    "help": "Get pages of a report (or all reports) in a workspace group.\n\nWhen ``--report-id`` is provided, retrieves the pages for that specific\nreport. When omitted, iterates over every report in the group and returns\nthe combined pages for all of them.\n\nExamples::\n\n    pbi reports pages -g GROUP_ID -r REPORT_ID\n\n    pbi reports pages -g GROUP_ID",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Group (workspace) ID",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "group_id",
+        "nargs": 1,
+        "opts": [
+          "--group-id",
+          "-g"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Report ID. If omitted, pages for all reports in the group are returned.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "report_id",
+        "nargs": 1,
+        "opts": [
+          "--report-id",
+          "-r"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file (if omitted, prints info to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi reports users": {
+    "deprecated": false,
+    "help": "Augment Power BI Apps data from a source file and save to target file together with report users",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "source file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "source",
+        "nargs": 1,
+        "opts": [
+          "--source",
+          "-s"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": true,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": "json",
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi users": {
+    "command_order": [
+      "user-access"
+    ],
+    "deprecated": false,
+    "help": "Command group for Power BI users",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi users user-access": {
+    "deprecated": false,
+    "help": "Get user access information from Power BI API",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "user id",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "user_id",
+        "nargs": 1,
+        "opts": [
+          "--user-id",
+          "-u"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target_folder",
+        "nargs": 1,
+        "opts": [
+          "--target-folder",
+          "-tf"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": [
+          "json"
+        ],
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "file_types",
+        "nargs": 1,
+        "opts": [
+          "--file-types",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "file name without extension",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_name",
+        "nargs": 1,
+        "opts": [
+          "--file-name",
+          "-n"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Use cached data if available instead of making API call",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "use_cache",
+        "nargs": 1,
+        "opts": [
+          "--use-cache"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Only use cache, fail if cache not available",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "cache_only",
+        "nargs": 1,
+        "opts": [
+          "--cache-only"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi version": {
+    "deprecated": false,
+    "help": "Show the current version of the pbi CLI tool.",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi workspaces": {
+    "command_order": [
+      "format-convert",
+      "list",
+      "report-users",
+      "scan"
+    ],
+    "deprecated": false,
+    "help": "Command group for Power BI workspaces",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi workspaces format-convert": {
+    "deprecated": false,
+    "help": "Convert output format of workspaces list\n(`pbi workspaces list`)\nfrom json to excel.\n\n```sh\npbi workspaces format-convert -s \"workspaces.json\" -t \"workspaces.xlsx\"\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "source file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "source",
+        "nargs": 1,
+        "opts": [
+          "--source",
+          "-s"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": true,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": "excel",
+        "envvar": null,
+        "help": "format of the file",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "format",
+        "nargs": 1,
+        "opts": [
+          "--format"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "excel"
+          ],
+          "name": "choice"
+        }
+      }
+    ]
+  },
+  "pbi workspaces list": {
+    "deprecated": false,
+    "help": "List Power BI workspaces and save them to files or print to console\n\nThe --target-folder can be:\n- An absolute path: \"C:\\Users\\Name\\PowerBI\\backups\\2024-01-01\"\n- A relative subfolder: \"2024-01-01\" (uses default output folder + this subfolder)\n- Omitted: prints results as a table to the console (no files created)\n\n```sh\n# Print to console as a table\npbi workspaces list\n\n# Using absolute path with caching\npbi workspaces list -ft json -ft excel -tf \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -e users -e reports -e dashboards -e datasets -e dataflows -e workbooks\n\n# Use cached data if available (falls back to API if not cached)\npbi workspaces list --use-cache\n\n# Only use cache (fails if not cached)\npbi workspaces list --cache-only\n\n# Using relative subfolder (requires default output folder to be configured)\npbi config set-output-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\"\npbi workspaces list -ft json -ft excel -tf \"$(Get-Date -format 'yyyy-MM-dd')\" -e users\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": 1000,
+        "envvar": null,
+        "help": "top n results",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "top",
+        "nargs": 1,
+        "opts": [
+          "--top"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "integer"
+        }
+      },
+      {
+        "count": false,
+        "default": [
+          "users",
+          "reports",
+          "dashboards",
+          "datasets",
+          "dataflows",
+          "workbooks"
+        ],
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "expand",
+        "nargs": 1,
+        "opts": [
+          "--expand",
+          "-e"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "users",
+            "reports",
+            "dashboards",
+            "datasets",
+            "dataflows",
+            "workbooks"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": [
+          "json"
+        ],
+        "envvar": null,
+        "help": null,
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "odata filter",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "odata_filter",
+        "nargs": 1,
+        "opts": [
+          "--odata-filter",
+          "-f"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target_folder",
+        "nargs": 1,
+        "opts": [
+          "--target-folder",
+          "-tf"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": "workspaces",
+        "envvar": null,
+        "help": "file name",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_name",
+        "nargs": 1,
+        "opts": [
+          "--file-name",
+          "-n"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Use cached data if available instead of making API call",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "use_cache",
+        "nargs": 1,
+        "opts": [
+          "--use-cache"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Only use cache, fail if cache not available",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "cache_only",
+        "nargs": 1,
+        "opts": [
+          "--cache-only"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi workspaces report-users": {
+    "deprecated": false,
+    "help": "Augment Power BI Workspace data from a source file\nand save to target file together with report users\n\nThe source `-s` should be the excel file exported from the command\n`pbi workspaces list`\n\n```sh\n# Print to console\npbi workspaces report-users -s \"workspaces.xlsx\" -wn $w -wi 5\n\n# Save to folder\npbi workspaces report-users -s \"workspaces.xlsx\" -t \"$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n```\n\nCombined with PowerShell or bash, we can automatatically\nuse different workspace names for the reports.\n\nHere is an example using PowerShell.\n\n```powershell\n$workspaces = \"AA\", \"BB\"\nforeach ($w in $workspaces) {\n    Write-Host \"Backing up for: $w\"\n    pbi workspaces report-users -s \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\workspaces.xlsx\" --target-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5\n}\n# Wait for 300 seconds (5 minutes) before the next loop\nStart-Sleep -Seconds 300\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "source json/excel file that contains all workspace information",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "source",
+        "nargs": 1,
+        "opts": [
+          "--source",
+          "-s"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": true,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "target folder (absolute path or subfolder within default output folder). If omitted, prints results to console as a table. Do not include the trailing (back)slash",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target_folder",
+        "nargs": 1,
+        "opts": [
+          "--target-folder",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": [
+          "json",
+          "excel"
+        ],
+        "envvar": null,
+        "help": "file type to save the results as",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "file_type",
+        "nargs": 1,
+        "opts": [
+          "--file-type",
+          "-ft"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "case_sensitive": true,
+          "choices": [
+            "json",
+            "excel"
+          ],
+          "name": "choice"
+        }
+      },
+      {
+        "count": false,
+        "default": 3,
+        "envvar": null,
+        "help": "number of seconds to wait between requests",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "wait_interval",
+        "nargs": 1,
+        "opts": [
+          "--wait-interval",
+          "-wi"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "integer"
+        }
+      },
+      {
+        "count": false,
+        "default": "workspaces_reports_users",
+        "envvar": null,
+        "help": "file name without extension",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "file_name",
+        "nargs": 1,
+        "opts": [
+          "--file-name",
+          "-n"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "workspace names to download",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": true,
+        "name": "workspace_name",
+        "nargs": 1,
+        "opts": [
+          "--workspace-name",
+          "-wn"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      }
+    ]
+  },
+  "pbi workspaces scan": {
+    "command_order": [
+      "batch",
+      "get",
+      "initiate",
+      "result",
+      "status"
+    ],
+    "deprecated": false,
+    "help": "Command group for workspace scan operations.\n\n!!! warning \"Requires Admin\"\n\n    All commands in this group require an admin account.",
+    "hidden": false,
+    "invoke_without_command": true,
+    "kind": "group",
+    "no_args_is_help": false,
+    "params": []
+  },
+  "pbi workspaces scan batch": {
+    "deprecated": false,
+    "help": "Scan every workspace listed in a YAML config file and save each result.\n\nEach workspace runs through its own initiate/status/result cycle so one\nfailing workspace doesn't block the rest, and each result is\nsaved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a\nname is provided,\nor ``<target_folder>/<workspace_id>.json`` otherwise.\n\nExample config file:\n\n```yaml\nworkspace_ids:\n  - id: <workspace-id-1>\n    name: Finance\n  - id: <workspace-id-2>\n    name: Marketing\n  - <workspace-id-3>  # name is optional; falls back to the ID\ntarget_folder: scan_results\nlineage: true\ndatasource_details: true\ndataset_schema: false\ndataset_expressions: false\nget_artifact_users: false\ninterval: 5\ntimeout: 300\n```\n\nOnly ``workspace_ids`` and ``target_folder`` are required; the scan flags\ndefault to ``false`` and ``interval``/``timeout`` default to ``5``/``300``\nseconds, same as ``pbi workspaces scan get``. When an entry has a\n``name``, the result is saved as\n``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it\nfalls back to ``<target_folder>/<workspace_id>.json``.\n\n```sh\npbi workspaces scan batch --config scan_config.yaml\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Path to a YAML config file listing workspace_ids and scan parameters.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "config_path",
+        "nargs": 1,
+        "opts": [
+          "--config",
+          "-c"
+        ],
+        "prompt": null,
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": true,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi workspaces scan get": {
+    "deprecated": false,
+    "help": "Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.\n\nCombines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and\n``pbi workspaces scan result`` into a single step: starts the scan, polls the\nscan status until it succeeds, fails, or times out, then prints or saves the\nresults.\n\n```sh\npbi workspaces scan get <workspace-id>\n\npbi workspaces scan get <workspace-id> <workspace-id> --lineage -t results.json\n\n# Loop over workspaces, saving each result as <workspace-id>.json\nfor w in ws-1 ws-2 ws-3; do\n    pbi workspaces scan get \"$w\" -tf scan_results\ndone\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "WORKSPACE_IDS",
+        "multiple": false,
+        "name": "workspace_ids",
+        "nargs": -1,
+        "opts": [
+          "workspace_ids"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include lineage information",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "lineage",
+        "nargs": 1,
+        "opts": [
+          "--lineage"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include datasource details",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "datasource_details",
+        "nargs": 1,
+        "opts": [
+          "--datasource-details"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include dataset schema",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "dataset_schema",
+        "nargs": 1,
+        "opts": [
+          "--dataset-schema"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include dataset expressions",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "dataset_expressions",
+        "nargs": 1,
+        "opts": [
+          "--dataset-expressions"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include artifact users",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "get_artifact_users",
+        "nargs": 1,
+        "opts": [
+          "--get-artifact-users"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": 5.0,
+        "envvar": null,
+        "help": "Seconds to wait between status checks",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "interval",
+        "nargs": 1,
+        "opts": [
+          "--interval"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "clamp": false,
+          "max": null,
+          "max_open": false,
+          "min": 0,
+          "min_open": true,
+          "name": "float range"
+        }
+      },
+      {
+        "count": false,
+        "default": 300.0,
+        "envvar": null,
+        "help": "Maximum seconds to wait for scan completion",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "timeout",
+        "nargs": 1,
+        "opts": [
+          "--timeout"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "clamp": false,
+          "max": null,
+          "max_open": false,
+          "min": 0,
+          "min_open": true,
+          "name": "float range"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Target file to save scan results (if omitted, prints to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Target folder to save scan results (absolute path or subfolder within the default output folder). Only supported when scanning a single workspace ID, and saves the result as <workspace_id>.json. Handy when looping over several workspaces. Mutually exclusive with --target.",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target_folder",
+        "nargs": 1,
+        "opts": [
+          "--target-folder",
+          "-tf"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      }
+    ]
+  },
+  "pbi workspaces scan initiate": {
+    "deprecated": false,
+    "help": "Initiate a workspace scan for one or more WORKSPACE_IDS.\n\nReturns the scan ID which can be used with ``pbi workspaces scan result``.\n\n```sh\npbi workspaces scan initiate <workspace-id> <workspace-id>\n\npbi workspaces scan initiate <workspace-id> --lineage --datasource-details\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "WORKSPACE_IDS",
+        "multiple": false,
+        "name": "workspace_ids",
+        "nargs": -1,
+        "opts": [
+          "workspace_ids"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include lineage information",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "lineage",
+        "nargs": 1,
+        "opts": [
+          "--lineage"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include datasource details",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "datasource_details",
+        "nargs": 1,
+        "opts": [
+          "--datasource-details"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include dataset schema",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "dataset_schema",
+        "nargs": 1,
+        "opts": [
+          "--dataset-schema"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include dataset expressions",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "dataset_expressions",
+        "nargs": 1,
+        "opts": [
+          "--dataset-expressions"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      },
+      {
+        "count": false,
+        "default": false,
+        "envvar": null,
+        "help": "Include artifact users",
+        "hidden": false,
+        "is_flag": true,
+        "kind": "option",
+        "multiple": false,
+        "name": "get_artifact_users",
+        "nargs": 1,
+        "opts": [
+          "--get-artifact-users"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "name": "boolean"
+        }
+      }
+    ]
+  },
+  "pbi workspaces scan result": {
+    "deprecated": false,
+    "help": "Get scan results for SCAN_ID.\n\nRetrieves the scan results for the given scan ID returned by\n``pbi workspaces scan initiate``.\n\n```sh\npbi workspaces scan result <scan-id>\n\npbi workspaces scan result <scan-id> -t results.json\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "SCAN_ID",
+        "multiple": false,
+        "name": "scan_id",
+        "nargs": 1,
+        "opts": [
+          "scan_id"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      },
+      {
+        "count": false,
+        "default": null,
+        "envvar": null,
+        "help": "Target file to save scan results (if omitted, prints to console)",
+        "hidden": false,
+        "is_flag": false,
+        "kind": "option",
+        "multiple": false,
+        "name": "target",
+        "nargs": 1,
+        "opts": [
+          "--target",
+          "-t"
+        ],
+        "prompt": null,
+        "required": false,
+        "secondary_opts": [],
+        "type": {
+          "dir_okay": true,
+          "exists": false,
+          "file_okay": true,
+          "name": "path",
+          "readable": true,
+          "resolve_path": false,
+          "writable": false
+        }
+      }
+    ]
+  },
+  "pbi workspaces scan status": {
+    "deprecated": false,
+    "help": "Get the scan status for SCAN_ID.\n\nRetrieves the current status (e.g. ``NotStarted``, ``Running``,\n``Succeeded``, ``Failed``) for the given scan ID returned by\n``pbi workspaces scan initiate``. Check this before calling\n``pbi workspaces scan result``.\n\n```sh\npbi workspaces scan status <scan-id>\n```\n\n!!! warning \"Requires Admin\"\n\n    This command requires an admin account.",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "SCAN_ID",
+        "multiple": false,
+        "name": "scan_id",
+        "nargs": 1,
+        "opts": [
+          "scan_id"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
+        }
+      }
+    ]
+  }
+}

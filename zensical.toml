@@ -1,0 +1,76 @@
+[project]
+site_name = "pbi_cli Documentation"
+site_description = "Documentation for pbi_cli - a command line interface for Power BI."
+site_url = "https://emptymalei.github.io/powerbi-cli"
+repo_url = "https://github.com/emptymalei/powerbi-cli"
+repo_name = "emptymalei/powerbi-cli"
+edit_uri = "blob/main/docs/"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Guides" = [
+    { "Workspace Scans" = "scan.md" },
+    { "Cache" = "cache.md" },
+  ] },
+  { "References" = [
+    { "Introduction" = "references/index.md" },
+    { "pbi_cli" = [
+      { "cli" = "references/cli.md" },
+      { "powerbi" = [
+        { "index" = "references/powerbi/index.md" },
+        { "admin" = "references/powerbi/admin.md" },
+        { "app" = "references/powerbi/app.md" },
+        { "base" = "references/powerbi/base.md" },
+        { "io" = "references/powerbi/io.md" },
+        { "report" = "references/powerbi/report.md" },
+      ] },
+    ] },
+  ] },
+  { "Changelog" = "changelog.md" },
+]
+
+[project.theme]
+# "classic" keeps the look of Material for MkDocs.
+variant = "classic"
+language = "en"
+features = [
+  "content.code.copy",
+  "navigation.sections",
+  "navigation.tabs",
+]
+
+[project.theme.font]
+text = "Roboto"
+code = "Roboto Mono"
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "red"
+accent = "red"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions]
+admonition = {}
+footnotes = {}
+toc.permalink = "¤"
+pymdownx.details = {}
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.magiclink = {}
+# Fail the build when an included file (docs/scan.md includes an example) is missing.
+pymdownx.snippets.check_paths = true
+pymdownx.superfences = {}
+pymdownx.tabbed.alternate_style = true
+pymdownx.tasklist.custom_checkbox = true
+
+# API reference pages (docs/references/**) are generated from the docstrings.
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "sphinx"

@@ -1,0 +1,198 @@
+{
+  "pbi (no subcommand)": {
+    "exit_code": 0,
+    "output": "Hello tester\nWelcome to pbi cli. Use pbi --help for help.\n"
+  },
+  "pbi --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --install-completion  Install completion for the current shell.\n  --show-completion     Show completion for the current shell, to copy it or\n                        customize the installation.\n  --help                Show this message and exit.\n\nCommands:\n  apps        Power BI Apps Command Group\n  auth        Store authentication bearer token securely\n  cache       Manage cached API call results\n  config      Manage pbi-cli configuration settings\n  export      export report based on id\n  profile     Manage authentication profiles\n  reports     Reports Command Group\n  users       Command group for Power BI users\n  version     Show the current version of the pbi CLI tool.\n  workspaces  Command group for Power BI workspaces\n"
+  },
+  "pbi apps (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi apps --help.\n"
+  },
+  "pbi apps --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi apps [OPTIONS] COMMAND [ARGS]...\n\n  Power BI Apps Command Group\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  app      Retrieve information about a specific Power BI App\n  augment  Augment Power BI Apps data from a source file and save to target...\n  list     List Power BI Apps and save them to files or print to console\n"
+  },
+  "pbi apps app --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi apps app [OPTIONS]\n\n  Retrieve information about a specific Power BI App\n\nOptions:\n  -a, --app-id <str>             app id  [required]\n  -t, --target <path>            target file (if omitted, prints to console)\n  -ft, --file-type <json|excel>  [default: json]\n  --help                         Show this message and exit.\n"
+  },
+  "pbi apps augment --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi apps augment [OPTIONS]\n\n  Augment Power BI Apps data from a source file and save to target file\n\nOptions:\n  -s, --source <path>            source file  [required]\n  -t, --target <path>            target file  [required]\n  -ft, --file-type <json|excel>  [default: json]\n  --help                         Show this message and exit.\n"
+  },
+  "pbi apps list --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi apps list [OPTIONS]\n\n  List Power BI Apps and save them to files or print to console\n\nOptions:\n  -tf, --target-folder <str>     target folder (absolute path or subfolder\n                                 within default output folder). If omitted,\n                                 prints results to console as a table.\n  -ft, --file-type <json|excel>  [default: json]\n  -r, --role <admin|user>        [default: user]\n  -n, --file-name <str>          file name  [default: apps]\n  --use-cache                    Use cached data if available instead of making\n                                 API call\n  --cache-only                   Only use cache, fail if cache not available\n  --help                         Show this message and exit.\n"
+  },
+  "pbi auth --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi auth [OPTIONS]\n\n  Store authentication bearer token securely\n\n  ``` pbi auth --bearer-token <your_bearer_token> ```\n\n  or with a custom profile name:\n\n  ``` pbi auth -t <your_bearer_token> -p production ```\n\n  or scoped to a group:\n\n  ``` pbi auth -t <your_bearer_token> -p admin-nlm -g admin pbi auth -t\n  <your_bearer_token> -p user-nlm -g user ```\n\n  :param bearer_token: Bearer token to authenticate with Power BI API :param\n  profile: Profile name to associate with this credential :param group: Optional\n  group ('user' or 'admin') to store the profile in\n\nOptions:\n  -t, --bearer-token <str>  Bearer token  [required]\n  -p, --profile <str>       Profile name for this credential set  [default:\n                            default]\n  -g, --group <user|admin>  Group to store this profile in ('user' or 'admin')\n  --help                    Show this message and exit.\n"
+  },
+  "pbi cache (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi cache --help for help.\n"
+  },
+  "pbi cache --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi cache [OPTIONS] COMMAND [ARGS]...\n\n  Manage cached API call results\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  clear  Clear cached data\n  list   List cached data\n"
+  },
+  "pbi cache clear --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi cache clear [OPTIONS]\n\n  Clear cached data\n\n  ``` # Clear all cache pbi cache clear\n\n  # Clear specific cache key pbi cache clear -k workspaces\n\n  # Clear specific version pbi cache clear -k workspaces -v 20240101_120000 ```\n\n  :param cache_key: Optional cache key to clear :param version: Optional version\n  to clear (requires cache_key)\n\nOptions:\n  -k, --cache-key <str>  Clear specific cache key (clears all if omitted)\n  -v, --version <str>    Clear specific version (requires --cache-key)\n  --yes                  Confirm the action without prompting.\n  --help                 Show this message and exit.\n"
+  },
+  "pbi cache list --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi cache list [OPTIONS]\n\n  List cached data\n\n  ``` # List all cache keys pbi cache list\n\n  # List versions for a specific key pbi cache list -k workspaces ```\n\n  :param cache_key: Optional cache key to show versions for\n\nOptions:\n  -k, --cache-key <str>  Show versions for a specific cache key\n  --help                 Show this message and exit.\n"
+  },
+  "pbi config (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi config --help for help.\n"
+  },
+  "pbi config --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config [OPTIONS] COMMAND [ARGS]...\n\n  Manage pbi-cli configuration settings\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  disable-cache      Disable caching of API call results\n  enable-cache       Enable caching of API call results\n  get-cache-folder   Get the currently configured cache folder\n  get-output-folder  Get the currently configured default output folder\n  set-cache-folder   Set the cache folder for storing API call results\n  set-output-folder  Set the default parent folder for all command outputs\n  show               Show all configuration settings\n"
+  },
+  "pbi config disable-cache --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config disable-cache [OPTIONS]\n\n  Disable caching of API call results\n\n  ``` pbi config disable-cache ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config enable-cache --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config enable-cache [OPTIONS]\n\n  Enable caching of API call results\n\n  ``` pbi config enable-cache ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config get-cache-folder --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config get-cache-folder [OPTIONS]\n\n  Get the currently configured cache folder\n\n  ``` pbi config get-cache-folder ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config get-output-folder --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config get-output-folder [OPTIONS]\n\n  Get the currently configured default output folder\n\n  ``` pbi config get-output-folder ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config set-cache-folder --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config set-cache-folder [OPTIONS] {FOLDER_PATH}\n\n  Set the cache folder for storing API call results\n\n  The cache folder can be: - A local path: \"/path/to/cache\" or\n  \"C:\\Users\\Name\\cache\" - A cloud path: \"s3://bucket-name/cache-folder\"\n\n  ``` pbi config set-cache-folder ~/PowerBI/cache ```\n\n  or with cloud storage:\n\n  ``` pbi config set-cache-folder s3://my-bucket/powerbi-cache ```\n\n  :param folder_path: Path to the cache folder (local or remote)\n\nArguments:\n  FOLDER_PATH  Local path or cloud URL (s3://, gs://, az://) of the cache folder\n               [required]\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config set-output-folder --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config set-output-folder [OPTIONS] {FOLDER_PATH}\n\n  Set the default parent folder for all command outputs\n\n  ``` pbi config set-output-folder ~/PowerBI/backups ```\n\n  or on Windows:\n\n  ``` pbi config set-output-folder \"C:\\Users\\YourName\\PowerBI\\backups\" ```\n\n  :param folder_path: Path to the default output folder\n\nArguments:\n  FOLDER_PATH  Folder that holds the output of commands  [required]\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi config show --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi config show [OPTIONS]\n\n  Show all configuration settings\n\n  ``` pbi config show ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi export --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi export [OPTIONS]\n\n  export report based on id\n\nOptions:\n  -g, --group-id <str>   Group ID  [required]\n  -r, --report-id <str>  Report ID  [required]\n  -t, --target <path>    target file (if omitted, prints info to console)\n  --help                 Show this message and exit.\n"
+  },
+  "pbi profile (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi profile --help for help.\n"
+  },
+  "pbi profile --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi profile [OPTIONS] COMMAND [ARGS]...\n\n  Manage authentication profiles\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  delete  Delete an authentication profile\n  list    List all stored authentication profiles\n  switch  Switch the active authentication profile\n"
+  },
+  "pbi profile delete --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi profile delete [OPTIONS] {PROFILE}\n\n  Delete an authentication profile\n\n  ``` pbi profile delete production ```\n\n  or from a specific group:\n\n  ``` pbi profile delete admin-nlm -g admin ```\n\n  :param profile: Profile name to delete :param group: Optional group ('user' or\n  'admin') to delete from\n\nArguments:\n  PROFILE  Name of the profile to delete  [required]\n\nOptions:\n  -g, --group <user|admin>  Group to delete the profile from ('user' or 'admin')\n  --yes                     Confirm the action without prompting.\n  --help                    Show this message and exit.\n"
+  },
+  "pbi profile list --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi profile list [OPTIONS]\n\n  List all stored authentication profiles\n\n  ``` pbi profile list ```\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi profile switch --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi profile switch [OPTIONS] [PROFILE_NAME]\n\n  Switch the active authentication profile\n\n  ``` pbi profile switch ```\n\n  or specify a profile:\n\n  ``` pbi profile switch production ```\n\n  or within a group:\n\n  ``` pbi profile switch admin-nlm -g admin pbi profile switch user-nlm -g user\n  ```\n\n  :param profile_name: Profile name to switch to (optional, will show\n  interactive selection if not provided) :param group: Optional group ('user' or\n  'admin') to switch within\n\nArguments:\n  PROFILE_NAME  Profile to switch to (you are asked to choose when omitted)\n\nOptions:\n  -g, --group <user|admin>  Group to switch profile in ('user' or 'admin')\n  --help                    Show this message and exit.\n"
+  },
+  "pbi reports (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi reports --help.\n"
+  },
+  "pbi reports --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi reports [OPTIONS] COMMAND [ARGS]...\n\n  Reports Command Group\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  export  Export report as file\n  list    List all reports in a workspace group.\n  pages   Get pages of a report (or all reports) in a workspace group.\n  users   Augment Power BI Apps data from a source file and save to target...\n"
+  },
+  "pbi reports export --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi reports export [OPTIONS]\n\n  Export report as file\n\nOptions:\n  -g, --group-id <str>   Group ID  [required]\n  -r, --report-id <str>  Report ID  [required]\n  -t, --target <path>    target file (if omitted, prints info to console)\n  --help                 Show this message and exit.\n"
+  },
+  "pbi reports list --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi reports list [OPTIONS]\n\n  List all reports in a workspace group.\n\n  Retrieves the full list of reports from the specified workspace group and\n  either prints the result to the console or saves it to a JSON file.\n\nOptions:\n  -g, --group-id <str>  Group (workspace) ID  [required]\n  -t, --target <path>   target file (if omitted, prints info to console)\n  --help                Show this message and exit.\n"
+  },
+  "pbi reports pages --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi reports pages [OPTIONS]\n\n  Get pages of a report (or all reports) in a workspace group.\n\n  When ``--report-id`` is provided, retrieves the pages for that specific\n  report. When omitted, iterates over every report in the group and returns the\n  combined pages for all of them.\n\n  Examples::\n\n      pbi reports pages -g GROUP_ID -r REPORT_ID\n\n      pbi reports pages -g GROUP_ID\n\nOptions:\n  -g, --group-id <str>   Group (workspace) ID  [required]\n  -r, --report-id <str>  Report ID. If omitted, pages for all reports in the\n                         group are returned.\n  -t, --target <path>    target file (if omitted, prints info to console)\n  --help                 Show this message and exit.\n"
+  },
+  "pbi reports users --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi reports users [OPTIONS]\n\n  Augment Power BI Apps data from a source file and save to target file together\n  with report users\n\nOptions:\n  -s, --source <path>            source file  [required]\n  -t, --target <path>            target file  [required]\n  -ft, --file-type <json|excel>  [default: json]\n  --help                         Show this message and exit.\n"
+  },
+  "pbi users (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi users --help.\n"
+  },
+  "pbi users --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi users [OPTIONS] COMMAND [ARGS]...\n\n  Command group for Power BI users\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  user-access  Get user access information from Power BI API\n"
+  },
+  "pbi users user-access --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi users user-access [OPTIONS]\n\n  Get user access information from Power BI API\n\nOptions:\n  -u, --user-id <str>             user id  [required]\n  -tf, --target-folder <str>      target folder (absolute path or subfolder\n                                  within default output folder). If omitted,\n                                  prints results to console as a table.\n  -ft, --file-types <json|excel>  [default: json]\n  -n, --file-name <str>           file name without extension\n  --use-cache                     Use cached data if available instead of making\n                                  API call\n  --cache-only                    Only use cache, fail if cache not available\n  --help                          Show this message and exit.\n"
+  },
+  "pbi version --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi version [OPTIONS]\n\n  Show the current version of the pbi CLI tool.\n\nOptions:\n  --help  Show this message and exit.\n"
+  },
+  "pbi workspaces (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi workspaces --help for help.\n"
+  },
+  "pbi workspaces --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces [OPTIONS] COMMAND [ARGS]...\n\n  Command group for Power BI workspaces\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  format-convert  Convert output format of workspaces list (`pbi workspaces...\n  list            List Power BI workspaces and save them to files or print...\n  report-users    Augment Power BI Workspace data from a source file and...\n  scan            Command group for workspace scan operations.\n"
+  },
+  "pbi workspaces format-convert --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces format-convert [OPTIONS]\n\n  Convert output format of workspaces list (`pbi workspaces list`) from json to\n  excel.\n\n  ```sh pbi workspaces format-convert -s \"workspaces.json\" -t \"workspaces.xlsx\"\n  ```\n\nOptions:\n  -s, --source <path>  source file  [required]\n  -t, --target <path>  target file  [required]\n  --format <excel>     format of the file  [default: excel]\n  --help               Show this message and exit.\n"
+  },
+  "pbi workspaces list --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces list [OPTIONS]\n\n  List Power BI workspaces and save them to files or print to console\n\n  The --target-folder can be: - An absolute path:\n  \"C:\\Users\\Name\\PowerBI\\backups\\2024-01-01\" - A relative subfolder:\n  \"2024-01-01\" (uses default output folder + this subfolder) - Omitted: prints\n  results as a table to the console (no files created)\n\n  ```sh # Print to console as a table pbi workspaces list\n\n  # Using absolute path with caching pbi workspaces list -ft json -ft excel -tf\n  \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -e\n  users -e reports -e dashboards -e datasets -e dataflows -e workbooks\n\n  # Use cached data if available (falls back to API if not cached) pbi\n  workspaces list --use-cache\n\n  # Only use cache (fails if not cached) pbi workspaces list --cache-only\n\n  # Using relative subfolder (requires default output folder to be configured)\n  pbi config set-output-folder \"C:\\Users\\$Env:UserName\\PowerBI\\backups\" pbi\n  workspaces list -ft json -ft excel -tf \"$(Get-Date -format 'yyyy-MM-dd')\" -e\n  users ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nOptions:\n  --top <int>                     top n results  [default: 1000]\n  -e, --expand <users|reports|dashboards|datasets|dataflows|workbooks>\n                                  [default: users, reports, dashboards,\n                                  datasets, dataflows, workbooks]\n  -ft, --file-type <json|excel>   [default: json]\n  -f, --odata-filter <str>        odata filter\n  -tf, --target-folder <str>      target folder (absolute path or subfolder\n                                  within default output folder). If omitted,\n                                  prints results to console as a table.\n  -n, --file-name <str>           file name  [default: workspaces]\n  --use-cache                     Use cached data if available instead of making\n                                  API call\n  --cache-only                    Only use cache, fail if cache not available\n  --help                          Show this message and exit.\n"
+  },
+  "pbi workspaces report-users --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces report-users [OPTIONS]\n\n  Augment Power BI Workspace data from a source file and save to target file\n  together with report users\n\n  The source `-s` should be the excel file exported from the command `pbi\n  workspaces list`\n\n  ```sh # Print to console pbi workspaces report-users -s \"workspaces.xlsx\" -wn\n  $w -wi 5\n\n  # Save to folder pbi workspaces report-users -s \"workspaces.xlsx\" -t \"$(Get-\n  Date -format 'yyyy-MM-dd')\" -wn $w -n $w -wi 5 ```\n\n  Combined with PowerShell or bash, we can automatatically use different\n  workspace names for the reports.\n\n  Here is an example using PowerShell.\n\n  ```powershell $workspaces = \"AA\", \"BB\" foreach ($w in $workspaces) {\n  Write-Host \"Backing up for: $w\"     pbi workspaces report-users -s\n  \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\workspaces.xlsx\" --target-folder\n  \"C:\\Users\\$Env:UserName\\PowerBI\\backups\\$(Get-Date -format 'yyyy-MM-dd')\" -wn\n  $w -n $w -wi 5 } # Wait for 300 seconds (5 minutes) before the next loop\n  Start-Sleep -Seconds 300 ```\n\nOptions:\n  -s, --source <path>            source json/excel file that contains all\n                                 workspace information  [required]\n  -t, --target-folder <str>      target folder (absolute path or subfolder\n                                 within default output folder). If omitted,\n                                 prints results to console as a table. Do not\n                                 include the trailing (back)slash\n  -ft, --file-type <json|excel>  file type to save the results as  [default:\n                                 json, excel]\n  -wi, --wait-interval <int>     number of seconds to wait between requests\n                                 [default: 3]\n  -n, --file-name <str>          file name without extension  [default:\n                                 workspaces_reports_users]\n  -wn, --workspace-name <str>    workspace names to download\n  --help                         Show this message and exit.\n"
+  },
+  "pbi workspaces scan (no subcommand)": {
+    "exit_code": 0,
+    "output": "Use pbi workspaces scan --help for help.\n"
+  },
+  "pbi workspaces scan --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan [OPTIONS] COMMAND [ARGS]...\n\n  Command group for workspace scan operations.\n\n  !!! warning \"Requires Admin\"\n\n      All commands in this group require an admin account.\n\nOptions:\n  --help  Show this message and exit.\n\nCommands:\n  batch     Scan every workspace listed in a YAML config file and save each...\n  get       Initiate a scan for WORKSPACE_IDS, wait for completion, and...\n  initiate  Initiate a workspace scan for one or more WORKSPACE_IDS.\n  result    Get scan results for SCAN_ID.\n  status    Get the scan status for SCAN_ID.\n"
+  },
+  "pbi workspaces scan batch --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan batch [OPTIONS]\n\n  Scan every workspace listed in a YAML config file and save each result.\n\n  Each workspace runs through its own initiate/status/result cycle so one\n  failing workspace doesn't block the rest, and each result is saved as\n  ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a name is\n  provided, or ``<target_folder>/<workspace_id>.json`` otherwise.\n\n  Example config file:\n\n  ```yaml workspace_ids:   - id: <workspace-id-1>     name: Finance   - id:\n  <workspace-id-2>     name: Marketing   - <workspace-id-3>  # name is optional;\n  falls back to the ID target_folder: scan_results lineage: true\n  datasource_details: true dataset_schema: false dataset_expressions: false\n  get_artifact_users: false interval: 5 timeout: 300 ```\n\n  Only ``workspace_ids`` and ``target_folder`` are required; the scan flags\n  default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``\n  seconds, same as ``pbi workspaces scan get``. When an entry has a ``name``,\n  the result is saved as ``<target_folder>/<slugified-\n  name>-<workspace_id>.json``; otherwise it falls back to\n  ``<target_folder>/<workspace_id>.json``.\n\n  ```sh pbi workspaces scan batch --config scan_config.yaml ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nOptions:\n  -c, --config <path>  Path to a YAML config file listing workspace_ids and scan\n                       parameters.  [required]\n  --help               Show this message and exit.\n"
+  },
+  "pbi workspaces scan get --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan get [OPTIONS] {WORKSPACE_IDS}\n\n  Initiate a scan for WORKSPACE_IDS, wait for completion, and return results.\n\n  Combines ``pbi workspaces scan initiate``, ``pbi workspaces scan status``, and\n  ``pbi workspaces scan result`` into a single step: starts the scan, polls the\n  scan status until it succeeds, fails, or times out, then prints or saves the\n  results.\n\n  ```sh pbi workspaces scan get <workspace-id>\n\n  pbi workspaces scan get <workspace-id> <workspace-id> --lineage -t\n  results.json\n\n  # Loop over workspaces, saving each result as <workspace-id>.json for w in\n  ws-1 ws-2 ws-3; do     pbi workspaces scan get \"$w\" -tf scan_results done ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nArguments:\n  WORKSPACE_IDS  One or more workspace IDs  [required]\n\nOptions:\n  --lineage                   Include lineage information\n  --datasource-details        Include datasource details\n  --dataset-schema            Include dataset schema\n  --dataset-expressions       Include dataset expressions\n  --get-artifact-users        Include artifact users\n  --interval <float>          Seconds to wait between status checks  [default:\n                              5.0]\n  --timeout <float>           Maximum seconds to wait for scan completion\n                              [default: 300.0]\n  -t, --target <path>         Target file to save scan results (if omitted,\n                              prints to console)\n  -tf, --target-folder <str>  Target folder to save scan results (absolute path\n                              or subfolder within the default output folder).\n                              Only supported when scanning a single workspace\n                              ID, and saves the result as <workspace_id>.json.\n                              Handy when looping over several workspaces.\n                              Mutually exclusive with --target.\n  --help                      Show this message and exit.\n"
+  },
+  "pbi workspaces scan initiate --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan initiate [OPTIONS] {WORKSPACE_IDS}\n\n  Initiate a workspace scan for one or more WORKSPACE_IDS.\n\n  Returns the scan ID which can be used with ``pbi workspaces scan result``.\n\n  ```sh pbi workspaces scan initiate <workspace-id> <workspace-id>\n\n  pbi workspaces scan initiate <workspace-id> --lineage --datasource-details ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nArguments:\n  WORKSPACE_IDS  One or more workspace IDs  [required]\n\nOptions:\n  --lineage              Include lineage information\n  --datasource-details   Include datasource details\n  --dataset-schema       Include dataset schema\n  --dataset-expressions  Include dataset expressions\n  --get-artifact-users   Include artifact users\n  --help                 Show this message and exit.\n"
+  },
+  "pbi workspaces scan result --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan result [OPTIONS] {SCAN_ID}\n\n  Get scan results for SCAN_ID.\n\n  Retrieves the scan results for the given scan ID returned by ``pbi workspaces\n  scan initiate``.\n\n  ```sh pbi workspaces scan result <scan-id>\n\n  pbi workspaces scan result <scan-id> -t results.json ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nArguments:\n  SCAN_ID  Scan ID returned by `pbi workspaces scan initiate`  [required]\n\nOptions:\n  -t, --target <path>  Target file to save scan results (if omitted, prints to\n                       console)\n  --help               Show this message and exit.\n"
+  },
+  "pbi workspaces scan status --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi workspaces scan status [OPTIONS] {SCAN_ID}\n\n  Get the scan status for SCAN_ID.\n\n  Retrieves the current status (e.g. ``NotStarted``, ``Running``, ``Succeeded``,\n  ``Failed``) for the given scan ID returned by ``pbi workspaces scan\n  initiate``. Check this before calling ``pbi workspaces scan result``.\n\n  ```sh pbi workspaces scan status <scan-id> ```\n\n  !!! warning \"Requires Admin\"\n\n      This command requires an admin account.\n\nArguments:\n  SCAN_ID  Scan ID returned by `pbi workspaces scan initiate`  [required]\n\nOptions:\n  --help  Show this message and exit.\n"
+  }
+}

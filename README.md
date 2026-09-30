@@ -45,3 +45,50 @@ Or activate the virtual environment and use the command directly:
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pbi --help
 ```
+
+### How the CLI is built
+
+The CLI uses [Typer](https://typer.tiangolo.com). The commands live in
+`src/pbi_cli/cli.py`, one `typer.Typer()` per group. Register a command with the
+`command()` decorator from `src/pbi_cli/cli_support.py` (it turns a `PBIError`, from
+`src/pbi_cli/errors.py`, into `Error: <message>` with exit status 1) and declare options
+with `Annotated[..., typer.Option(...)]`. Keep the option names explicit, including short
+names such as `-ft`: existing scripts use them.
+
+### Running the tests
+
+```bash
+uv run pytest
+```
+
+### The CLI surface snapshot
+
+Existing scripts depend on the exact flags of the CLI (for example `-ft`, `-tf`, `-wn`
+and `-wi`). `tests/test_cli_surface.py` guards them: it walks the whole command tree and
+compares every command, flag, type, default and `--help` output with the fixtures in
+`tests/fixtures/` (`cli_surface.json` and `cli_help.json`).
+
+If the test fails, the CLI changed. If the change was intentional, record it in
+`ACCEPTED_SURFACE_CHANGES` in that test with the reason (and add a line to
+`docs/changelog.md`). Then re-record the `--help` output, which is expected to change
+with every new option or docstring:
+
+```bash
+uv run python tests/cli_surface.py --write help
+```
+
+`cli_surface.json` is the baseline recorded from the click based CLI that preceded
+Typer; only re-record it (`--write surface`) for a reviewed, intentional flag change.
+
+### Building the docs
+
+The docs are built with [Zensical](https://zensical.org); the configuration is in
+`zensical.toml`. The command reference (`docs/references/cli.md`) is generated from the
+commands, so regenerate it after changing a command, option or docstring. A test, and
+the docs workflows, fail when it is stale.
+
+```bash
+uv run python scripts/gen_cli_docs.py   # regenerate docs/references/cli.md
+uv run zensical serve                   # preview the docs locally
+uv run zensical build --clean           # build them into site/
+```
