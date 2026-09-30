@@ -53,6 +53,7 @@ class Fault:
     body: Any
     headers: Dict[str, str]
     times: Optional[int]  # None: every time
+    query: Dict[str, Pattern[str]]  # the request must carry these, matching
 
 
 def _error(status: int, code: str, message: str) -> Tuple[int, Any]:
@@ -92,6 +93,7 @@ class FakePowerBI(BaseAdapter):
         self.events_page_size = events_page_size
         self.result_not_ready_times = 0
         self.empty_first_events_page = False
+        self.link_after_last_events_page = False
         self.failing_scan_workspaces: set = set()
 
         now = self.now()
@@ -216,7 +218,7 @@ class FakePowerBI(BaseAdapter):
 
         with self._lock:
             self.calls.append(Call(request.method, path, query, body))
-            fault = self._fault_for(request.method, path)
+            fault = self._fault_for(request.method, path, query)
             if fault is not None:
                 response = make_response(
                     fault.status, fault.body, headers=fault.headers
@@ -234,9 +236,18 @@ class FakePowerBI(BaseAdapter):
         response.request = request
         return response
 
-    def _fault_for(self, method: str, path: str) -> Optional[Fault]:
+    def _fault_for(
+        self, method: str, path: str, query: Dict[str, str]
+    ) -> Optional[Fault]:
         for fault in self._faults:
-            if fault.method == method and fault.pattern.search(path):
+            if (
+                fault.method == method
+                and fault.pattern.search(path)
+                and all(
+                    name in query and pattern.search(query[name])
+                    for name, pattern in fault.query.items()
+                )
+            ):
                 if fault.times is None:
                     return fault
                 if fault.times > 0:
@@ -268,12 +279,25 @@ class FakePowerBI(BaseAdapter):
         body: Any = None,
         times: Optional[int] = None,
         headers: Optional[Dict[str, str]] = None,
+        query: Optional[Dict[str, str]] = None,
     ) -> None:
-        """Answer requests whose path matches the regex ``path`` with an error status."""
+        """Answer requests whose path matches the regex ``path`` with an error status.
+
+        :param query: only requests whose query parameters match these regexes
+            (for example ``{"continuationToken": "^'2026-09-29"}``)
+        """
         if body is None:
             body = {"error": {"code": f"Error{status}", "message": "injected"}}
         self._faults.append(
-            Fault(method, re.compile(path), status, body, headers or {}, times)
+            Fault(
+                method,
+                re.compile(path),
+                status,
+                body,
+                headers or {},
+                times,
+                {name: re.compile(regex) for name, regex in (query or {}).items()},
+            )
         )
 
     def throttle(self, path: str, *, retry_after: int = 1, times: int = 1) -> None:
@@ -373,7 +397,7 @@ class FakePowerBI(BaseAdapter):
 
     def _users(self, match, query, body, origin):
         report = match.group("id")
-        if not any(r["id"] == report for r in self.reports):
+        if not any(r.get("id") == report for r in self.reports):
             return _error(404, "PowerBIEntityNotFound", f"no report {report}")
         return 200, {
             "value": [
@@ -388,7 +412,7 @@ class FakePowerBI(BaseAdapter):
 
     def _datasources(self, match, query, body, origin):
         dataset = match.group("id")
-        if not any(d["id"] == dataset for d in self.datasets):
+        if not any(d.get("id") == dataset for d in self.datasets):
             return _error(404, "PowerBIEntityNotFound", f"no dataset {dataset}")
         return 200, {
             "value": [
@@ -592,7 +616,7 @@ class FakePowerBI(BaseAdapter):
             "continuationToken": None,
             "lastResultSet": not more,
         }
-        if more:
+        if more or self.link_after_last_events_page:
             next_token = f"{day.isoformat()}|{following}|{end:%Y-%m-%dT%H:%M:%S.%f}Z"
             payload["continuationToken"] = next_token
             payload["continuationUri"] = (

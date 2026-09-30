@@ -318,3 +318,19 @@ def test_it_can_be_shared_by_threads(fake):
         thread.join()
 
     assert errors == [] and len(fake.calls) == 200
+
+
+def test_a_fault_can_be_limited_to_requests_with_certain_query_parameters():
+    fake = FakePowerBI(clock=lambda: NOW, events_per_day=5, events_page_size=2)
+    day = NOW.date() - timedelta(days=1)
+    url = f"{BASE}/admin/activityevents"
+    fake.fail(
+        "GET", r"activityevents", 500, query={"continuationToken": r"\|2\|"}, times=1
+    )
+
+    first = fake.session().get(url, params=window(day))
+    second = fake.session().get(first.json()["continuationUri"])
+    retried = fake.session().get(first.json()["continuationUri"])
+
+    assert first.status_code == 200  # no continuationToken: not matched
+    assert second.status_code == 500 and retried.status_code == 200

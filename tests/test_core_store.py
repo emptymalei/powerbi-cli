@@ -528,3 +528,14 @@ def test_an_event_day_knows_when_it_was_last_written(store):
     assert abs(datetime.now(UTC) - written) < timedelta(minutes=1)
     store.seal_day("t1", "admin.activityevents", day)
     assert store.event_day("t1", "admin.activityevents", day).updated_at >= written
+
+
+def test_events_are_stamped_with_the_time_they_were_received(store):
+    day = date(2026, 9, 29)
+    received = datetime(2026, 9, 30, 8, 30, tzinfo=UTC)
+    sealed = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
+
+    store.append_events("t1", "admin.activityevents", day, [{"Id": "1"}], at=received)
+    assert store.event_day("t1", "admin.activityevents", day).updated_at == received
+    store.seal_day("t1", "admin.activityevents", day, at=sealed)
+    assert store.event_day("t1", "admin.activityevents", day).updated_at == sealed

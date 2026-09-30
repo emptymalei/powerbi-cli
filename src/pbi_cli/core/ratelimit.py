@@ -330,6 +330,7 @@ class Limiter:
                     f"in {format_wait(wait)}; run the command again later.",
                     status=None,
                     retry_after=wait,
+                    endpoint=endpoint.id,
                 )
             logger.info(
                 f"Waiting {format_wait(wait)} before calling {endpoint.id} "

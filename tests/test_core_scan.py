@@ -20,7 +20,7 @@ from pbi_cli.core.scan import (
     store_scan,
 )
 from pbi_cli.core.store import LakeStore
-from pbi_cli.errors import ScanError, TokenExpiredError
+from pbi_cli.errors import ScanError, ScanTimeout, TokenExpiredError
 
 
 @pytest.fixture
@@ -159,9 +159,10 @@ def test_a_result_that_is_not_ready_yet_is_asked_for_again(client, clock, fake):
 def test_a_scan_that_does_not_finish_times_out(client, clock, fake):
     fake.scan_polls = 10**6
 
-    with pytest.raises(ScanError, match="did not complete within 12.0s") as info:
+    with pytest.raises(ScanTimeout, match="did not complete within 12.0s") as info:
         scan(client, clock, ["ws-0001"], interval=5.0, timeout=12.0)
 
+    assert isinstance(info.value, ScanError)  # callers may treat both alike
     assert info.value.scan_id == "scan-0001"
     assert clock.slept == [5.0, 5.0, 2.0]  # the last wait is cut to the deadline
 
@@ -173,6 +174,7 @@ def test_a_failed_scan_is_an_error_with_the_reason(client, clock, fake):
         scan(client, clock, ["ws-0001", "ws-0002"])
 
     assert "ScanFailed" in str(info.value) and info.value.scan_id == "scan-0001"
+    assert not isinstance(info.value, ScanTimeout)  # its id is of no use any more
     assert fake.count(r"scanResult") == 0
 
 

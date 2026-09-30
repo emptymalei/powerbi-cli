@@ -309,13 +309,15 @@ def test_a_long_retry_after_is_not_waited_out_and_blocks_the_endpoint():
     with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
     assert excinfo.value.retry_after == 3000
+    assert excinfo.value.endpoint == "admin.groups"
     assert "50 minutes" in str(excinfo.value)
     assert clock.slept == []
     assert len(adapter.requests) == 1
 
     # the next attempt does not hit the same wall: it fails fast, locally
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as again:
         client.request("admin.groups", {"$top": 1})
+    assert again.value.endpoint == "admin.groups"
     assert len(adapter.requests) == 1
 
 
@@ -345,8 +347,10 @@ def test_a_request_fails_fast_when_the_quota_wait_is_too_long():
     client, clock = make_client(adapter, quota_wait=30)
     for _ in range(15):
         client.request("admin.groups", {"$top": 1})
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
+    assert excinfo.value.endpoint == "admin.groups"  # which quota ran out
+    assert 0 < excinfo.value.retry_after <= 60
     assert len(adapter.requests) == 15
 
 

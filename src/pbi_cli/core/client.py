@@ -291,6 +291,10 @@ class PowerBIClient:
         """The key the lake uses for the current credentials."""
         return self._tenant_key(self._credentials())
 
+    def profile_name(self) -> Optional[str]:
+        """The name of the profile the current credentials belong to, if they say."""
+        return self._credentials().profile
+
     # -- one request ---------------------------------------------------------------
 
     def _check_origin(self, url: str) -> None:
@@ -355,6 +359,7 @@ class PowerBIClient:
                     f"Power BI is throttling requests to {endpoint.id} (HTTP 429). "
                     f"Try again in {format_wait(wait)}.",
                     retry_after=wait,
+                    endpoint=endpoint.id,
                 )
             logger.info(f"Throttled on {endpoint.id}, waiting {format_wait(wait)}")
             if self._on_throttle is not None:

@@ -538,6 +538,7 @@ class LakeStore:
         sealed: bool = False,
         profile: Optional[str] = None,
         request: Optional[Mapping[str, Any]] = None,
+        at: Optional[datetime] = None,
     ) -> int:
         """Add events to a day, skipping the ones that are already stored.
 
@@ -553,6 +554,7 @@ class LakeStore:
         :param sealed: mark the day as complete
         :param profile: name of the profile used (not the token)
         :param request: what was asked: never headers
+        :param at: when the events were received (default: now)
         :return: the number of events that were new
         :raises StoreError: if the day is already sealed
         """
@@ -606,18 +608,24 @@ class LakeStore:
                 manifest["cursor"] = cursor or None
             manifest["sealed"] = bool(sealed)
             manifest["profile"] = profile
-            manifest["updated_at"] = datetime.now(timezone.utc).isoformat()
+            manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()
             manifest["cli_version"] = _cli_version()
             self._write_bytes(directory / MANIFEST, _dump(manifest, indent=2))
             return len(fresh)
 
-    def seal_day(self, tenant: str, endpoint_id: str, day: date) -> None:
-        """Mark a day of events as complete."""
+    def seal_day(
+        self,
+        tenant: str,
+        endpoint_id: str,
+        day: date,
+        at: Optional[datetime] = None,
+    ) -> None:
+        """Mark a day of events as complete (``at``: when, default now)."""
         with self._event_lock:
             stored = self.event_day(tenant, endpoint_id, day)
             if stored is None:
                 raise StoreError(f"No events stored for {endpoint_id} on {day}")
             manifest = dict(stored.manifest)
             manifest["sealed"] = True
-            manifest["updated_at"] = datetime.now(timezone.utc).isoformat()
+            manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()
             self._write_bytes(stored.directory / MANIFEST, _dump(manifest, indent=2))

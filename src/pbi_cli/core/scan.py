@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, 
 from pbi_cli.core.client import PowerBIClient, body_hash
 from pbi_cli.core.ratelimit import DEFAULT_MAX_WAIT, MaxWait
 from pbi_cli.core.store import LakeStore, Snapshot
-from pbi_cli.errors import ApiError, ScanError
+from pbi_cli.errors import ApiError, ScanError, ScanTimeout
 
 #: Workspace ids per ``getInfo`` call.
 MAX_WORKSPACES = 100
@@ -180,7 +180,8 @@ def run_scan(
     :param monotonic: a clock for the timeout (replaced in tests)
     :param clock: the current time, aware UTC (replaced in tests)
     :param max_wait: how long requests may wait for quota
-    :raises ScanError: if the scan fails, is rejected or does not finish in time
+    :raises ScanTimeout: if the scan does not finish in time (it may still succeed)
+    :raises ScanError: if the scan fails or is rejected
     :raises TokenExpiredError: if the token expired (the scan keeps running: ``on_started``
         has reported its id)
     :raises ApiError: for any other failed request
@@ -234,7 +235,7 @@ def run_scan(
                     )
                 status = "Succeeded, result not ready"  # 202: ask again shortly
             if monotonic() >= deadline:
-                raise ScanError(
+                raise ScanTimeout(
                     f"Scan {job.scan_id} did not complete within {timeout}s "
                     f"(last status: {status}).",
                     job.scan_id,
