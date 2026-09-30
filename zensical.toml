@@ -11,14 +11,15 @@ nav = [
   { "Guides" = [
     { "Authentication" = "auth.md" },
     { "Workspace Scans" = "scan.md" },
-    { "Cache" = "cache.md" },
     { "Data lake" = "lake.md" },
+    { "Cache (legacy)" = "cache.md" },
   ] },
   { "References" = [
     { "Introduction" = "references/index.md" },
     { "pbi_cli" = [
       { "cli" = "references/cli.md" },
       { "errors" = "references/errors.md" },
+      { "session" = "references/session.md" },
       { "core" = [
         { "auth" = "references/core/auth.md" },
         { "client" = "references/core/client.md" },

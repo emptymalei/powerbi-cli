@@ -32,6 +32,21 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     # "x > 0" is now checked by a callback: Typer only has inclusive bounds.
     "pbi workspaces scan get/params/interval/type": "value must still be > 0, checked by a callback",
     "pbi workspaces scan get/params/timeout/type": "value must still be > 0, checked by a callback",
+    # The data lake: commands that browse and tidy what the other commands fetched.
+    "pbi/command_order": "the root gains the lake group",
+    "pbi lake": "new: pbi lake",
+    "pbi lake ls": "new: pbi lake ls",
+    "pbi lake show": "new: pbi lake show",
+    "pbi lake prune": "new: pbi lake prune",
+    # Help texts only (no flag changed): they now describe the data lake.
+    "pbi workspaces list/help": "says the answer is stored in the data lake and what --use-cache and --cache-only mean",
+    "pbi users user-access/help": "same, and says that it reads every page and needs an admin",
+    "pbi apps list/help": "same, and says what --role admin and --role user list",
+    "pbi reports list/help": "says the answer is also stored in the data lake",
+    "pbi reports pages/help": "says the answers are also stored in the data lake",
+    "pbi cache/help": "the cache is now the legacy layout; points to pbi lake",
+    "pbi cache list/help": "says it lists the legacy cache only",
+    "pbi cache clear/help": "says it never touches the data lake",
 }
 
 # Key format: "<command path> --help" or "<command path> (no subcommand)". Value = reason.

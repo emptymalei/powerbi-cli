@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from pbi_cli.cache import CacheConfig, CacheManager
+from pbi_cli.cache import LAKE_FOLDER, CacheConfig, CacheManager
 
 
 @pytest.fixture
@@ -168,3 +168,117 @@ def test_cache_structure(temp_cache_dir):
         assert "version" in data
         assert "data" in data
         assert "metadata" in data
+
+
+# ---------------------------------------------------------------------------
+# The data lake lives in the cache folder and must survive the legacy cache commands
+# ---------------------------------------------------------------------------
+
+
+def _make_lake(cache_dir: Path) -> Path:
+    lake = cache_dir / LAKE_FOLDER / "tenant=t" / "endpoint=admin_groups"
+    lake.mkdir(parents=True)
+    (lake / "keep.json").write_text("{}")
+    return cache_dir / LAKE_FOLDER
+
+
+def test_clearing_the_whole_cache_keeps_the_data_lake(temp_cache_dir):
+    manager = CacheManager(cache_folder=str(temp_cache_dir))
+    manager.save("workspaces", {"value": []})
+    manager.save("apps", {"value": []})
+    (temp_cache_dir / "stray.txt").write_text("x")
+    lake = _make_lake(temp_cache_dir)
+
+    manager.clear()
+
+    assert sorted(p.name for p in temp_cache_dir.iterdir()) == [LAKE_FOLDER]
+    assert (lake / "tenant=t" / "endpoint=admin_groups" / "keep.json").exists()
+    assert manager.list_keys() == []
+
+
+def test_the_data_lake_cannot_be_cleared_as_a_cache_key(temp_cache_dir):
+    manager = CacheManager(cache_folder=str(temp_cache_dir))
+    lake = _make_lake(temp_cache_dir)
+
+    manager.clear(cache_key=LAKE_FOLDER)
+    manager.clear(cache_key=LAKE_FOLDER, version="anything")
+
+    assert (lake / "tenant=t" / "endpoint=admin_groups" / "keep.json").exists()
+
+
+def test_the_data_lake_is_not_a_cache_key(temp_cache_dir):
+    manager = CacheManager(cache_folder=str(temp_cache_dir))
+    manager.save("workspaces", {"value": []})
+    _make_lake(temp_cache_dir)
+
+    assert manager.list_keys() == ["workspaces"]
+
+
+def test_clearing_one_key_leaves_the_lake_and_other_keys(temp_cache_dir):
+    manager = CacheManager(cache_folder=str(temp_cache_dir))
+    manager.save("workspaces", {"value": []})
+    manager.save("apps", {"value": []})
+    lake = _make_lake(temp_cache_dir)
+
+    manager.clear(cache_key="workspaces")
+
+    assert manager.list_keys() == ["apps"]
+    assert lake.exists()
+
+
+def test_clear_cache_command_keeps_the_lake_and_says_so(cache_folder):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    CacheManager(cache_folder=str(cache_folder)).save("workspaces", {"value": []})
+    lake = _make_lake(cache_folder)
+
+    result = CliRunner().invoke(app, ["cache", "clear", "--yes"])
+
+    assert result.exit_code == 0
+    assert "Cleared entire cache (the data lake was kept)" in result.output
+    assert lake.exists()
+
+
+def test_clear_cache_command_does_not_mention_a_lake_there_is_not(cache_folder):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    CacheManager(cache_folder=str(cache_folder)).save("workspaces", {"value": []})
+
+    result = CliRunner().invoke(app, ["cache", "clear", "--yes"])
+
+    assert result.exit_code == 0
+    assert "Cleared entire cache" in result.output
+    assert "data lake" not in result.output
+
+
+def test_clear_cache_command_refuses_the_lake_as_a_key(cache_folder):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    lake = _make_lake(cache_folder)
+
+    result = CliRunner().invoke(app, ["cache", "clear", "-k", LAKE_FOLDER, "--yes"])
+
+    assert result.exit_code == 1
+    assert "'lake' is the data lake, not a cache key" in result.output
+    assert "pbi lake prune" in result.output
+    assert lake.exists()
+
+
+def test_list_cache_command_does_not_list_the_lake(cache_folder):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    CacheManager(cache_folder=str(cache_folder)).save("workspaces", {"value": []})
+    _make_lake(cache_folder)
+
+    result = CliRunner().invoke(app, ["cache", "list"])
+
+    assert "workspaces (1 version(s))" in result.output
+    assert "lake" not in result.output

@@ -1,9 +1,20 @@
 import json
 import os
 import sys
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, Callable, Dict, Iterable, List, Optional, Union
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+)
 
 import pandas as pd
 import requests
@@ -18,7 +29,8 @@ import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
-from pbi_cli.cache import CacheManager
+from pbi_cli.cache import LAKE_FOLDER, CacheManager
+from pbi_cli.cli_lake import lake_app
 from pbi_cli.cli_support import command, new_app
 from pbi_cli.config import (
     VALID_GROUPS,
@@ -26,9 +38,13 @@ from pbi_cli.config import (
     migrate_legacy_config,
     resolve_output_path,
 )
-from pbi_cli.errors import PBIError
-from pbi_cli.powerbi.admin import User, Workspaces
+from pbi_cli.core.auth import Credentials, credentials_from_headers
+from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
+from pbi_cli.core.registry import get_endpoint
+from pbi_cli.errors import ApiError, PBIError, RateLimitError
+from pbi_cli.powerbi.admin import Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
+from pbi_cli.session import lake_hint, lake_path, open_client
 from pbi_cli.web import DataRetriever
 
 try:
@@ -70,58 +86,6 @@ def _get_credentials_file() -> Path:
 def _get_auth_config_file() -> Path:
     """Return the legacy auth config file path, resolved at call time."""
     return _get_config_dir() / "auth.json"
-
-
-def _handle_cache_load(
-    cache_key: str, use_cache: bool, cache_only: bool, pbi_config: PBIConfig
-) -> Optional[Dict[str, Any]]:
-    """Handle loading data from cache.
-
-    Returns the cached data if available, or None if not cached.
-    Raises typer.Abort if cache_only is True but cache is not available.
-    """
-    if not (use_cache or cache_only):
-        return None
-
-    if pbi_config.cache_folder and pbi_config.cache_enabled:
-        cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
-        cached_data = cache_manager.load(cache_key, version="latest")
-
-        if cached_data:
-            cache_version = cached_data.get("version", "unknown")
-            cache_time = cached_data.get("cached_at", "unknown")
-            typer.secho(
-                f"Using cached data from {cache_time} (version: {cache_version})",
-                fg="cyan",
-            )
-            return cached_data.get("data")
-        elif cache_only:
-            typer.secho(
-                "Error: Cache not available and --cache-only was specified", fg="red"
-            )
-            raise typer.Abort()
-        else:
-            typer.secho("Cache not available, fetching from API...", fg="yellow")
-            return None
-    elif cache_only:
-        typer.secho(
-            "Error: Cache not configured and --cache-only was specified", fg="red"
-        )
-        typer.echo("Use 'pbi config set-cache-folder' to configure caching.")
-        raise typer.Abort()
-
-    return None
-
-
-def _handle_cache_save(
-    cache_key: str, data: Any, metadata: Dict[str, Any], pbi_config: PBIConfig
-):
-    """Save data to cache if configured and enabled."""
-    if pbi_config.cache_folder and pbi_config.cache_enabled:
-        cache_manager = CacheManager(cache_folder=pbi_config.cache_folder)
-        version = cache_manager.save(cache_key, data, metadata=metadata)
-        if version:
-            typer.secho(f"Cached data (version: {version})", fg="green")
 
 
 def _display_table(
@@ -331,6 +295,46 @@ def _save_group_profiles(group: str, group_data: dict):
     pbi_config.set_group_active_profile(group, group_data.get("active_profile"))
 
 
+def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
+    """Name of the profile to use: the given one, else the active one of *group*.
+
+    Resolves the profile from the given *group* first.  If no profile is found in
+    that group the function falls back to the legacy flat profile storage so that
+    existing configurations continue to work.
+
+    :raises PBIError: if there is no such profile
+    """
+    pbi_config = PBIConfig()
+
+    # Try to resolve from the requested group first.
+    resolved_profile = profile
+    if resolved_profile is None:
+        resolved_profile = pbi_config.get_group_active_profile(group)
+
+    if resolved_profile is not None and pbi_config.has_profile_in_group(
+        group, resolved_profile
+    ):
+        # Use group-based profile.
+        return resolved_profile
+
+    # Fall back to legacy flat profiles for backward compatibility.
+    profiles_data = _load_profiles()
+    if profile is None:
+        profile = profiles_data.get("active_profile")
+    if profile is None:
+        raise PBIError(
+            f"No active profile set for group '{group}'. "
+            f"Use 'pbi auth -g {group}' to create a profile or "
+            f"'pbi profile switch -g {group}' to switch profiles."
+        )
+    if profile not in profiles_data.get("profiles", {}):
+        raise PBIError(
+            f"Profile '{profile}' not found in group '{group}' or flat profiles. "
+            "Use 'pbi profile list' to see available profiles."
+        )
+    return profile
+
+
 def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     """Load authentication for the specified profile or active profile.
 
@@ -345,34 +349,7 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
         admin-level access.
     :return: dict containing ``{"Authorization": "Bearer <token>"}``
     """
-    pbi_config = PBIConfig()
-
-    # Try to resolve from the requested group first.
-    resolved_profile = profile
-    if resolved_profile is None:
-        resolved_profile = pbi_config.get_group_active_profile(group)
-
-    if resolved_profile is not None and pbi_config.has_profile_in_group(
-        group, resolved_profile
-    ):
-        # Use group-based profile.
-        profile = resolved_profile
-    else:
-        # Fall back to legacy flat profiles for backward compatibility.
-        profiles_data = _load_profiles()
-        if profile is None:
-            profile = profiles_data.get("active_profile")
-        if profile is None:
-            raise PBIError(
-                f"No active profile set for group '{group}'. "
-                f"Use 'pbi auth -g {group}' to create a profile or "
-                f"'pbi profile switch -g {group}' to switch profiles."
-            )
-        if profile not in profiles_data.get("profiles", {}):
-            raise PBIError(
-                f"Profile '{profile}' not found in group '{group}' or flat profiles. "
-                "Use 'pbi profile list' to see available profiles."
-            )
+    profile = _resolve_profile(profile, group)
 
     # Get token from keyring or file.
     token = _get_credential(profile)
@@ -382,6 +359,110 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
         )
 
     return {"Authorization": f"Bearer {token}"}
+
+
+def _credentials_provider(group: str) -> Callable[[], Credentials]:
+    """What the API client asks before each request for the token of *group*.
+
+    The client asks several times per request, and a command runs for seconds, so the
+    token is looked up once (not in the settings and the keyring for every request). A
+    token stored with ``pbi auth`` while the command runs is used by the next command.
+    """
+    found: List[Credentials] = []
+
+    def provide() -> Credentials:
+        if not found:
+            headers = load_auth(group=group)
+            try:
+                profile: Optional[str] = _resolve_profile(None, group)
+            except PBIError:
+                profile = None  # only used to name the profile in messages
+            found.append(
+                credentials_from_headers(headers, profile=profile, group=group)
+            )
+        return found[0]
+
+    return provide
+
+
+@contextmanager
+def _client(group: str) -> Iterator[PowerBIClient]:
+    """An API client that signs in as *group* and keeps what it fetches in the data lake.
+
+    TLS certificates are not verified, as before (see the ``tls_verify`` follow-up).
+    """
+    with open_client(_credentials_provider(group), verify=False) as client:
+        yield client
+
+
+def _get(
+    client: PowerBIClient,
+    endpoint_id: str,
+    params: Optional[Dict[str, Any]] = None,
+    *,
+    use_cache: bool = False,
+    cache_only: bool = False,
+    quiet: bool = False,
+) -> Result:
+    """Read one endpoint; the answer goes to the data lake (when there is one).
+
+    Without flags the API is called. ``use_cache`` accepts any stored answer to the very
+    same request (and calls the API when there is none); ``cache_only`` never calls it.
+
+    :param client: from `_client`
+    :param endpoint_id: id of the operation (see ``pbi_cli.core.registry``)
+    :param params: path and query parameters of the request
+    :param quiet: do not say where the data came from (for commands that print JSON)
+    :raises PBIError: for a failed request, or ``cache_only`` without a stored answer
+    """
+    if cache_only and client.store is None:
+        raise PBIError(f"--cache-only needs the data lake. {lake_hint()}")
+
+    result = client.fetch(
+        endpoint_id,
+        params,
+        max_age=FOREVER if use_cache else None,
+        refresh=not use_cache,
+        offline=cache_only,
+    )
+
+    if not quiet and result.snapshot is not None:
+        version = result.snapshot.version
+        if result.from_cache:
+            typer.secho(
+                f"Using cached data from {result.fetched_at:%Y-%m-%d %H:%M} UTC "
+                f"(version: {version})",
+                fg="cyan",
+            )
+        else:
+            if use_cache:
+                typer.secho(
+                    "Nothing stored for this request yet, fetched from the API.",
+                    fg="yellow",
+                )
+            typer.secho(f"Saved to the data lake (version: {version})", fg="green")
+    return result
+
+
+def _fetch(
+    endpoint_id: str,
+    params: Optional[Dict[str, Any]] = None,
+    *,
+    group: str,
+    use_cache: bool = False,
+    cache_only: bool = False,
+    quiet: bool = False,
+) -> Result:
+    """Read one endpoint as *group* (``user`` or ``admin``); see `_get`."""
+    with _client(group) as client:
+        return _get(
+            client,
+            endpoint_id,
+            params,
+            use_cache=use_cache,
+            cache_only=cache_only,
+            quiet=quiet,
+        )
 
 
 class AuthGroup(str, Enum):
@@ -447,6 +528,7 @@ reports_app = new_app("reports")
 app.add_typer(profile_app, name="profile")
 app.add_typer(config_app, name="config")
 app.add_typer(cache_app, name="cache")
+app.add_typer(lake_app, name="lake")
 app.add_typer(workspaces_app, name="workspaces")
 workspaces_app.add_typer(scan_app, name="scan")
 app.add_typer(users_app, name="users")
@@ -1034,7 +1116,12 @@ def disable_cache():
 
 @cache_app.callback(invoke_without_command=True)
 def cache_group(ctx: typer.Context):
-    """Manage cached API call results"""
+    """Manage the legacy cache (the data lake is under pbi lake)
+
+    Commands now keep what they fetch in the data lake: browse it with `pbi lake`.
+    This group only works with the older cache, one folder per key, and never touches
+    the data lake.
+    """
     if ctx.invoked_subcommand is None:
         typer.echo("Use pbi cache --help for help.")
 
@@ -1049,6 +1136,8 @@ def list_cache(
     ] = None,
 ):
     """List cached data
+
+    Lists the legacy cache; `pbi lake ls` lists the data lake.
 
     ```
     # List all cache keys
@@ -1120,6 +1209,9 @@ def clear_cache(
 ):
     """Clear cached data
 
+    Clears the legacy cache only: the data lake is always kept. To delete old versions
+    from the lake use `pbi lake prune`.
+
     ```
     # Clear all cache
     pbi cache clear
@@ -1136,6 +1228,12 @@ def clear_cache(
     """
     if not yes:
         raise typer.Abort()
+
+    if cache_key == LAKE_FOLDER:
+        raise PBIError(
+            f"'{LAKE_FOLDER}' is the data lake, not a cache key. "
+            "Use `pbi lake prune` to delete old versions from it."
+        )
 
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
@@ -1157,7 +1255,9 @@ def clear_cache(
     elif cache_key:
         typer.secho(f"✓ Cleared all versions of {cache_key}", fg="green")
     else:
-        typer.secho("✓ Cleared entire cache", fg="green")
+        lake = lake_path(pbi_config)
+        kept = " (the data lake was kept)" if lake is not None and lake.exists() else ""
+        typer.secho(f"✓ Cleared entire cache{kept}", fg="green")
 
 
 @command(app, "export")
@@ -1247,6 +1347,10 @@ def workspaces_list(
     - A relative subfolder: "2024-01-01" (uses default output folder + this subfolder)
     - Omitted: prints results as a table to the console (no files created)
 
+    The answer is stored in the data lake (see `pbi lake ls`) when a cache folder is
+    configured. --use-cache reuses the stored answer to the same request (same --top,
+    --expand and --odata-filter), whatever its age, and --cache-only never calls the API.
+
     ```sh
     # Print to console as a table
     pbi workspaces list
@@ -1272,25 +1376,18 @@ def workspaces_list(
     """
     expand = tuple(_values(expand))
     file_type = tuple(_values(file_type))
-    pbi_config = PBIConfig()
-    cache_key = "workspaces"
+    if top < 1:
+        raise typer.BadParameter("must be at least 1", param_hint="--top")
 
-    # Try to load from cache
-    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
-
-    # Fetch from API if not using cache
-    if result is None:
-        workspaces = Workspaces(auth=load_auth(group="admin"), verify=False)
+    if not cache_only:  # it never calls the API
         typer.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
-        result = workspaces(top=top, expand=expand, filter=odata_filter)
-
-        # Save to cache
-        _handle_cache_save(
-            cache_key,
-            result,
-            {"top": top, "expand": [*expand] if expand else [], "filter": odata_filter},
-            pbi_config,
-        )
+    result = _fetch(
+        "admin.groups",
+        {"$top": top, "$expand": expand, "$filter": odata_filter},
+        group="admin",
+        use_cache=use_cache,
+        cache_only=cache_only,
+    ).data
 
     # Display or save results
     if target_folder is None:
@@ -1328,7 +1425,7 @@ def workspaces_list(
     if "excel" in file_type:
         excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing to {excel_file_path}")
-        flattened = workspaces.flatten_workspaces(result["value"])
+        flattened = Workspaces(auth={}).flatten_workspaces(result["value"])
         multi_group_dict_to_excel(flattened, excel_file_path)
 
 
@@ -1564,24 +1661,31 @@ def user_access(
         ),
     ] = False,
 ):
-    """Get user access information from Power BI API"""
+    """Get user access information from Power BI API
+
+    Reads every page of the items the user has access to. The answer is stored in the
+    data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache reuses
+    the stored answer and --cache-only never calls the API.
+
+    !!! warning "Requires Admin"
+
+        This command requires an admin account.
+
+    """
     file_types = tuple(_values(file_types))
     if file_name is None:
         file_name = slugify(user_id)
 
-    pbi_config = PBIConfig()
-    cache_key = f"user_access_{slugify(user_id)}"
-
-    # Try to load from cache
-    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
-
-    # Fetch from API if not using cache
-    if result is None:
-        user = User(auth=load_auth(group="admin"), user_id=user_id, verify=False)
-        result = user()
-
-        # Save to cache
-        _handle_cache_save(cache_key, result, {"user_id": user_id}, pbi_config)
+    answer = _fetch(
+        "admin.users.artifact_access",
+        {"userId": user_id},
+        group="admin",
+        use_cache=use_cache,
+        cache_only=cache_only,
+    )
+    result = {
+        "artifacts": rows_of(get_endpoint("admin.users.artifact_access"), answer.data)
+    }
 
     # Display or save results
     if target_folder is None:
@@ -1599,31 +1703,30 @@ def user_access(
         else:
             typer.echo(json.dumps(result, indent=4))
         return
-        # Resolve the target folder path
-        target_path = resolve_output_path(target_folder)
 
-        if target_path is None:
-            typer.secho("Error: Unable to determine output folder.", fg="red")
-            typer.echo(
-                "Use 'pbi config set-output-folder' to set a default output folder,"
-            )
-            typer.echo("or provide an absolute path with --target-folder.")
-            raise typer.Abort()
+    # Resolve the target folder path
+    target_path = resolve_output_path(target_folder)
 
-        if not target_path.exists():
-            typer.secho(f"creating folder {target_path}", fg="blue")
-            target_path.mkdir(parents=True, exist_ok=True)
+    if target_path is None:
+        typer.secho("Error: Unable to determine output folder.", fg="red")
+        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
+        typer.echo("or provide an absolute path with --target-folder.")
+        raise typer.Abort()
 
-        if "json" in file_types:
-            json_file_path = target_path / f"{file_name}.json"
-            logger.info(f"Writing json file to {json_file_path}...")
-            with open(json_file_path, "w") as fp:
-                json.dump(result, fp)
-        if "excel" in file_types:
-            excel_file_path = target_path / f"{file_name}.xlsx"
-            logger.info(f"Writing excel file to {excel_file_path}...")
-            df = pd.json_normalize(result)
-            df.to_excel(excel_file_path)
+    if not target_path.exists():
+        typer.secho(f"creating folder {target_path}", fg="blue")
+        target_path.mkdir(parents=True, exist_ok=True)
+
+    if "json" in file_types:
+        json_file_path = target_path / f"{file_name}.json"
+        logger.info(f"Writing json file to {json_file_path}...")
+        with open(json_file_path, "w") as fp:
+            json.dump(result, fp)
+    if "excel" in file_types:
+        excel_file_path = target_path / f"{file_name}.xlsx"
+        logger.info(f"Writing excel file to {excel_file_path}...")
+        df = pd.json_normalize(result)
+        df.to_excel(excel_file_path)
 
 
 @apps_app.callback(invoke_without_command=True)
@@ -1664,26 +1767,24 @@ def apps_list(
         ),
     ] = False,
 ):
-    """List Power BI Apps and save them to files or print to console"""
+    """List Power BI Apps and save them to files or print to console
+
+    With --role admin all apps of the tenant are listed (this requires an admin account),
+    with --role user the apps the signed-in user has installed. The answer is stored in
+    the data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache
+    reuses the stored answer and --cache-only never calls the API.
+    """
     role = role.value
     file_type = tuple(_values(file_type))
-    pbi_config = PBIConfig()
-    cache_key = f"apps_{role}"
 
-    # Try to load from cache
-    result = _handle_cache_load(cache_key, use_cache, cache_only, pbi_config)
-
-    # Fetch from API if not using cache
-    if result is None:
+    if not cache_only:  # it never calls the API
         typer.echo(f"Listing Apps as {role}")
-        if role == "user":
-            user = powerbi_app.Apps(auth=load_auth(group="user"), verify=False)
-        else:  # admin
-            user = powerbi_admin.Apps(auth=load_auth(group="admin"), verify=False)
-        result = user()
-
-        # Save to cache
-        _handle_cache_save(cache_key, result, {"role": role}, pbi_config)
+    result = _fetch(
+        "user.apps" if role == "user" else "admin.apps",
+        group=role,
+        use_cache=use_cache,
+        cache_only=cache_only,
+    ).data
 
     # Display or save results
     if target_folder is None:
@@ -1904,6 +2005,43 @@ def reports_export(
         typer.secho(f"✓ Export saved to {target}", fg="green")
 
 
+def _all_report_pages(group_id: str) -> List[Dict[str, Any]]:
+    """The pages of every report of a workspace, each with the id and name of its report.
+
+    A report whose pages cannot be read (no access to it, deleted in the meantime) is
+    skipped and an error is logged. A problem that affects every request, an expired
+    token or throttling, stops the command instead.
+    """
+    with _client("user") as client:
+        reports = _get(client, "user.group_reports", {"groupId": group_id}, quiet=True)
+        results = []
+        for report in rows_of(get_endpoint("user.group_reports"), reports.data):
+            report_id, report_name = report.get("id"), report.get("name")
+            try:
+                pages = _get(
+                    client,
+                    "user.report_pages",
+                    {"groupId": group_id, "reportId": report_id},
+                    quiet=True,
+                )
+            except RateLimitError:
+                raise
+            except ApiError as error:
+                logger.error(
+                    f"Failed to retrieve pages for report '{report_name}' "
+                    f"(id={report_id}): {error}"
+                )
+                continue
+            results.append(
+                {
+                    "report_id": report_id,
+                    "report_name": report_name,
+                    "pages": pages.data,
+                }
+            )
+    return results
+
+
 @command(reports_app, "list")
 def reports_list_group(
     group_id: Annotated[
@@ -1921,12 +2059,12 @@ def reports_list_group(
     """List all reports in a workspace group.
 
     Retrieves the full list of reports from the specified workspace group and
-    either prints the result to the console or saves it to a JSON file.
+    either prints the result to the console or saves it to a JSON file. The answer
+    is also stored in the data lake (see `pbi lake`) when a cache folder is configured.
     """
-    group_reports = powerbi_report.GroupReports(
-        auth=load_auth(), verify=False, group_id=group_id
-    )
-    result = group_reports.reports
+    result = _fetch(
+        "user.group_reports", {"groupId": group_id}, group="user", quiet=True
+    ).data
 
     if target is None:
         typer.echo(json.dumps(result, indent=2))
@@ -1962,7 +2100,8 @@ def reports_pages(
 
     When ``--report-id`` is provided, retrieves the pages for that specific
     report. When omitted, iterates over every report in the group and returns
-    the combined pages for all of them.
+    the combined pages for all of them. The answers are also stored in the data
+    lake (see `pbi lake`) when a cache folder is configured.
 
     Examples::
 
@@ -1971,15 +2110,14 @@ def reports_pages(
         pbi reports pages -g GROUP_ID
     """
     if report_id is not None:
-        pbi_report = powerbi_report.Report(
-            auth=load_auth(), verify=False, report_id=report_id, group_id=group_id
-        )
-        result = pbi_report.pages
+        result = _fetch(
+            "user.report_pages",
+            {"groupId": group_id, "reportId": report_id},
+            group="user",
+            quiet=True,
+        ).data
     else:
-        group_reports = powerbi_report.GroupReports(
-            auth=load_auth(), verify=False, group_id=group_id
-        )
-        result = group_reports.all_pages()
+        result = _all_report_pages(group_id)
 
     if target is None:
         typer.echo(json.dumps(result, indent=2))

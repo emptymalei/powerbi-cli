@@ -18,9 +18,10 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 
 * `apps`: Power BI Apps Command Group
 * `auth`: Store authentication bearer token securely
-* `cache`: Manage cached API call results
+* `cache`: Manage the legacy cache (the data lake is...
 * `config`: Manage pbi-cli configuration settings
 * `export`: export report based on id
+* `lake`: Browse the data lake of fetched API results
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
 * `users`: Command group for Power BI users
@@ -85,6 +86,11 @@ $ pbi apps augment [OPTIONS]
 
 List Power BI Apps and save them to files or print to console
 
+With --role admin all apps of the tenant are listed (this requires an admin account),
+with --role user the apps the signed-in user has installed. The answer is stored in
+the data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache
+reuses the stored answer and --cache-only never calls the API.
+
 **Usage**:
 
 ```console
@@ -141,7 +147,11 @@ $ pbi auth [OPTIONS]
 
 ## `pbi cache`
 
-Manage cached API call results
+Manage the legacy cache (the data lake is under pbi lake)
+
+Commands now keep what they fetch in the data lake: browse it with `pbi lake`.
+This group only works with the older cache, one folder per key, and never touches
+the data lake.
 
 **Usage**:
 
@@ -161,6 +171,9 @@ $ pbi cache [OPTIONS] COMMAND [ARGS]...
 ### `pbi cache clear`
 
 Clear cached data
+
+Clears the legacy cache only: the data lake is always kept. To delete old versions
+from the lake use `pbi lake prune`.
 
 ```
 # Clear all cache
@@ -192,6 +205,8 @@ $ pbi cache clear [OPTIONS]
 ### `pbi cache list`
 
 List cached data
+
+Lists the legacy cache; `pbi lake ls` lists the data lake.
 
 ```
 # List all cache keys
@@ -409,6 +424,126 @@ $ pbi export [OPTIONS]
 * `-t, --target <path>`: target file (if omitted, prints info to console)
 * `--help`: Show this message and exit.
 
+## `pbi lake`
+
+Browse the data lake of fetched API results
+
+**Usage**:
+
+```console
+$ pbi lake [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `ls`: List what the data lake holds
+* `prune`: Delete old versions, keeping the newest of...
+* `show`: Print a stored response (or its manifest)...
+
+### `pbi lake ls`
+
+List what the data lake holds
+
+One line per request (an endpoint with one set of parameters) shows when it was
+fetched, how many rows it has and how many versions are stored. Use REF with
+`pbi lake show`.
+
+```
+# Everything in the lake
+pbi lake ls
+
+# Only the workspace lists, with every stored version
+pbi lake ls -e admin.groups --all-versions
+```
+
+**Usage**:
+
+```console
+$ pbi lake ls [OPTIONS]
+```
+
+**Options**:
+
+* `-e, --endpoint <str>`: Only this endpoint, for example admin.groups
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `--all-versions`: List every stored version, not only the newest of each request
+* `--help`: Show this message and exit.
+
+### `pbi lake prune`
+
+Delete old versions, keeping the newest of each request
+
+Every fetch adds a version and nothing is overwritten, so a lake grows. Pruning keeps
+the newest versions of each request (by default only the newest). Event logs are kept.
+
+```
+# Keep only the newest version of every request
+pbi lake prune
+
+# Keep the last three workspace lists
+pbi lake prune -e admin.groups --keep 3
+```
+
+**Usage**:
+
+```console
+$ pbi lake prune [OPTIONS]
+```
+
+**Options**:
+
+* `--keep <int range>`: Versions of each request to keep (the newest)  [default: 1; x>=1]
+* `-e, --endpoint <str>`: Only this endpoint
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `--yes`: Confirm the action without prompting.
+* `--help`: Show this message and exit.
+
+### `pbi lake show`
+
+Print a stored response (or its manifest) as JSON
+
+When an endpoint was fetched with several sets of parameters, tell them apart with
+`-p KEY=VALUE` (as shown under PARAMETERS by `pbi lake ls`) or `--ref`. Event logs
+are kept per UTC day: choose the day with `--day`; events are printed one per line.
+
+```
+# The newest workspace list (there is only one kind of request)
+pbi lake show admin.groups
+
+# The request made with --top 50
+pbi lake show admin.groups -p '$top=50'
+
+# Where it came from: parameters, time, checksum
+pbi lake show admin.groups --manifest
+
+# The audit events of one day
+pbi lake show admin.activityevents --day 2026-09-29
+```
+
+**Usage**:
+
+```console
+$ pbi lake show [OPTIONS] {ENDPOINT}
+```
+
+**Arguments**:
+
+* `ENDPOINT`: Endpoint id, for example admin.groups (see pbi lake ls)  [required]
+
+**Options**:
+
+* `-p, --param KEY=VALUE`: A parameter of the stored request, to tell requests apart (repeatable)
+* `--ref <str>`: The REF of the request, as listed by pbi lake ls
+* `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
+* `-v, --version <str>`: Version to show (default: the newest)
+* `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
+* `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
+* `--help`: Show this message and exit.
+
 ## `pbi profile`
 
 Manage authentication profiles
@@ -562,7 +697,8 @@ $ pbi reports export [OPTIONS]
 List all reports in a workspace group.
 
 Retrieves the full list of reports from the specified workspace group and
-either prints the result to the console or saves it to a JSON file.
+either prints the result to the console or saves it to a JSON file. The answer
+is also stored in the data lake (see `pbi lake`) when a cache folder is configured.
 
 **Usage**:
 
@@ -582,7 +718,8 @@ Get pages of a report (or all reports) in a workspace group.
 
 When ``--report-id`` is provided, retrieves the pages for that specific
 report. When omitted, iterates over every report in the group and returns
-the combined pages for all of them.
+the combined pages for all of them. The answers are also stored in the data
+lake (see `pbi lake`) when a cache folder is configured.
 
 Examples::
 
@@ -641,6 +778,14 @@ $ pbi users [OPTIONS] COMMAND [ARGS]...
 ### `pbi users user-access`
 
 Get user access information from Power BI API
+
+Reads every page of the items the user has access to. The answer is stored in the
+data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache reuses
+the stored answer and --cache-only never calls the API.
+
+!!! warning "Requires Admin"
+
+    This command requires an admin account.
 
 **Usage**:
 
@@ -724,6 +869,10 @@ The --target-folder can be:
 - An absolute path: "C:\Users\Name\PowerBI\backups\2024-01-01"
 - A relative subfolder: "2024-01-01" (uses default output folder + this subfolder)
 - Omitted: prints results as a table to the console (no files created)
+
+The answer is stored in the data lake (see `pbi lake ls`) when a cache folder is
+configured. --use-cache reuses the stored answer to the same request (same --top,
+--expand and --odata-filter), whatever its age, and --cache-only never calls the API.
 
 ```sh
 # Print to console as a table

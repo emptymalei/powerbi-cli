@@ -1,15 +1,170 @@
 # Data lake
 
 The data lake is a folder (or an S3 prefix) where pbi_cli keeps what it fetched from the
-Power BI REST API, exactly as the API returned it. The API client in `pbi_cli.core` writes
-to it whenever it fetches something, and answers from it when the data is fresh enough.
+Power BI REST API, exactly as the API returned it. The commands that read the API write to
+it, `pbi lake` browses it, and other tools can read it: it is plain JSON in Hive-style
+folders.
 
-!!! note "Status"
+## Using it from the command line
 
-    The client and the store described here are in place and tested, but the commands do
-    not use them yet: until they do, the commands keep using the [cache](cache.md). This
-    page describes how the lake works and what it guarantees, so that what it holds can
-    already be read by other tools.
+### Turn it on
+
+The lake is the `lake` folder inside the cache folder. Set the cache folder once:
+
+```bash
+pbi config set-cache-folder ~/PowerBI/cache           # the lake is ~/PowerBI/cache/lake
+pbi config set-cache-folder s3://my-bucket/powerbi    # or a prefix in S3
+```
+
+Without a cache folder nothing is stored and the commands work as they always did.
+`pbi config disable-cache` stops the commands from using the lake without forgetting the
+folder, and `pbi config enable-cache` switches it back on. Browsing with `pbi lake` works
+either way.
+
+### What the commands store
+
+| Command | What is stored | `--use-cache`, `--cache-only` |
+| --- | --- | --- |
+| `pbi workspaces list` | `admin.groups` | yes |
+| `pbi users user-access` | `admin.users.artifact_access` | yes |
+| `pbi apps list` | `user.apps`, or `admin.apps` with `--role admin` | yes |
+| `pbi reports list` | `user.group_reports` | no: always asks the API |
+| `pbi reports pages` | `user.report_pages` (and `user.group_reports` without `--report-id`) | no: always asks the API |
+
+The endpoint ids are explained under [Endpoints and quotas](#endpoints-and-quotas). The
+other commands that call the API (the scans, `workspaces report-users`, `reports users`,
+`reports export`, `apps app`, `apps augment` and `export`) do not use the lake yet.
+
+Every call asks the API, waits when a [quota](#throttling) is used up, and adds a new
+version to the lake: nothing is overwritten. The commands that print a table say which
+version they stored (`Saved to the data lake (version: 20260930T214332941747Z)`); the
+commands that print JSON, such as `pbi reports list`, print only the JSON so that it can be
+piped, and store silently.
+
+### Reuse what is stored
+
+```bash
+# A stored answer to this very request, of any age; the API only if there is none
+pbi workspaces list --use-cache
+
+# Only a stored answer: fails if there is none, never calls the API
+pbi workspaces list --cache-only
+```
+
+- A stored answer belongs to a *request*: the endpoint, its parameters (`--top`,
+  `--expand`, `--odata-filter`, the user id, the role) and the tenant. `--use-cache` with
+  another `--top` or `--expand` does not return the answer to the first one: it asks the
+  API. The order of the `--expand` values does not matter. (The earlier
+  [cache](cache.md) kept one entry per command, so it could answer with data that had been
+  fetched with other options, or by another tenant.)
+- With `--use-cache` and `--cache-only` together, `--cache-only` wins.
+- The commands read your stored token even for `--cache-only`: its tenant tells which data
+  is yours. An expired token is fine, as nothing is sent.
+- Without a lake (no cache folder, or caching disabled) `--cache-only` stops and says how
+  to set one up; `--use-cache` just asks the API.
+- A lake that cannot be read (a damaged file, S3 not reachable) does not stop `--use-cache`:
+  the command warns and asks the API, which stores a fresh answer. `--cache-only` has no API
+  to fall back on, so it stops and says why.
+
+### Look into the lake: `pbi lake`
+
+`pbi lake` reads the lake only: it needs no token and no network, so it works offline and
+with an expired token.
+
+`pbi lake ls` lists what is stored, one line per request (an endpoint with one set of
+parameters), with its `REF`: the name of its `params=` folder. `--all-versions` lists
+every stored version instead of the newest of each request.
+
+```text
+$ pbi lake ls
+Data lake: ~/PowerBI/cache/lake
+
+Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
+ENDPOINT              REF           FETCHED (UTC)     AGE     ROWS  SIZE   VERSIONS  PARAMETERS
+admin.activityevents  events        2026-09-30 21:56  0 s     1     -      1 day(s)  newest day 2026-09-28 (sealed)
+admin.groups          60177fd656f3  2026-09-30 21:44  12 min  4     143 B  2         $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups          9a414e1d2726  2026-09-30 18:56  3 h     1     44 B   1         $top=50
+user.apps             44136fa355b3  2026-09-30 20:56  1 h     1     42 B   1         -
+
+$ pbi lake ls -e admin.groups --all-versions
+Data lake: ~/PowerBI/cache/lake
+
+Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
+ENDPOINT      REF           VERSION                 FETCHED (UTC)     AGE     ROWS  SIZE   PARAMETERS
+admin.groups  60177fd656f3  20260930T214424436365Z  2026-09-30 21:44  12 min  4     143 B  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups  60177fd656f3  20260928T215624436365Z  2026-09-28 21:56  2 d     3     110 B  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+admin.groups  9a414e1d2726  20260930T185624436365Z  2026-09-30 18:56  3 h     1     44 B   $top=50
+```
+
+`pbi lake show ENDPOINT` prints a stored response as JSON. When an endpoint was fetched
+with several sets of parameters, say which one with `-p KEY=VALUE` (as shown under
+`PARAMETERS`; the order of the values of `$expand` does not matter) or with `--ref`.
+`--version` picks an older version and `--manifest` prints what was asked, when, by which
+profile and a checksum, instead of the data.
+
+```text
+$ pbi lake show admin.groups
+Error: 2 stored requests of admin.groups match; choose one with -p KEY=VALUE or --ref:
+  60177fd656f3  $expand=dashboards,dataflows,datasets,reports,users,workbooks $top=1000
+  9a414e1d2726  $top=50
+
+$ pbi lake show admin.groups -p '$top=50'
+{
+  "value": [
+    {
+      "id": "g0",
+      "name": "Workspace 0"
+    }
+  ]
+}
+
+$ pbi lake show admin.groups -p '$top=50' --manifest
+{
+  "schema": 1,
+  "kind": "snapshot",
+  "endpoint": "admin.groups",
+  "tenant": "0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40",
+  "profile": "admin-nlm",
+  "fetched_at": "2026-09-30T18:56:24.436365+00:00",
+  "request": {
+    "method": "GET",
+    "path": "/admin/groups",
+    "params": {
+      "$top": "50"
+    }
+  },
+  "params": {
+    "$top": "50"
+  },
+  "params_hash": "9a414e1d2726",
+  "status": 200,
+  "pages": 1,
+  "rows": 1,
+  "data_file": "data.json",
+  "bytes": 44,
+  "sha256": "ecf45bef6dda1dbfac0201cd0cd4596ad7481b9ab4ab982b27cbdf0072500695",
+  "cli_version": "0.4.0"
+}
+```
+
+Event logs are kept per UTC day: choose the day with `--day`. The events are printed one
+per line.
+
+```text
+$ pbi lake show admin.activityevents --day 2026-09-28
+{"Id": "e1", "Activity": "ViewReport", "UserId": "alice@example.com"}
+```
+
+The lake grows, because every call adds a version. `pbi lake prune` deletes old versions
+and keeps the newest of each request (`--keep N` keeps more; `--endpoint` and `--tenant`
+narrow it down). It asks first, or pass `--yes`. Event logs are never pruned.
+
+```text
+$ pbi lake prune --yes
+✓ Deleted 1 old version(s), kept the newest 1 of each request
+```
+
+`pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
 ## Why
 
@@ -90,6 +245,10 @@ stored), `offline` never calls the API and answers from the lake whatever the ag
 `max_age=timedelta(0)` always fetches. A fresh snapshot is served even when the token has
 since expired.
 
+The commands do not use the `ttl`: they ask the API unless you pass `--use-cache` (a
+stored answer of any age) or `--cache-only` (`offline`). The `ttl` applies to
+`client.fetch` calls that pass no `max_age`, as in the Python example below.
+
 ## Endpoints and quotas
 
 These are the operations pbi_cli may call. Only reads are listed, plus the scanner API
@@ -125,8 +284,10 @@ locally and rely on the `429` answer of the API.
 
 ## Throttling
 
-The client counts the requests it sends (in `~/.pbi_cli/quota.json` when the command line
-uses it) and waits when a documented quota is used up, instead of being refused. The
+The client counts the requests it sends (the commands keep the counts in
+`~/.pbi_cli/quota.json`, so a second run knows what the first one used) and waits when a
+documented quota is used up, instead of being refused. A command waits at most two minutes
+for quota; if that is not enough it stops and says when to run it again. The
 counts are an estimate: other people and tools share the same quota, so the `429 Too Many
 Requests` answer of the API always wins. On a `429` the client waits for the time the API
 asks for (`Retry-After`). If that is longer than five minutes it does not wait: it
@@ -166,4 +327,7 @@ print(result.from_cache, len(result.data["value"]))
 result = client.fetch("admin.groups", {"$expand": ["users", "reports"]}, offline=True)
 ```
 
-The reference of the modules is under [References](references/core/client.md).
+The commands build their client with `pbi_cli.session.open_client`, which finds the lake
+from the cache folder of the settings and keeps the quota counters in
+`~/.pbi_cli/quota.json`. The reference of the modules is under
+[References](references/core/client.md) and [`pbi_cli.session`](references/session.md).
