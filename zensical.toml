@@ -13,6 +13,7 @@ nav = [
     { "Workspace Scans" = "scan.md" },
     { "Data lake" = "lake.md" },
     { "Sync" = "sync.md" },
+    { "Terminal UI" = "tui.md" },
     { "Cache (legacy)" = "cache.md" },
   ] },
   { "References" = [
@@ -23,6 +24,7 @@ nav = [
       { "session" = "references/session.md" },
       { "core" = [
         { "auth" = "references/core/auth.md" },
+        { "catalog" = "references/core/catalog.md" },
         { "client" = "references/core/client.md" },
         { "jwt" = "references/core/jwt.md" },
         { "ratelimit" = "references/core/ratelimit.md" },
@@ -36,6 +38,13 @@ nav = [
           { "state" = "references/core/sync/state.md" },
           { "targets" = "references/core/sync/targets.md" },
         ] },
+        { "timefmt" = "references/core/timefmt.md" },
+      ] },
+      { "tui" = [
+        { "backend" = "references/tui/backend.md" },
+        { "render" = "references/tui/render.md" },
+        { "run" = "references/tui/run.md" },
+        { "summary" = "references/tui/summary.md" },
       ] },
       { "powerbi" = [
         { "index" = "references/powerbi/index.md" },

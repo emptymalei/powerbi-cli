@@ -1,0 +1,58 @@
+"""The line at the top of every screen: who is signed in, where the lake is, what is running."""
+
+from typing import Any
+
+from rich.text import Text
+from textual.app import ComposeResult
+from textual.containers import Horizontal
+from textual.widgets import Static
+
+from pbi_cli.tui import render
+
+#: The frames of the little spinner that shows a sync is running.
+SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+#: Seconds between two redraws of the line.
+REFRESH_EVERY = 0.5
+
+
+class StatusBar(Horizontal):
+    """Tenant, profile, lake and token on the left; the running sync on the right."""
+
+    def compose(self) -> ComposeResult:
+        yield Static("", id="who")
+        yield Static("", id="busy")
+
+    def on_mount(self) -> None:
+        self._frame = 0
+        self.set_interval(REFRESH_EVERY, self.refresh_status)
+        self.refresh_status()
+
+    def refresh_status(self) -> None:
+        """Draw the line again (called twice a second, and when something changes)."""
+        app: Any = self.app
+        identity = app.identity
+        now = app.backend.clock()
+        who = Text()
+        who.append(" pbi ", style="bold black on #F2C811")
+        who.append("  ")
+        tenant = app.tenant
+        who.append(f"tenant {render.short_id(tenant, 14)}" if tenant else "no tenant")
+        who.append("  │  ")
+        if identity.signed_in:
+            who.append(f"{identity.profile or 'profile'} ({identity.group})")
+        else:
+            who.append("no profile", style="grey62")
+        who.append("  │  ")
+        who.append(app.lake_label, style="grey62")
+        who.append("  │  ")
+        who.append_text(render.token_text(identity.expires_at, now, identity.signed_in))
+        self.query_one("#who", Static).update(who)
+
+        busy = Text()
+        state = app.run_state
+        if state is not None and state.running:
+            self._frame = (self._frame + 1) % len(SPINNER)
+            busy.append(f"{SPINNER[self._frame]} ", style="#F2C811")
+            busy.append(state.summary(app.backend.clock) + " ")
+        self.query_one("#busy", Static).update(busy)

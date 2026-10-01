@@ -5,7 +5,7 @@
   },
   "pbi --help": {
     "exit_code": 0,
-    "output": "Usage: pbi [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --install-completion  Install completion for the current shell.\n  --show-completion     Show completion for the current shell, to copy it or\n                        customize the installation.\n  --help                Show this message and exit.\n\nCommands:\n  apps        Power BI Apps Command Group\n  auth        Store authentication bearer token securely\n  cache       Manage the legacy cache (the data lake is under pbi lake)\n  config      Manage pbi-cli configuration settings\n  export      export report based on id\n  lake        Browse the data lake of fetched API results\n  profile     Manage authentication profiles\n  reports     Reports Command Group\n  sync        Keep what Power BI knows about the tenant in the data lake\n  users       Command group for Power BI users\n  version     Show the current version of the pbi CLI tool.\n  workspaces  Command group for Power BI workspaces\n"
+    "output": "Usage: pbi [OPTIONS] COMMAND [ARGS]...\n\nOptions:\n  --install-completion  Install completion for the current shell.\n  --show-completion     Show completion for the current shell, to copy it or\n                        customize the installation.\n  --help                Show this message and exit.\n\nCommands:\n  apps        Power BI Apps Command Group\n  auth        Store authentication bearer token securely\n  cache       Manage the legacy cache (the data lake is under pbi lake)\n  config      Manage pbi-cli configuration settings\n  export      export report based on id\n  lake        Browse the data lake of fetched API results\n  profile     Manage authentication profiles\n  reports     Reports Command Group\n  sync        Keep what Power BI knows about the tenant in the data lake\n  tui         Browse the data lake, and sync it, in a terminal UI\n  users       Command group for Power BI users\n  version     Show the current version of the pbi CLI tool.\n  workspaces  Command group for Power BI workspaces\n"
   },
   "pbi apps (no subcommand)": {
     "exit_code": 0,
@@ -170,6 +170,10 @@
   "pbi sync status --help": {
     "exit_code": 0,
     "output": "Usage: pbi sync status [OPTIONS]\n\n  Show how the last runs went and what the lake holds\n\n  Lists the latest run, the units that failed or that a quota held back, the\n  scans that were started and not collected, the quota used in the last hour,\n  and what the lake holds for each target. It reads the lake only, so it needs\n  no token and no network.\n\n  ``` pbi sync status ```\n\nOptions:\n  -t, --tenant <str>  Only this tenant (default: every tenant synced)\n  --help              Show this message and exit.\n"
+  },
+  "pbi tui --help": {
+    "exit_code": 0,
+    "output": "Usage: pbi tui [OPTIONS]\n\n  Browse the data lake, and sync it, in a terminal UI\n\n  The Explorer shows the workspaces of the tenant, what is in them, who can open\n  it, how it is connected and how fresh each part is, all from the data lake: it\n  works without a token and without a network. The Sync screen plans a sync\n  (what it would fetch, and what it costs against the quotas), runs it, and\n  stops it. When the token expires, the UI asks for a fresh one and goes on\n  where it stopped.\n\n  Needs the optional dependency Textual: `pip install \"pbi-cli[tui]\"`. The lake\n  is the one of `pbi config set-cache-folder`; it keeps what `pbi sync run`\n  fetches. A bare `pbi` in a terminal opens the UI too.\n\n  ``` pbi tui ```\n\nOptions:\n  -t, --tenant <str>  Tenant of the lake to browse (default: that of the token)\n  --help              Show this message and exit.\n"
   },
   "pbi users (no subcommand)": {
     "exit_code": 0,

@@ -336,6 +336,14 @@ report-users  admin.reports.users   3 request(s)  0 s ago
 activity      admin.activityevents  3 day(s)      0 s ago
 ```
 
+## From the terminal UI
+
+The [terminal UI](tui.md) has a Sync screen for everything on this page: choose the
+targets and the options, see the plan and what it costs against the quotas, run the sync,
+watch its log, and stop it. It uses the same planner and engine, so the plan is the one of
+`pbi sync plan`, a stop is the same as Ctrl-C, and running again continues. When the token
+expires it asks for a new one in a dialog and goes on.
+
 ## On a schedule
 
 Run a sync as often as you want the lake to be up to date; nothing is fetched twice, so a

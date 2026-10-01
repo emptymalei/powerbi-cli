@@ -38,6 +38,8 @@
   never deletes the data lake, which is the `lake` folder of the same cache folder, and
   `lake` cannot be used as a cache key.
 - The `--help` of the commands above, and of `pbi cache`, describes the data lake.
+- The scans kept in the data lake carry the name, type and state of their workspaces in the
+  manifest, so that a lake that holds only scans can be browsed by name.
 - The CLI is now built with [Typer](https://typer.tiangolo.com) instead of click.
   Commands, flags (including `-ft`, `-tf`, `-wi` and `-wn`), defaults, prompts and exit
   codes are unchanged. `click` is no longer a direct dependency.
@@ -58,6 +60,23 @@
 
 ### Added
 
+- `pbi tui` opens a [terminal UI](tui.md) built with [Textual](https://textual.textualize.io)
+  (the optional extra `pbi-cli[tui]`). The Explorer shows the workspaces of the tenant, what
+  is in them, who can open it, what it is built from and what is built on it (lineage), the
+  JSON as stored, and every stored version, with a dot for how fresh each part is, all read
+  from the data lake, so it needs no token and no network. The Sync screen plans a sync with
+  its cost against the quotas, runs it, shows its log and stops it. When the token expires
+  the UI asks for a new one in a dialog and goes on where it stopped. `r` fetches again
+  what is selected, after showing what it costs, and the command palette (`Ctrl+P`) jumps
+  to a workspace or an item by name. It only reads: the requests are those of `pbi sync`.
+- A bare `pbi` in a terminal opens the UI when Textual is installed and a cache folder is
+  set; anywhere else it greets as before.
+- `pbi_cli.core.catalog`: the read model the UI is made of (workspaces, their items, users,
+  lineage, freshness, versions, audit events), for use from Python.
+- `pbi_cli.core.sync`: `SyncEngine.run` takes a `stop` event that ends a run (the report
+  says `interrupted` and how many units were not started), `SyncOptions.workspace_ids`
+  scans only the chosen workspaces without moving the point the next incremental scan
+  continues from, and a stop also cuts short a wait for quota.
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
 - `pbi sync plan`, `pbi sync run` and `pbi sync status` keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
@@ -99,6 +118,9 @@
 
 ### Development
 
+- The tests of the terminal UI start the real app with Textual's test pilot against the
+  fake service, and are left out when Textual is not installed. The pictures of the
+  [terminal UI](tui.md) are made from the real app by `scripts/gen_tui_screenshots.py`.
 - `tests/test_sync_http.py` runs the sync engine with 16 workers against the fake service
   behind a real local socket. It found that the HTTP session kept only 10 connections, so
   that the workers of a busy sync opened (and logged a warning for) a new connection per

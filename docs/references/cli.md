@@ -25,6 +25,7 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
 * `sync`: Keep what Power BI knows about the tenant...
+* `tui`: Browse the data lake, and sync it, in a...
 * `users`: Command group for Power BI users
 * `version`: Show the current version of the pbi CLI tool.
 * `workspaces`: Command group for Power BI workspaces
@@ -919,6 +920,35 @@ $ pbi sync status [OPTIONS]
 **Options**:
 
 * `-t, --tenant <str>`: Only this tenant (default: every tenant synced)
+* `--help`: Show this message and exit.
+
+## `pbi tui`
+
+Browse the data lake, and sync it, in a terminal UI
+
+The Explorer shows the workspaces of the tenant, what is in them, who can open it,
+how it is connected and how fresh each part is, all from the data lake: it works
+without a token and without a network. The Sync screen plans a sync (what it would
+fetch, and what it costs against the quotas), runs it, and stops it. When the token
+expires, the UI asks for a fresh one and goes on where it stopped.
+
+Needs the optional dependency Textual: `pip install "pbi-cli[tui]"`. The lake is the
+one of `pbi config set-cache-folder`; it keeps what `pbi sync run` fetches. A bare
+`pbi` in a terminal opens the UI too.
+
+```
+pbi tui
+```
+
+**Usage**:
+
+```console
+$ pbi tui [OPTIONS]
+```
+
+**Options**:
+
+* `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
 * `--help`: Show this message and exit.
 
 ## `pbi users`

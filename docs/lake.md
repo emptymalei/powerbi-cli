@@ -169,6 +169,10 @@ $ pbi lake prune --yes
 
 `pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
+To look around instead of listing, open the [terminal UI](tui.md) (`pbi tui`): the
+workspaces of the tenant, what is in them, who can open it, how it is connected, and how
+fresh each part is, all read from the lake.
+
 ## Why
 
 - The admin APIs allow few requests. The workspace list, for example, allows 50 per hour

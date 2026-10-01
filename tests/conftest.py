@@ -5,6 +5,7 @@ tokens in the system keyring, so no test may run against the real ones: every te
 empty home and an in-memory keyring.
 """
 
+import importlib.util
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -16,6 +17,19 @@ from keyring.backend import KeyringBackend
 from keyring.errors import PasswordDeleteError
 
 from pbi_cli.config import PBIConfig
+
+# The tests of the terminal UI need Textual, an optional extra (uv sync --extra tui): without
+# it they are not collected.
+collect_ignore_glob = (
+    []
+    if importlib.util.find_spec("textual")
+    else [
+        "test_tui_app.py",
+        "test_tui_explorer.py",
+        "test_tui_sync.py",
+        "tui_helpers.py",
+    ]
+)
 
 
 class MemoryKeyring(KeyringBackend):
@@ -60,6 +74,16 @@ def isolated_home(tmp_path_factory, monkeypatch) -> Path:
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     return home
+
+
+@pytest.fixture(autouse=True)
+def quick_tui(monkeypatch):
+    """Let the TUI look at things often, so that the tests do not have to wait for it."""
+    if importlib.util.find_spec("textual") is None:
+        return
+    monkeypatch.setattr("pbi_cli.tui.syncscreen.REPLAN_AFTER", 0.05)
+    monkeypatch.setattr("pbi_cli.tui.syncscreen.TICK", 0.1)
+    monkeypatch.setattr("pbi_cli.tui.status.REFRESH_EVERY", 0.2)
 
 
 @pytest.fixture

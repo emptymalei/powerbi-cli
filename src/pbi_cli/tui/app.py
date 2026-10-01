@@ -1,0 +1,344 @@
+"""The Textual application: the screens, the sign-in, and the sync that runs in the background.
+
+```python
+from pbi_cli.tui import Backend, run
+
+run(Backend(store=store, client_for=pool, sign_in=sign_in))
+```
+
+Everything that talks to the lake or the API runs in a worker thread and reports back with
+``call_from_thread``, so the screen never freezes. The app is read-only towards Power BI: the
+only requests it can make are those of the sync engine, which only reads.
+"""
+
+from pathlib import Path
+from typing import Any, Iterable, Optional, Tuple
+
+from loguru import logger
+from textual import work
+from textual.app import App, SystemCommand
+from textual.binding import Binding
+from textual.screen import Screen
+
+from pbi_cli.core.catalog import Catalog, Match
+from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
+from pbi_cli.core.sync.plan import SyncOptions
+from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
+from pbi_cli.tui.backend import Backend, Identity
+from pbi_cli.tui.explorer import ExplorerScreen
+from pbi_cli.tui.modals import ChoiceModal, ConfirmModal, SignInModal
+from pbi_cli.tui.palette import GotoProvider
+from pbi_cli.tui.run import RunState
+from pbi_cli.tui.status import StatusBar
+from pbi_cli.tui.styles import CSS, THEME
+from pbi_cli.tui.syncscreen import SyncScreen
+
+#: Seconds between two looks at the token (the countdown in the header).
+IDENTITY_EVERY = 30
+
+
+def lake_label(root: Any, width: int = 36) -> str:
+    """Where the lake is, short enough for the header: ``~`` for the home folder."""
+    text = str(root)
+    home = str(Path.home())
+    if text.startswith(home):
+        text = "~" + text[len(home) :]
+    return text if len(text) <= width else "…" + text[-(width - 1) :]
+
+
+class PBIApp(App[None]):
+    """The pbi terminal UI.
+
+    :param backend: the lake, the clients and the sign-in
+    :param tenant: the tenant to browse (default: that of the token, or the only one in the
+        lake)
+    """
+
+    TITLE = "pbi"
+    CSS = CSS
+    SCREENS = {"explorer": ExplorerScreen, "sync": SyncScreen}
+    COMMANDS = App.COMMANDS | {GotoProvider}
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("a", "sign_in", "Sign in"),
+        Binding("s", "open_sync", "Sync"),
+        Binding("e", "open_explorer", "Explorer", show=False),
+        Binding("t", "choose_tenant", "Tenant", show=False),
+    ]
+
+    def __init__(self, backend: Backend, tenant: Optional[str] = None):
+        super().__init__()
+        self.backend = backend
+        self._wanted = tenant
+        self.identity = Identity()
+        self.tenant: Optional[str] = None
+        self.catalog: Optional[Catalog] = None
+        self.run_state: Optional[RunState] = None
+        self.lake_label = lake_label(backend.store.root)
+        self._resume: Optional[Tuple[SyncOptions, str]] = None
+        self._sink: Optional[int] = None
+
+    # -- start and end -----------------------------------------------------------------------
+
+    def on_mount(self) -> None:
+        self.register_theme(THEME)
+        self.theme = "powerbi"
+        self.identity = self.backend.identity()
+        self.tenant = self._pick_tenant()
+        self._sink = logger.add(self._to_log, level="INFO", format="{message}")
+        self.push_screen("explorer")
+        self.set_interval(IDENTITY_EVERY, self.refresh_identity)
+        if self.tenant is not None:
+            self.reload_catalog()
+        elif len(self.backend.store.tenants()) > 1:
+            self.call_after_refresh(self.action_choose_tenant)
+        else:
+            self.notify(
+                self.identity.problem or "Nothing in the lake yet.",
+                title="Not signed in",
+                severity="warning",
+            )
+
+    def on_unmount(self) -> None:
+        if self._sink is not None:
+            logger.remove(self._sink)
+
+    def action_quit(self) -> None:
+        """Quit; when a sync is running, ask first, and stop it."""
+        state = self.run_state
+        if state is None or not state.running:
+            self.exit()
+            return
+
+        def answered(confirmed: Optional[bool]) -> None:
+            if confirmed:
+                state.request_stop()  # what is done is kept: running it again continues
+                self.exit()
+
+        self.push_screen(
+            ConfirmModal(
+                "A sync is running",
+                "Quit and stop it? The requests in flight finish first, what is done is "
+                "kept, and running the sync again continues where it stopped.",
+                "Quit",
+            ),
+            answered,
+        )
+
+    def _to_log(self, message: Any) -> None:
+        """What the library logs while a sync runs (a quota wait, for example) is shown in
+        the log of the run."""
+        state = self.run_state
+        if state is not None and state.running:
+            state.log(str(message).rstrip(), "grey62")
+
+    def _pick_tenant(self) -> Optional[str]:
+        if self._wanted:
+            return self._wanted
+        if self.identity.tenant:
+            return self.identity.tenant
+        found = self.backend.store.tenants()
+        return found[0] if len(found) == 1 else None
+
+    # -- who is signed in --------------------------------------------------------------------
+
+    def refresh_identity(self) -> None:
+        """Look at the stored token again (it may have been replaced, or be about to run out)."""
+        self.identity = self.backend.identity()
+        if self.tenant is None and self.identity.tenant:
+            self.tenant = self.identity.tenant
+            self.reload_catalog()
+        self.refresh_bars()
+
+    def refresh_bars(self) -> None:
+        """Draw the header of the screen that is shown again, now."""
+        for bar in self.screen.query(StatusBar):
+            bar.refresh_status()
+
+    def action_sign_in(self, reason: str = "", group: str = "admin") -> None:
+        """Ask for a fresh token."""
+        if isinstance(self.screen, SignInModal):
+            return
+
+        def signed_in(signed: Optional[str]) -> None:
+            if signed is None:
+                self._resume = None
+                return
+            self.refresh_identity()
+            self.notify(f"Signed in ({signed}).")
+            if self._resume is not None:
+                options, label_text = self._resume
+                self._resume = None
+                self.start_sync(options, label_text)
+
+        self.push_screen(SignInModal(self.backend, group, reason), signed_in)
+
+    def explain_sync_problem(
+        self, error: BaseException, resume: Optional[Tuple[SyncOptions, str]]
+    ) -> None:
+        """Say why a sync could not run; for a missing or expired token, ask to sign in."""
+        if isinstance(error, AuthError):
+            self._resume = resume
+            self.action_sign_in(reason=str(error))
+        elif isinstance(error, PBIError):
+            self.notify(str(error), title="Cannot sync", severity="error")
+        else:
+            self.notify(
+                f"{type(error).__name__}: {error}",
+                title="Cannot sync",
+                severity="error",
+            )
+
+    # -- the lake ----------------------------------------------------------------------------
+
+    def reload_catalog(self, announce: bool = False) -> None:
+        """Read the lake again, in the background, and rebuild what shows it."""
+        if self.tenant is not None:
+            self._read_catalog(self.tenant, announce)
+
+    @work(thread=True, exclusive=True, group="catalog")
+    def _read_catalog(self, tenant: str, announce: bool) -> None:
+        try:
+            catalog = Catalog(self.backend.store, tenant, clock=self.backend.clock)
+        except Exception as error:  # an unreadable lake must not end the UI
+            self.call_from_thread(
+                self.notify, f"Cannot read the lake: {error}", severity="error"
+            )
+            return
+        self.call_from_thread(self._catalog_ready, catalog, announce)
+
+    def _catalog_ready(self, catalog: Catalog, announce: bool) -> None:
+        self.catalog = catalog
+        explorer = self.get_screen("explorer")
+        if isinstance(explorer, ExplorerScreen) and explorer.is_mounted:
+            explorer.rebuild_tree()
+        if announce:
+            self.notify("Read the lake again.")
+
+    def action_choose_tenant(self) -> None:
+        """Choose which tenant of the lake to browse."""
+        found = self.backend.store.tenants()
+        if len(found) < 2:
+            self.notify("The lake holds only one tenant.")
+            return
+
+        def chosen(tenant: Optional[str]) -> None:
+            if tenant is not None and tenant != self.tenant:
+                self.tenant = tenant
+                self.catalog = None
+                self.reload_catalog()
+                self.refresh_bars()
+
+        self.push_screen(
+            ChoiceModal(
+                "Which tenant?",
+                [(name, name) for name in found],
+                "The lake keeps each tenant apart.",
+            ),
+            chosen,
+        )
+
+    # -- syncing -----------------------------------------------------------------------------
+
+    def start_sync(self, options: SyncOptions, label_text: str) -> bool:
+        """Run a sync in the background.
+
+        :return: ``False`` if one is running already
+        """
+        if self.run_state is not None and self.run_state.running:
+            self.notify("A sync is already running.", severity="warning")
+            return False
+        state = RunState(label_text, options, self.backend.clock())
+        self.run_state = state
+        self._run_sync(state)
+        self.refresh_bars()
+        return True
+
+    @work(thread=True, group="sync")
+    def _run_sync(self, state: RunState) -> None:
+        try:
+            report = self.backend.engine().run(
+                state.options, on_event=state.on_event, stop=state.stop
+            )
+        except Exception as error:
+            # no token for a target, tokens of two tenants, or a bug
+            state.log(f"{type(error).__name__}: {error}", "red")
+            state.finish(self.backend.clock(), error=str(error))
+            self._tell(self._sync_done, state, None, error)
+            return
+        state.finish(self.backend.clock(), report=report)
+        self._tell(self._sync_done, state, report, None)
+
+    def _tell(self, callback: Any, *args: Any) -> None:
+        """Run something on the screen's thread, unless the app was closed meanwhile."""
+        try:
+            self.call_from_thread(callback, *args)
+        except RuntimeError:  # the user quit while the sync was finishing
+            pass
+
+    def _sync_done(
+        self,
+        state: RunState,
+        report: Optional[RunReport],
+        error: Optional[BaseException],
+    ) -> None:
+        self.reload_catalog()
+        self.refresh_bars()
+        resume = (state.options, state.label)
+        if error is not None:
+            self.explain_sync_problem(error, resume)
+            return
+        assert report is not None
+        if report.status == TOKEN_EXPIRED:
+            self.explain_sync_problem(TokenExpiredError(report.message), resume)
+        elif report.status == INTERRUPTED:
+            self.notify(
+                f"{state.label}: stopped. What is done is kept; run it again to continue.",
+                severity="warning",
+            )
+        elif report.failures or report.deferred:
+            self.notify(
+                f"{state.label}: finished, with {len(report.failures)} failure(s) and "
+                f"{len(report.deferred)} unit(s) held back.",
+                severity="warning",
+            )
+        else:
+            self.notify(f"{state.label}: done.")
+
+    # -- moving between screens ----------------------------------------------------------------
+
+    def _in_modal(self) -> bool:
+        return not isinstance(self.screen, (ExplorerScreen, SyncScreen))
+
+    def action_open_sync(self) -> None:
+        if not self._in_modal() and not isinstance(self.screen, SyncScreen):
+            self.push_screen("sync")
+
+    def action_open_explorer(self) -> None:
+        if isinstance(self.screen, SyncScreen):
+            self.pop_screen()
+
+    def goto(self, found: Match) -> None:
+        """Show a workspace or an item that the command palette found."""
+        self.action_open_explorer()
+        explorer = self.get_screen("explorer")
+        if isinstance(explorer, ExplorerScreen):
+            explorer.goto(found.kind, found.id, found.workspace_id)
+
+    # -- the command palette ---------------------------------------------------------------------
+
+    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        yield from super().get_system_commands(screen)
+        yield SystemCommand(
+            "Sync", "Fetch from Power BI into the lake", self.action_open_sync
+        )
+        yield SystemCommand("Explorer", "Browse the lake", self.action_open_explorer)
+        yield SystemCommand(
+            "Sign in", "Store a fresh bearer token", self.action_sign_in
+        )
+        yield SystemCommand(
+            "Reload the lake", "Read the lake again", lambda: self.reload_catalog(True)
+        )
+        yield SystemCommand(
+            "Choose the tenant", "Switch tenant", self.action_choose_tenant
+        )

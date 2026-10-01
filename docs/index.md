@@ -38,6 +38,14 @@ Tokens are kept in your system keyring. They expire after a while (typically abo
 hour); when a command reports a missing or rejected token, sign in again and run
 `pbi auth` with a fresh one.
 
+## Look around
+
+Once the [data lake](lake.md) holds something (`pbi sync run`), `pbi tui` opens a
+[terminal UI](tui.md) to browse it: the workspaces of the tenant, what is in them, who can
+open it, what it is built from and what is built on it, and how fresh each part is. It
+also plans, runs and stops a sync, so there is nothing to remember. It needs the optional
+extra `pip install "pbi-cli[tui]"`.
+
 Commands marked "Requires Admin" in the reference need a profile in the `admin` group.
 
 ## Shell completion
@@ -55,5 +63,7 @@ pbi --show-completion      # print the completion script instead
   and reused offline.
 - [Sync](sync.md): keep the tenant in the lake: lists, audit events and scans, within the
   quotas, continuing where the last run stopped.
+- [Terminal UI](tui.md): browse the lake and run a sync from a terminal, without
+  remembering the commands.
 - [Cache (legacy)](cache.md): the older cache and what replaced it.
 - [Changelog](changelog.md)

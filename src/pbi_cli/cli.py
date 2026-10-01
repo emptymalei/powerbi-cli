@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from contextlib import contextmanager
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import (
@@ -38,9 +39,11 @@ from pbi_cli.cli_support import (
     ScanDatasourceDetails,
     ScanLineage,
     command,
+    fail,
     new_app,
 )
 from pbi_cli.cli_sync import sync_app
+from pbi_cli.cli_tui import launch, should_launch, tui
 from pbi_cli.config import (
     VALID_GROUPS,
     PBIConfig,
@@ -557,8 +560,17 @@ app.add_typer(reports_app, name="reports")
 @app.callback(invoke_without_command=True)
 def root(ctx: typer.Context):
     if ctx.invoked_subcommand is None:
+        if should_launch():  # in a terminal, with Textual and a data lake
+            try:
+                launch()
+            except PBIError as error:
+                fail(str(error))
+            return
         typer.echo("Hello {}".format(os.environ.get("USER", "")))
         typer.echo("Welcome to pbi cli. Use pbi --help for help.")
+
+
+command(app, "tui")(tui)
 
 
 @command(app, "version")
@@ -567,6 +579,71 @@ def version():
     from importlib.metadata import version as _version
 
     typer.echo(_version("pbi_cli"))
+
+
+@dataclass
+class StoredToken:
+    """What `store_token` did.
+
+    :param profile: the profile the token was stored for
+    :param group: the group the profile is in (``None``: the flat, legacy profiles)
+    :param active: whether the profile is now the active one
+    """
+
+    profile: str
+    group: Optional[str]
+    active: bool
+
+
+def store_token(
+    bearer_token: str, profile: str = "default", group: Optional[str] = None
+) -> StoredToken:
+    """Store a bearer token for a profile, as ``pbi auth`` does.
+
+    The token goes to the keyring (or to a file readable by the owner only when there is
+    no keyring); the profile is added to its group, and becomes the active one of the
+    group when the group has none.
+
+    :param bearer_token: the token, with or without the ``Bearer`` prefix
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` keeps the profile in the flat, legacy list
+    """
+    if bearer_token.startswith("Bearer"):
+        logger.warning("Do not include the Bearer string in the beginning")
+        bearer_token = bearer_token.replace("Bearer ", "")
+
+    config_dir = _get_config_dir()
+    if not config_dir.exists():
+        logger.info(f"Creating config folder: {config_dir}")
+        config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Store token securely (keyed by profile name)
+    _set_credential(profile, bearer_token)
+
+    if group is not None:
+        # Store in group-based config
+        pbi_config = PBIConfig()
+        pbi_config.add_profile_to_group(group, profile, {"name": profile})
+        # Activate this profile in the group if none is set yet
+        if not pbi_config.get_group_active_profile(group):
+            pbi_config.set_group_active_profile(group, profile)
+        return StoredToken(
+            profile, group, pbi_config.get_group_active_profile(group) == profile
+        )
+
+    # Legacy: store in flat profiles
+    profiles_data = _load_profiles()
+    if "profiles" not in profiles_data:
+        profiles_data["profiles"] = {}
+
+    profiles_data["profiles"][profile] = {"name": profile}
+
+    # Set as active profile if it's the first one or if it's 'default'
+    if not profiles_data.get("active_profile") or profile == "default":
+        profiles_data["active_profile"] = profile
+
+    _save_profiles(profiles_data)
+    return StoredToken(profile, None, profiles_data["active_profile"] == profile)
 
 
 @command(app, "auth")
@@ -611,53 +688,24 @@ def auth(
     :param group: Optional group ('user' or 'admin') to store the profile in
     """
 
-    if bearer_token.startswith("Bearer"):
-        logger.warning("Do not include the Bearer string in the beginning")
-        bearer_token = bearer_token.replace("Bearer ", "")
-
-    config_dir = _get_config_dir()
-    if not config_dir.exists():
-        logger.info(f"Creating config folder: {config_dir}")
-        config_dir.mkdir(parents=True, exist_ok=True)
-
-    # Store token securely (keyed by profile name)
-    _set_credential(profile, bearer_token)
-
     group_name = group.value if group is not None else None
-    if group_name is not None:
-        # Store in group-based config
-        pbi_config = PBIConfig()
-        pbi_config.add_profile_to_group(group_name, profile, {"name": profile})
-        # Activate this profile in the group if none is set yet
-        if not pbi_config.get_group_active_profile(group_name):
-            pbi_config.set_group_active_profile(group_name, profile)
-        active_in_group = pbi_config.get_group_active_profile(group_name)
+    stored = store_token(bearer_token, profile, group_name)
+    if stored.group is not None:
         typer.secho(
-            f"✓ Credentials saved securely for profile '{profile}' in group '{group_name}'",
+            f"✓ Credentials saved securely for profile '{stored.profile}' in group '{stored.group}'",
             fg="green",
         )
-        if active_in_group == profile:
+        if stored.active:
             typer.secho(
-                f"✓ Profile '{profile}' is now active in group '{group_name}'",
+                f"✓ Profile '{stored.profile}' is now active in group '{stored.group}'",
                 fg="green",
             )
     else:
-        # Legacy: store in flat profiles
-        profiles_data = _load_profiles()
-        if "profiles" not in profiles_data:
-            profiles_data["profiles"] = {}
-
-        profiles_data["profiles"][profile] = {"name": profile}
-
-        # Set as active profile if it's the first one or if it's 'default'
-        if not profiles_data.get("active_profile") or profile == "default":
-            profiles_data["active_profile"] = profile
-
-        _save_profiles(profiles_data)
-
-        typer.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
-        if profiles_data["active_profile"] == profile:
-            typer.secho(f"✓ Profile '{profile}' is now active", fg="green")
+        typer.secho(
+            f"✓ Credentials saved securely for profile '{stored.profile}'", fg="green"
+        )
+        if stored.active:
+            typer.secho(f"✓ Profile '{stored.profile}' is now active", fg="green")
 
 
 @profile_app.callback(invoke_without_command=True)
