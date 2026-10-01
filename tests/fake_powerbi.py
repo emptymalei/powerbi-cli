@@ -130,12 +130,23 @@ class FakePowerBI(BaseAdapter):
             for i in range(1, datasets + 1)
             if self.workspaces
         ]
-        self.dashboards = [{"id": "dash-0001", "displayName": "Dashboard 1"}]
-        self.dataflows = [{"objectId": "flow-0001", "name": "Dataflow 1"}]
+        first = self.workspaces[0]["id"] if self.workspaces else None
+        self.dashboards = [
+            {"id": "dash-0001", "displayName": "Dashboard 1", "workspaceId": first}
+        ]
+        self.dataflows = [
+            {"objectId": "flow-0001", "name": "Dataflow 1", "workspaceId": first}
+        ]
         self.capacities = [{"id": "cap-0001", "displayName": "Capacity 1", "sku": "P1"}]
         self.apps = [
-            {"id": f"app-{i:04d}", "name": f"App {i}", "description": ""}
+            {
+                "id": f"app-{i:04d}",
+                "name": f"App {i}",
+                "description": "",
+                "workspaceId": self.workspaces[(i - 1) % len(self.workspaces)]["id"],
+            }
             for i in range(1, 4)
+            if self.workspaces
         ]
         self.user_workspace_ids = [w["id"] for w in self.workspaces[:3]]
         self._events: Dict[date, List[Dict[str, Any]]] = {}
@@ -530,22 +541,79 @@ class FakePowerBI(BaseAdapter):
                     for r in self.reports
                     if r["workspaceId"] == workspace_id
                 ],
-                "datasets": [
+                "users": [
                     {
-                        "id": d["id"],
-                        "name": d["name"],
-                        "datasourceUsages": (
-                            [{"datasourceInstanceId": f"dsi-{d['id']}"}]
-                            if flags["datasourceDetails"]
-                            else []
-                        ),
+                        "displayName": "Owner",
+                        "emailAddress": "owner@example.com",
+                        "groupUserAccessRight": "Admin",
+                        "principalType": "User",
                     }
-                    for d in datasets
+                ],
+                "datasets": [],
+                "dashboards": [],
+                "dataflows": [
+                    {"objectId": f["objectId"], "name": f["name"]}
+                    for f in self.dataflows
+                    if f["workspaceId"] == workspace_id
                 ],
             }
+            for n, d in enumerate(datasets):
+                dataset: Dict[str, Any] = {
+                    "id": d["id"],
+                    "name": d["name"],
+                    "configuredBy": d["configuredBy"],
+                    "datasourceUsages": (
+                        [{"datasourceInstanceId": f"dsi-{d['id']}"}]
+                        if flags["datasourceDetails"]
+                        else []
+                    ),
+                }
+                if flags["lineage"]:
+                    if n == 0 and self.dataflows:
+                        flow = self.dataflows[0]
+                        dataset["upstreamDataflows"] = [
+                            {
+                                "targetDataflowId": flow["objectId"],
+                                "groupId": flow["workspaceId"],
+                            }
+                        ]
+                    else:
+                        dataset["upstreamDatasets"] = [
+                            {
+                                "targetDatasetId": datasets[0]["id"],
+                                "groupId": workspace_id,
+                            }
+                        ]
+                entry["datasets"].append(dataset)
+            if flags["lineage"]:
+                for dash in self.dashboards:
+                    if dash["workspaceId"] == workspace_id:
+                        entry["dashboards"].append(
+                            {
+                                "id": dash["id"],
+                                "displayName": dash["displayName"],
+                                "tiles": (
+                                    [
+                                        {
+                                            "id": "tile-1",
+                                            "reportId": self.reports[0]["id"],
+                                        }
+                                    ]
+                                    if self.reports
+                                    else []
+                                ),
+                            }
+                        )
             if flags["getArtifactUsers"]:
                 for report in entry["reports"]:
-                    report["users"] = [{"emailAddress": "ann@example.com"}]
+                    report["users"] = [
+                        {
+                            "displayName": "Ann",
+                            "emailAddress": "ann@example.com",
+                            "reportUserAccessRight": "Owner",
+                            "principalType": "User",
+                        }
+                    ]
             workspaces.append(entry)
             if flags["datasourceDetails"]:
                 instances.extend(

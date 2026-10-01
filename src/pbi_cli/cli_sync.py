@@ -6,13 +6,13 @@ run stopped and never fetches twice what is still fresh; ``status`` shows how th
 went and what the lake holds (it reads the lake only, so it needs no token).
 """
 
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, List, Optional
 
 import typer
 
 from pbi_cli.cli_support import (
+    ClientPool,
     ScanArtifactUsers,
     ScanDatasetExpressions,
     ScanDatasetSchema,
@@ -25,9 +25,9 @@ from pbi_cli.cli_support import (
     print_table,
 )
 from pbi_cli.config import PBIConfig
-from pbi_cli.core.client import PowerBIClient
+from pbi_cli.core.catalog import holding
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
-from pbi_cli.core.registry import ENDPOINTS, Scope
+from pbi_cli.core.registry import ENDPOINTS
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore, safe_name
 from pbi_cli.core.sync.engine import (
@@ -213,27 +213,6 @@ def _lake() -> LakeStore:
     return store
 
 
-class _Clients:
-    """The API clients of a sync: made when a target needs one, closed together."""
-
-    def __init__(self) -> None:
-        self._stack = ExitStack()
-        self._made: Dict[Scope, PowerBIClient] = {}
-
-    def __call__(self, scope: Scope) -> PowerBIClient:
-        if scope not in self._made:
-            from pbi_cli.cli import _client  # late: pbi_cli.cli mounts this module
-
-            self._made[scope] = self._stack.enter_context(_client(scope.value))
-        return self._made[scope]
-
-    def __enter__(self) -> "_Clients":
-        return self
-
-    def __exit__(self, *exc_info: Any) -> None:
-        self._stack.close()
-
-
 def _print_targets(names: List[str], store: LakeStore) -> None:
     selection = select_targets(names)
     typer.echo(f"Data lake: {store.root}")
@@ -360,7 +339,7 @@ def sync_plan(
     )
     store = _lake()
     _print_targets(list(options.targets), store)
-    with _Clients() as clients:
+    with ClientPool() as clients:
         _print_plan(SyncEngine(clients, store).plan(options))
 
 
@@ -515,7 +494,7 @@ def sync_run(
     )
     store = _lake()
     _print_targets(list(options.targets), store)
-    with _Clients() as clients:
+    with ClientPool() as clients:
         report = SyncEngine(clients, store).run(options, on_event=_Progress())
     _print_report(report)
 
@@ -646,16 +625,11 @@ def _show_tenant(store: LakeStore, tenant: str, now: datetime) -> None:
 
 def _holdings(store: LakeStore, tenant: str, endpoint: str, now: datetime) -> List[str]:
     """How much of an operation the lake holds and how new it is (empty if nothing)."""
-    days = store.event_days(tenant, endpoint)
-    if days:
-        written = [d.updated_at for d in days if d.updated_at]
-        newest = format_age(now - max(written)) + " ago" if written else "-"
-        return [f"{len(days)} day(s)", newest]
-    sets = store.parameter_sets(tenant, endpoint)
-    if not sets:
+    held = holding(store, tenant, endpoint)
+    if held is None:
         return []
-    newest_at = max(s.latest.fetched_at for s in sets)
-    return [f"{len(sets)} request(s)", format_age(now - newest_at) + " ago"]
+    newest = format_age(now - held.newest) + " ago" if held.newest else "-"
+    return [f"{held.count} {held.unit}(s)", newest]
 
 
 @command(sync_app, "status")

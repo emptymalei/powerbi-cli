@@ -23,7 +23,7 @@ from typing import Callable, Dict, Iterator, List, Optional, Union
 from loguru import logger
 
 from pbi_cli.core.registry import Endpoint, RateLimit
-from pbi_cli.errors import RateLimitError
+from pbi_cli.errors import RateLimitError, Stopped
 
 #: Seconds of history that are kept: the longest window of any documented quota.
 RETENTION = 3600.0
@@ -231,6 +231,10 @@ class Limiter:
     :param max_wait: longest time one request may wait for quota before
         `RateLimitError` is raised; ``None`` waits as long as
         needed
+
+    Setting `interrupt` to an event makes the waits for quota end, with
+    `~pbi_cli.errors.Stopped`, as soon as the event is set (the sync engine does so
+    for the length of a run, so that a stop does not have to wait for a quota).
     """
 
     def __init__(
@@ -242,6 +246,7 @@ class Limiter:
         self.tracker = tracker
         self._sleep = sleep
         self._max_wait = max_wait
+        self.interrupt: Optional[threading.Event] = None
         self._reserve = threading.Lock()
         self._semaphores: Dict[str, threading.BoundedSemaphore] = {}
         self._semaphore_lock = threading.Lock()
@@ -308,6 +313,14 @@ class Limiter:
             if semaphore is not None:
                 semaphore.release()
 
+    def _pause(self, seconds: float) -> None:
+        """Wait for quota; a set `interrupt` ends the wait."""
+        interrupt = self.interrupt
+        if interrupt is None:
+            self._sleep(seconds)
+        elif interrupt.wait(seconds):
+            raise Stopped("Stopped while waiting for quota.")
+
     def _wait_for_quota(
         self,
         endpoint: Endpoint,
@@ -336,5 +349,5 @@ class Limiter:
                 f"Waiting {format_wait(wait)} before calling {endpoint.id} "
                 "(quota used up or throttled)"
             )
-            self._sleep(wait)
+            self._pause(wait)
             waited += wait

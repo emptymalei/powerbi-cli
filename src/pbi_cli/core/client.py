@@ -33,6 +33,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from pbi_cli.core.auth import Credentials, CredentialsProvider, ensure_not_expired
+from pbi_cli.core.jwt import TokenInfo
 from pbi_cli.core.ratelimit import (
     DEFAULT_MAX_WAIT,
     Limiter,
@@ -300,6 +301,14 @@ class PowerBIClient:
     def profile_name(self) -> Optional[str]:
         """The name of the profile the current credentials belong to, if they say."""
         return self._credentials().profile
+
+    def token_info(self) -> TokenInfo:
+        """The tenant and expiry the current token states.
+
+        They are read from the token itself: nothing is sent, and the signature is not
+        checked.
+        """
+        return self._credentials().info
 
     # -- one request ---------------------------------------------------------------
 

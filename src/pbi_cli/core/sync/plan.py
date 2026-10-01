@@ -74,6 +74,9 @@ class SyncOptions:
     :param exclude_inactive: leave the inactive workspaces out of the scans
     :param scan_interval: seconds between two status checks of a scan
     :param scan_timeout: seconds to wait for one scan to succeed
+    :param workspace_ids: scan only these workspaces, whatever changed (the scan target
+        only: it does not list the modified workspaces, and does not move the point the
+        next incremental scan continues from)
     """
 
     targets: Tuple[str, ...] = ()
@@ -89,8 +92,14 @@ class SyncOptions:
     exclude_inactive: bool = False
     scan_interval: float = 5.0
     scan_timeout: float = 600.0
+    workspace_ids: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "workspace_ids",
+            tuple(dict.fromkeys(str(i) for i in self.workspace_ids if i)),
+        )
         if not 1 <= self.workers <= MAX_WORKERS:
             raise PBIError(f"workers must be between 1 and {MAX_WORKERS}")
         if not 1 <= self.days <= MAX_DAYS:
@@ -113,6 +122,7 @@ class SyncOptions:
             "full_scan": self.full_scan,
             "exclude_personal": self.exclude_personal,
             "exclude_inactive": self.exclude_inactive,
+            "only_workspaces": len(self.workspace_ids),
         }
 
 
@@ -371,7 +381,15 @@ class Planner:
             elif target.mode is Mode.EVENTS:
                 units.extend(self._event_days(target))
             elif target.mode is Mode.SCAN:
-                units.append(self._modified(target))
+                if self.options.workspace_ids:
+                    units.extend(
+                        self._scan_batch(target, batch)
+                        for batch in chunked(
+                            sorted(self.options.workspace_ids), MAX_WORKSPACES
+                        )
+                    )
+                else:
+                    units.append(self._modified(target))
         return units
 
     def expand(self, unit: Unit, rows: Sequence[Any]) -> List[Unit]:
@@ -392,7 +410,6 @@ class Planner:
 
         children: List[Unit] = []
         for child in self._children(unit.target):
-            endpoint = get_endpoint(child.endpoint)
             seen = set()
             for row in rows:
                 if not isinstance(row, dict):

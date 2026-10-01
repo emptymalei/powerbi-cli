@@ -82,5 +82,12 @@ class ScanTimeout(ScanError):
     """
 
 
+class Stopped(PBIError):
+    """Work was stopped on request (for example by the Stop button of the TUI).
+
+    It is not a failure: a sync that is stopped keeps what is done and can be run again.
+    """
+
+
 class OfflineCacheMiss(PBIError):
     """Offline mode was requested but the lake holds no matching snapshot."""

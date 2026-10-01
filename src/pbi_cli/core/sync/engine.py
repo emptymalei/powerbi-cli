@@ -36,15 +36,7 @@ from loguru import logger
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.registry import ENDPOINTS, Scope, get_endpoint
 from pbi_cli.core.store import LakeStore
-from pbi_cli.core.sync.plan import (
-    MODIFIED,
-    SCAN,
-    Plan,
-    Planner,
-    QuotaLine,
-    SyncOptions,
-    Unit,
-)
+from pbi_cli.core.sync.plan import Plan, Planner, QuotaLine, SyncOptions, Unit
 from pbi_cli.core.sync.runners import (
     CANCELLED,
     DEFERRED,
@@ -58,8 +50,14 @@ from pbi_cli.core.sync.runners import (
 from pbi_cli.core.sync.state import DEFERRED as MARK_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARK_FAILED
 from pbi_cli.core.sync.state import SyncState
-from pbi_cli.core.sync.targets import Selection, get_target, select_targets
-from pbi_cli.errors import ApiError, PBIError, RateLimitError, TokenExpiredError
+from pbi_cli.core.sync.targets import Selection, select_targets
+from pbi_cli.errors import (
+    ApiError,
+    PBIError,
+    RateLimitError,
+    Stopped,
+    TokenExpiredError,
+)
 
 COMPLETED = "completed"
 COMPLETED_WITH_FAILURES = "completed_with_failures"
@@ -74,10 +72,6 @@ _ORDER = {endpoint.id: n for n, endpoint in enumerate(ENDPOINTS)}
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
-
-
-class RunStopped(Exception):
-    """Raised inside a unit when the run is stopped while the unit waits."""
 
 
 @dataclass(frozen=True)
@@ -117,6 +111,7 @@ class RunReport:
     :param by_target: the same by target
     :param failures: the failed units with the reason
     :param deferred: the deferred units with the seconds until a request fits
+    :param cancelled: how many units were not done because the run was stopped
     :param notes: what else the reader should know
     :param message: the reason a run was stopped
     """
@@ -129,6 +124,7 @@ class RunReport:
     by_target: Dict[str, Counter] = field(default_factory=dict)
     failures: List[Tuple[str, str]] = field(default_factory=list)
     deferred: List[Tuple[str, Optional[float]]] = field(default_factory=list)
+    cancelled: int = 0
     notes: List[str] = field(default_factory=list)
     message: str = ""
 
@@ -184,7 +180,9 @@ class SyncEngine:
 
     # -- setting up --------------------------------------------------------------------
 
-    def _session(self, options: SyncOptions) -> _Session:
+    def _session(
+        self, options: SyncOptions, stop: Optional[threading.Event] = None
+    ) -> _Session:
         selection = select_targets(options.targets)
         clients = {
             scope: self._client_for(scope)
@@ -210,15 +208,15 @@ class SyncEngine:
             state=state,
             clock=self._clock,
         )
-        stop = threading.Event()
+        stop = threading.Event() if stop is None else stop
 
         def sleep(seconds: float) -> None:
             if stop.is_set():
-                raise RunStopped()
+                raise Stopped()
             if self._sleep is not None:
                 self._sleep(seconds)
             elif stop.wait(seconds):
-                raise RunStopped()
+                raise Stopped()
 
         context = Context(
             options=options,
@@ -275,13 +273,20 @@ class SyncEngine:
         self,
         options: SyncOptions,
         on_event: Optional[Callable[[Event], None]] = None,
+        stop: Optional[threading.Event] = None,
     ) -> RunReport:
         """Fetch what the targets need into the lake.
 
         :param options: what to sync, and how
         :param on_event: called (from the thread that runs) as stages begin and units end
+        :param stop: set it, from any thread, to end the run: units that are being fetched
+            finish, no other unit starts, and the report says ``interrupted``. What is
+            done is kept, so running again continues.
         """
-        session = self._session(options)
+        session = self._session(options, stop)
+        if self._sleep is None:  # real time: a stop also ends the waits for quota
+            for client in session.clients.values():
+                client.limiter.interrupt = session.stop
         started = self._clock()
         run_id = session.state.begin_run(session.selection.names, options.summary())
         report = RunReport(run_id=run_id, started_at=started)
@@ -295,12 +300,17 @@ class SyncEngine:
                 stage += 1
                 outcomes = self._run_stage(session, units, stage, report, on_event)
                 units = self._following(session, outcomes, created)
+            if report.cancelled:
+                report.status = INTERRUPTED
+                report.message = "stopped before everything was done"
         except TokenExpiredError as error:
             report.status, report.message = TOKEN_EXPIRED, str(error)
         except KeyboardInterrupt:
             report.status, report.message = INTERRUPTED, "interrupted by the user"
         finally:
             session.stop.set()
+            for client in session.clients.values():
+                client.limiter.interrupt = None
         self._finish(session, report, created, started)
         return report
 
@@ -344,6 +354,7 @@ class SyncEngine:
                         token_error = token_error or error
                         continue
                     if outcome.status == CANCELLED:
+                        report.cancelled += 1
                         continue
                     self._record(session, unit, outcome, report)
                     finished.append((unit, outcome))
@@ -366,6 +377,8 @@ class SyncEngine:
             pool.shutdown(wait=True, cancel_futures=True)
         if token_error is not None:
             raise token_error
+        # the units that were never started, because the run was stopped
+        report.cancelled += sum(1 for _ in pending)
         return finished
 
     def _execute(self, session: _Session, unit: Unit) -> Outcome:
@@ -380,7 +393,7 @@ class SyncEngine:
         except TokenExpiredError:
             session.stop.set()  # at once: a queued unit must not ask with a dead token
             raise
-        except RunStopped:
+        except Stopped:
             return Outcome(CANCELLED)
         except RateLimitError as error:
             return Outcome(
@@ -501,10 +514,12 @@ class SyncEngine:
 
         # Every workspace is scanned as of the start of this run when the units of the scan
         # target all succeeded (the list of workspaces, then every batch) and the run was
-        # not cut short: the next scan can then continue from here.
+        # not cut short: the next scan can then continue from here. A scan of chosen
+        # workspaces covers only those, so it moves nothing.
         scanned = report.by_target.get("scan")
         if (
             scanned
+            and not session.options.workspace_ids
             and report.status not in (TOKEN_EXPIRED, INTERRUPTED)
             and not scanned[FAILED]
             and not scanned[DEFERRED]

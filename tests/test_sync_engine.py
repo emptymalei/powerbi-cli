@@ -1,5 +1,7 @@
 """The sync engine: snapshots, fan-outs, and what happens when things go wrong."""
 
+import threading
+import time
 from datetime import timedelta
 
 import pytest
@@ -11,6 +13,7 @@ from pbi_cli.core.sync.engine import (
     COMPLETED_WITH_FAILURES,
     INTERRUPTED,
     TOKEN_EXPIRED,
+    SyncEngine,
 )
 from pbi_cli.core.sync.plan import SNAPSHOT
 from pbi_cli.core.sync.runners import DEFERRED, DONE, FAILED, RUNNERS, SKIPPED
@@ -343,6 +346,73 @@ def test_ctrl_c_stops_the_run_and_keeps_what_is_done(world):
     assert sum(report.counts.values()) == 2
     assert world.state()["runs"][-1]["status"] == "interrupted"
     assert world.stored("admin.groups") is not None
+
+
+def test_a_stop_from_outside_ends_the_run_and_a_second_run_continues(world):
+    stop = threading.Event()
+
+    def on_event(event):
+        if event.kind == "unit":
+            stop.set()
+
+    options = world.options()
+    report = world.engine.run(options, on_event=on_event, stop=stop)
+
+    assert report.status == INTERRUPTED
+    assert report.cancelled >= 1
+    assert sum(report.counts.values()) + report.cancelled == 7
+    assert world.state()["runs"][-1]["status"] == "interrupted"
+    done = report.counts[DONE]
+
+    again = world.engine.run(options)
+
+    assert again.status == COMPLETED and not again.cancelled
+    assert again.counts[SKIPPED] == done  # what was done is not fetched again
+    assert again.counts[DONE] == 7 - done
+
+
+def test_a_stop_before_the_run_starts_makes_no_request(world):
+    stop = threading.Event()
+    stop.set()
+
+    report = world.engine.run(world.options(), stop=stop)
+
+    assert report.status == INTERRUPTED and report.cancelled == 7
+    assert not report.counts and world.fake.calls == []
+
+
+def test_a_stop_after_the_last_unit_does_not_make_a_finished_run_interrupted(world):
+    stop = threading.Event()
+
+    def on_event(event):
+        if event.kind == "unit" and event.done == event.total:
+            stop.set()
+
+    report = world.engine.run(world.options("groups"), on_event=on_event, stop=stop)
+
+    assert report.status == COMPLETED and report.cancelled == 0
+
+
+def test_a_stop_cuts_a_wait_for_quota_short(world):
+    # admin.groups allows 15 requests a minute: use them up, so that the next one waits
+    for n in range(15):
+        world.admin.request("admin.groups", {"$top": n + 1})
+    # an engine that waits in real time (the World's waits on the fake clock instead)
+    engine = SyncEngine(
+        world.client_for,
+        world.store,
+        clock=world.clock.now,
+        monotonic=world.clock.time,
+    )
+    stop = threading.Event()
+    threading.Timer(0.2, stop.set).start()
+    started = time.monotonic()
+
+    report = engine.run(world.options("groups", max_wait=120.0), stop=stop)
+
+    assert report.status == INTERRUPTED and report.cancelled == 1
+    assert time.monotonic() - started < 10  # not the 60 seconds the quota asks for
+    assert world.admin.limiter.interrupt is None  # the limiter is as it was
 
 
 def test_tokens_of_different_tenants_are_refused(tmp_path):

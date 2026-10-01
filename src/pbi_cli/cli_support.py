@@ -2,12 +2,27 @@
 
 import functools
 import re
+import threading
+from contextlib import ExitStack
 from datetime import timedelta
-from typing import Annotated, Any, Callable, List, NoReturn, Optional, Sequence
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    ContextManager,
+    Dict,
+    List,
+    NoReturn,
+    Optional,
+    Sequence,
+)
 
 import typer
 from typer.core import TyperGroup
 
+from pbi_cli.core.client import PowerBIClient
+from pbi_cli.core.registry import Scope
+from pbi_cli.core.timefmt import format_age  # noqa: F401  (re-exported)
 from pbi_cli.errors import PBIError
 
 
@@ -73,6 +88,55 @@ def command(app: typer.Typer, name: Optional[str] = None, **kwargs: Any) -> Call
     return decorator
 
 
+# -- the API clients of a command ------------------------------------------------------
+
+
+class ClientPool:
+    """The API clients a command (or the TUI) uses: one per kind of token, made when it is
+    first needed, closed together.
+
+    A client looks its token up once, so a token that is stored while the pool is in use is
+    picked up by `reset`, which makes the next call build a new client.
+
+    :param make: builds the client for a group name (``admin`` or ``user``) as a context
+        manager; by default the client of the command line (`pbi_cli.cli`)
+    """
+
+    def __init__(
+        self, make: Optional[Callable[[str], ContextManager[PowerBIClient]]] = None
+    ):
+        self._make = make
+        self._lock = threading.Lock()
+        self._stack = ExitStack()
+        self._made: Dict[Scope, PowerBIClient] = {}
+
+    def __call__(self, scope: Scope) -> PowerBIClient:
+        with self._lock:
+            if scope not in self._made:
+                make = self._make
+                if make is None:
+                    from pbi_cli.cli import (  # late: pbi_cli.cli imports this module
+                        _client,
+                    )
+
+                    make = _client
+                self._made[scope] = self._stack.enter_context(make(scope.value))
+            return self._made[scope]
+
+    def reset(self) -> None:
+        """Close the clients; the next call makes new ones, which read the token again."""
+        with self._lock:
+            self._stack.close()
+            self._stack = ExitStack()
+            self._made = {}
+
+    def __enter__(self) -> "ClientPool":
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.reset()
+
+
 # -- options shared by the scan commands and by `pbi sync` -----------------------------
 
 ScanLineage = Annotated[
@@ -108,20 +172,6 @@ def print_table(header: Sequence[str], rows: Sequence[Sequence[Any]]) -> None:
                 for i, cell in enumerate(line)
             ).rstrip()
         )
-
-
-def format_age(delta: timedelta) -> str:
-    """How old something is, in the largest unit that keeps it short: 40 s, 5 min, 3 h, 2 d."""
-    seconds = max(0, int(delta.total_seconds()))
-    if seconds < 90:
-        return f"{seconds} s"
-    minutes = round(seconds / 60)
-    if minutes < 60:
-        return f"{minutes} min"
-    hours = round(seconds / 3600)
-    if hours < 48:
-        return f"{hours} h"
-    return f"{round(seconds / 86400)} d"
 
 
 _DURATION = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*([smhd])\s*$", re.IGNORECASE)
