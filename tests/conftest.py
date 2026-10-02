@@ -24,6 +24,7 @@ collect_ignore_glob = (
     []
     if importlib.util.find_spec("textual")
     else [
+        "test_tui_accounts.py",
         "test_tui_app.py",
         "test_tui_explorer.py",
         "test_tui_lakes.py",

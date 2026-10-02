@@ -1,6 +1,9 @@
 """``pbi tui``, and what a bare ``pbi`` does: the command line side of the TUI."""
 
+from datetime import timedelta
+
 import pytest
+from core_helpers import NOW, make_token
 from loguru import logger
 from typer.testing import CliRunner
 
@@ -297,3 +300,76 @@ def test_the_environment_lake_lets_a_bare_pbi_open_the_tui(monkeypatch, tmp_path
     monkeypatch.setenv("PBI_LAKE", str(tmp_path))
 
     assert cli_tui.should_launch() is True
+
+
+def test_the_backend_lists_the_stored_profiles_with_who_they_are(opened, cache_folder):
+    invoke("tui")
+    backend = opened["backend"]
+    expires = timedelta(hours=1)
+    backend.sign_in(
+        make_token(tenant="tenant-1", expires_in=expires, upn="adm@x.com"),
+        "adm",
+        "admin",
+    )
+    backend.sign_in(
+        make_token(tenant="tenant-1", expires_in=expires, upn="svc@x.com"),
+        "svc",
+        "user",
+    )
+    backend.sign_in(
+        make_token(tenant="tenant-1", expires_in=expires, upn="ana@x.com"),
+        "ana",
+        "user",
+    )
+
+    found = {(a.group, a.profile): a for a in backend.accounts()}
+
+    assert set(found) == {("admin", "adm"), ("user", "svc"), ("user", "ana")}
+    assert found[("admin", "adm")].active and found[("user", "svc")].active
+    assert not found[("user", "ana")].active  # the first of a group is the active one
+    assert found[("user", "svc")].name == "svc@x.com"
+    assert found[("user", "svc")].tenant == "tenant-1"
+    assert found[("user", "svc")].expires_at == NOW + expires
+    assert all(a.has_token for a in found.values())
+
+
+def test_a_profile_whose_token_is_gone_is_listed_without_one(
+    opened, cache_folder, memory_keyring
+):
+    invoke("tui")
+    backend = opened["backend"]
+    backend.sign_in(make_token(tenant="tenant-1"), "svc", "user")
+    memory_keyring.delete_password("pbi-cli", "svc")
+
+    (account,) = backend.accounts()
+
+    assert account.profile == "svc" and account.has_token is False
+    assert account.name is None and account.expires_at is None
+
+
+def test_making_a_profile_active_is_what_pbi_profile_switch_does(opened, cache_folder):
+    invoke("tui")
+    backend = opened["backend"]
+    backend.sign_in(make_token(tenant="tenant-1", oid="o-svc"), "svc", "user")
+    backend.sign_in(make_token(tenant="tenant-1", oid="o-ana"), "ana", "user")
+    assert backend.client_for(Scope.USER).profile_name() == "svc"  # the first is active
+
+    backend.activate("user", "ana")
+
+    assert PBIConfig().get_group_active_profile("user") == "ana"
+    assert backend.active_profile("user") == "ana"
+    assert backend.client_for(Scope.USER).profile_name() == "ana"  # the pool was reset
+    assert backend.client_for(Scope.USER).identity_key() == "o-ana"
+
+
+def test_a_client_can_be_asked_for_by_profile(opened, cache_folder):
+    invoke("tui")
+    backend = opened["backend"]
+    backend.sign_in(make_token(tenant="tenant-1", oid="o-svc"), "svc", "user")
+    backend.sign_in(make_token(tenant="tenant-1", oid="o-ana"), "ana", "user")
+
+    by_name = backend.client_for(Scope.USER, "ana")
+
+    assert by_name.profile_name() == "ana" and by_name.identity_key() == "o-ana"
+    assert backend.client_for(Scope.USER, "ana") is by_name  # made once
+    assert backend.client_for(Scope.USER).profile_name() == "svc"  # the active one

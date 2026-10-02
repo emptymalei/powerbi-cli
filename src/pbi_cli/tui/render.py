@@ -422,7 +422,7 @@ def contents_rows(catalog: Catalog, workspace_id: str) -> List[Tuple[str, str]]:
     for kind in KINDS:
         if kind in counts:
             rows.append((label(kind, True), str(counts[kind])))
-        elif catalog.listing(kind) is None:
+        elif not catalog.listed(kind, workspace_id):
             rows.append((label(kind, True), "the list is not in the lake"))
     return rows
 
@@ -443,7 +443,9 @@ def empty_hint(catalog: Catalog, workspace_id: str) -> Hint:
     """Say why a workspace has no items: the lists are missing, it was never scanned, or
     it really is empty."""
     missing = [
-        label(kind, True).lower() for kind in KINDS if catalog.listing(kind) is None
+        label(kind, True).lower()
+        for kind in KINDS
+        if not catalog.listed(kind, workspace_id)
     ]
     if missing:
         return Hint(
@@ -452,7 +454,8 @@ def empty_hint(catalog: Catalog, workspace_id: str) -> Hint:
             "to show. Press s and Run to fetch the lists of the tenant, or r to scan "
             "this workspace.",
         )
-    if catalog.scan_of(workspace_id) is None:
+    from_administrators = any(catalog.listing(kind) is not None for kind in KINDS)
+    if from_administrators and catalog.scan_of(workspace_id) is None:
         return Hint(
             "never scanned: press r to scan it",
             "No list holds an item of this workspace and it was never scanned. Press r "
@@ -484,6 +487,18 @@ def provenance(
                     f"{found.endpoint}, fetched {ago(catalog, found.fetched_at)}{note}",
                 )
             )
+        if found is None and isinstance(subject, Item) and subject.workspace_id:
+            made = catalog.user_list(kind, subject.workspace_id)
+            if made is not None:
+                rows.append(
+                    (
+                        "List",
+                        f"{made.manifest.get('endpoint', 'a list')} of the workspace, "
+                        f"fetched {ago(catalog, made.fetched_at)}",
+                    )
+                )
+        if isinstance(subject, Workspace) and subject.visible_to:
+            rows.append(("Visible to", ", ".join(subject.visible_to)))
         workspace_id = (
             subject.id if isinstance(subject, Workspace) else subject.workspace_id
         )

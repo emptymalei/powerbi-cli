@@ -345,12 +345,14 @@ def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
         raise AuthError(
             f"No active profile set for group '{group}'. "
             f"Use 'pbi auth -g {group}' to create a profile or "
-            f"'pbi profile switch -g {group}' to switch profiles."
+            f"'pbi profile switch -g {group}' to switch profiles.",
+            group=group,
         )
     if profile not in profiles_data.get("profiles", {}):
         raise AuthError(
             f"Profile '{profile}' not found in group '{group}' or flat profiles. "
-            "Use 'pbi profile list' to see available profiles."
+            "Use 'pbi profile list' to see available profiles.",
+            group=group,
         )
     return profile
 
@@ -375,43 +377,50 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     token = _get_credential(profile)
     if token is None:
         raise AuthError(
-            f"No credentials found for profile '{profile}'. Please re-authenticate."
+            f"No credentials found for profile '{profile}'. Please re-authenticate.",
+            group=group,
         )
 
     return {"Authorization": f"Bearer {token}"}
 
 
-def _credentials_provider(group: str) -> Callable[[], Credentials]:
+def _credentials_provider(
+    group: str, profile: Optional[str] = None
+) -> Callable[[], Credentials]:
     """What the API client asks before each request for the token of *group*.
 
     The client asks several times per request, and a command runs for seconds, so the
     token is looked up once (not in the settings and the keyring for every request). A
     token stored with ``pbi auth`` while the command runs is used by the next command.
+
+    :param group: ``admin`` or ``user``
+    :param profile: the profile to use instead of the active one of the group
     """
     found: List[Credentials] = []
 
     def provide() -> Credentials:
         if not found:
-            headers = load_auth(group=group)
+            headers = load_auth(profile=profile, group=group)
             try:
-                profile: Optional[str] = _resolve_profile(None, group)
+                name: Optional[str] = _resolve_profile(profile, group)
             except PBIError:
-                profile = None  # only used to name the profile in messages
-            found.append(
-                credentials_from_headers(headers, profile=profile, group=group)
-            )
+                name = None  # only used to name the profile in messages
+            found.append(credentials_from_headers(headers, profile=name, group=group))
         return found[0]
 
     return provide
 
 
 @contextmanager
-def _client(group: str) -> Iterator[PowerBIClient]:
+def _client(group: str, profile: Optional[str] = None) -> Iterator[PowerBIClient]:
     """An API client that signs in as *group* and keeps what it fetches in the data lake.
 
     TLS certificates are not verified, as before (see the ``tls_verify`` follow-up).
+
+    :param group: ``admin`` or ``user``
+    :param profile: the profile to use instead of the active one of the group
     """
-    with open_client(_credentials_provider(group), verify=False) as client:
+    with open_client(_credentials_provider(group, profile), verify=False) as client:
         yield client
 
 

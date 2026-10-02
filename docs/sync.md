@@ -44,15 +44,50 @@ every target.
 | `report-users` | The users of every report | `admin.reports.users` | admin | no: the people who can open each report, with their e-mail addresses |
 | `datasources` | The data sources of every dataset | `admin.datasets.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
 | `activity` | Audit activity events, one log per UTC day | `admin.activityevents` | admin | no: what each person did and when: e-mail addresses, IP addresses, devices |
-| `user-groups` | Workspaces of the user | `user.groups` | user | no: needs a user's token |
-| `user-apps` | Apps of the user | `user.apps` | user | no: needs a user's token |
-| `user-reports` | Reports of each workspace of the user | `user.group_reports` | user | no: needs a user's token |
+| `user-groups` | Workspaces of the user | `user.groups` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-apps` | Apps of the user | `user.apps` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-reports` | Reports of each workspace of the user | `user.group_reports` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-datasets` | Datasets of each workspace of the user | `user.group_datasets` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-dashboards` | Dashboards of each workspace of the user | `user.group_dashboards` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-dataflows` | Dataflows of each workspace of the user | `user.group_dataflows` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-group-users` | The users of each workspace of the user | `user.group_users` | user | no: the people who have access to each workspace, with their e-mail addresses |
 | `user-pages` | Pages of each report of the user | `user.report_pages` | user | no: needs a user's token |
 
-`report-users`, `datasources`, `user-reports` and `user-pages` ask once for every row of
-another target (the users of every report, the pages of every report of every workspace).
-Naming one brings the target it needs along, and the plan says so. The quota of each
-operation is in the [table of the data lake](lake.md#endpoints-and-quotas).
+`report-users`, `datasources`, the `user-...` targets that ask for each workspace, and
+`user-pages` ask once for every row of another target (the users of every report, the
+datasets of every workspace, the pages of every report of every workspace). Naming one
+brings the target it needs along, and the plan says so. The quota of each operation is in
+the [table of the data lake](lake.md#endpoints-and-quotas).
+
+## Which accounts a sync uses
+
+A sync uses the accounts you have stored (`pbi profile list`): the active profile of the
+group `admin` for the administrator's targets, and the active profile of the group `user`
+for the `user-...` targets. `--admin-profile` and `--user-profile` use other profiles of
+those groups for one run, for example `pbi sync run user-groups --user-profile svc-finance`.
+`pbi sync plan` and `pbi sync run` print the accounts they use, in an `Accounts:` line
+(`Accounts: admin-nlm (admin), svc-finance (user)`), and so does the plan on the Sync screen of
+the [terminal UI](tui.md).
+
+What a sync does without names depends on the accounts:
+
+- **An administrator account**: the plain targets, the lists of the tenant.
+- **Only a user account** (no administrator): what that user can see, workspace by
+  workspace: `user-groups`, `user-apps`, `user-reports`, `user-datasets`, `user-dashboards`
+  and `user-dataflows`. The Explorer of the [terminal UI](tui.md) shows those lists like the
+  tenant's lists, for the workspaces that account can see.
+- **No account**: `pbi sync` says so and what to run (`pbi auth -t <token> -g admin`, or
+  `-g user`).
+
+Naming a target that needs an account you do not have fails at once, before anything is
+fetched, and says which account to store. `all` is every target the accounts you have can
+run.
+
+The answers that depend on who asks, the workspaces and the apps *of a user*, are kept per
+account in the lake, by the object id that is in the token. Two user accounts of one tenant
+never see each other's, a profile that is renamed keeps its history, and the plan counts
+what is fresh *for the account* it is made for. What is the same for everyone who can see a
+workspace (its reports, datasets, dashboards, dataflows, users) is kept once.
 
 ## Look before you fetch
 
@@ -63,8 +98,9 @@ and how that compares with the quota that is left:
 ```text
 $ pbi sync plan
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows
-Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages
+Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages
 Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
 
 TARGET      OPERATION         UNITS  FRESH  TO DO  REQUESTS
@@ -98,6 +134,7 @@ audit events:
 ```text
 $ pbi sync plan default activity scan --lineage --days 3
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, activity
   scan copies the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item
   activity copies what each person did and when: e-mail addresses, IP addresses, devices
@@ -135,8 +172,9 @@ they finish; a big stage prints only its milestones and the units that failed.
 ```text
 $ pbi sync run
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows
-Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages
+Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages
 
 Stage 1: 7 unit(s) of groups, apps, capacities, reports, datasets, dashboards, dataflows
   ✓ admin.capacities  1 rows
@@ -156,6 +194,7 @@ also what makes it safe to run from a scheduler.
 ```text
 $ pbi sync run default activity scan --lineage --days 3 --scan-interval 0.1
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, activity
   scan copies the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item
   activity copies what each person did and when: e-mail addresses, IP addresses, devices
@@ -261,6 +300,7 @@ A sync can be stopped at any time, and run again:
 ```text
 $ pbi sync run report-users
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: reports, report-users
   report-users copies the people who can open each report, with their e-mail addresses
 

@@ -560,7 +560,7 @@ def test_refresh_without_credentials_asks_to_sign_in(synced):
 
     screen, reason = run_ui(backend_of(synced, client_for=client_for), scenario)
 
-    assert screen == "SignInModal" and "No active profile" in str(reason)
+    assert screen == "SignInModal" and "No account is stored" in str(reason)
 
 
 def test_a_token_that_expires_while_refreshing_asks_to_sign_in_and_goes_on(synced):

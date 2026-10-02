@@ -7,7 +7,7 @@ went and what the lake holds (it reads the lake only, so it needs no token).
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, List, Optional
+from typing import AbstractSet, Annotated, List, Optional, Sequence
 
 import typer
 
@@ -28,7 +28,7 @@ from pbi_cli.cli_support import (
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.catalog import holding
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
-from pbi_cli.core.registry import ENDPOINTS
+from pbi_cli.core.registry import ENDPOINTS, Scope
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore, safe_name
 from pbi_cli.core.sync.engine import (
@@ -152,6 +152,22 @@ ScanIntervalOption = Annotated[
         "--scan-interval", min=0.1, help="Seconds between status checks of a scan"
     ),
 ]
+AdminProfileOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--admin-profile",
+        help="The profile of the administrator account to use (default: the active "
+        "profile of the group admin)",
+    ),
+]
+UserProfileOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--user-profile",
+        help="The profile of the user account to use (default: the active profile of "
+        "the group user)",
+    ),
+]
 ScanTimeoutOption = Annotated[
     float,
     typer.Option(
@@ -180,6 +196,8 @@ def _options(
     scan_timeout: float,
     workers: int = 4,
     wait: float = 120.0,
+    admin_profile: Optional[str] = None,
+    user_profile: Optional[str] = None,
 ) -> SyncOptions:
     return SyncOptions(
         targets=tuple(targets or ()),
@@ -200,6 +218,8 @@ def _options(
         exclude_inactive=exclude_inactive,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
+        admin_profile=admin_profile,
+        user_profile=user_profile,
     )
 
 
@@ -214,18 +234,40 @@ def _lake() -> LakeStore:
     return store
 
 
-def _print_targets(names: List[str], store: LakeStore) -> None:
-    selection = select_targets(names)
+def _print_targets(
+    names: List[str],
+    store: LakeStore,
+    available: Optional[AbstractSet[Scope]] = None,
+    accounts: Sequence[str] = (),
+) -> None:
+    """Say what is synced.
+
+    :param available: the kinds of account that are stored; what the plain sync is, and
+        what can be named, depends on them
+    :param accounts: the accounts the sync uses, each as ``profile (kind)``
+    """
     typer.echo(f"Data lake: {store.root}")
+    if available is not None and not available:
+        return  # no account: the engine says so, with what to do
+    selection = select_targets(names, available)
+    if accounts:
+        typer.echo(f"Accounts: {', '.join(accounts)}")
     typer.echo(f"Targets: {', '.join(selection.names)}")
     for target in selection.targets:
         if target.sensitive and target.name not in selection.implied:
             typer.secho(f"  {target.name} copies {target.sensitive}", fg="yellow")
     if not names:
-        rest = [t.name for t in TARGETS if t.name not in selection.names]
-        typer.echo(
-            f"Not included (name them to include them, see --help): {', '.join(rest)}"
-        )
+        rest = [
+            t.name
+            for t in TARGETS
+            if t.name not in selection.names
+            and (available is None or t.scope in available)
+        ]
+        if rest:
+            typer.echo(
+                "Not included (name them to include them, see --help): "
+                f"{', '.join(rest)}"
+            )
 
 
 def _count(value: Optional[int]) -> str:
@@ -301,6 +343,8 @@ def sync_plan(
     exclude_inactive: ExcludeInactiveOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
+    admin_profile: AdminProfileOption = None,
+    user_profile: UserProfileOption = None,
 ):
     """Show what a sync would fetch and what it costs, without calling the API
 
@@ -320,6 +364,9 @@ def sync_plan(
     !!! warning "Requires Admin"
 
         The admin targets need an admin account; the `user-...` targets need a user account.
+        Without names the plain targets are synced: the administrator's lists when there is
+        an administrator account, and else what a user can see, workspace by workspace.
+        `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
     options = _options(
@@ -337,11 +384,19 @@ def sync_plan(
         exclude_inactive=exclude_inactive,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
+        admin_profile=admin_profile,
+        user_profile=user_profile,
     )
     store = _lake()
-    _print_targets(list(options.targets), store)
     with ClientPool() as clients:
-        _print_plan(SyncEngine(clients, store).plan(options))
+        engine = SyncEngine(clients, store)
+        _print_targets(
+            list(options.targets),
+            store,
+            engine.available_scopes(options),
+            engine.accounts(options),
+        )
+        _print_plan(engine.plan(options))
 
 
 # -- run -------------------------------------------------------------------------------
@@ -439,6 +494,8 @@ def sync_run(
     exclude_inactive: ExcludeInactiveOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
+    admin_profile: AdminProfileOption = None,
+    user_profile: UserProfileOption = None,
 ):
     """Fetch what the targets need into the data lake, within the quotas
 
@@ -473,6 +530,9 @@ def sync_run(
     !!! warning "Requires Admin"
 
         The admin targets need an admin account; the `user-...` targets need a user account.
+        Without names the plain targets are synced: the administrator's lists when there is
+        an administrator account, and else what a user can see, workspace by workspace.
+        `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
     options = _options(
@@ -492,11 +552,19 @@ def sync_run(
         scan_timeout=scan_timeout,
         workers=workers,
         wait=wait,
+        admin_profile=admin_profile,
+        user_profile=user_profile,
     )
     store = _lake()
-    _print_targets(list(options.targets), store)
     with ClientPool() as clients:
-        report = SyncEngine(clients, store).run(options, on_event=_Progress())
+        engine = SyncEngine(clients, store)
+        _print_targets(
+            list(options.targets),
+            store,
+            engine.available_scopes(options),
+            engine.accounts(options),
+        )
+        report = engine.run(options, on_event=_Progress())
     _print_report(report)
 
     again = "pbi sync run" + "".join(f" {name}" for name in options.targets)

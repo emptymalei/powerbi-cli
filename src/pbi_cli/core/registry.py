@@ -29,6 +29,11 @@ _DOCS = "https://learn.microsoft.com/en-us/rest/api/power-bi"
 HOUR = 3600
 MINUTE = 60
 
+#: The pseudo parameter that says who is asking, for the operations whose answer depends on
+#: it (see `Endpoint.per_identity`). It is part of the key of a request in the lake and is
+#: never sent to the API.
+IDENTITY_PARAM = "_as"
+
 
 class Scope(str, Enum):
     """Which kind of token an operation needs."""
@@ -102,6 +107,9 @@ class Endpoint:
     :param ttl: how long a snapshot counts as fresh
     :param parent: id of the operation that lists the items this one is called for
     :param parent_field: field of the parent's rows that fills the path placeholder
+    :param per_identity: whether the answer depends on who asks (the workspaces *a user*
+        has access to, the apps *a user* installed): the lake then keeps the answers of
+        each account apart, by the parameter `IDENTITY_PARAM`
     """
 
     id: str
@@ -120,6 +128,7 @@ class Endpoint:
     ttl: timedelta = timedelta(hours=24)
     parent: Optional[str] = None
     parent_field: str = "id"
+    per_identity: bool = False
 
     @property
     def path_params(self) -> Tuple[str, ...]:
@@ -136,6 +145,8 @@ class Endpoint:
         :raises ValueError: for a missing placeholder or an unknown query parameter
         """
         given = {k: v for k, v in (params or {}).items() if v is not None}
+        if self.per_identity:
+            given.pop(IDENTITY_PARAM, None)  # a part of the key, not of the request
         path_params = {k: given.pop(k) for k in self.path_params if k in given}
         missing = [k for k in self.path_params if k not in path_params]
         if missing:
@@ -171,10 +182,15 @@ class Endpoint:
     def canonical_params(self, params: Optional[Mapping[str, Any]]) -> Dict[str, str]:
         """Path and query parameters together as sorted canonical strings.
 
-        This is what identifies a request in the lake.
+        This is what identifies a request in the lake. For an operation whose answer depends
+        on who asks it includes ``_as``, the identity of the account, when one is given.
         """
         path_params, query = self.split_canonical(params)
-        return dict(sorted({**path_params, **query}.items()))
+        found = {**path_params, **query}
+        identity = (params or {}).get(IDENTITY_PARAM)
+        if self.per_identity and identity:
+            found[IDENTITY_PARAM] = str(identity)
+        return dict(sorted(found.items()))
 
     def build_url(
         self,
@@ -408,6 +424,7 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         doc_url=f"{_DOCS}/groups/get-groups",
         query=("$filter", "$top", "$skip"),
         ttl=timedelta(hours=1),
+        per_identity=True,
     ),
     Endpoint(
         id="user.apps",
@@ -418,6 +435,7 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         kind=Kind.SNAPSHOT,
         doc_url=f"{_DOCS}/apps/get-apps",
         ttl=timedelta(hours=1),
+        per_identity=True,
     ),
     Endpoint(
         id="user.group_reports",
@@ -427,6 +445,50 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         scope=Scope.USER,
         kind=Kind.SNAPSHOT,
         doc_url=f"{_DOCS}/reports/get-reports-in-group",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_datasets",
+        title="Datasets of a workspace",
+        method="GET",
+        path="/groups/{groupId}/datasets",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-datasets-in-group",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_dashboards",
+        title="Dashboards of a workspace",
+        method="GET",
+        path="/groups/{groupId}/dashboards",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dashboards/get-dashboards-in-group",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_dataflows",
+        title="Dataflows of a workspace",
+        method="GET",
+        path="/groups/{groupId}/dataflows",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dataflows/get-dataflows",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_users",
+        title="Users of a workspace",
+        method="GET",
+        path="/groups/{groupId}/users",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/groups/get-group-users",
         ttl=timedelta(hours=1),
         parent="user.groups",
     ),

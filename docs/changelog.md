@@ -60,6 +60,36 @@
 
 ### Added
 
+- **An administrator account is optional.** pbi works with an administrator's token, with a
+  user's token (a service account, for example), or with both. `pbi sync` with no names
+  syncs the lists of the tenant when an administrator account is stored, and else what a
+  user can see, workspace by workspace: the new targets `user-datasets`, `user-dashboards`
+  and `user-dataflows` join `user-groups`, `user-apps` and `user-reports`, and
+  `user-group-users` (who has access to each workspace of the account) is there when named.
+  Naming a target whose account is not stored fails at once, before anything is fetched, and
+  says which `pbi auth` command to run (`pbi sync run scan` with only a user account, for
+  example). With no account at all `pbi sync` says what to store. See
+  [Authentication](auth.md#which-accounts-you-need) and [Sync](sync.md#which-accounts-a-sync-uses).
+- **Several accounts.** `pbi sync plan` and `pbi sync run` take `--admin-profile` and
+  `--user-profile` to use other profiles than the active ones for one run. What depends on
+  who asks, the workspaces and the apps of a user, is kept in the lake per account, by the
+  object id in the token (`oid`, or `appid` of a service principal), so that two accounts
+  never overwrite each other's lists; what is the same for everybody who can open a
+  workspace stays under the workspace. A token also yields a name (`upn`, ...) to show.
+- `pbi sync plan` and `pbi sync run` say which accounts they use (`Accounts: admin-nlm
+  (admin), svc-finance (user)`), and so does the plan on the Sync screen of the terminal UI.
+  `SyncEngine.accounts(options)` and `Plan.accounts` give the same from Python.
+- The [terminal UI](tui.md) knows about accounts. The header shows every account that is
+  stored with how long its token lasts, `p` opens the Accounts dialog (the stored profiles
+  of both groups; make one active, or store a new token for it), a sync that fails for a
+  token asks for the kind that is missing or expired, and the Sync screen dims the targets
+  whose account is not stored and says what to do. With only a user account the Explorer
+  shows the items of the workspaces that account sees, `r` fetches what you can see, and the
+  Info tab of a workspace says which accounts see it.
+- `pbi_cli.core.catalog`: items come from the lists a user made of each workspace as well as
+  from the lists of the tenant (the administrator's list wins for an item both have),
+  `Workspace.visible_to` names the accounts that see a workspace, and `Catalog.listed` says
+  whether the lake holds a list that would show the items of a workspace.
 - A lake can be [shared](sharing.md). `pbi tui`, `pbi lake ls|show|prune` and `pbi sync
   status` take `--lake <folder or s3://bucket/folder>` (or the environment variable
   `PBI_LAKE`) to look at another lake than the one of the cache folder, for example one that
@@ -120,6 +150,9 @@
 
 ### Fixed
 
+- The dialogs of the [terminal UI](tui.md) all come up in the middle of the screen over the
+  dimmed one: they are made from one class, `Dialog`, that carries the styles, and a test
+  fails for a dialog that is not.
 - A workspace that shows no items in the [terminal UI](tui.md) says why: the lists of items
   are not in the lake (after `pbi sync run groups`, for example), or it was never scanned,
   or it is empty. Before, it showed `0 item(s)` and nothing else.
@@ -136,6 +169,11 @@
 
 ### Development
 
+- The fake service in `tests/fake_powerbi.py` knows who asks: the account is the `oid` of the
+  token, each account can see its own workspaces (`visible_to`), the admin operations can be
+  made to refuse a token that is not an administrator's (`require_admin`), and it serves the
+  per-workspace lists a user can read. `World.only_user()` and `World.accounts(...)` make a
+  world with only a user, or with several.
 - The tests of the terminal UI start the real app with Textual's test pilot against the
   fake service, and are left out when Textual is not installed. The pictures of the
   [terminal UI](tui.md) are made from the real app by `scripts/gen_tui_screenshots.py`.

@@ -37,6 +37,10 @@ DOCUMENTED_LIMITS = {
     "user.groups": None,
     "user.apps": None,
     "user.group_reports": None,
+    "user.group_datasets": None,
+    "user.group_dashboards": None,
+    "user.group_dataflows": None,
+    "user.group_users": None,
     "user.report_pages": None,
 }
 
@@ -225,3 +229,38 @@ def test_build_url_encodes_query_values_and_sorts_keys():
 def test_build_url_with_a_custom_base():
     url = get_endpoint("user.apps").build_url({}, {}, base_url="http://localhost:1")
     assert url == "http://localhost:1/apps"
+
+
+# ---------------------------------------------------------------------------
+# what depends on who asks
+# ---------------------------------------------------------------------------
+
+
+def test_only_what_depends_on_who_asks_is_per_identity():
+    assert {e.id for e in ENDPOINTS if e.per_identity} == {"user.groups", "user.apps"}
+
+
+def test_the_identity_is_a_part_of_the_key_of_the_request_but_not_of_the_url():
+    endpoint = get_endpoint("user.groups")
+
+    assert endpoint.canonical_params({"$top": 5, "_as": "oid-1"}) == {
+        "$top": "5",
+        "_as": "oid-1",
+    }
+    assert endpoint.canonical_params({"$top": 5}) == {"$top": "5"}
+    path_params, query = endpoint.split_canonical({"$top": 5, "_as": "oid-1"})
+    assert (path_params, query) == ({}, {"$top": "5"})
+    assert "_as" not in endpoint.build_url(path_params, query)
+
+
+def test_two_identities_are_two_requests():
+    endpoint = get_endpoint("user.apps")
+
+    assert endpoint.canonical_params({"_as": "a"}) != endpoint.canonical_params(
+        {"_as": "b"}
+    )
+
+
+def test_an_operation_that_does_not_depend_on_who_asks_refuses_an_identity():
+    with pytest.raises(ValueError, match="unknown parameter"):
+        get_endpoint("admin.groups").canonical_params({"_as": "oid-1"})

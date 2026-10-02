@@ -807,3 +807,39 @@ def test_textual_is_looked_for_without_being_imported(monkeypatch):
 
     monkeypatch.setattr("pbi_cli.tui.importlib.util.find_spec", lambda name: None)
     assert textual_available() is False
+
+
+def test_a_workspace_of_a_user_lake_that_holds_nothing_is_not_told_to_scan(tmp_path):
+    world = World(tmp_path)
+    world.only_user()
+    world.fake.workspaces.append(
+        {
+            "id": "ws-empty",
+            "name": "Empty",
+            "type": "Workspace",
+            "state": "Active",
+            "isReadOnly": False,
+            "isOnDedicatedCapacity": False,
+            "modified_at": world.clock.now(),
+        }
+    )
+    world.fake.user_workspace_ids.append("ws-empty")
+    world.run()
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    hint = render.empty_hint(catalog, "ws-empty")
+    shown = text(render.info(catalog, catalog.workspace("ws-empty")))
+
+    assert hint.short == "it holds nothing"
+    assert "Press" not in shown and "Visible to" in shown and "user-nlm" in shown
+
+
+def test_an_item_that_only_a_users_list_has_says_which_list(tmp_path):
+    world = World(tmp_path)
+    world.only_user()
+    world.run()
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    shown = text(render.info(catalog, catalog.item("report", "rep-0001")))
+
+    assert "user.group_reports of the workspace, fetched 0 s ago" in shown

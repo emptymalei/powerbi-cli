@@ -53,6 +53,7 @@ from pbi_cli.core.sync.state import SyncState
 from pbi_cli.core.sync.targets import Selection, select_targets
 from pbi_cli.errors import (
     ApiError,
+    AuthError,
     PBIError,
     RateLimitError,
     Stopped,
@@ -135,13 +136,23 @@ class RunReport:
         return min(waits) if waits else None
 
 
+#: A kind of token and a profile (``None``: the active one): who a request is made as.
+Account = Tuple[Scope, Optional[str]]
+
+
+def _label(scope: Scope, client: PowerBIClient) -> str:
+    """How a plan calls an account: ``profile (kind)``."""
+    profile = client.profile_name()
+    return f"{profile} ({scope.value})" if profile else scope.value
+
+
 @dataclass
 class _Session:
     """Everything one plan or run works with."""
 
     options: SyncOptions
     selection: Selection
-    clients: Dict[Scope, PowerBIClient]
+    clients: Dict[Account, PowerBIClient]
     tenant: str
     state: SyncState
     planner: Planner
@@ -151,12 +162,18 @@ class _Session:
     forbidden_streak: Counter = field(default_factory=Counter)
     forbidden: Set[str] = field(default_factory=set)
 
+    def client(self, scope: Scope) -> PowerBIClient:
+        """The client of a kind of token, for the profile this run uses."""
+        return self.clients[(scope, self.options.profile_of(scope))]
+
 
 class SyncEngine:
     """Plans and runs syncs of one tenant into a lake.
 
-    :param client_for: returns the client that signs in for a kind of token; called when a
-        target of that kind is used, and may raise `PBIError` (no profile, no token)
+    :param client_for: returns the client that signs in for a kind of token, as the profile
+        it is given when it is given one (``client_for(scope)`` or ``client_for(scope,
+        profile)``); it may raise `PBIError` (no profile, no token), which means that there
+        is no account of that kind
     :param store: the lake
     :param clock: the current time (aware, UTC)
     :param sleep: waits for some seconds; by default a wait that a stop cuts short
@@ -165,7 +182,7 @@ class SyncEngine:
 
     def __init__(
         self,
-        client_for: Callable[[Scope], PowerBIClient],
+        client_for: Callable[..., PowerBIClient],
         store: LakeStore,
         *,
         clock: Callable[[], datetime] = _utcnow,
@@ -180,16 +197,67 @@ class SyncEngine:
 
     # -- setting up --------------------------------------------------------------------
 
-    def _session(
-        self, options: SyncOptions, stop: Optional[threading.Event] = None
-    ) -> _Session:
-        selection = select_targets(options.targets)
-        clients = {
-            scope: self._client_for(scope)
+    def _client(self, scope: Scope, account: Optional[str] = None) -> PowerBIClient:
+        if account is None:
+            return self._client_for(scope)
+        return self._client_for(scope, account)
+
+    def available_scopes(self, options: Optional[SyncOptions] = None) -> Set[Scope]:
+        """The kinds of account that are stored: those whose client knows its token.
+
+        Nothing is sent: a token is only looked up, and read for its tenant.
+
+        :param options: the profiles the sync is to use (default: the active ones)
+        """
+        found: Set[Scope] = set()
+        for scope in Scope:
+            try:
+                self._client(
+                    scope, options.profile_of(scope) if options else None
+                ).tenant_key()
+            except PBIError:  # no profile, or no token under it
+                continue
+            found.add(scope)
+        return found
+
+    def accounts(self, options: SyncOptions) -> List[str]:
+        """The accounts a sync with these options would use, each as ``profile (kind)``.
+
+        Nothing is sent. The answer is empty when no account is stored: a plan or a run
+        then says what to store.
+
+        :raises PBIError: for a target that needs an account that is not stored
+        """
+        available = self.available_scopes(options)
+        if not available:
+            return []
+        selection = select_targets(options.targets, available)
+        return [
+            _label(scope, self._client(scope, options.profile_of(scope)))
             for scope in sorted(
                 {t.scope for t in selection.targets}, key=lambda s: s.value
             )
-        }
+        ]
+
+    def _session(
+        self, options: SyncOptions, stop: Optional[threading.Event] = None
+    ) -> _Session:
+        available = self.available_scopes(options)
+        if not available:
+            raise AuthError(
+                "No account is stored. Store a token with `pbi auth -t <token> -g admin` "
+                "(an administrator's) or `pbi auth -t <token> -g user` (a user's)."
+            )
+        selection = select_targets(options.targets, available)
+        if not selection.targets:
+            raise PBIError(
+                "There is nothing to sync with the accounts that are stored."
+            )
+        accounts = sorted(
+            {(t.scope, options.profile_of(t.scope)) for t in selection.targets},
+            key=lambda a: (a[0].value, a[1] or ""),
+        )
+        clients = {account: self._client(*account) for account in accounts}
         tenants = {client.tenant_key() for client in clients.values()}
         if len(tenants) != 1:
             raise PBIError(
@@ -207,6 +275,7 @@ class SyncEngine:
             tenant=tenant,
             state=state,
             clock=self._clock,
+            identity=lambda scope, account: clients[(scope, account)].identity_key(),
         )
         stop = threading.Event() if stop is None else stop
 
@@ -224,7 +293,7 @@ class SyncEngine:
             tenant=tenant,
             state=state,
             planner=planner,
-            client_for=lambda scope: clients[scope],
+            client_for=lambda scope, account=None: clients[(scope, account)],
             clock=self._clock,
             sleep=sleep,
             monotonic=self._monotonic,
@@ -249,7 +318,7 @@ class SyncEngine:
         lines = []
         for endpoint_id in sorted(needed, key=lambda e: _ORDER.get(e, len(_ORDER))):
             endpoint = get_endpoint(endpoint_id)
-            client = session.clients[endpoint.scope]
+            client = session.client(endpoint.scope)
             hourly = None
             if endpoint.limit is not None:
                 hourly = next(
@@ -265,7 +334,14 @@ class SyncEngine:
                     hourly=hourly,
                 )
             )
-        return Plan(tenant=session.tenant, targets=targets, quota=lines)
+        return Plan(
+            tenant=session.tenant,
+            targets=targets,
+            quota=lines,
+            accounts=[
+                _label(scope, client) for (scope, _), client in session.clients.items()
+            ],
+        )
 
     # -- running -----------------------------------------------------------------------
 

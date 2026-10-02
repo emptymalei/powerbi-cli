@@ -47,6 +47,16 @@ class Credentials:
         """The tenant the token was issued by, when the token says so."""
         return self.info.tenant_id
 
+    @property
+    def identity(self) -> str:
+        """Who the token is for, as a key: the object id the token states, else the name of
+        the profile. The answer of an operation that depends on who asks is kept per
+        identity in the lake."""
+        subject = self.info.subject
+        if subject:
+            return subject
+        return f"profile:{self.profile}" if self.profile else "unknown"
+
     def sign_in_hint(self) -> str:
         """The command that stores a fresh token for this profile."""
         command = "pbi auth -t <token>"
@@ -101,5 +111,6 @@ def ensure_not_expired(
     who = f" for profile '{credentials.profile}'" if credentials.profile else ""
     raise TokenExpiredError(
         f"The token{who} expired at {info.expires_at:%Y-%m-%d %H:%M} UTC. "
-        f"Sign in again and store a fresh token with `{credentials.sign_in_hint()}`."
+        f"Sign in again and store a fresh token with `{credentials.sign_in_hint()}`.",
+        group=credentials.group,
     )

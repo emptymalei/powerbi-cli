@@ -865,6 +865,9 @@ pbi sync plan default activity scan --days 7 --lineage
 !!! warning "Requires Admin"
 
     The admin targets need an admin account; the `user-...` targets need a user account.
+    Without names the plain targets are synced: the administrator's lists when there is
+    an administrator account, and else what a user can see, workspace by workspace.
+    `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
 **Usage**:
 
@@ -874,7 +877,7 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 
 **Arguments**:
 
-* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages; 'default' stands for the plain ones, 'all' for everything.
 
 **Options**:
 
@@ -891,6 +894,8 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 * `--exclude-inactive`: Leave inactive workspaces out of scans
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
+* `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
 * `--help`: Show this message and exit.
 
 ### `pbi sync run`
@@ -928,6 +933,9 @@ pbi sync run default activity --days 7
 !!! warning "Requires Admin"
 
     The admin targets need an admin account; the `user-...` targets need a user account.
+    Without names the plain targets are synced: the administrator's lists when there is
+    an administrator account, and else what a user can see, workspace by workspace.
+    `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
 **Usage**:
 
@@ -937,7 +945,7 @@ $ pbi sync run [OPTIONS] [TARGET]...
 
 **Arguments**:
 
-* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages; 'default' stands for the plain ones, 'all' for everything.
 
 **Options**:
 
@@ -956,6 +964,8 @@ $ pbi sync run [OPTIONS] [TARGET]...
 * `--exclude-inactive`: Leave inactive workspaces out of scans
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
+* `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
 * `--help`: Show this message and exit.
 
 ### `pbi sync status`

@@ -18,7 +18,7 @@ Naming ``default`` adds the plain ones, ``all`` adds everything.
 from dataclasses import dataclass, field
 from datetime import timedelta
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import AbstractSet, Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from pbi_cli.core.registry import Scope
 from pbi_cli.errors import PBIError
@@ -47,6 +47,8 @@ class Target:
     :param endpoint: registry id of the requests (for scans: where the results are stored)
     :param scope: the kind of token the requests need
     :param default: whether a sync without target names includes it
+    :param default_user: whether it is part of the plain sync of someone who has only a user
+        account (no administrator): what a user can see, workspace by workspace
     :param sensitive: why it is only fetched when named (empty for the plain targets)
     :param parent: the target whose rows it fans out over
     :param bind: how a fan-out fills the path of its requests: placeholder to
@@ -62,6 +64,7 @@ class Target:
     endpoint: str
     scope: Scope
     default: bool = False
+    default_user: bool = False
     sensitive: str = ""
     parent: Optional[str] = None
     bind: Mapping[str, Tuple[str, str]] = field(default_factory=dict)
@@ -133,14 +136,63 @@ TARGETS: Tuple[Target, ...] = (
         Mode.SNAPSHOT,
         "user.groups",
         Scope.USER,
+        default_user=True,
     ),
-    Target("user-apps", "Apps of the user", Mode.SNAPSHOT, "user.apps", Scope.USER),
+    Target(
+        "user-apps",
+        "Apps of the user",
+        Mode.SNAPSHOT,
+        "user.apps",
+        Scope.USER,
+        default_user=True,
+    ),
     Target(
         "user-reports",
         "Reports of each workspace of the user",
         Mode.FANOUT,
         "user.group_reports",
         Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-datasets",
+        "Datasets of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_datasets",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-dashboards",
+        "Dashboards of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_dashboards",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-dataflows",
+        "Dataflows of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_dataflows",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-group-users",
+        "The users of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_users",
+        Scope.USER,
+        sensitive="the people who have access to each workspace, with their e-mail addresses",
         parent="user-groups",
         bind={"groupId": ("row", "id")},
     ),
@@ -194,22 +246,64 @@ class Selection:
         return [target.name for target in self.targets]
 
 
-def select_targets(names: Sequence[str] = ()) -> Selection:
+def _article(scope: Scope) -> str:
+    return "an administrator" if scope is Scope.ADMIN else "a user"
+
+
+def _require(target: Target, available: Optional[AbstractSet[Scope]]) -> None:
+    """Refuse a target that needs an account that is not stored, and say what to do."""
+    if available is None or target.scope in available:
+        return
+    have = ", ".join(sorted(f"{s.value}" for s in available))
+    raise PBIError(
+        f"'{target.name}' needs {_article(target.scope)} account, and none is stored. "
+        f"Store one with `pbi auth -t <token> -g {target.scope.value}`."
+        + (f" The accounts you have are: {have}." if have else "")
+    )
+
+
+def _plain(available: Optional[AbstractSet[Scope]]) -> List[str]:
+    """The names of the plain targets: those of the administrator's account when there is
+    one, else those of a user's."""
+    if available is None or Scope.ADMIN in available:
+        return [
+            t.name
+            for t in TARGETS
+            if t.default and (available is None or t.scope in available)
+        ]
+    if Scope.USER in available:
+        return [t.name for t in TARGETS if t.default_user and t.scope in available]
+    return []
+
+
+def select_targets(
+    names: Sequence[str] = (), available: Optional[AbstractSet[Scope]] = None
+) -> Selection:
     """Turn what the user named into the targets to sync.
 
     Without names the plain targets are synced. ``default`` stands for them, ``all`` for
     every target. A fan-out brings along the target it fans out over.
 
-    :raises PBIError: for a name that is not a target
+    :param names: what the user named
+    :param available: the kinds of account that are stored (default: all of them). What the
+        plain sync is depends on it: the administrator's lists when there is an
+        administrator account, else what a user can see. ``all`` is every target the
+        accounts can run, and naming one they cannot is an error.
+    :raises PBIError: for a name that is not a target, or a target that needs an account
+        that is not stored
     """
     wanted: Set[str] = set()
     for name in names or (DEFAULT,):
         if name == DEFAULT:
-            wanted.update(t.name for t in TARGETS if t.default)
+            wanted.update(_plain(available))
         elif name == ALL:
-            wanted.update(t.name for t in TARGETS)
+            wanted.update(
+                t.name for t in TARGETS if available is None or t.scope in available
+            )
         else:
-            wanted.add(get_target(name).name)
+            target = get_target(name)
+            _require(target, available)
+            wanted.add(target.name)
 
     implied: Set[str] = set()
     pending = list(wanted)

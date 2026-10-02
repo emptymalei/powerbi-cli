@@ -41,7 +41,14 @@ from pbi_cli.core.ratelimit import (
     QuotaTracker,
     format_wait,
 )
-from pbi_cli.core.registry import BASE_URL, Endpoint, Kind, Paging, get_endpoint
+from pbi_cli.core.registry import (
+    BASE_URL,
+    IDENTITY_PARAM,
+    Endpoint,
+    Kind,
+    Paging,
+    get_endpoint,
+)
 from pbi_cli.core.store import LakeStore, Snapshot, safe_name
 from pbi_cli.errors import (
     ApiError,
@@ -302,6 +309,11 @@ class PowerBIClient:
         """The name of the profile the current credentials belong to, if they say."""
         return self._credentials().profile
 
+    def identity_key(self) -> str:
+        """Who the current credentials are for (see `Credentials.identity`): what the lake
+        keeps the answers of the operations that depend on who asks apart by."""
+        return self._credentials().identity
+
     def token_info(self) -> TokenInfo:
         """The tenant and expiry the current token states.
 
@@ -441,7 +453,8 @@ class PowerBIClient:
             raise TokenExpiredError(
                 f"Power BI rejected the token (401 Unauthorized) for {endpoint.id}. "
                 f"Sign in again and store a fresh token with "
-                f"`{credentials.sign_in_hint()}`."
+                f"`{credentials.sign_in_hint()}`.",
+                group=credentials.group,
             )
         if status == 403:
             if endpoint.scope.value == "admin":
@@ -600,6 +613,14 @@ class PowerBIClient:
 
     # -- fetching with the lake ----------------------------------------------------
 
+    def _identified(
+        self, endpoint: Endpoint, params: Optional[Mapping[str, Any]]
+    ) -> Optional[Mapping[str, Any]]:
+        """Say who asks, for an operation whose answer depends on it (unless it says)."""
+        if not endpoint.per_identity or (params and params.get(IDENTITY_PARAM)):
+            return params
+        return {**(params or {}), IDENTITY_PARAM: self._credentials().identity}
+
     def fetch(
         self,
         endpoint_id: str,
@@ -634,6 +655,7 @@ class PowerBIClient:
                 f"{endpoint.id} cannot be fetched into the lake as a snapshot "
                 f"({endpoint.kind.value}); use request() or the sync engine."
             )
+        params = self._identified(endpoint, params)
         canonical = endpoint.canonical_params(params)  # also validates the parameters
 
         credentials: Optional[Credentials] = None

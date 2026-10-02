@@ -1,5 +1,6 @@
-"""The dialogs of the TUI: sign in, confirm, choose, open a lake."""
+"""The dialogs of the TUI: sign in, accounts, confirm, choose, open a lake."""
 
+from datetime import datetime
 from typing import List, Optional, Sequence, Tuple, TypeVar
 
 from rich.console import RenderableType
@@ -10,6 +11,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
+    DataTable,
     Input,
     Label,
     OptionList,
@@ -19,7 +21,7 @@ from textual.widgets import (
 )
 from textual.widgets.option_list import Option
 
-from pbi_cli.tui.backend import Backend
+from pbi_cli.tui.backend import AccountInfo, Backend
 
 GROUPS = ("admin", "user")
 
@@ -43,17 +45,27 @@ class SignInModal(Dialog[Optional[str]]):
     :param backend: what stores the token
     :param group: the kind of token to start with: ``admin`` or ``user``
     :param reason: why the user is asked, shown above the form
+    :param profile: the profile to start with (default: the active one of the group)
     """
 
     BINDINGS = [Binding("escape", "cancel", "Cancel")]
 
-    def __init__(self, backend: Backend, group: str = "admin", reason: str = ""):
+    def __init__(
+        self,
+        backend: Backend,
+        group: str = "admin",
+        reason: str = "",
+        profile: Optional[str] = None,
+    ):
         super().__init__()
         self._backend = backend
         self._group = group if group in GROUPS else "admin"
         self._reason = reason
+        self._profile = profile
 
     def _profile_for(self, group: str) -> str:
+        if self._profile and group == self._group:
+            return self._profile
         return self._backend.active_profile(group) or "default"
 
     def compose(self) -> ComposeResult:
@@ -281,3 +293,94 @@ class OpenLakeModal(Dialog[Optional[str]]):
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
         self.dismiss(None)
+
+
+class AccountsModal(Dialog[Optional[Tuple[str, str, str]]]):
+    """The stored profiles of both groups: make one active, or sign in again as one.
+
+    The modal closes with ``(action, group, profile)`` where the action is ``activate`` or
+    ``sign_in``, or with ``None`` when the user gives up.
+
+    :param accounts: the profiles to list
+    :param now: the current time, for how long each token lasts
+    """
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("n", "sign_in", "New token", show=False),
+    ]
+
+    def __init__(self, accounts: Sequence[AccountInfo], now: datetime) -> None:
+        super().__init__()
+        self._accounts = list(accounts)
+        self._now = now
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Accounts", id="dialog-title")
+            yield Static(
+                "The profiles stored with `pbi auth`. Enter makes the highlighted one the "
+                "active profile of its group, `n` stores a new token for it. The sync uses "
+                "the active profile of each group."
+            )
+            yield DataTable(id="accounts", cursor_type="row", zebra_stripes=True)
+            with Horizontal(id="buttons"):
+                yield Button("Make active", variant="primary", id="activate")
+                yield Button("New token", id="token")
+                yield Button("Close", id="cancel")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#accounts", DataTable)
+        table.add_columns("Group", "Profile", "Active", "Who", "Tenant", "Token")
+        for number, account in enumerate(self._accounts):
+            if not account.has_token:
+                token = "none stored"
+            elif account.expires_at is None:
+                token = "no expiry"
+            else:
+                left = (account.expires_at - self._now).total_seconds()
+                token = "expired" if left <= 0 else f"{format_left(left)} left"
+            table.add_row(
+                account.group,
+                account.profile,
+                "yes" if account.active else "",
+                account.name or "-",
+                (account.tenant or "-")[:13],
+                token,
+                key=str(number),
+            )
+        table.focus()
+
+    def _highlighted(self) -> Optional[AccountInfo]:
+        table = self.query_one("#accounts", DataTable)
+        if not self._accounts or table.row_count == 0:
+            return None
+        key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+        return self._accounts[int(str(key.value))]
+
+    def _finish(self, action: str) -> None:
+        account = self._highlighted()
+        if account is not None:
+            self.dismiss((action, account.group, account.profile))
+
+    @on(DataTable.RowSelected)
+    @on(Button.Pressed, "#activate")
+    def _activate(self) -> None:
+        self._finish("activate")
+
+    @on(Button.Pressed, "#token")
+    def action_sign_in(self) -> None:
+        self._finish("sign_in")
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
+def format_left(seconds: float) -> str:
+    """How long a token lasts, in the largest unit that keeps it short."""
+    minutes = int(seconds // 60)
+    if minutes < 90:
+        return f"{max(minutes, 1)} min"
+    hours = minutes // 60
+    return f"{hours} h" if hours < 48 else f"{hours // 24} d"

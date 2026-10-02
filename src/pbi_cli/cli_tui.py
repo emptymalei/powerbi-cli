@@ -8,17 +8,19 @@ logger from writing over the screen.
 import os
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
 import typer
 from loguru import logger
 
 from pbi_cli.cli_support import ClientPool, LakeOption
-from pbi_cli.config import PBIConfig
+from pbi_cli.config import VALID_GROUPS, PBIConfig
+from pbi_cli.core.jwt import TokenInfo, token_info
 from pbi_cli.core.store import LakeStore
 from pbi_cli.errors import PBIError
 from pbi_cli.session import LAKE_ENV, lake_hint, lake_path, resolve_lake
 from pbi_cli.tui import Backend, run, textual_available
+from pbi_cli.tui.backend import AccountInfo
 
 #: Where the log of the TUI goes: the terminal belongs to the screen.
 LOG_NAME = "tui.log"
@@ -64,6 +66,34 @@ def build_backend(pool: ClientPool, lake: Optional[str] = None) -> Backend:
         store_token(token, profile, group)
         pool.reset()  # the clients look their token up once: make them look again
 
+    def accounts() -> List[AccountInfo]:
+        """The stored profiles of both groups, with who their tokens are for."""
+        from pbi_cli.cli import _get_credential  # late: pbi_cli.cli imports this module
+
+        config = PBIConfig()
+        found = []
+        for group in VALID_GROUPS:
+            active = config.get_group_active_profile(group)
+            for profile in config.get_group_profiles(group):
+                token = _get_credential(profile)
+                info = token_info(token) if token else TokenInfo()
+                found.append(
+                    AccountInfo(
+                        group=group,
+                        profile=profile,
+                        active=profile == active,
+                        name=info.name,
+                        tenant=info.tenant_id,
+                        expires_at=info.expires_at,
+                        has_token=token is not None,
+                    )
+                )
+        return found
+
+    def activate(group: str, profile: str) -> None:
+        PBIConfig().set_group_active_profile(group, profile)
+        pool.reset()  # the clients look their token up once: make them look again
+
     def open_lake(location: str) -> LakeStore:
         found = resolve_lake(location)
         assert found is not None  # a location was given
@@ -80,6 +110,8 @@ def build_backend(pool: ClientPool, lake: Optional[str] = None) -> Backend:
         open_lake=open_lake,
         recent_lakes=lambda: PBIConfig().recent_lakes,
         work_lake=str(work) if work is not None else None,
+        accounts=accounts,
+        activate=activate,
     )
 
 

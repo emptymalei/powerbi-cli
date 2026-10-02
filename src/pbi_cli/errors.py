@@ -12,7 +12,16 @@ class PBIError(Exception):
 
 
 class AuthError(PBIError):
-    """The credentials are missing or were refused."""
+    """The credentials are missing or were refused.
+
+    :param message: what is wrong, in words the user can act on
+    :param group: the kind of account it is about (``admin`` or ``user``), when known, so
+        that something that asks for a new token can ask for the right kind
+    """
+
+    def __init__(self, message: str = "", group: Optional[str] = None):
+        super().__init__(message)
+        self.group = group
 
 
 class TokenExpiredError(AuthError):

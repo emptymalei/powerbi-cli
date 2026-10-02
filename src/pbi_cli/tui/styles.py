@@ -164,6 +164,14 @@ Dialog {
     border: thick $primary;
     padding: 1 2;
 }
+AccountsModal #dialog {
+    width: 100;
+    max-width: 100%;
+}
+#accounts {
+    height: auto;
+    max-height: 14;
+}
 #dialog-title {
     text-style: bold;
     color: $primary;

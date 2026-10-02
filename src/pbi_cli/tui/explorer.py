@@ -31,6 +31,7 @@ from textual.widgets.tree import TreeNode
 from textual.worker import get_current_worker
 
 from pbi_cli.core.catalog import Catalog, Workspace, label
+from pbi_cli.core.registry import Scope
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import Plan, SyncOptions
 from pbi_cli.tui import render
@@ -233,12 +234,13 @@ class ExplorerScreen(Screen):
 
         workspaces("workspaces", "Workspaces", False)
         workspaces("personal", "Personal workspaces", True)
-        apps = catalog.listing("app")
-        if apps is not None:
+        if catalog.has_apps():
             ref = NodeRef("apps")
             self._tree_nodes[ref] = tree.root.add_leaf(
                 self._node_label(
-                    "Apps", len(apps.rows), render.dot(catalog.listing_freshness("app"))
+                    "Apps",
+                    len(catalog.all_items("app")),
+                    render.dot(catalog.apps_freshness()),
                 ),
                 data=ref,
             )
@@ -538,7 +540,14 @@ class ExplorerScreen(Screen):
         self.pbi.reload_catalog(announce=True)
 
     def refresh_choice(self) -> Optional[Tuple[str, SyncOptions]]:
-        """What ``r`` would refresh: a label for it, and the sync that does it."""
+        """What ``r`` would refresh: a label for it, and the sync that does it.
+
+        With an administrator account that is a scan of a workspace, or the lists of the
+        tenant. Without one (a user can scan nothing and list only what they can see) it is
+        the lists of the workspaces that account can see.
+        """
+        available = self.pbi.backend.available_scopes()
+        administrator = not available or Scope.ADMIN in available
         subject = self._subject
         workspace_id: Optional[str] = None
         if self._ref.kind == "workspace":
@@ -551,6 +560,11 @@ class ExplorerScreen(Screen):
             and self.query_one("#table", DataTable).has_focus
         ):
             workspace_id = subject.id  # the user picked a workspace from the list
+        if workspace_id is not None and not administrator:
+            return (
+                "Fetch what you can see",
+                SyncOptions(targets=("default",), force=True),
+            )
         if workspace_id is not None:
             catalog = self.catalog
             workspace = catalog.workspace(workspace_id) if catalog else None
@@ -569,11 +583,19 @@ class ExplorerScreen(Screen):
         kind = self._ref.kind
         if kind in ("root", "workspaces", "personal"):
             return (
-                "Fetch the lists of the tenant",
+                (
+                    "Fetch the lists of the tenant"
+                    if administrator
+                    else "Fetch what you can see"
+                ),
                 SyncOptions(targets=("default",), force=True),
             )
+        if kind == "apps" and not administrator:
+            return ("Fetch your apps", SyncOptions(targets=("user-apps",), force=True))
         if kind == "apps":
             return ("Fetch the apps", SyncOptions(targets=("apps",), force=True))
+        if kind in ("capacities", "activity") and not administrator:
+            return None  # only an administrator can list those
         if kind == "capacities":
             return (
                 "Fetch the capacities",
@@ -588,6 +610,15 @@ class ExplorerScreen(Screen):
             return
         choice = self.refresh_choice()
         if choice is None:
+            available = self.pbi.backend.available_scopes()
+            only_administrators = self._ref.kind in ("capacities", "activity")
+            if only_administrators and available and Scope.ADMIN not in available:
+                self.notify(
+                    "Only an administrator account can fetch this: store one with "
+                    "`pbi auth -t <token> -g admin` (press a).",
+                    severity="warning",
+                )
+                return
             self.notify("There is nothing here to fetch again.", severity="warning")
             return
         title, options = choice

@@ -5,6 +5,7 @@ from typing import Any
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Horizontal
+from textual.css.query import NoMatches
 from textual.widgets import Static
 
 from pbi_cli.tui import render
@@ -30,27 +31,37 @@ class StatusBar(Horizontal):
 
     def refresh_status(self) -> None:
         """Draw the line again (called twice a second, and when something changes)."""
+        try:
+            self._draw()
+        except NoMatches:
+            return  # the app is closing and the line is taken apart: nothing to draw
+
+    def _draw(self) -> None:
         app: Any = self.app
-        identity = app.identity
         now = app.backend.clock()
         who = Text()
         who.append(" pbi ", style="bold black on #F2C811")
-        who.append("  ")
+        who.append(" ")
         tenant = app.tenant
         who.append(f"tenant {render.short_id(tenant, 14)}" if tenant else "no tenant")
-        who.append("  │  ")
+        who.append(" │ ")
         view_only = bool(app.backend.readonly)
         if view_only:
             who.append("view only", style="bold yellow")
-        elif identity.signed_in:
-            who.append(f"{identity.profile or 'profile'} ({identity.group})")
+        elif app.identities:
+            for number, found in enumerate(app.identities):
+                if number:
+                    who.append(" · ")
+                who.append(f"{found.profile or 'profile'} ({found.group}) ")
+                who.append_text(render.token_text(found.expires_at, now, True))
         else:
-            who.append("no profile", style="grey62")
-        who.append("  │  ")
+            who.append("no profile  ", style="grey62")
+            who.append_text(render.token_text(None, now, False))
+        who.append(" │ ")
         who.append(app.lake_label, style="grey62")
         published = app.backend.store.published()
         if published is not None:
-            who.append("  │  ")
+            who.append(" │ ")
             if published.complete:
                 who.append(
                     f"published {published.published_at:%Y-%m-%d %H:%M} by "
@@ -61,11 +72,6 @@ class StatusBar(Horizontal):
                 who.append(
                     f"publish by {published.published_by} not finished", style="yellow"
                 )
-        if not view_only:
-            who.append("  │  ")
-            who.append_text(
-                render.token_text(identity.expires_at, now, identity.signed_in)
-            )
         self.query_one("#who", Static).update(who)
 
         busy = Text()

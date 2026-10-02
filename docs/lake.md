@@ -308,6 +308,10 @@ locally and rely on the `429` answer of the API.
 | `user.groups` | [Workspaces the user has access to](https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-groups) | user | – | snapshot |
 | `user.apps` | [Apps installed by the user](https://learn.microsoft.com/en-us/rest/api/power-bi/apps/get-apps) | user | – | snapshot |
 | `user.group_reports` | [Reports of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-reports-in-group) | user | – | snapshot |
+| `user.group_datasets` | [Datasets of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-datasets-in-group) | user | – | snapshot |
+| `user.group_dashboards` | [Dashboards of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/dashboards/get-dashboards-in-group) | user | – | snapshot |
+| `user.group_dataflows` | [Dataflows of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/dataflows/get-dataflows) | user | – | snapshot |
+| `user.group_users` | [Users of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-group-users) | user | – | snapshot |
 | `user.report_pages` | [Pages of a report](https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-pages-in-group) | user | – | snapshot |
 
 ## Throttling

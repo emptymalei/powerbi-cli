@@ -72,6 +72,14 @@ threaded scheduler with its error policy (`engine.py`) and the state it leaves i
 (`state.py`). The scan job itself is `src/pbi_cli/core/scan.py`, which `pbi workspaces scan
 batch` uses too. See `docs/sync.md`.
 
+Commands and the sync engine ask for an account by its kind (`Scope.ADMIN` or `Scope.USER`)
+and, for a run, a profile: `ClientPool` (`src/pbi_cli/cli_support.py`) keeps one client for
+each kind and profile. Which kinds are stored decides what a sync does without names
+(`SyncEngine.available_scopes()`, `select_targets(names, available)` in
+`src/pbi_cli/core/sync/targets.py`), and an operation whose answer depends on who asks
+(`Endpoint.per_identity`: `user.groups`, `user.apps`) is keyed in the lake by the object id of
+the token. An administrator account is optional. See `docs/auth.md`.
+
 Only the work lake, the lake of the cache folder, is ever written. A lake opened with
 `--lake` or `PBI_LAKE` is read-only (`LakeStore(readonly=True)` raises `ReadOnlyLake`), and
 so is a published one (`pbi lake publish`, `src/pbi_cli/core/publish.py`, marks it with a
@@ -98,10 +106,13 @@ the scans there is a fake Power BI service, `tests/fake_powerbi.py`, that behave
 admin API (paging, scans, audit events, quotas) and can inject failures; `tests/sync_helpers.py`
 puts it, a lake and an engine on one fake clock.
 
-The tests of the terminal UI (`tests/test_tui_app.py`, `test_tui_explorer.py` and
-`test_tui_sync.py`) start the real app with Textual's test pilot on that fake service
-(`tests/tui_helpers.py`); `tests/conftest.py` leaves them out when Textual is not installed
-(`uv sync --extra tui`). The tests of what the UI is made of that need no terminal
+The fake service knows who asks (the `oid` of the token), so a world can have only a user
+(`World.only_user()`) or several accounts (`World.accounts(ana="oid-ana", ...)`).
+
+The tests of the terminal UI (`tests/test_tui_app.py`, `test_tui_explorer.py`,
+`test_tui_sync.py`, `test_tui_lakes.py` and `test_tui_accounts.py`) start the real app with
+Textual's test pilot on that fake service (`tests/tui_helpers.py`); `tests/conftest.py` leaves
+them out when Textual is not installed (`uv sync --extra tui`). The tests of what the UI is made of that need no terminal
 (`test_core_catalog.py`, `test_tui_core.py`, `test_cli_tui.py`) always run.
 
 ### The CLI surface snapshot

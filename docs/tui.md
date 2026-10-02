@@ -46,7 +46,7 @@ selected node at the top right, and the details of the selected row below it.
 | **Workspaces** | the workspaces; open one to see what is in it | `groups` |
 | **Personal workspaces** | the same for personal workspaces (they are many, so they are apart) | `groups` |
 | a workspace | its reports, datasets, dashboards, dataflows and apps | the lists, with the newest scan over them |
-| **Apps** | the apps of the tenant | `apps` |
+| **Apps** | the apps of the tenant (with only a user account: the apps of that account) | `apps`, or `user-apps` |
 | **Capacities** | the capacities of the tenant | `capacities` |
 | **Activity** | the days of audit events in the lake; open a day to see its events, newest first | `activity` |
 
@@ -79,7 +79,7 @@ Press a number, or click a tab, to switch the details of the selected row:
 
 | Key | Tab | What it shows |
 | --- | --- | --- |
-| `1` | Info | the plain fields of the row, where they come from, and how old they are |
+| `1` | Info | the plain fields of the row, where they come from, and how old they are; for a workspace also which accounts see it (*Visible to*, when the lake holds the lists of a user account) |
 | `2` | Users | who has access: from the users of the report (`report-users`), from the list of workspaces fetched with `-e users`, or from the scan with `--get-artifact-users`. When the lake does not hold them, the tab says what to fetch |
 | `3` | Lineage | what the item is built from and what is built on it (below) |
 | `4` | JSON | the stored answer, as it came from the API, and the folder of the lake it is in |
@@ -129,6 +129,12 @@ requested and how that compares with the quota:
 It is the same engine as `pbi sync run`, so the same rules hold: the quotas are kept,
 a request waits for a short quota, and what the quota holds back is fetched next time.
 
+With **only a user account** an administrator's scan or tenant list is not possible, so
+`r` on a workspace, the Lake or Workspaces fetches *what you can see* instead (the
+workspaces of the account, their reports, datasets, dashboards and dataflows, and its
+apps), `r` on Apps fetches the apps of the account, and `r` on Capacities or Activity says
+that only an administrator account can fetch them. See [Accounts](#accounts).
+
 ## The Sync screen
 
 Press `s` to plan and run a sync, and `Esc` (or `e`) to go back to the Explorer.
@@ -137,7 +143,9 @@ Press `s` to plan and run a sync, and `Esc` (or `e`) to go back to the Explorer.
 
 - **Targets** (left): the same targets as [`pbi sync`](sync.md#what-can-be-synced). The
   plain ones are chosen at first; the ones marked ⚠ copy personal data or queries, and a
-  note under the list says what each one copies. Nothing is fetched until you run.
+  note under the list says what each one copies. Nothing is fetched until you run. A target
+  whose account is not stored is dimmed and cannot be chosen, and the note says which account
+  it needs (see [Accounts](#accounts)).
 - **Options**: fetch again what is fresh (`--force`), scan every workspace, the options of
   the scan, the days of audit events and how many requests go at once.
 - **Plan** (right): what the sync would do and what it costs, worked out from what the lake
@@ -160,19 +168,55 @@ shows its log from the start when you open it again.
 
 ## Signing in again
 
-The header shows who you are signed in as, and how long the token lasts: green, then yellow
-in the last ten minutes, then red when it has expired. Browsing does not need a token, but
-`pbi sync` does.
+The header shows every account you are signed in as (the administrator and the user, as far
+as they are stored), and how long each token lasts: green, then yellow in the last ten
+minutes, then red when it has expired. Browsing does not need a token, but `pbi sync` does.
 
-When a sync or a refresh finds that the token is missing or has expired, the UI asks for a
-new one at once. You can also press `a` at any time.
+When a sync or a refresh finds that a token is missing or has expired, the UI asks for a
+new one at once, for the kind of account that is the problem (a sync of `user-...` targets
+asks for the user's token, not the administrator's). You can also press `a` at any time.
 
 ![The dialog that asks for a fresh token](images/tui-signin.svg)
 
 Paste the token (the field is masked) and press `Enter`. Choose the kind of token, `admin`
 or `user`, and the profile; the profile is the active one of the kind, so its token is
-replaced. The token is stored exactly as [`pbi auth`](auth.md) stores it, in the keyring.
-Then the sync that was interrupted starts again, and continues where it stopped.
+replaced (a new profile name stores a new account). The token is stored exactly as
+[`pbi auth`](auth.md) stores it, in the keyring. Then the sync that was interrupted starts
+again, and continues where it stopped.
+
+## Accounts
+
+You need one account, of either kind (see [Authentication](auth.md#which-accounts-you-need)).
+Press `p` for the **Accounts** dialog: the profiles stored with `pbi auth`, both groups, with
+who each token is for (read from the token), its tenant, whether it is the active profile of
+its group and how long it lasts.
+
+![The Accounts dialog: an administrator and two service accounts, one of them expired](images/tui-accounts.svg)
+
+`Enter` (or **Make active**) makes the highlighted profile the active one of its group, the
+same as `pbi profile switch`, and the sync uses it from then on. `n` (or **New token**)
+opens the sign-in dialog for that profile, which is how an expired token is replaced. A
+profile that has no token stored says so.
+
+### Only a user account
+
+Without an administrator account the UI works with what a user can see:
+
+- The Sync screen dims the administrator's targets, says why under the list, and chooses
+  the plain targets of a user: the workspaces of the account and their reports, datasets,
+  dashboards and dataflows, and the account's apps (`user-groups`, `user-apps`,
+  `user-reports`, `user-datasets`, `user-dashboards`, `user-dataflows`). Press **Run sync**
+  and the Explorer shows them like the tenant's lists, for the workspaces that account is a
+  member of.
+- `r` in the Explorer fetches what you can see (see above).
+- What needs an administrator (the scan, the users of reports, data sources, audit events,
+  capacities) is not offered, and says so.
+
+![The Sync screen of someone with only a service account: the administrator's targets are dimmed](images/tui-useronly.svg)
+
+With both accounts the administrator's lists and scans give the tenant, and the user's lists
+add the workspaces that only that account can open, and say who sees what in *Visible to*.
+Where both have an item, the administrator's wins.
 
 ## Tenants
 
@@ -205,6 +249,7 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `s` | Explorer | open the Sync screen |
 | `Esc`, `e` | Sync | back to the Explorer |
 | `a` | everywhere | sign in: store a fresh token |
+| `p` | everywhere | the accounts: make a stored profile active, or store a new token for it |
 | `t` | everywhere | choose the tenant |
 | `o` | everywhere | open another lake (view only), or the work lake again |
 | `Ctrl+P` | everywhere | the command palette: jump to a workspace or an item by name |

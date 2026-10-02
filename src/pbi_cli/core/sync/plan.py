@@ -18,7 +18,7 @@ from math import ceil
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from pbi_cli.core.client import rows_of
-from pbi_cli.core.registry import Scope, get_endpoint
+from pbi_cli.core.registry import IDENTITY_PARAM, Scope, get_endpoint
 from pbi_cli.core.scan import MAX_WORKSPACES, ScanFlags, batch_key, chunked, latest_scan
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import SyncState
@@ -77,6 +77,9 @@ class SyncOptions:
     :param workspace_ids: scan only these workspaces, whatever changed (the scan target
         only: it does not list the modified workspaces, and does not move the point the
         next incremental scan continues from)
+    :param admin_profile: the profile of the administrator account to use (default: the
+        active one)
+    :param user_profile: the profile of the user account to use (default: the active one)
     """
 
     targets: Tuple[str, ...] = ()
@@ -93,6 +96,13 @@ class SyncOptions:
     scan_interval: float = 5.0
     scan_timeout: float = 600.0
     workspace_ids: Tuple[str, ...] = ()
+    admin_profile: Optional[str] = None
+    user_profile: Optional[str] = None
+
+    def profile_of(self, scope: Scope) -> Optional[str]:
+        """The profile to use for a kind of account: the one asked for, else ``None`` (the
+        active one of the group)."""
+        return self.admin_profile if scope is Scope.ADMIN else self.user_profile
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -123,6 +133,8 @@ class SyncOptions:
             "exclude_personal": self.exclude_personal,
             "exclude_inactive": self.exclude_inactive,
             "only_workspaces": len(self.workspace_ids),
+            "admin_profile": self.admin_profile,
+            "user_profile": self.user_profile,
         }
 
 
@@ -141,6 +153,8 @@ class Unit:
     :param workspace_ids: the workspaces of a ``scan`` unit
     :param uses: the operations whose quota the unit spends
     :param has_children: whether the units of another target are made from its rows
+    :param account: the profile whose token the requests use (``None``: the active one of
+        the kind of token)
     """
 
     key: str
@@ -154,6 +168,7 @@ class Unit:
     workspace_ids: Tuple[str, ...] = ()
     uses: Tuple[str, ...] = ()
     has_children: bool = False
+    account: Optional[str] = None
 
 
 def unit_key(endpoint_id: str, params: Mapping[str, str]) -> str:
@@ -234,12 +249,14 @@ class Plan:
     :param targets: one entry per target
     :param quota: one line per operation that needs requests
     :param notes: what else the reader should know
+    :param accounts: the accounts the sync would use, each as ``profile (kind)``
     """
 
     tenant: str
     targets: List[TargetPlan]
     quota: List[QuotaLine] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
+    accounts: List[str] = field(default_factory=list)
 
     @property
     def requests(self) -> int:
@@ -255,6 +272,8 @@ class Planner:
     :param tenant: the tenant whose data it holds
     :param state: what earlier runs left behind (for incremental scans)
     :param clock: returns the current time (aware, UTC)
+    :param identity: who an account is, as a key, for the operations whose answer depends on
+        who asks: called with the kind of token and the profile (``None``: the active one)
     """
 
     def __init__(
@@ -266,6 +285,9 @@ class Planner:
         tenant: str,
         state: SyncState,
         clock: Callable[[], datetime] = _utcnow,
+        identity: Callable[[Scope, Optional[str]], str] = lambda scope, account: (
+            "unknown"
+        ),
     ):
         self.selection = selection
         self.options = options
@@ -273,6 +295,7 @@ class Planner:
         self._tenant = tenant
         self._state = state
         self._clock = clock
+        self._identity = identity
         self._selected = {target.name for target in selection.targets}
 
     # -- building units ---------------------------------------------------------------
@@ -283,16 +306,21 @@ class Planner:
 
     def _snapshot(self, target: Target, params: Mapping[str, Any]) -> Unit:
         endpoint = get_endpoint(target.endpoint)
+        account = self.options.profile_of(target.scope)
+        asked = dict(params)
+        if endpoint.per_identity:  # the lake keeps these apart by who asked
+            asked[IDENTITY_PARAM] = self._identity(target.scope, account)
         return Unit(
-            key=unit_key(endpoint.id, endpoint.canonical_params(params)),
+            key=unit_key(endpoint.id, endpoint.canonical_params(asked)),
             target=target.name,
             kind=SNAPSHOT,
             endpoint=endpoint.id,
             scope=target.scope,
-            params=dict(params),
+            params=asked,
             ttl=target.ttl,
             uses=(endpoint.id,),
             has_children=bool(self._children(target.name)),
+            account=account,
         )
 
     def coverage(self) -> Dict[str, bool]:
@@ -335,6 +363,7 @@ class Planner:
             params=params,
             uses=(endpoint.id,),
             has_children=True,
+            account=self.options.profile_of(target.scope),
         )
 
     def _scan_batch(
@@ -350,6 +379,7 @@ class Planner:
             ttl=target.ttl,
             workspace_ids=tuple(ids),
             uses=tuple(SCAN_REQUESTS),
+            account=self.options.profile_of(target.scope),
         )
 
     def _event_days(self, target: Target) -> List[Unit]:
@@ -366,6 +396,7 @@ class Planner:
                 ttl=target.ttl,
                 day=day,
                 uses=(target.endpoint,),
+                account=self.options.profile_of(target.scope),
             )
             for day in (
                 first + timedelta(days=n) for n in range((today - first).days + 1)

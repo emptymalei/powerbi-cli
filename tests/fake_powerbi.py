@@ -11,7 +11,11 @@ of the documentation so that the code under test meets them too:
 - ``modifiedSince`` must be between 30 minutes and 30 days old;
 - activity events need ``startDateTime`` and ``endDateTime`` in single quotes, in the same
   UTC day and within the last 28 days, and come in pages that are chained by
-  ``continuationUri``.
+  ``continuationUri``;
+- what a user can see depends on who asks, by the ``oid`` of the token: `visible_to` maps an
+  ``oid`` to the workspaces of that account (other tokens see ``user_workspace_ids``), and
+  with `require_admin` the ``admin`` operations answer ``403`` to a token without the claim
+  ``admin``.
 
 Faults can be injected (`FakePowerBI.fail`, `throttle`, `expire_token_after`), every call
 is recorded, and the service can be shared by threads.
@@ -28,6 +32,8 @@ from urllib.parse import parse_qs, urlsplit
 import requests
 from core_helpers import make_response
 from requests.adapters import BaseAdapter
+
+from pbi_cli.core.jwt import decode_claims
 
 UTC = timezone.utc
 PREFIX = "/v1.0/myorg"
@@ -148,7 +154,10 @@ class FakePowerBI(BaseAdapter):
             for i in range(1, 4)
             if self.workspaces
         ]
-        self.user_workspace_ids = [w["id"] for w in self.workspaces[:3]]
+        self.user_workspace_ids: List[str] = [str(w["id"]) for w in self.workspaces[:3]]
+        self.visible_to: Dict[str, List[str]] = {}
+        self.require_admin = False
+        self._claims: Dict[str, Any] = {}
         self._events: Dict[date, List[Dict[str, Any]]] = {}
         for back in range(event_days):
             self.add_events(now.date() - timedelta(days=back), events_per_day)
@@ -194,6 +203,26 @@ class FakePowerBI(BaseAdapter):
             ),
             (
                 "GET",
+                re.compile(r"^/groups/(?P<group>[^/]+)/datasets$"),
+                self._group_list("datasets", ("id", "name", "configuredBy")),
+            ),
+            (
+                "GET",
+                re.compile(r"^/groups/(?P<group>[^/]+)/dashboards$"),
+                self._group_list("dashboards", ("id", "displayName")),
+            ),
+            (
+                "GET",
+                re.compile(r"^/groups/(?P<group>[^/]+)/dataflows$"),
+                self._group_list("dataflows", ("objectId", "name")),
+            ),
+            (
+                "GET",
+                re.compile(r"^/groups/(?P<group>[^/]+)/users$"),
+                self._group_users,
+            ),
+            (
+                "GET",
                 re.compile(
                     r"^/groups/(?P<group>[^/]+)/reports/(?P<report>[^/]+)/pages$"
                 ),
@@ -229,6 +258,7 @@ class FakePowerBI(BaseAdapter):
 
         with self._lock:
             self.calls.append(Call(request.method, path, query, body))
+            self._claims = self._claims_of(request)
             fault = self._fault_for(request.method, path, query)
             if fault is not None:
                 response = make_response(
@@ -246,6 +276,18 @@ class FakePowerBI(BaseAdapter):
         response.url = str(request.url)
         response.request = request
         return response
+
+    @staticmethod
+    def _claims_of(request: Any) -> Dict[str, Any]:
+        """The claims of the bearer token of a request (it is only read, as pbi-cli does)."""
+        header = str(request.headers.get("Authorization") or "")
+        return decode_claims(header.partition(" ")[2].strip())
+
+    def _visible(self) -> List[str]:
+        """The workspaces of the account that asks."""
+        return self.visible_to.get(
+            str(self._claims.get("oid")), self.user_workspace_ids
+        )
 
     def _fault_for(
         self, method: str, path: str, query: Dict[str, str]
@@ -269,6 +311,20 @@ class FakePowerBI(BaseAdapter):
     def _route(
         self, method: str, path: str, query: Dict[str, str], body: Any, origin: str
     ) -> requests.Response:
+        if (
+            self.require_admin
+            and path.startswith("/admin/")
+            and not self._claims.get("admin")
+        ):
+            return make_response(
+                403,
+                {
+                    "error": {
+                        "code": "PowerBINotAuthorizedException",
+                        "message": "an administrator is needed",
+                    }
+                },
+            )
         for route_method, pattern, handler in self._routes:
             match = pattern.match(path)
             if route_method == method and match:
@@ -699,11 +755,12 @@ class FakePowerBI(BaseAdapter):
     # -- handlers: what a user sees --------------------------------------------------
 
     def _user_groups(self, match, query, body, origin):
+        visible = self._visible()
         return 200, {
             "value": [
                 {"id": w["id"], "name": w["name"], "isReadOnly": False}
                 for w in self.workspaces
-                if w["id"] in self.user_workspace_ids
+                if w["id"] in visible
             ]
         }
 
@@ -712,7 +769,7 @@ class FakePowerBI(BaseAdapter):
 
     def _group_reports(self, match, query, body, origin):
         group = match.group("group")
-        if group not in self.user_workspace_ids:
+        if group not in self._visible():
             return _error(403, "PowerBINotAuthorizedException", f"no access to {group}")
         return 200, {
             "value": [
@@ -727,5 +784,47 @@ class FakePowerBI(BaseAdapter):
         return 200, {
             "value": [
                 {"name": f"{report}-page1", "displayName": "Overview", "order": 0}
+            ]
+        }
+
+    def _group_list(self, attribute: str, fields: Tuple[str, ...]) -> Handler:
+        """What a user sees of one kind of item in a workspace of theirs."""
+
+        def handler(match, query, body, origin):
+            group = match.group("group")
+            if group not in self._visible():
+                return _error(
+                    403, "PowerBINotAuthorizedException", f"no access to {group}"
+                )
+            return 200, {
+                "value": [
+                    {k: row[k] for k in fields if k in row}
+                    for row in getattr(self, attribute)
+                    if row.get("workspaceId") == group
+                ]
+            }
+
+        return handler
+
+    def _group_users(self, match, query, body, origin):
+        group = match.group("group")
+        if group not in self._visible():
+            return _error(403, "PowerBINotAuthorizedException", f"no access to {group}")
+        return 200, {
+            "value": [
+                {
+                    "displayName": "Owner of " + group,
+                    "emailAddress": f"owner@{group}.example.com",
+                    "groupUserAccessRight": "Admin",
+                    "identifier": f"owner@{group}.example.com",
+                    "principalType": "User",
+                },
+                {
+                    "displayName": "Reader of " + group,
+                    "emailAddress": f"reader@{group}.example.com",
+                    "groupUserAccessRight": "Viewer",
+                    "identifier": f"reader@{group}.example.com",
+                    "principalType": "User",
+                },
             ]
         }

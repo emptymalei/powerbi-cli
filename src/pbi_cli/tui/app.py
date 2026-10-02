@@ -12,7 +12,7 @@ only requests it can make are those of the sync engine, which only reads.
 """
 
 from pathlib import Path
-from typing import Any, Iterable, Optional, Tuple
+from typing import Any, Iterable, List, Optional, Tuple
 
 from loguru import logger
 from textual import work
@@ -28,6 +28,7 @@ from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
 from pbi_cli.tui.modals import (
     WORK_LAKE,
+    AccountsModal,
     ChoiceModal,
     ConfirmModal,
     OpenLakeModal,
@@ -71,6 +72,7 @@ class PBIApp(App[None]):
         Binding("e", "open_explorer", "Explorer", show=False),
         Binding("t", "choose_tenant", "Tenant", show=False),
         Binding("o", "open_lake", "Open lake"),
+        Binding("p", "accounts", "Accounts"),
     ]
 
     def __init__(self, backend: Backend, tenant: Optional[str] = None):
@@ -78,6 +80,7 @@ class PBIApp(App[None]):
         self.backend = backend
         self._wanted = tenant
         self.identity = Identity()
+        self.identities: List[Identity] = []
         self.tenant: Optional[str] = None
         self.catalog: Optional[Catalog] = None
         self.run_state: Optional[RunState] = None
@@ -91,6 +94,7 @@ class PBIApp(App[None]):
         self.register_theme(THEME)
         self.theme = "powerbi"
         self.identity = self.backend.identity()
+        self.identities = self.backend.identities()
         self.tenant = self._pick_tenant()
         self._sink = logger.add(self._to_log, level="INFO", format="{message}")
         self.push_screen("explorer")
@@ -156,6 +160,7 @@ class PBIApp(App[None]):
     def refresh_identity(self) -> None:
         """Look at the stored token again (it may have been replaced, or be about to run out)."""
         self.identity = self.backend.identity()
+        self.identities = self.backend.identities()
         if self.tenant is None and self.identity.tenant:
             self.tenant = self.identity.tenant
             self.reload_catalog()
@@ -173,8 +178,10 @@ class PBIApp(App[None]):
             self.notify(reason, title="View only", severity="warning")
         return bool(reason)
 
-    def action_sign_in(self, reason: str = "", group: str = "admin") -> None:
-        """Ask for a fresh token."""
+    def action_sign_in(
+        self, reason: str = "", group: str = "admin", profile: Optional[str] = None
+    ) -> None:
+        """Ask for a fresh token (of ``profile``, or of the active one of the group)."""
         if isinstance(self.screen, SignInModal):
             return
         if self.refuse_when_view_only():
@@ -191,7 +198,35 @@ class PBIApp(App[None]):
                 self._resume = None
                 self.start_sync(options, label_text)
 
-        self.push_screen(SignInModal(self.backend, group, reason), signed_in)
+        self.push_screen(SignInModal(self.backend, group, reason, profile), signed_in)
+
+    def action_accounts(self) -> None:
+        """List the stored profiles: make one active, or store a new token for it."""
+        if self._in_modal() or self.refuse_when_view_only():
+            return
+
+        def chosen(picked: Optional[Tuple[str, str, str]]) -> None:
+            if picked is None:
+                return
+            action, group, profile = picked
+            if action == "sign_in":
+                self.action_sign_in(group=group, profile=profile)
+                return
+            activate = self.backend.activate
+            if activate is None:
+                self.notify("This session cannot switch profiles.", severity="warning")
+                return
+            try:
+                activate(group, profile)
+            except Exception as error:  # a settings problem must not end the UI
+                self.notify(f"Cannot switch: {error}", severity="error")
+                return
+            self.refresh_identity()
+            self.notify(f"{profile} is now the active profile of the group {group}.")
+
+        self.push_screen(
+            AccountsModal(self.backend.accounts(), self.backend.clock()), chosen
+        )
 
     def explain_sync_problem(
         self, error: BaseException, resume: Optional[Tuple[SyncOptions, str]]
@@ -199,7 +234,8 @@ class PBIApp(App[None]):
         """Say why a sync could not run; for a missing or expired token, ask to sign in."""
         if isinstance(error, AuthError):
             self._resume = resume
-            self.action_sign_in(reason=str(error))
+            # ask for the kind of token that is missing or expired, not always the admin's
+            self.action_sign_in(reason=str(error), group=error.group or "admin")
         elif isinstance(error, PBIError):
             self.notify(str(error), title="Cannot sync", severity="error")
         else:
@@ -423,6 +459,11 @@ class PBIApp(App[None]):
         yield SystemCommand("Explorer", "Browse the lake", self.action_open_explorer)
         yield SystemCommand(
             "Sign in", "Store a fresh bearer token", self.action_sign_in
+        )
+        yield SystemCommand(
+            "Accounts",
+            "The stored profiles: switch the active one",
+            self.action_accounts,
         )
         yield SystemCommand(
             "Reload the lake", "Read the lake again", lambda: self.reload_catalog(True)

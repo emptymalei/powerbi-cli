@@ -1,5 +1,6 @@
 """The catalog: the lake read the way a person browses it."""
 
+import json
 import threading
 from datetime import timedelta
 
@@ -1043,3 +1044,191 @@ def test_an_item_knows_when_it_was_updated_and_by_whom():
     assert item.owner == "c@d"  # configuredBy, then modifiedBy, then createdBy
     assert Item("report", "r", "R", None, {}).owner == ""
     assert Item("report", "r", "R", None, {}).sources == ""
+
+
+# ---------------------------------------------------------------------------
+# a lake of someone who is not an administrator, and of several accounts
+# ---------------------------------------------------------------------------
+
+SKELETON = [
+    "user-groups",
+    "user-apps",
+    "user-reports",
+    "user-datasets",
+    "user-dashboards",
+    "user-dataflows",
+]
+
+
+@pytest.fixture
+def user_world(world):
+    """Only a user is signed in, and the plain sync of a user has been run."""
+    world.only_user()
+    world.run()
+    world.run("user-group-users")
+    return world
+
+
+def test_the_items_of_a_workspace_come_from_the_lists_a_user_made(user_world):
+    found = catalog_of(user_world)
+
+    assert [w.id for w in found.workspaces()] == ["ws-0001", "ws-0002", "ws-0003"]
+    assert [(i.kind, i.id) for i in found.items("ws-0001")] == [
+        ("report", "rep-0001"),
+        ("dataset", "ds-0001"),
+        ("dashboard", "dash-0001"),
+        ("dataflow", "flow-0001"),
+        ("app", "app-0001"),
+    ]
+    assert found.counts("ws-0002") == {"report": 1, "dataset": 1, "app": 1}
+    report = found.item("report", "rep-0001")
+    assert report.workspace_id == "ws-0001" and report.name == "Report 1"
+
+
+def test_a_workspace_of_a_user_lake_knows_who_sees_it_and_how_it_was_listed(user_world):
+    found = catalog_of(user_world)
+
+    workspace = found.workspace("ws-0001")
+
+    assert workspace.visible_to == ["user-nlm"]
+    assert found.listing("workspace").endpoint == "user.groups"
+    assert (
+        found.user_list("report", "ws-0001").manifest["endpoint"]
+        == "user.group_reports"
+    )
+    assert found.user_list("report", "ws-0009") is None
+
+
+def test_which_lists_there_are_is_told_per_workspace_for_a_user(user_world):
+    found = catalog_of(user_world)
+
+    assert all(found.listed(kind, "ws-0001") for kind in ("report", "dataset", "app"))
+    assert not found.listed("report", "ws-0009")  # not a workspace that was listed
+    assert not found.listed("dataset", "ws-0009")
+
+
+def test_the_users_of_a_workspace_come_from_what_a_user_fetched(user_world):
+    found = catalog_of(user_world)
+
+    view = found.users(found.workspace("ws-0001"))
+
+    assert view.source == "user.group_users" and view.fetched_at is not None
+    assert [(a.email, a.role) for a in view.rows] == [
+        ("owner@ws-0001.example.com", "Admin"),
+        ("reader@ws-0001.example.com", "Viewer"),
+    ]
+
+
+def test_a_workspace_that_a_user_has_no_list_for_says_so(world):
+    world.only_user()
+    world.run("user-groups")  # the workspaces, and nothing of what is in them
+    found = catalog_of(world)
+
+    assert not found.listed("report", "ws-0001")
+    assert found.items("ws-0001") == []
+    assert "user-group-users" in found.users(found.workspace("ws-0001")).missing
+
+
+def test_the_lists_of_the_administrators_come_first_and_a_user_adds_what_they_lack(
+    world,
+):
+    world.run()
+    world.fake.reports.append(
+        {
+            "id": "rep-9999",
+            "name": "New report",
+            "datasetId": "ds-0001",
+            "workspaceId": "ws-0001",
+        }
+    )
+    world.run(
+        "user-reports"
+    )  # a user sees a report that the administrators' list lacks
+    found = catalog_of(world)
+
+    ids = [i.id for i in found.items("ws-0001") if i.kind == "report"]
+    assert sorted(ids) == ["rep-0001", "rep-9999"]
+    admin_row = found.item("report", "rep-0001")
+    assert admin_row.raw.get("workspaceId") == "ws-0001"  # the administrators' row
+    assert found.item("report", "rep-9999").raw.get("workspaceId") is None  # a user's
+
+
+def test_two_accounts_see_their_own_workspaces_and_the_catalog_knows_both(world):
+    world.fake.visible_to = {
+        "oid-ana": ["ws-0001", "ws-0002"],
+        "oid-bob": ["ws-0002", "ws-0003"],
+    }
+    world.accounts(ana="oid-ana", bob="oid-bob")
+    world.run("user-groups", user_profile="ana")
+    world.run("user-groups", user_profile="bob")
+
+    found = catalog_of(world)
+
+    assert [w.id for w in found.workspaces()] == ["ws-0001", "ws-0002", "ws-0003"]
+    seen = {w.id: sorted(w.visible_to) for w in found.workspaces()}
+    assert seen == {
+        "ws-0001": ["ana"],
+        "ws-0002": ["ana", "bob"],
+        "ws-0003": ["bob"],
+    }
+
+
+def test_the_apps_of_a_user_are_in_the_workspaces_they_belong_to(user_world):
+    found = catalog_of(user_world)
+
+    apps = [i for i in found.items("ws-0002") if i.kind == "app"]
+
+    assert [a.name for a in apps] == ["App 2"]
+
+
+def test_a_lake_of_an_earlier_sync_without_an_identity_is_still_read(world):
+    world.only_user()
+    world.run("user-groups")
+    for found in world.store.parameter_sets(TENANT, "user.groups"):
+        manifest_path = found.latest.directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.pop("profile", None)
+        manifest["params"] = {}
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    found = catalog_of(world)
+
+    assert [w.id for w in found.workspaces()] == ["ws-0001", "ws-0002", "ws-0003"]
+
+
+def test_the_apps_of_an_account_count_as_a_list_of_apps(world):
+    world.only_user()
+    assert not catalog_of(world).has_apps()
+    assert catalog_of(world).apps_freshness() is Freshness.NONE
+
+    world.run("user-apps")
+    found = catalog_of(world)
+
+    assert found.has_apps() and len(found.all_items("app")) == 3
+    assert found.apps_freshness() is Freshness.FRESH
+    world.clock.advance(hours=3)  # a list of apps of an account is fresh for an hour
+    assert catalog_of(world).apps_freshness() is not Freshness.FRESH
+
+
+def test_the_apps_of_the_tenant_are_the_list_of_apps_when_there_is_one(world):
+    world.run("apps")
+
+    found = catalog_of(world)
+
+    assert found.has_apps() and found.apps_freshness() is Freshness.FRESH
+    assert len(found.all_items("app")) == 3
+
+
+@pytest.mark.parametrize("older, newer", [("ana", "bob"), ("bob", "ana")])
+def test_the_apps_of_several_accounts_are_as_fresh_as_the_newest_list(
+    world, older, newer
+):
+    world.accounts(ana="oid-ana", bob="oid-bob")
+    world.run("user-apps", user_profile=older)
+    world.clock.advance(hours=3)
+    world.run("user-apps", user_profile=newer)
+
+    found = catalog_of(world)
+
+    assert found.apps_freshness() is Freshness.FRESH
+    assert len(found.all_items("app")) == 3  # the same apps, listed by both

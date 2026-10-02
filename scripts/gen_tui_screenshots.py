@@ -33,9 +33,11 @@ from sync_helpers import World
 from pbi_cli.core.publish import plan_publish, publish
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore
+from pbi_cli.core.sync.engine import SyncEngine
 from pbi_cli.core.sync.targets import TARGETS
 from pbi_cli.tui import Backend
 from pbi_cli.tui.app import PBIApp
+from pbi_cli.tui.backend import AccountInfo
 
 # isort: on
 
@@ -155,23 +157,44 @@ def patch_scan_result() -> None:
     fake_powerbi.FakePowerBI._scan_result = scan_result  # type: ignore[method-assign]
 
 
+ADMIN = "admin-nlm"
+SERVICE = "svc-finance"
+
+
 def new_token(world: World) -> None:
-    """A token with some time left: the header counts it down."""
-    token = make_token(
-        tenant=TENANT, expires_in=timedelta(minutes=47), now=world.clock.now()
+    """Tokens with some time left: the header counts them down."""
+    now = world.clock.now()
+    admin = make_token(
+        tenant=TENANT,
+        expires_in=timedelta(minutes=47),
+        now=now,
+        oid="oid-ann",
+        upn="ann.lee@contoso.com",
     )
     world.admin = make_client(
-        world.fake, clock=world.clock, store=world.store, token=token
+        world.fake, clock=world.clock, store=world.store, token=admin, profile=ADMIN
+    )[0]
+    service = make_token(
+        tenant=TENANT,
+        expires_in=timedelta(minutes=21),
+        now=now,
+        oid="oid-svc-finance",
+        upn="svc-finance@contoso.com",
+    )
+    world.user = make_client(
+        world.fake,
+        clock=world.clock,
+        store=world.store,
+        token=service,
+        group="user",
+        profile=SERVICE,
     )[0]
 
 
-def build_world(tmp: Path) -> World:
-    """A tenant with 14 workspaces, synced at three different times so that the dots differ."""
-    patch_scan_result()
-    patch_users()
-    # the lake lives where a user would keep it: ~/PowerBI/cache/lake
+def make_world(cache: Path) -> World:
+    """A made-up tenant of 14 workspaces, with the names and the people of a company."""
     world = World(
-        tmp / "home" / "PowerBI" / "cache",
+        cache,
         workspaces=len(WORKSPACES),
         reports=len(REPORTS),
         datasets=len(DATASETS),
@@ -215,6 +238,13 @@ def build_world(tmp: Path) -> World:
         dataset["configuredBy"] = "mia.chen@contoso.com"
 
     new_token(world)
+    return world
+
+
+def build_world(tmp: Path) -> World:
+    """The tenant synced by an administrator, at three different times so that the dots
+    differ. The lake lives where a user would keep it: ~/PowerBI/cache/lake."""
+    world = make_world(tmp / "home" / "PowerBI" / "cache")
     # scans of different ages: the dots of the tree go from green to red
     clock = world.clock
     clock.t = NOW.timestamp() - 9 * 86400
@@ -239,15 +269,35 @@ def build_world(tmp: Path) -> World:
     return world
 
 
-def backend_of(world: World) -> Backend:
-    return Backend(
+def build_user_world(tmp: Path) -> World:
+    """The same tenant as a service account sees it: no administrator, so the plain sync is
+    the workspaces of the account and what is in them, in a lake of its own."""
+    world = make_world(tmp / "home" / "PowerBI" / "finance-bot")
+    world.only_user()
+    world.run()
+    return world
+
+
+def backend_of(world: World, **replace: Any) -> Backend:
+    settings: dict = dict(
         store=world.store,
         client_for=world.client_for,
         sign_in=lambda token, profile, group: None,
-        active_profile=lambda group: "admin-nlm" if group == "admin" else "user-nlm",
+        active_profile=lambda group: ADMIN if group == "admin" else SERVICE,
         make_engine=lambda: world.engine,
         clock=world.clock.now,
     )
+    if "client_for" in replace and "make_engine" not in replace:
+        # an engine that signs in the way the backend does
+        replace["make_engine"] = lambda: SyncEngine(
+            replace["client_for"],
+            world.store,
+            clock=world.clock.now,
+            sleep=world.clock.sleep,
+            monotonic=world.clock.time,
+        )
+    settings.update(replace)
+    return Backend(**settings)
 
 
 async def settle(app: PBIApp, pilot: Any) -> None:
@@ -304,6 +354,8 @@ async def pick(app: PBIApp, pilot: Any, workspace: str, row: str = "") -> None:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+    patch_scan_result()
+    patch_users()
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp) / "home"
         Path.home = classmethod(lambda cls: home)  # type: ignore[method-assign]
@@ -324,10 +376,44 @@ def main() -> None:
             await pick(app, pilot, "ws-0001")
             app.action_sign_in(
                 reason=(
-                    "The token for profile 'admin-nlm' expired at 2026-09-30 12:02 UTC. "
+                    f"The token for profile '{ADMIN}' expired at 2026-09-30 12:02 UTC. "
                     "The sync keeps what it did and goes on when you have signed in."
                 )
             )
+
+        def stored_accounts() -> list:
+            """The profiles of an administrator who also keeps two service accounts."""
+            now = world.clock.now()
+            return [
+                AccountInfo(
+                    "admin",
+                    ADMIN,
+                    True,
+                    "ann.lee@contoso.com",
+                    TENANT,
+                    now + timedelta(minutes=47),
+                ),
+                AccountInfo(
+                    "user",
+                    SERVICE,
+                    True,
+                    "svc-finance@contoso.com",
+                    TENANT,
+                    now + timedelta(minutes=21),
+                ),
+                AccountInfo(
+                    "user",
+                    "svc-sales",
+                    False,
+                    "svc-sales@contoso.com",
+                    TENANT,
+                    now - timedelta(hours=3),
+                ),
+            ]
+
+        async def accounts(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001")
+            await pilot.press("p")
 
         for name, scenario in (
             ("tui-explorer.svg", workspace),
@@ -336,6 +422,14 @@ def main() -> None:
             ("tui-signin.svg", sign_in),
         ):
             asyncio.run(shoot(world, name, scenario))
+        asyncio.run(
+            shoot(
+                world,
+                "tui-accounts.svg",
+                accounts,
+                backend_of(world, accounts=stored_accounts),
+            )
+        )
 
         # a day later the lists are stale, so the plan has something to fetch
         world.clock.advance(hours=26)
@@ -360,6 +454,29 @@ def main() -> None:
 
         asyncio.run(shoot(world, "tui-sync.svg", plan))
         asyncio.run(shoot(world, "tui-run.svg", run))
+
+        # someone with only a service account: no administrator targets, a plain sync of
+        # what the account can see
+        service = build_user_world(Path(tmp))
+        service.clock.advance(hours=26)
+        new_token(service)
+
+        async def user_only(app: PBIApp, pilot: Any) -> None:
+            await pilot.press("s")
+            screen = app.get_screen("sync")
+            await until(lambda: screen.plans > 0)
+            targets = screen.query_one("#targets")
+            # the note under the list says why the highlighted target is off
+            targets.highlighted = [t.name for t in TARGETS].index("scan")
+
+        asyncio.run(
+            shoot(
+                service,
+                "tui-useronly.svg",
+                user_only,
+                backend_of(service, client_for=service.engine._client_for),
+            )
+        )
 
         # a lake that somebody published to a bucket, looked at by a person with no account
         implementation_registry["s3"] = local_s3_implementation  # a bucket on this disk

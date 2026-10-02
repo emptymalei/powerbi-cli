@@ -5,13 +5,14 @@ does not do) and the run from the same engine as ``pbi sync run``. A run goes on
 user looks at the Explorer, and the screen shows it again when it is opened.
 """
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Set, Union
 
 from rich.text import Text
 from textual import on, work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.css.query import NoMatches
 from textual.events import ScreenResume
 from textual.screen import Screen
 from textual.timer import Timer
@@ -91,7 +92,12 @@ class SyncScreen(Screen):
 
     # -- layout --------------------------------------------------------------------------
 
+    def _available(self) -> Set[Scope]:
+        """The kinds of account that are stored (none known: all are assumed)."""
+        return self.pbi.backend.available_scopes()
+
     def compose(self) -> ComposeResult:
+        available = self._available()
         yield StatusBar()
         with Horizontal(id="sync"):
             with VerticalScroll(id="sync-left"):
@@ -110,7 +116,8 @@ class SyncScreen(Screen):
                                 ("  ⚠" if target.sensitive else "", "yellow"),
                             ),
                             target.name,
-                            target.default,
+                            self._plain(target, available),
+                            id=target.name,
                         )
                         for target in TARGETS
                     ],
@@ -163,6 +170,28 @@ class SyncScreen(Screen):
                             )
         yield Footer()
 
+    @staticmethod
+    def _plain(target: Any, available: Set[Scope]) -> bool:
+        """Whether a target is chosen at first: the plain ones of the administrator, or of a
+        user who has no administrator account."""
+        if not available or Scope.ADMIN in available:
+            return bool(target.default)
+        return bool(target.default_user)
+
+    def _apply_accounts(self) -> None:
+        """Dim the targets whose account is not stored, and drop them from the choice."""
+        available = self._available()
+        targets = self.query_one("#targets", SelectionList)
+        for target in TARGETS:
+            if available and target.scope not in available:
+                targets.disable_option(target.name)
+                targets.deselect(target.name)
+            else:
+                targets.enable_option(target.name)
+        highlighted = targets.highlighted
+        if highlighted is not None:  # the note names the accounts that are missing
+            self._note_for(str(targets.get_option_at_index(highlighted).value))
+
     def on_mount(self) -> None:
         for table, columns in (
             ("#plan", ("Target", "Operation", "Units", "Fresh", "To do", "Requests")),
@@ -177,6 +206,7 @@ class SyncScreen(Screen):
 
     @on(ScreenResume)
     def _resumed(self) -> None:
+        self._apply_accounts()
         self.replan()
         self.refresh_lake()
         self._tick()
@@ -226,6 +256,15 @@ class SyncScreen(Screen):
         note.append(f"{target.name}: {target.title}", style="bold")
         if target.sensitive:
             note.append(f"\nCopies {target.sensitive}.", style="yellow")
+        available = self._available()
+        for scope in Scope:
+            if available and scope not in available:
+                kind = "an administrator" if scope is Scope.ADMIN else "a user"
+                note.append(
+                    f"\nThe dimmed targets need {kind} account, and none is stored: "
+                    f"press p, or run `pbi auth -t <token> -g {scope.value}`.",
+                    style="yellow",
+                )
         self.query_one("#targets-note", Static).update(note)
 
     @on(SelectionList.SelectionHighlighted)
@@ -293,9 +332,10 @@ class SyncScreen(Screen):
         self.plans += 1
         self._planned = options
         self._problem = ""
-        self.query_one("#plan-head", Static).update(
-            Text(f"Tenant: {result.tenant}", style="grey62")
-        )
+        head = f"Tenant: {result.tenant}"
+        if result.accounts:
+            head += f"\nAccounts: {', '.join(result.accounts)}"
+        self.query_one("#plan-head", Static).update(Text(head, style="grey62"))
         plan = self.query_one("#plan", DataTable)
         plan.clear()
         for row in render.plan_rows(result):
@@ -342,7 +382,13 @@ class SyncScreen(Screen):
             self._buttons()
 
     def _tick(self) -> None:
-        """Show how the run is going (called while the screen is alive)."""
+        """Show how the run is going, twice a second and when the screen is shown."""
+        try:
+            self._show_run()
+        except NoMatches:
+            return  # the app is closing and the screen is taken apart: nothing to show
+
+    def _show_run(self) -> None:
         state = self.pbi.run_state
         if state is not self._state:
             self._state = state

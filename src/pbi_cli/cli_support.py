@@ -15,6 +15,7 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
+    Tuple,
 )
 
 import typer
@@ -92,27 +93,31 @@ def command(app: typer.Typer, name: Optional[str] = None, **kwargs: Any) -> Call
 
 
 class ClientPool:
-    """The API clients a command (or the TUI) uses: one per kind of token, made when it is
-    first needed, closed together.
+    """The API clients a command (or the TUI) uses: one per kind of token and profile, made
+    when it is first needed, closed together.
 
     A client looks its token up once, so a token that is stored while the pool is in use is
     picked up by `reset`, which makes the next call build a new client.
 
     :param make: builds the client for a group name (``admin`` or ``user``) as a context
-        manager; by default the client of the command line (`pbi_cli.cli`)
+        manager, and for a profile when one is asked for; by default the client of the
+        command line (`pbi_cli.cli`)
     """
 
     def __init__(
-        self, make: Optional[Callable[[str], ContextManager[PowerBIClient]]] = None
+        self,
+        make: Optional[Callable[..., ContextManager[PowerBIClient]]] = None,
     ):
         self._make = make
         self._lock = threading.Lock()
         self._stack = ExitStack()
-        self._made: Dict[Scope, PowerBIClient] = {}
+        self._made: Dict[Tuple[Scope, Optional[str]], PowerBIClient] = {}
 
-    def __call__(self, scope: Scope) -> PowerBIClient:
+    def __call__(self, scope: Scope, profile: Optional[str] = None) -> PowerBIClient:
+        """The client of a kind of token, as the active profile of it or as ``profile``."""
+        key = (scope, profile)
         with self._lock:
-            if scope not in self._made:
+            if key not in self._made:
                 make = self._make
                 if make is None:
                     from pbi_cli.cli import (  # late: pbi_cli.cli imports this module
@@ -120,8 +125,11 @@ class ClientPool:
                     )
 
                     make = _client
-                self._made[scope] = self._stack.enter_context(make(scope.value))
-            return self._made[scope]
+                opened = (
+                    make(scope.value) if profile is None else make(scope.value, profile)
+                )
+                self._made[key] = self._stack.enter_context(opened)
+            return self._made[key]
 
     def reset(self) -> None:
         """Close the clients; the next call makes new ones, which read the token again."""

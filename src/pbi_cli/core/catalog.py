@@ -45,7 +45,7 @@ from typing import (
 from loguru import logger
 
 from pbi_cli.core.client import rows_of
-from pbi_cli.core.registry import get_endpoint
+from pbi_cli.core.registry import IDENTITY_PARAM, get_endpoint
 from pbi_cli.core.scan import RESULT_ENDPOINT, ScanFlags, split_scan_result
 from pbi_cli.core.store import EventDay, LakeStore, Snapshot
 from pbi_cli.core.sync.state import STATE_NAME
@@ -79,6 +79,17 @@ LIST_ENDPOINTS: Dict[str, str] = {
 
 #: Where the workspaces of the user are, when the lake has no list of the tenant.
 USER_WORKSPACES = "user.groups"
+
+#: What an account that is not an administrator can list of a workspace, one request for each
+#: workspace: the lake keeps each of these lists under the workspace it was asked for.
+USER_LISTS: Dict[str, str] = {
+    "report": "user.group_reports",
+    "dataset": "user.group_datasets",
+    "dashboard": "user.group_dashboards",
+    "dataflow": "user.group_dataflows",
+}
+USER_APPS = "user.apps"
+USER_GROUP_USERS = "user.group_users"
 
 ACTIVITY_ENDPOINT = "admin.activityevents"
 REPORT_USERS_ENDPOINT = "admin.reports.users"
@@ -234,6 +245,8 @@ class Workspace:
     :param type: ``Workspace``, ``PersonalGroup``, ...
     :param state: ``Active``, ``Deleted``, ...
     :param raw: the row of the list it came from
+    :param visible_to: the accounts whose own list of workspaces holds it (by the name of
+        their profile), as far as the lake knows
     """
 
     id: str
@@ -241,6 +254,7 @@ class Workspace:
     type: str
     state: str
     raw: Dict[str, Any]
+    visible_to: List[str] = field(default_factory=list)
 
     kind = "workspace"
 
@@ -533,6 +547,8 @@ class _State:
     reports_of_dataset: Dict[str, List[Item]]
     scans: Dict[str, ScanRef]
     baseline: Optional[_Baseline]
+    user_lists: Dict[Tuple[str, str], Snapshot]
+    user_apps: Optional[datetime]
 
 
 class Catalog:
@@ -637,24 +653,78 @@ class Catalog:
                     raw=row,
                 )
 
+        # the workspaces that accounts see, each by its own list: the union of them all
+        for ps in self._store.parameter_sets(self.tenant, USER_WORKSPACES):
+            who = _text(ps.latest.manifest.get("profile")) or _text(
+                ps.params.get(IDENTITY_PARAM)
+            )
+            try:
+                rows = _dicts(rows_of(get_endpoint(USER_WORKSPACES), ps.latest.load()))
+            except (OSError, ValueError) as error:
+                logger.warning(f"Ignoring unreadable user.groups in the lake: {error}")
+                continue
+            for row in rows:
+                workspace_id = id_of("workspace", row)
+                if not workspace_id:
+                    continue
+                if workspace_id not in workspaces:
+                    workspaces[workspace_id] = Workspace(
+                        id=workspace_id,
+                        name=name_of("workspace", row),
+                        type=_text(row.get("type")),
+                        state=_text(row.get("state")),
+                        raw=row,
+                    )
+                seen_by = workspaces[workspace_id].visible_to
+                if who and who not in seen_by:
+                    seen_by.append(who)
+
         items: Dict[str, Dict[str, Item]] = {kind: {} for kind in KINDS}
         by_workspace: Dict[str, Dict[str, List[Item]]] = {}
         reports_of_dataset: Dict[str, List[Item]] = {}
+
+        def add(kind: str, row: Dict[str, Any], home: Optional[str]) -> None:
+            item_id = id_of(kind, row)
+            if not item_id or item_id in items[kind]:  # the first list to have it wins
+                return
+            item = Item(kind, item_id, name_of(kind, row), home, row)
+            items[kind][item_id] = item
+            if home:
+                by_workspace.setdefault(home, {}).setdefault(kind, []).append(item)
+            if kind == "report" and row.get("datasetId"):
+                reports_of_dataset.setdefault(_text(row["datasetId"]), []).append(item)
+
         for kind in KINDS:
             listing = listings[kind]
             for row in listing.rows if listing else []:
-                item_id = id_of(kind, row)
-                if not item_id:
+                add(kind, row, _text(row.get("workspaceId")) or None)
+
+        # what an account lists of a workspace: below the lists of the administrators
+        user_lists: Dict[Tuple[str, str], Snapshot] = {}
+        for kind, endpoint_id in USER_LISTS.items():
+            for ps in self._store.parameter_sets(self.tenant, endpoint_id):
+                group = _text(ps.params.get("groupId"))
+                if not group:
                     continue
-                home = _text(row.get("workspaceId")) or None
-                item = Item(kind, item_id, name_of(kind, row), home, row)
-                items[kind][item_id] = item
-                if home:
-                    by_workspace.setdefault(home, {}).setdefault(kind, []).append(item)
-                if kind == "report" and row.get("datasetId"):
-                    reports_of_dataset.setdefault(_text(row["datasetId"]), []).append(
-                        item
-                    )
+                try:
+                    rows = _dicts(rows_of(get_endpoint(endpoint_id), ps.latest.load()))
+                except (OSError, ValueError) as error:
+                    logger.warning(f"Ignoring unreadable {endpoint_id}: {error}")
+                    continue
+                user_lists[(kind, group)] = ps.latest
+                for row in rows:
+                    add(kind, row, group)
+        user_apps: Optional[datetime] = None
+        for ps in self._store.parameter_sets(self.tenant, USER_APPS):
+            try:
+                rows = _dicts(rows_of(get_endpoint(USER_APPS), ps.latest.load()))
+            except (OSError, ValueError) as error:
+                logger.warning(f"Ignoring unreadable user.apps: {error}")
+                continue
+            fetched = ps.latest.fetched_at
+            user_apps = fetched if user_apps is None else max(user_apps, fetched)
+            for row in rows:
+                add("app", row, _text(row.get("workspaceId")) or None)
 
         scans = self._scan_refs()
         for workspace_id, ref in scans.items():  # scans know workspaces no list has
@@ -678,6 +748,8 @@ class Catalog:
             reports_of_dataset=reports_of_dataset,
             scans=scans,
             baseline=self._baseline(),
+            user_lists=user_lists,
+            user_apps=user_apps,
         )
 
     # -- the lists of the tenant -------------------------------------------------------
@@ -724,6 +796,32 @@ class Catalog:
             self._s.items.get(kind, {}).values(),
             key=lambda i: (i.name.casefold(), i.id),
         )
+
+    def has_apps(self) -> bool:
+        """Whether the lake holds a list of apps: the tenant's, or one that an account made."""
+        return self.listing("app") is not None or self._s.user_apps is not None
+
+    def apps_freshness(self) -> Freshness:
+        """How fresh the apps are: the tenant's list, else the newest list of an account."""
+        if self.listing("app") is not None:
+            return self.listing_freshness("app")
+        if self._s.user_apps is None:
+            return Freshness.NONE
+        return judge(self.age(self._s.user_apps), get_endpoint(USER_APPS).ttl)
+
+    def listed(self, kind: str, workspace_id: str) -> bool:
+        """Whether the lake holds a list that would show the items of a kind in a workspace:
+        the list of the whole tenant, or the list an account made for that workspace."""
+        if self._s.listings.get(kind) is not None:
+            return True
+        if kind == "app":
+            return self._s.user_apps is not None
+        return (kind, workspace_id) in self._s.user_lists
+
+    def user_list(self, kind: str, workspace_id: str) -> Optional[Snapshot]:
+        """The list that an account made of one kind of item in a workspace, if there is
+        one (what is shown of an item that only such a list has)."""
+        return self._s.user_lists.get((kind, workspace_id))
 
     def counts(self, workspace_id: str) -> Dict[str, int]:
         """How many items of each kind the lists have for a workspace."""
@@ -909,6 +1007,14 @@ class Catalog:
                     "admin.groups",
                     found.fetched_at if found else None,
                 )
+            stored = self._store.latest(
+                self.tenant, USER_GROUP_USERS, {"groupId": subject.id}
+            )
+            if stored is not None:
+                rows = rows_of(get_endpoint(USER_GROUP_USERS), stored.load())
+                return UsersView(
+                    self._access(rows), USER_GROUP_USERS, stored.fetched_at
+                )
             view = self.scan_of(subject.id)
             if view is not None and view.workspace.get("users"):
                 return UsersView(
@@ -917,7 +1023,8 @@ class Catalog:
             return UsersView(
                 missing=(
                     "The lake does not hold the users of this workspace. Scan it "
-                    "(`pbi sync run scan`), or list the workspaces with `-e users`."
+                    "(`pbi sync run scan`), fetch them as a user (`pbi sync run "
+                    "user-group-users`), or list the workspaces with `-e users`."
                 )
             )
 

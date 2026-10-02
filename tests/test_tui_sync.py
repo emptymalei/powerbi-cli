@@ -186,7 +186,7 @@ def test_a_plan_that_cannot_be_made_says_why(world):
 
     text, disabled = run_ui(backend_of(world, client_for=client_for), scenario)
 
-    assert "No active profile set for group 'user'" in text and disabled
+    assert "No account is stored" in text and disabled
 
 
 def test_what_does_not_fit_the_quota_is_marked_and_explained(world):
@@ -240,6 +240,24 @@ def test_a_sync_runs_and_is_reported(world):
     assert "Last sync" in lines and "completed" in lines
     assert disabled is False
     assert tree[0] == "● Workspaces  12"  # and the Explorer has read the lake again
+
+
+def test_the_screen_and_the_header_do_not_fail_when_they_are_taken_apart(world):
+    """The app closes with timers still running: one that fires after the widgets it draws
+    on are gone must not end in an error (it did, now and then, when the app was quit).
+    """
+
+    async def scenario(ui):
+        await open_sync(ui)
+        await ui.click("#run")
+        await ui.finish_sync()
+        await ui.sync.query_one("#progress").remove()
+        await ui.app.screen.query_one("#who").remove()
+        ui.sync._tick()
+        ui.app.screen.query_one("StatusBar").refresh_status()
+        return "no error"
+
+    assert run_ui(backend_of(world), scenario) == "no error"
 
 
 def test_a_failed_unit_is_reported_and_listed(world):

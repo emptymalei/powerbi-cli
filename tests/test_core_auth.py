@@ -148,3 +148,55 @@ def test_token_about_to_expire_is_refused():
     with pytest.raises(TokenExpiredError):
         ensure_not_expired(creds, now=NOW)
     ensure_not_expired(creds, now=NOW, leeway=timedelta(0))
+
+
+# ---------------------------------------------------------------------------
+# who the token is for
+# ---------------------------------------------------------------------------
+
+
+def test_the_token_says_who_it_is_for():
+    info = token_info(make_token(oid="oid-1", upn="ana@contoso.com"))
+
+    assert info.subject == "oid-1" and info.name == "ana@contoso.com"
+
+
+def test_an_application_token_is_for_the_application():
+    info = token_info(make_token(appid="app-1"))
+
+    assert info.subject == "app-1" and info.name == "app-1"
+
+
+def test_the_object_id_comes_before_the_application_and_the_user_name_before_the_rest():
+    info = token_info(
+        make_token(oid="oid-1", appid="app-1", unique_name="u@x", name="Ana", upn="p@x")
+    )
+
+    assert info.subject == "oid-1" and info.name == "p@x"
+    assert token_info(make_token(unique_name="u@x", name="Ana")).name == "u@x"
+    assert token_info(make_token(name="Ana")).name == "Ana"
+
+
+@pytest.mark.parametrize("claims", [{}, {"oid": 5}, {"oid": "  "}, {"upn": None}])
+def test_a_token_that_does_not_say_has_no_subject(claims):
+    info = token_info(make_token(**claims))
+
+    assert info.subject is None
+    assert info.name is None
+
+
+def test_an_identity_is_the_object_id_else_the_profile_else_unknown():
+    assert Credentials(make_token(oid="oid-1"), profile="p").identity == "oid-1"
+    assert Credentials(make_token(), profile="p").identity == "profile:p"
+    assert Credentials("opaque").identity == "unknown"
+
+
+def test_an_expired_token_error_says_which_kind_of_account():
+    credentials = Credentials(
+        make_token(expires_in=timedelta(minutes=-5)), profile="svc", group="user"
+    )
+
+    with pytest.raises(TokenExpiredError) as error:
+        ensure_not_expired(credentials)
+
+    assert error.value.group == "user"
