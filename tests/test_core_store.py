@@ -539,3 +539,41 @@ def test_events_are_stamped_with_the_time_they_were_received(store):
     assert store.event_day("t1", "admin.activityevents", day).updated_at == received
     store.seal_day("t1", "admin.activityevents", day, at=sealed)
     assert store.event_day("t1", "admin.activityevents", day).updated_at == sealed
+
+
+# ---------------------------------------------------------------------------
+# what Windows needs: binary files, and a replace that waits for readers
+# ---------------------------------------------------------------------------
+
+
+def test_files_are_opened_in_binary_mode_where_the_platform_has_one(
+    store, tmp_path, monkeypatch
+):
+    fake_flag = 0x40000000  # no real flag: os.open must not be given it for real
+    monkeypatch.setattr(os, "O_BINARY", fake_flag, raising=False)
+    real_open = os.open
+    seen = []
+
+    def spy(path, flags, *args, **kwargs):
+        seen.append(flags)
+        return real_open(path, flags & ~fake_flag, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", spy)
+
+    store._write_bytes(tmp_path / "lake" / "a.json", b"one\ntwo\n")
+
+    assert seen and all(flags & fake_flag for flags in seen)
+    assert (tmp_path / "lake" / "a.json").read_bytes() == b"one\ntwo\n"
+
+
+def test_a_file_is_put_in_place_with_the_helper_that_waits_for_readers(
+    store, tmp_path, monkeypatch
+):
+    moved = []
+    monkeypatch.setattr(
+        "pbi_cli.core.store.replace_file", lambda source, target: moved.append(target)
+    )
+
+    store._write_bytes(tmp_path / "lake" / "b.json", b"{}")
+
+    assert moved == [tmp_path / "lake" / "b.json"]

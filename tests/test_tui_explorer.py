@@ -145,6 +145,25 @@ def test_a_workspace_shows_its_items_and_its_own_details(synced):
     assert "Reports" in info and "Scan" in info and "lineage" in info
 
 
+def test_a_workspace_of_a_lake_with_only_the_workspaces_says_why_it_shows_nothing(
+    tmp_path,
+):
+    world = World(tmp_path)
+    world.run("groups")  # what `pbi sync run groups` keeps
+
+    async def scenario(ui):
+        await ui.select("workspace", "ws-0001")
+        return ui.rows(), ui.static("#table-title"), ui.static("#info")
+
+    rows, title, info = run_ui(backend_of(world), scenario)
+
+    assert rows == []
+    assert "Workspace 1: 0 item(s)" in title
+    assert "not in the lake" in title and "press s" in title
+    assert "Reports" in info and "the list is not in the lake" in info
+    assert "Press s and Run" in info
+
+
 def test_a_row_of_the_table_is_described_in_the_detail_pane(synced):
     async def scenario(ui):
         await ui.select("workspace", "ws-0001")

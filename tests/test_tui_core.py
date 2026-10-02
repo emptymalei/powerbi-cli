@@ -238,6 +238,58 @@ def test_the_info_of_a_workspace_without_a_scan_says_so(world):
     assert "none in the lake" in shown
 
 
+def test_a_workspace_says_what_is_missing_when_the_lists_are_not_in_the_lake(tmp_path):
+    world = World(tmp_path)
+    world.run("groups")  # only the list of workspaces
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    rows = render.contents_rows(catalog, "ws-0001")
+    hint = render.empty_hint(catalog, "ws-0001")
+    shown = text(render.info(catalog, catalog.workspace("ws-0001")))
+
+    assert rows == [
+        (name, "the list is not in the lake")
+        for name in ("Reports", "Datasets", "Dashboards", "Dataflows", "Apps")
+    ]
+    assert (
+        "lists of reports, datasets, dashboards, dataflows and apps are not in the lake"
+        in hint.long
+    )
+    assert "Press s and Run" in hint.long and "r to scan" in hint.long
+    assert "not in the lake" in hint.short and "press s" in hint.short
+    assert "the list is not in the lake" in shown and "Press s and Run" in shown
+
+
+def test_a_workspace_with_the_lists_but_no_item_and_no_scan_says_to_scan_it(tmp_path):
+    world = World(tmp_path)
+    world.run()  # the lists: no item of the last workspace, which was never scanned
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    hint = render.empty_hint(catalog, "ws-0012")
+    shown = text(render.info(catalog, catalog.workspace("ws-0012")))
+
+    assert render.contents_rows(catalog, "ws-0012") == []
+    assert hint.short == "never scanned: press r to scan it"
+    assert "never scanned" in shown and "Press r" in shown
+
+
+def test_a_scanned_workspace_without_items_is_just_empty(catalog):
+    hint = render.empty_hint(catalog, "ws-0012")
+    shown = text(render.info(catalog, catalog.workspace("ws-0012")))
+
+    assert render.contents_rows(catalog, "ws-0012") == []
+    assert hint.short == "it holds nothing"
+    assert "holds no report, dataset, dashboard, dataflow or app" in shown
+    assert "Press" not in shown
+
+
+def test_a_workspace_with_items_shows_no_hint_and_only_counts(catalog):
+    shown = text(render.info(catalog, catalog.workspace("ws-0001")))
+
+    assert "not in the lake" not in shown and "Press" not in shown
+    assert render.contents_rows(catalog, "ws-0001")[0] == ("Reports", "1")
+
+
 def test_the_info_of_an_item_merges_the_list_and_the_scan(catalog):
     item = catalog.item("report", "rep-0001")
 

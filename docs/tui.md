@@ -64,6 +64,13 @@ An [incremental scan](sync.md#scans) does not fetch a workspace that did not cha
 such a workspace counts as scanned *as of the start of the last complete scan* (with the
 same options): an unchanged workspace is not shown as old.
 
+A workspace shows what the lake holds of it, and nothing else. After `pbi sync run groups`,
+which fetches only the list of workspaces, every workspace is empty: the title of the table
+says that the lists of items are not in the lake, and the Info tab names each list that is
+missing (reports, datasets, dashboards, dataflows, apps). Press `s` and **Run** to fetch the
+plain targets, or `r` to scan that one workspace. A workspace that really holds nothing says
+so, and one that has the lists but was never scanned says to scan it.
+
 ### The details
 
 Press a number, or click a tab, to switch the details of the selected row:

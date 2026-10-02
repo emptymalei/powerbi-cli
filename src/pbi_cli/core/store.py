@@ -36,6 +36,8 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Union
 from cloudpathlib import AnyPath, CloudPath
 from loguru import logger
 
+from pbi_cli.core.fsutil import replace_file
+
 #: Version of the manifest layout.
 SCHEMA = 1
 MANIFEST = "manifest.json"
@@ -212,10 +214,13 @@ class LakeStore:
         self._ensure_root()
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + ".tmp")
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        # O_BINARY: on Windows a file made with os.open is a text file unless it is asked
+        # not to be, and every line break would be written as CRLF
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0)
+        fd = os.open(tmp, flags, 0o600)
         with os.fdopen(fd, "wb") as handle:
             handle.write(payload)
-        os.replace(tmp, path)
+        replace_file(tmp, path)
 
     def _ensure_root(self) -> None:
         """Create the lake folder, readable by the owner only."""

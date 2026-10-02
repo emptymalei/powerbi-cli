@@ -319,12 +319,10 @@ class ExplorerScreen(Screen):
             if workspace is None:
                 return Loaded(ref, "This workspace is not in the lake any more", [])
             items = catalog.items(ref.id)
-            return Loaded(
-                ref,
-                f"{workspace.name}: {len(items)} item(s)",
-                render.item_entries(items),
-                workspace,
-            )
+            title = f"{workspace.name}: {len(items)} item(s)"
+            if not items:
+                title += f"  ·  {render.empty_hint(catalog, ref.id).short}"
+            return Loaded(ref, title, render.item_entries(items), workspace)
         if ref.kind == "apps":
             entries = render.app_entries(catalog)
             return Loaded(ref, f"Apps: {len(entries)}", entries)

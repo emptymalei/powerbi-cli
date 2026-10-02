@@ -12,7 +12,6 @@ The counters are kept in a small JSON file so separate runs of the command line 
 """
 
 import json
-import os
 import threading
 import time
 from contextlib import contextmanager
@@ -22,6 +21,7 @@ from typing import Callable, Dict, Iterator, List, Optional, Union
 
 from loguru import logger
 
+from pbi_cli.core.fsutil import replace_file
 from pbi_cli.core.registry import Endpoint, RateLimit
 from pbi_cli.errors import RateLimitError, Stopped
 
@@ -130,7 +130,7 @@ class QuotaTracker:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self._path.with_name(self._path.name + ".tmp")
             tmp.write_text(json.dumps(state, separators=(",", ":")), encoding="utf-8")
-            os.replace(tmp, self._path)
+            replace_file(tmp, self._path)
             self._mtime = self._path.stat().st_mtime_ns
         except OSError as error:
             logger.warning(

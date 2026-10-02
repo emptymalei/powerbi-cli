@@ -407,6 +407,63 @@ def _title(name: str, subtitle: str) -> Text:
     return text
 
 
+def _words(names: Sequence[str]) -> str:
+    """``reports``, ``reports and datasets``, ``reports, datasets and apps``."""
+    if len(names) < 2:
+        return "".join(names)
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def contents_rows(catalog: Catalog, workspace_id: str) -> List[Tuple[str, str]]:
+    """What the lake holds of a workspace, by kind: how many, or that the list of the
+    kind is not in the lake at all (so that nothing can be said about it)."""
+    counts = catalog.counts(workspace_id)
+    rows = []
+    for kind in KINDS:
+        if kind in counts:
+            rows.append((label(kind, True), str(counts[kind])))
+        elif catalog.listing(kind) is None:
+            rows.append((label(kind, True), "the list is not in the lake"))
+    return rows
+
+
+@dataclass(frozen=True)
+class Hint:
+    """Why a workspace shows nothing, and what to do about it.
+
+    :param short: a few words, for the title of the table
+    :param long: a sentence, for the Info tab
+    """
+
+    short: str
+    long: str
+
+
+def empty_hint(catalog: Catalog, workspace_id: str) -> Hint:
+    """Say why a workspace has no items: the lists are missing, it was never scanned, or
+    it really is empty."""
+    missing = [
+        label(kind, True).lower() for kind in KINDS if catalog.listing(kind) is None
+    ]
+    if missing:
+        return Hint(
+            "the lists of items are not in the lake: press s, then Run",
+            f"The lists of {_words(missing)} are not in the lake, so there is nothing "
+            "to show. Press s and Run to fetch the lists of the tenant, or r to scan "
+            "this workspace.",
+        )
+    if catalog.scan_of(workspace_id) is None:
+        return Hint(
+            "never scanned: press r to scan it",
+            "No list holds an item of this workspace and it was never scanned. Press r "
+            "to scan it.",
+        )
+    return Hint(
+        "it holds nothing",
+        "This workspace holds no report, dataset, dashboard, dataflow or app.",
+    )
+
+
 def provenance(
     catalog: Catalog, subject: Subject
 ) -> List[Tuple[str, Union[str, Text]]]:
@@ -450,17 +507,12 @@ def info(catalog: Catalog, subject: Subject) -> RenderableType:
         head = _title(subject.name, f"workspace · {subject.id}")
         fields = scalar_fields(subject.raw) or [("id", subject.id)]
         extra: List[RenderableType] = []
-        counts = catalog.counts(subject.id)
-        if counts:
-            extra.append(
-                _grid(
-                    [
-                        (label(kind, True), str(counts[kind]))
-                        for kind in KINDS
-                        if kind in counts
-                    ]
-                )
-            )
+        rows = contents_rows(catalog, subject.id)
+        if rows:
+            extra.append(_grid(rows))
+        if not catalog.counts(subject.id):
+            extra.append(Text())
+            extra.append(Text(empty_hint(catalog, subject.id).long, style="yellow"))
         return Group(
             head,
             Text(),

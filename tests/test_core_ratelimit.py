@@ -349,3 +349,18 @@ def test_a_shorter_block_does_not_shorten_a_longer_one():
     tracker.block("k", 600)
     tracker.block("k", 30)
     assert tracker.next_slot("k", None) == pytest.approx(600)
+
+
+def test_the_counters_are_put_in_place_with_the_helper_that_waits_for_readers(
+    tmp_path, monkeypatch
+):
+    moved = []
+    monkeypatch.setattr(
+        "pbi_cli.core.ratelimit.replace_file",
+        lambda source, target: moved.append(target),
+    )
+    path = tmp_path / "quota.json"
+
+    QuotaTracker(path, clock=FakeClock()).record("k")
+
+    assert moved == [path]
