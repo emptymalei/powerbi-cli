@@ -47,6 +47,9 @@ SCAN_REQUESTS = {"admin.scan.start": 1, "admin.scan.status": 3, "admin.scan.resu
 #: Events per request, when estimating how many requests a day of events takes.
 EVENTS_PER_REQUEST = 1000
 
+#: The placeholder of the requests that are about one workspace (``groups/{groupId}/...``).
+WORKSPACE_PLACEHOLDER = "groupId"
+
 SNAPSHOT = "snapshot"
 EVENTS = "events"
 MODIFIED = "modified"
@@ -74,9 +77,11 @@ class SyncOptions:
     :param exclude_inactive: leave the inactive workspaces out of the scans
     :param scan_interval: seconds between two status checks of a scan
     :param scan_timeout: seconds to wait for one scan to succeed
-    :param workspace_ids: scan only these workspaces, whatever changed (the scan target
-        only: it does not list the modified workspaces, and does not move the point the
-        next incremental scan continues from)
+    :param workspace_ids: only these workspaces. The scan target scans just them, whatever
+        changed (it does not list the modified workspaces, and does not move the point the
+        next incremental scan continues from); a target that fans out over items fetches only
+        for the items that are in them, and a target that fans out over the workspaces only
+        for them. The lists they are made from are still fetched whole.
     :param admin_profile: the profile of the administrator account to use (default: the
         active one)
     :param user_profile: the profile of the user account to use (default: the active one)
@@ -106,7 +111,14 @@ class SyncOptions:
     only: Mapping[str, Sequence[str]] = field(default_factory=dict, hash=False)
 
     def allows(self, placeholder: str, value: Any) -> bool:
-        """Whether the requests for this id of this placeholder are wanted (see `only`)."""
+        """Whether the requests for this id of this placeholder are wanted (see `only` and
+        `workspace_ids`)."""
+        if (
+            placeholder == WORKSPACE_PLACEHOLDER
+            and self.workspace_ids
+            and str(value) not in self.workspace_ids
+        ):
+            return False
         wanted = self.only.get(placeholder)
         return wanted is None or str(value) in wanted
 
@@ -317,6 +329,9 @@ class Planner:
         self._clock = clock
         self._identity = identity
         self._selected = {target.name for target in selection.targets}
+        #: by target: how many rows were left out because they do not say which workspace
+        #: they are in, while the sync is limited to some workspaces
+        self.unplaced: Dict[str, int] = {}
 
     # -- building units ---------------------------------------------------------------
 
@@ -465,6 +480,14 @@ class Planner:
             for row in rows:
                 if not isinstance(row, dict):
                     continue
+                if child.workspace and self.options.workspace_ids:
+                    home = row.get(child.workspace)
+                    if str(home or "") not in self.options.workspace_ids:
+                        if not home:  # it cannot be told which workspace it is in
+                            self.unplaced[child.name] = (
+                                self.unplaced.get(child.name, 0) + 1
+                            )
+                        continue
                 params: Dict[str, Any] = {}
                 for placeholder, (source, name) in child.bind.items():
                     value = row.get(name) if source == "row" else unit.params.get(name)
@@ -479,6 +502,17 @@ class Planner:
                         seen.add(made.key)
                         children.append(made)
         return children
+
+    def unplaced_notes(self) -> Dict[str, str]:
+        """What to say about the rows that were left out for want of a workspace, by target."""
+        found = {}
+        for name, count in self.unplaced.items():
+            child = get_target(name)
+            found[name] = (
+                f"{count} row(s) of {child.parent} have no {child.workspace}, so they cannot "
+                "be matched to the workspaces and were left out"
+            )
+        return found
 
     # -- what the lake holds ----------------------------------------------------------
 
@@ -631,6 +665,8 @@ class Planner:
                         "so there will be more than this"
                     )
             frontier = following
+        for name, note in self.unplaced_notes().items():
+            plans[name].add_note(note)
         return list(plans.values()), needed
 
     def _plan_scan(

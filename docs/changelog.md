@@ -62,6 +62,19 @@
 
 ### Added
 
+- **A plan file** names what to keep in the lake, for which workspaces and through which
+  account, in one YAML file (`pbi_cli.core.planfile`). It is strict: an unknown key, a key
+  that does nothing and a profile that has no token are errors that name the file, the line and
+  the key. It compiles to ordinary sync runs, one step for the tenant and one for each set of
+  workspaces, details and account (`pbi_cli.core.planrun` plans and runs them one after the
+  other, and reports them as one). A name in the file is a pattern looked up in the list of
+  workspaces in the lake; `via: auto` reads with the administrator's account when it can and
+  else with the user account whose own list of workspaces holds the workspace.
+- `SyncOptions.workspace_ids` limits a sync to some workspaces: besides the scan, the targets
+  that fan out over items or workspaces fetch only for those of the chosen workspaces
+  (`Target.workspace` says which field of a row holds its workspace; a row that has none is
+  left out, and the plan and the run say so). `SyncEngine` can say whether an account is
+  stored (`has_account`), under which profile (`profile_of`) and the tenant of a sync.
 - **Details of one item, on demand.** Who has access to a dataset, a dashboard, a dataflow or
   a workspace, the data sources of a dataflow, the refresh history and the parameters of a
   dataset, the tiles of a dashboard: each costs a request per item, so a sync keeps them only

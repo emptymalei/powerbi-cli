@@ -63,6 +63,10 @@ class Target:
         ``refreshes``, ``parameters`` or ``tiles``)
     :param match: for a target that lists many items in one answer (the refresh summaries
         of the tenant): the field of its rows that holds the id of the item the row is about
+    :param workspace: for a fan-out over the rows of a list of items: the field of a row that
+        holds the id of the workspace the item is in, so that a sync of chosen workspaces
+        (`pbi_cli.core.sync.plan.SyncOptions.workspace_ids`) fetches for the items of those
+        workspaces only
     """
 
     name: str
@@ -80,6 +84,7 @@ class Target:
     item: str = ""
     detail: str = ""
     match: str = ""
+    workspace: str = ""
 
 
 TARGETS: Tuple[Target, ...] = (
@@ -120,6 +125,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"reportId": ("row", "id")},
         item="report",
         detail="users",
+        workspace="workspaceId",
     ),
     Target(
         "datasources",
@@ -132,6 +138,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"datasetId": ("row", "id")},
         item="dataset",
         detail="datasources",
+        workspace="workspaceId",
     ),
     Target(
         "group-users",
@@ -156,6 +163,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"datasetId": ("row", "id")},
         item="dataset",
         detail="users",
+        workspace="workspaceId",
     ),
     Target(
         "dashboard-users",
@@ -168,6 +176,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"dashboardId": ("row", "id")},
         item="dashboard",
         detail="users",
+        workspace="workspaceId",
     ),
     Target(
         "dataflow-users",
@@ -180,6 +189,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"dataflowId": ("row", "objectId")},
         item="dataflow",
         detail="users",
+        workspace="workspaceId",
     ),
     Target(
         "dataflow-datasources",
@@ -192,6 +202,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"dataflowId": ("row", "objectId")},
         item="dataflow",
         detail="datasources",
+        workspace="workspaceId",
     ),
     Target(
         "refreshables",

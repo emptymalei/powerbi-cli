@@ -394,6 +394,16 @@ def test_a_stop_after_the_last_unit_does_not_make_a_finished_run_interrupted(wor
     assert report.status == COMPLETED and report.cancelled == 0
 
 
+def test_the_stop_event_of_the_caller_is_left_alone_when_the_run_ends(world):
+    stop = threading.Event()
+
+    first = world.engine.run(world.options("groups"), stop=stop)
+    second = world.engine.run(world.options("apps"), stop=stop)  # the same event again
+
+    assert first.status == COMPLETED and second.status == COMPLETED
+    assert second.counts[DONE] == 1 and not stop.is_set()
+
+
 def test_a_stop_cuts_a_wait_for_quota_short(world):
     # admin.groups allows 15 requests a minute: use them up, so that the next one waits
     for n in range(15):

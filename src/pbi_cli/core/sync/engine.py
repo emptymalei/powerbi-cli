@@ -202,6 +202,23 @@ class SyncEngine:
             return self._client_for(scope)
         return self._client_for(scope, account)
 
+    def has_account(self, scope: Scope, profile: Optional[str] = None) -> bool:
+        """Whether an account is stored: a token under the profile (default: the active one
+        of the kind). Nothing is sent: a token is only looked up, and read for its tenant.
+        """
+        try:
+            self._client(scope, profile).tenant_key()
+        except PBIError:  # no profile, or no token under it
+            return False
+        return True
+
+    def profile_of(self, scope: Scope, profile: Optional[str] = None) -> Optional[str]:
+        """The name of the profile an account is stored under: the one asked for, else the
+        active one of the kind; ``None`` when no account is stored."""
+        if not self.has_account(scope, profile):
+            return None
+        return self._client(scope, profile).profile_name()
+
     def available_scopes(self, options: Optional[SyncOptions] = None) -> Set[Scope]:
         """The kinds of account that are stored: those whose client knows its token.
 
@@ -209,16 +226,19 @@ class SyncEngine:
 
         :param options: the profiles the sync is to use (default: the active ones)
         """
-        found: Set[Scope] = set()
-        for scope in Scope:
-            try:
-                self._client(
-                    scope, options.profile_of(scope) if options else None
-                ).tenant_key()
-            except PBIError:  # no profile, or no token under it
-                continue
-            found.add(scope)
-        return found
+        return {
+            scope
+            for scope in Scope
+            if self.has_account(scope, options.profile_of(scope) if options else None)
+        }
+
+    def tenant(self, options: SyncOptions) -> str:
+        """The tenant whose lake a sync with these options works on.
+
+        :raises PBIError: when no account is stored, or the accounts belong to different
+            tenants
+        """
+        return self._session(options).tenant
 
     def accounts(self, options: SyncOptions) -> List[str]:
         """The accounts a sync with these options would use, each as ``profile (kind)``.
@@ -384,7 +404,8 @@ class SyncEngine:
         except KeyboardInterrupt:
             report.status, report.message = INTERRUPTED, "interrupted by the user"
         finally:
-            session.stop.set()
+            if stop is None:  # the run's own: release whatever still waits on it
+                session.stop.set()
             for client in session.clients.values():
                 client.limiter.interrupt = None
         self._finish(session, report, created, started)
@@ -574,6 +595,8 @@ class SyncEngine:
             report.status = (
                 COMPLETED_WITH_FAILURES if report.counts[FAILED] else COMPLETED
             )
+
+        report.notes.extend(session.planner.unplaced_notes().values())
 
         for target in session.selection.targets:
             if target.parent and not created.get(target.name):

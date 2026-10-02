@@ -1,0 +1,55 @@
+# A plan for `pbi sync plan --config <this file>`, `pbi sync run --config <this file>` and
+# `pbi tui --config <this file>`.
+#
+# It says what to keep in the data lake, for which workspaces, through which account, and
+# a few settings for a terminal UI session. It never holds a token: accounts are named by
+# the profiles of `pbi auth` (see `pbi profile list`). Keep it anywhere (a git repository
+# is a good place); a relative path in it is relative to the folder of this file.
+#
+# Check what it would do, and what it costs, before running it:
+#
+#     pbi sync plan --config pbi-plan.yaml
+#
+# Unknown keys are errors, and so is a key that does nothing, so that a misspelled one does
+# not silently do nothing.
+
+version: 1
+
+# The accounts to use, by the name of their profile. Without this section the active
+# profile of each group is used.
+accounts:
+  admin: admin-nlm # the administrator's profile
+  user: [svc-finance, svc-sales] # user profiles that may read the workspaces below
+
+# What to keep for the whole tenant, with the administrator's account. The targets are
+# those of `pbi sync plan --help`; without `targets` it is the plain sync. A target of a
+# user's account runs once for each of the user profiles above.
+tenant:
+  targets: [default, activity]
+  activity_days: 7 # days of audit events (1 to 28); only with `activity` above
+
+# What to keep for particular workspaces. A workspace is an `id`, or a `name` (a pattern:
+# `*` and `?` stand for any text and one character) that is looked up in the list of
+# workspaces in the lake, so the list has to be there (`default` in `tenant.targets` keeps
+# it). A name matches active workspaces that are not personal.
+workspaces:
+  - name: "Finance*"
+    # A metadata scan of these workspaces, with these options (those of
+    # `pbi workspaces scan batch`). A scan is always the administrator's.
+    scan: { lineage: true, datasource_details: true, get_artifact_users: true }
+    # Details of every item in them: users, datasources, pages, refreshes, parameters, tiles.
+    details: [users, datasources, refreshes]
+    # Whose account reads them: `auto` (the administrator's when it can, else a user whose
+    # own list of workspaces holds it), `admin`, `user` (never the administrator's), or the
+    # name of a profile.
+    via: auto
+
+  - id: 3f1c9a52-0000-0000-0000-000000000000
+    details: [pages, tiles] # only a user's account reads these
+    via: svc-finance
+
+# Settings for `pbi tui --config <this file>`.
+session:
+  lake: ~/PowerBI/shared-lake # open this lake (view only, unless it is the work lake)
+  open: "Finance*" # a workspace to select at the start: an id, or a name pattern
+  lazy: ask # what to do about a detail the lake lacks: ask (press f), auto, or off

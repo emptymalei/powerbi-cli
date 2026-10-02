@@ -78,6 +78,8 @@ class World:
             if scope is Scope.ADMIN:
                 return self.admin
             name = profile or first
+            if name not in oids:
+                raise PBIError(f"Profile '{name}' not found in group 'user'.")
             if name not in clients:
                 token = make_token(
                     tenant=TENANT, expires_in=timedelta(days=3650), oid=oids[name]
