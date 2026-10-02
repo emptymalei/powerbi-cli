@@ -45,6 +45,7 @@ from typing import (
 from loguru import logger
 
 from pbi_cli.core.client import rows_of
+from pbi_cli.core.details import Detail, collect
 from pbi_cli.core.registry import IDENTITY_PARAM, get_endpoint
 from pbi_cli.core.scan import RESULT_ENDPOINT, ScanFlags, split_scan_result
 from pbi_cli.core.store import EventDay, LakeStore, Snapshot
@@ -997,59 +998,71 @@ class Catalog:
             )
         return sorted(found, key=lambda a: (a.name.casefold(), a.email.casefold()))
 
+    def details(self, subject: Subject) -> List[Detail]:
+        """The details of a workspace or an item (who has access to it, its data sources,
+        the pages of a report, ...), each with what the lake holds of it, and the targets
+        that can fetch it. See `pbi_cli.core.details`."""
+        if isinstance(subject, Workspace):
+            kind, workspace_id = "workspace", subject.id
+        else:
+            kind, workspace_id = subject.kind, subject.workspace_id
+        state = self._store.read_state(self.tenant, STATE_NAME) or {}
+        return collect(
+            self._store,
+            self.tenant,
+            kind,
+            subject.id,
+            workspace_id,
+            state.get("units") or {},
+        )
+
     def users(self, subject: Subject) -> UsersView:
         """Who has access to a workspace or an item, as far as the lake knows."""
-        if isinstance(subject, Workspace):
-            if subject.raw.get("users"):
-                found = self.listing("workspace")
-                return UsersView(
-                    self._access(subject.raw["users"]),
-                    "admin.groups",
-                    found.fetched_at if found else None,
-                )
-            stored = self._store.latest(
-                self.tenant, USER_GROUP_USERS, {"groupId": subject.id}
+        if isinstance(subject, Workspace) and subject.raw.get("users"):
+            found = self.listing("workspace")
+            return UsersView(
+                self._access(subject.raw["users"]),
+                "admin.groups",
+                found.fetched_at if found else None,
             )
-            if stored is not None:
-                rows = rows_of(get_endpoint(USER_GROUP_USERS), stored.load())
-                return UsersView(
-                    self._access(rows), USER_GROUP_USERS, stored.fetched_at
-                )
+        detail = next((d for d in self.details(subject) if d.name == "users"), None)
+        if detail is not None and detail.held is not None:
+            held = detail.held
+            rows = rows_of(held.provider.endpoint, held.snapshot.load())
+            return UsersView(
+                self._access(rows), held.provider.endpoint.id, held.fetched_at
+            )
+        if isinstance(subject, Workspace):
             view = self.scan_of(subject.id)
             if view is not None and view.workspace.get("users"):
                 return UsersView(
                     self._access(view.workspace["users"]), "scan", view.as_of
                 )
-            return UsersView(
-                missing=(
-                    "The lake does not hold the users of this workspace. Scan it "
-                    "(`pbi sync run scan`), fetch them as a user (`pbi sync run "
-                    "user-group-users`), or list the workspaces with `-e users`."
-                )
-            )
-
-        if subject.kind == "report":
-            stored = self._store.latest(
-                self.tenant, REPORT_USERS_ENDPOINT, {"reportId": subject.id}
-            )
-            if stored is not None:
-                rows = rows_of(get_endpoint(REPORT_USERS_ENDPOINT), stored.load())
+        else:
+            scanned = subject.scan or {}
+            if scanned.get("users"):
+                view = self.scan_of(subject.workspace_id or "")
                 return UsersView(
-                    self._access(rows), REPORT_USERS_ENDPOINT, stored.fetched_at
+                    self._access(scanned["users"]),
+                    "scan",
+                    view.as_of if view else None,
                 )
-        scanned = subject.scan or {}
-        if scanned.get("users"):
-            view = self.scan_of(subject.workspace_id or "")
-            return UsersView(
-                self._access(scanned["users"]), "scan", view.as_of if view else None
-            )
-        hint = (
-            "`pbi sync run report-users`, or a scan with `--get-artifact-users`"
-            if subject.kind == "report"
-            else "a scan with `--get-artifact-users`"
+        targets = " or ".join(
+            f"`pbi sync run {p.target.name}`"
+            for p in (detail.providers if detail is not None else ())
         )
+        if isinstance(subject, Workspace):
+            ways = (
+                "a scan (`pbi sync run scan`), or list the workspaces with `-e users`"
+            )
+            ways = f"{targets}, {ways}" if targets else ways
+            return UsersView(
+                missing=f"The lake does not hold the users of this workspace. Fetch them with {ways}."
+            )
+        ways = "a scan with `--get-artifact-users`"
+        ways = f"{targets}, or {ways}" if targets else ways
         return UsersView(
-            missing=f"The lake does not hold the users of this item. Fetch them with {hint}."
+            missing=f"The lake does not hold the users of this item. Fetch them with {ways}."
         )
 
     # -- lineage -----------------------------------------------------------------------

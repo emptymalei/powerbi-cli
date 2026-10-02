@@ -29,6 +29,12 @@ DOCUMENTED_LIMITS = {
     "admin.users.artifact_access": "200/h",
     "admin.reports.users": "200/h",
     "admin.datasets.datasources": "300/h",
+    "admin.groups.users": "200/h",
+    "admin.datasets.users": "200/h",
+    "admin.dashboards.users": "200/h",
+    "admin.dataflows.users": "200/h",
+    "admin.dataflows.datasources": None,  # the page states no quota
+    "admin.refreshables": "200/h",
     "admin.workspaces.modified": "30/h",
     "admin.activityevents": "200/h",
     "admin.scan.start": "500/h, 16 concurrent",
@@ -42,6 +48,12 @@ DOCUMENTED_LIMITS = {
     "user.group_dataflows": None,
     "user.group_users": None,
     "user.report_pages": None,
+    "user.dataset_users": None,
+    "user.dataset_datasources": None,
+    "user.dataflow_datasources": None,
+    "user.dataset_refreshes": None,
+    "user.dataset_parameters": None,
+    "user.dashboard_tiles": None,
 }
 
 

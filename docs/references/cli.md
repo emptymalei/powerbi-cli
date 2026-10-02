@@ -877,7 +877,7 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 
 **Arguments**:
 
-* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages; 'default' stands for the plain ones, 'all' for everything.
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.
 
 **Options**:
 
@@ -945,7 +945,7 @@ $ pbi sync run [OPTIONS] [TARGET]...
 
 **Arguments**:
 
-* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages; 'default' stands for the plain ones, 'all' for everything.
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.
 
 **Options**:
 

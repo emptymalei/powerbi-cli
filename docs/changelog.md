@@ -62,6 +62,19 @@
 
 ### Added
 
+- New operations in the registry, with the targets that fetch them for every item: the users
+  of a workspace, dataset, dashboard and dataflow (`group-users`, `dataset-users`,
+  `dashboard-users`, `dataflow-users`, 200 requests an hour each), the data sources of a
+  dataflow (`dataflow-datasources`), the refresh summaries of the tenant (`refreshables`,
+  200 an hour), and for a user account the users, data sources and refresh history of a
+  dataset (`user-dataset-users`, `user-dataset-datasources`, `user-dataset-refreshes`, which
+  need Reshare or Write permission on the dataset), its parameters, the data sources of a
+  dataflow and the tiles of a dashboard. None is in a plain sync. See [Sync](sync.md).
+- `SyncOptions.only` limits a sync to some items: the targets that fan out over rows skip the
+  rows whose id (`datasetId`, `reportId`, `groupId`, ...) is not wanted. `pbi_cli.core.details`
+  says which details an item has, which operations can fetch each, and `Catalog.details` what the
+  lake holds of them; `Catalog.users` now reads the users of every kind of item from what was
+  fetched, by an administrator or by a user.
 - The [terminal UI](tui.md) has a **command palette**: `:` (as in Vim) or `Ctrl+P` (as in VS
   Code and Obsidian), or a click on `: commands` in the header, opens a search bar over every
   action of the UI, each with what it does and the key that does the same. Typing narrows

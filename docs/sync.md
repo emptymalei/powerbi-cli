@@ -43,6 +43,12 @@ every target.
 | `scan` | Metadata scan of every workspace | `admin.scan.result` | admin | no: the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item |
 | `report-users` | The users of every report | `admin.reports.users` | admin | no: the people who can open each report, with their e-mail addresses |
 | `datasources` | The data sources of every dataset | `admin.datasets.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
+| `group-users` | The users of every workspace | `admin.groups.users` | admin | no: the people who have access to each workspace, with their e-mail addresses |
+| `dataset-users` | The users of every dataset | `admin.datasets.users` | admin | no: the people who can use each dataset, with their e-mail addresses |
+| `dashboard-users` | The users of every dashboard | `admin.dashboards.users` | admin | no: the people who can open each dashboard, with their e-mail addresses |
+| `dataflow-users` | The users of every dataflow | `admin.dataflows.users` | admin | no: the people who can use each dataflow, with their e-mail addresses |
+| `dataflow-datasources` | The data sources of every dataflow | `admin.dataflows.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
+| `refreshables` | How each dataset refreshes: a summary of its last week | `admin.refreshables` | admin | no: who owns each dataset (e-mail addresses) and when it refreshes |
 | `activity` | Audit activity events, one log per UTC day | `admin.activityevents` | admin | no: what each person did and when: e-mail addresses, IP addresses, devices |
 | `user-groups` | Workspaces of the user | `user.groups` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
 | `user-apps` | Apps of the user | `user.apps` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
@@ -52,12 +58,37 @@ every target.
 | `user-dataflows` | Dataflows of each workspace of the user | `user.group_dataflows` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
 | `user-group-users` | The users of each workspace of the user | `user.group_users` | user | no: the people who have access to each workspace, with their e-mail addresses |
 | `user-pages` | Pages of each report of the user | `user.report_pages` | user | no: needs a user's token |
+| `user-dataset-users` | The users of each dataset of the user | `user.dataset_users` | user | no: the people who can use each dataset (it needs Reshare permission on it) |
+| `user-dataset-datasources` | The data sources of each dataset of the user | `user.dataset_datasources` | user | no: connection details of the data sources: servers, databases, paths (it needs Write permission on the dataset) |
+| `user-dataflow-datasources` | The data sources of each dataflow of the user | `user.dataflow_datasources` | user | no: connection details of the data sources: servers, databases, paths |
+| `user-dataset-refreshes` | The refresh history of each dataset of the user | `user.dataset_refreshes` | user | no: needs a user's token |
+| `user-dataset-parameters` | The parameters of each dataset of the user | `user.dataset_parameters` | user | no: the current values of the parameters, which can hold server names and paths |
+| `user-dashboard-tiles` | The tiles of each dashboard of the user | `user.dashboard_tiles` | user | no: needs a user's token |
 
 `report-users`, `datasources`, the `user-...` targets that ask for each workspace, and
 `user-pages` ask once for every row of another target (the users of every report, the
 datasets of every workspace, the pages of every report of every workspace). Naming one
 brings the target it needs along, and the plan says so. The quota of each operation is in
 the [table of the data lake](lake.md#endpoints-and-quotas).
+
+## Details of one item
+
+The targets of the kind `...-users`, `...-datasources`, `user-pages` and the like each fetch
+**one detail for every item** of their kind: who has access to every dataset, the data sources of
+every dataflow. They cost a request per item (the quota of an administrator's is 200 an hour for
+the users, 300 for the data sources of datasets), so none of them is in a plain sync, and the
+plan says what they cost before anything is sent.
+
+Fetching a detail for **one item** is what the [terminal UI](tui.md#details-one-item-at-a-time)
+does when you press `f`. It gives the sync `SyncOptions.only`, the placeholders of the
+requests (`datasetId`, `reportId`, `groupId`, ...) and the ids that are wanted, and the targets
+that fan out over rows skip the rows that are not wanted. From Python:
+
+```python
+from pbi_cli.core.sync.plan import SyncOptions
+
+SyncOptions(targets=("dataset-users",), only={"datasetId": ["<dataset id>"]})
+```
 
 ## Which accounts a sync uses
 

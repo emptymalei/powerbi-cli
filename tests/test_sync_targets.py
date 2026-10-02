@@ -85,7 +85,22 @@ def test_what_is_not_plain_says_why():
 def test_children_of():
     assert [t.name for t in children_of("reports")] == ["report-users"]
     assert [t.name for t in children_of("user-reports")] == ["user-pages"]
-    assert children_of("groups") == []
+    assert [t.name for t in children_of("groups")] == ["group-users"]
+    assert [t.name for t in children_of("datasets")] == [
+        "datasources",
+        "dataset-users",
+    ]
+    assert [t.name for t in children_of("dataflows")] == [
+        "dataflow-users",
+        "dataflow-datasources",
+    ]
+    assert [t.name for t in children_of("user-datasets")] == [
+        "user-dataset-users",
+        "user-dataset-datasources",
+        "user-dataset-refreshes",
+        "user-dataset-parameters",
+    ]
+    assert children_of("apps") == []
 
 
 def test_get_target_says_what_there_is():

@@ -80,6 +80,11 @@ class SyncOptions:
     :param admin_profile: the profile of the administrator account to use (default: the
         active one)
     :param user_profile: the profile of the user account to use (default: the active one)
+    :param only: fetch only for these items: a placeholder of the requests (``reportId``,
+        ``datasetId``, ``groupId``, ...) to the ids that are wanted. A target that fans out
+        over rows skips the rows that are not wanted, for each placeholder named here, and
+        does not narrow what is not named. It is how the details of one item are fetched
+        without those of every other.
     """
 
     targets: Tuple[str, ...] = ()
@@ -98,6 +103,12 @@ class SyncOptions:
     workspace_ids: Tuple[str, ...] = ()
     admin_profile: Optional[str] = None
     user_profile: Optional[str] = None
+    only: Mapping[str, Sequence[str]] = field(default_factory=dict, hash=False)
+
+    def allows(self, placeholder: str, value: Any) -> bool:
+        """Whether the requests for this id of this placeholder are wanted (see `only`)."""
+        wanted = self.only.get(placeholder)
+        return wanted is None or str(value) in wanted
 
     def profile_of(self, scope: Scope) -> Optional[str]:
         """The profile to use for a kind of account: the one asked for, else ``None`` (the
@@ -109,6 +120,14 @@ class SyncOptions:
             self,
             "workspace_ids",
             tuple(dict.fromkeys(str(i) for i in self.workspace_ids if i)),
+        )
+        object.__setattr__(
+            self,
+            "only",
+            {
+                str(name): tuple(dict.fromkeys(str(i) for i in ids if i))
+                for name, ids in dict(self.only).items()
+            },
         )
         if not 1 <= self.workers <= MAX_WORKERS:
             raise PBIError(f"workers must be between 1 and {MAX_WORKERS}")
@@ -135,6 +154,7 @@ class SyncOptions:
             "only_workspaces": len(self.workspace_ids),
             "admin_profile": self.admin_profile,
             "user_profile": self.user_profile,
+            "only": {name: len(ids) for name, ids in sorted(self.only.items())},
         }
 
 
@@ -450,6 +470,8 @@ class Planner:
                     value = row.get(name) if source == "row" else unit.params.get(name)
                     if value in (None, ""):
                         break
+                    if not self.options.allows(placeholder, value):
+                        break  # not wanted: the details of other items are not fetched
                     params[placeholder] = value
                 else:
                     made = self._snapshot(child, {**child.params, **params})

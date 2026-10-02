@@ -56,6 +56,13 @@ class Target:
         parameter of the parent's request)
     :param params: fixed parameters of the requests
     :param ttl: how long a stored answer stays fresh (default: the endpoint's ``ttl``)
+    :param item: the kind of item whose *detail* it fetches (``report``, ``dataset``,
+        ``dashboard``, ``dataflow`` or ``workspace``), for a target that exists to answer
+        something about one item at a time
+    :param detail: which detail of the item it is (``users``, ``datasources``, ``pages``,
+        ``refreshes``, ``parameters`` or ``tiles``)
+    :param match: for a target that lists many items in one answer (the refresh summaries
+        of the tenant): the field of its rows that holds the id of the item the row is about
     """
 
     name: str
@@ -70,6 +77,9 @@ class Target:
     bind: Mapping[str, Tuple[str, str]] = field(default_factory=dict)
     params: Mapping[str, Any] = field(default_factory=dict)
     ttl: Optional[timedelta] = None
+    item: str = ""
+    detail: str = ""
+    match: str = ""
 
 
 TARGETS: Tuple[Target, ...] = (
@@ -108,6 +118,8 @@ TARGETS: Tuple[Target, ...] = (
         sensitive="the people who can open each report, with their e-mail addresses",
         parent="reports",
         bind={"reportId": ("row", "id")},
+        item="report",
+        detail="users",
     ),
     Target(
         "datasources",
@@ -118,6 +130,79 @@ TARGETS: Tuple[Target, ...] = (
         sensitive="connection details of the data sources: servers, databases, paths",
         parent="datasets",
         bind={"datasetId": ("row", "id")},
+        item="dataset",
+        detail="datasources",
+    ),
+    Target(
+        "group-users",
+        "The users of every workspace",
+        Mode.FANOUT,
+        "admin.groups.users",
+        Scope.ADMIN,
+        sensitive="the people who have access to each workspace, with their e-mail addresses",
+        parent="groups",
+        bind={"groupId": ("row", "id")},
+        item="workspace",
+        detail="users",
+    ),
+    Target(
+        "dataset-users",
+        "The users of every dataset",
+        Mode.FANOUT,
+        "admin.datasets.users",
+        Scope.ADMIN,
+        sensitive="the people who can use each dataset, with their e-mail addresses",
+        parent="datasets",
+        bind={"datasetId": ("row", "id")},
+        item="dataset",
+        detail="users",
+    ),
+    Target(
+        "dashboard-users",
+        "The users of every dashboard",
+        Mode.FANOUT,
+        "admin.dashboards.users",
+        Scope.ADMIN,
+        sensitive="the people who can open each dashboard, with their e-mail addresses",
+        parent="dashboards",
+        bind={"dashboardId": ("row", "id")},
+        item="dashboard",
+        detail="users",
+    ),
+    Target(
+        "dataflow-users",
+        "The users of every dataflow",
+        Mode.FANOUT,
+        "admin.dataflows.users",
+        Scope.ADMIN,
+        sensitive="the people who can use each dataflow, with their e-mail addresses",
+        parent="dataflows",
+        bind={"dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="users",
+    ),
+    Target(
+        "dataflow-datasources",
+        "The data sources of every dataflow",
+        Mode.FANOUT,
+        "admin.dataflows.datasources",
+        Scope.ADMIN,
+        sensitive="connection details of the data sources: servers, databases, paths",
+        parent="dataflows",
+        bind={"dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="datasources",
+    ),
+    Target(
+        "refreshables",
+        "How each dataset refreshes: a summary of its last week",
+        Mode.SNAPSHOT,
+        "admin.refreshables",
+        Scope.ADMIN,
+        sensitive="who owns each dataset (e-mail addresses) and when it refreshes",
+        item="dataset",
+        detail="refreshes",
+        match="id",
     ),
     Target(
         "activity",
@@ -195,6 +280,8 @@ TARGETS: Tuple[Target, ...] = (
         sensitive="the people who have access to each workspace, with their e-mail addresses",
         parent="user-groups",
         bind={"groupId": ("row", "id")},
+        item="workspace",
+        detail="users",
     ),
     Target(
         "user-pages",
@@ -204,6 +291,81 @@ TARGETS: Tuple[Target, ...] = (
         Scope.USER,
         parent="user-reports",
         bind={"groupId": ("param", "groupId"), "reportId": ("row", "id")},
+        item="report",
+        detail="pages",
+    ),
+    Target(
+        "user-dataset-users",
+        "The users of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_users",
+        Scope.USER,
+        sensitive="the people who can use each dataset (it needs Reshare permission on it)",
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="users",
+    ),
+    Target(
+        "user-dataset-datasources",
+        "The data sources of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_datasources",
+        Scope.USER,
+        sensitive=(
+            "connection details of the data sources: servers, databases, paths "
+            "(it needs Write permission on the dataset)"
+        ),
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="datasources",
+    ),
+    Target(
+        "user-dataflow-datasources",
+        "The data sources of each dataflow of the user",
+        Mode.FANOUT,
+        "user.dataflow_datasources",
+        Scope.USER,
+        sensitive="connection details of the data sources: servers, databases, paths",
+        parent="user-dataflows",
+        bind={"groupId": ("param", "groupId"), "dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="datasources",
+    ),
+    Target(
+        "user-dataset-refreshes",
+        "The refresh history of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_refreshes",
+        Scope.USER,
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="refreshes",
+    ),
+    Target(
+        "user-dataset-parameters",
+        "The parameters of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_parameters",
+        Scope.USER,
+        sensitive="the current values of the parameters, which can hold server names and paths",
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="parameters",
+    ),
+    Target(
+        "user-dashboard-tiles",
+        "The tiles of each dashboard of the user",
+        Mode.FANOUT,
+        "user.dashboard_tiles",
+        Scope.USER,
+        parent="user-dashboards",
+        bind={"groupId": ("param", "groupId"), "dashboardId": ("row", "id")},
+        item="dashboard",
+        detail="tiles",
     ),
 )
 

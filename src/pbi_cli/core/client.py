@@ -462,6 +462,8 @@ class PowerBIClient:
                     " This operation needs a Fabric administrator: store that token "
                     "with `pbi auth -t <token> -g admin`."
                 )
+            elif endpoint.needs:
+                hint = f" The account needs {endpoint.needs}."
             else:
                 hint = " The account may have no access to this item, or the token lacks the scope."
             raise ApiError(
