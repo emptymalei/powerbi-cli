@@ -82,6 +82,10 @@ one person share their lists, a renamed profile keeps its history, and two accou
 overwrite each other's. Everything that is the same for everybody who can open a workspace
 (its reports, datasets, dashboards, dataflows and users) is kept once.
 
+A [plan file](plan-file.md) names the accounts it uses by these profile names (`accounts:`
+and `via:`), so one file can say that the administrator reads most workspaces and
+`svc-finance` the ones that only it is a member of. It never holds a token.
+
 In the [terminal UI](tui.md) the header shows every account you have, with how long each
 token lasts, and `p` lists the stored profiles of both groups, makes one of them active and
 stores a new token for it.

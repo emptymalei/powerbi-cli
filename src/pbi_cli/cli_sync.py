@@ -7,7 +7,8 @@ went and what the lake holds (it reads the lake only, so it needs no token).
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import AbstractSet, Annotated, List, Optional, Sequence
+from pathlib import Path
+from typing import AbstractSet, Annotated, List, Optional, Sequence, Tuple
 
 import typer
 
@@ -27,6 +28,8 @@ from pbi_cli.cli_support import (
 )
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.catalog import holding
+from pbi_cli.core.planfile import Overrides, PlanFile, Step
+from pbi_cli.core.planrun import PlanRun, SequencePlan
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
 from pbi_cli.core.registry import ENDPOINTS, Scope
 from pbi_cli.core.scan import ScanFlags
@@ -39,7 +42,7 @@ from pbi_cli.core.sync.engine import (
     RunReport,
     SyncEngine,
 )
-from pbi_cli.core.sync.plan import MAX_DAYS, MAX_WORKERS, Plan, SyncOptions
+from pbi_cli.core.sync.plan import MAX_DAYS, MAX_WORKERS, Plan, QuotaLine, SyncOptions
 from pbi_cli.core.sync.runners import DEFERRED, DONE, FAILED, SKIPPED
 from pbi_cli.core.sync.state import DEFERRED as MARKED_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARKED_FAILED
@@ -176,6 +179,21 @@ ScanTimeoutOption = Annotated[
         help="Seconds to wait for one scan (a timed out scan is continued next run)",
     ),
 ]
+ConfigOption = Annotated[
+    Optional[Path],
+    typer.Option(
+        "--config",
+        "-c",
+        exists=True,
+        dir_okay=False,
+        help=(
+            "A plan file (YAML) that says what to keep, for which workspaces and through "
+            "which account, instead of target names. --force, --max-age, --days, "
+            "--workers, --wait, --scan-interval and --scan-timeout still apply to every "
+            "step of it"
+        ),
+    ),
+]
 
 
 def _options(
@@ -274,11 +292,92 @@ def _count(value: Optional[int]) -> str:
     return "?" if value is None else str(value)
 
 
+# -- a plan file instead of target names -------------------------------------------------
+
+#: The options that say what a sync does; with a plan file they are written in the file.
+_IN_THE_FILE = {
+    "lineage": ("--lineage", "scan: {lineage: true}"),
+    "datasource_details": ("--datasource-details", "scan: {datasource_details: true}"),
+    "dataset_schema": ("--dataset-schema", "scan: {dataset_schema: true}"),
+    "dataset_expressions": (
+        "--dataset-expressions",
+        "scan: {dataset_expressions: true}",
+    ),
+    "get_artifact_users": ("--get-artifact-users", "scan: {get_artifact_users: true}"),
+    "full_scan": ("--full-scan", "tenant: {full_scan: true}"),
+    "exclude_personal": ("--exclude-personal", "tenant: {exclude_personal: true}"),
+    "exclude_inactive": ("--exclude-inactive", "tenant: {exclude_inactive: true}"),
+    "admin_profile": ("--admin-profile", "accounts: {admin: <profile>}"),
+    "user_profile": ("--user-profile", "accounts: {user: [<profile>]}"),
+}
+
+
+def _given(ctx: typer.Context, name: str) -> bool:
+    """Whether an option was typed on the command line (and not just left at its default)."""
+    return getattr(ctx.get_parameter_source(name), "name", "") == "COMMANDLINE"
+
+
+def _refuse_with_a_plan_file(ctx: typer.Context, targets: Optional[List[str]]) -> None:
+    """Refuse what says again, or against, what the plan file says.
+
+    :raises PBIError: for target names, or an option that the file takes over
+    """
+    if targets:
+        raise PBIError(
+            "Name targets or give a plan file, not both: the file says what to sync "
+            "(under tenant: targets: [...])."
+        )
+    for name, (flag, where) in _IN_THE_FILE.items():
+        if _given(ctx, name):
+            raise PBIError(
+                f"{flag} cannot be used with --config: the plan file says it "
+                f"({where})."
+            )
+
+
+def _overrides(
+    ctx: typer.Context,
+    *,
+    force: bool,
+    max_age: Optional[str],
+    days: int,
+    scan_interval: float,
+    scan_timeout: float,
+    workers: Optional[int] = None,
+    wait: Optional[float] = None,
+) -> Overrides:
+    """What the flags typed on the command line change in every step of a plan file: those
+    that were typed (a flag left at its default does not overrule the file)."""
+    return Overrides(
+        force=force,
+        max_age=parse_duration(max_age, "--max-age") if max_age else None,
+        days=days if _given(ctx, "days") else None,
+        workers=workers if _given(ctx, "workers") else None,
+        wait=wait if _given(ctx, "wait") else None,
+        scan_interval=scan_interval if _given(ctx, "scan_interval") else None,
+        scan_timeout=scan_timeout if _given(ctx, "scan_timeout") else None,
+    )
+
+
+def _plan_file_plan(config: Path, overrides: Overrides) -> None:
+    """``pbi sync plan --config``."""
+    store = _lake()
+    plan_file = PlanFile.load(config)
+    with ClientPool() as clients:
+        run = PlanRun(SyncEngine(clients, store), store, plan_file, overrides=overrides)
+        sequence = run.plan()
+    typer.echo(f"Data lake: {store.root}")
+    typer.echo(f"Plan file: {plan_file.path}")
+    if sequence.accounts:
+        typer.echo(f"Accounts: {', '.join(sequence.accounts)}")
+    _print_sequence(sequence)
+
+
 # -- plan ------------------------------------------------------------------------------
 
 
-def _print_plan(plan: Plan) -> None:
-    typer.echo(f"Tenant: {plan.tenant}\n")
+def _print_target_rows(plan: Plan) -> None:
+    """The targets of a plan: how much of each is fresh, what is left, what it costs."""
     rows = []
     for item in plan.targets:
         rows.append(
@@ -298,7 +397,10 @@ def _print_plan(plan: Plan) -> None:
         for note in item.notes:
             typer.echo(f"  {item.target.name}: {note}")
 
-    if not plan.quota:
+
+def _print_quota(quota: Sequence[QuotaLine]) -> None:
+    """The requests a plan needs against the quota of each operation."""
+    if not quota:
         typer.echo("\nNothing to fetch: the lake holds everything fresh.")
         return
     typer.echo("\nRequests against the quota of each operation")
@@ -311,10 +413,10 @@ def _print_plan(plan: Plan) -> None:
                 line.quota or "-",
                 "-" if line.left is None else line.left,
             ]
-            for line in plan.quota
+            for line in quota
         ],
     )
-    over = [line for line in plan.quota if not line.fits]
+    over = [line for line in quota if not line.fits]
     if not over:
         typer.echo("\nEverything fits the quota now.")
     for line in over:
@@ -327,8 +429,36 @@ def _print_plan(plan: Plan) -> None:
         )
 
 
+def _print_plan(plan: Plan) -> None:
+    typer.echo(f"Tenant: {plan.tenant}\n")
+    _print_target_rows(plan)
+    _print_quota(plan.quota)
+
+
+def _print_sequence(sequence: SequencePlan) -> None:
+    """What a plan file would do: each step as a plan, then what is wrong or worth knowing,
+    then what all of them need from the quotas."""
+    for number, (step, made) in enumerate(sequence.steps, 1):
+        typer.secho(f"\nStep {number}: {step.title}", bold=True)
+        for item in made.targets:
+            if item.target.sensitive and not item.implied:
+                typer.secho(
+                    f"  {item.target.name} copies {item.target.sensitive}", fg="yellow"
+                )
+        _print_target_rows(made)
+    if not sequence.steps:
+        typer.echo("\nNo step is planned yet.")
+    for where, problem in sequence.unmatched:
+        typer.secho(f"  {where}: {problem}", fg="yellow")
+    for note in sequence.notes:
+        typer.secho(f"  {note}", fg="yellow")
+    if sequence.steps:
+        _print_quota(sequence.quota)
+
+
 @command(sync_app, "plan")
 def sync_plan(
+    ctx: typer.Context,
     targets: SyncTargets = None,
     max_age: MaxAgeOption = None,
     force: ForceOption = False,
@@ -345,6 +475,7 @@ def sync_plan(
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
     user_profile: UserProfileOption = None,
+    config: ConfigOption = None,
 ):
     """Show what a sync would fetch and what it costs, without calling the API
 
@@ -359,7 +490,14 @@ def sync_plan(
 
     # Plus the audit events of the last week, and a scan with lineage
     pbi sync plan default activity scan --days 7 --lineage
+
+    # What a plan file would do: each of its steps, and what they cost together
+    pbi sync plan --config pbi-plan.yaml
     ```
+
+    With `--config` the plan file says what to sync, so no target names and none of the
+    options that it takes over (the scan options, the profiles) can be given; `--force`,
+    `--max-age`, `--days` and the like still apply to every step of it.
 
     !!! warning "Requires Admin"
 
@@ -369,6 +507,20 @@ def sync_plan(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    if config is not None:
+        _refuse_with_a_plan_file(ctx, targets)
+        _plan_file_plan(
+            config,
+            _overrides(
+                ctx,
+                force=force,
+                max_age=max_age,
+                days=days,
+                scan_interval=scan_interval,
+                scan_timeout=scan_timeout,
+            ),
+        )
+        return
     options = _options(
         targets,
         force=force,
@@ -460,6 +612,7 @@ def _print_report(report: RunReport) -> None:
 
 @command(sync_app, "run")
 def sync_run(
+    ctx: typer.Context,
     targets: SyncTargets = None,
     max_age: MaxAgeOption = None,
     force: ForceOption = False,
@@ -496,6 +649,7 @@ def sync_run(
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
     user_profile: UserProfileOption = None,
+    config: ConfigOption = None,
 ):
     """Fetch what the targets need into the data lake, within the quotas
 
@@ -525,7 +679,16 @@ def sync_run(
 
     # Every night, from a scheduler: the events of the last week
     pbi sync run default activity --days 7
+
+    # What a plan file says, step after step (the steps for the tenant first)
+    pbi sync run --config pbi-plan.yaml
     ```
+
+    With `--config` the plan file says what to sync, so no target names and none of the
+    options that it takes over (the scan options, the profiles) can be given; `--force`,
+    `--max-age`, `--days`, `--workers` and the like still apply to every step of it. The
+    run ends at the first step whose token expired; run it again after signing in and it
+    continues, as every step skips what the lake holds fresh.
 
     !!! warning "Requires Admin"
 
@@ -535,6 +698,23 @@ def sync_run(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    if config is not None:
+        _refuse_with_a_plan_file(ctx, targets)
+        report, again = _plan_file_run(
+            config,
+            _overrides(
+                ctx,
+                force=force,
+                max_age=max_age,
+                days=days,
+                scan_interval=scan_interval,
+                scan_timeout=scan_timeout,
+                workers=workers,
+                wait=wait,
+            ),
+        )
+        _finish_run(report, again)
+        return
     options = _options(
         targets,
         force=force,
@@ -565,9 +745,37 @@ def sync_run(
             engine.accounts(options),
         )
         report = engine.run(options, on_event=_Progress())
-    _print_report(report)
+    _finish_run(
+        report, "pbi sync run" + "".join(f" {name}" for name in options.targets)
+    )
 
-    again = "pbi sync run" + "".join(f" {name}" for name in options.targets)
+
+def _plan_file_run(config: Path, overrides: Overrides) -> Tuple[RunReport, str]:
+    """``pbi sync run --config``: the steps of the plan file, one after the other.
+
+    :return: how it went, and the command that continues it
+    """
+    store = _lake()
+    plan_file = PlanFile.load(config)
+    typer.echo(f"Data lake: {store.root}")
+    typer.echo(f"Plan file: {plan_file.path}")
+    with ClientPool() as clients:
+        run = PlanRun(SyncEngine(clients, store), store, plan_file, overrides=overrides)
+        typer.echo(f"Accounts: {', '.join(run.accounting().labels())}")
+
+        def announce(number: int, step: Step) -> None:
+            typer.secho(f"\nStep {number}: {step.title}", bold=True)
+
+        report = run.run(on_event=_Progress(), on_step=announce)
+    return report, f"pbi sync run --config {config}"
+
+
+def _finish_run(report: RunReport, again: str) -> None:
+    """Say how a run went and end the command as it deserves.
+
+    :param again: the command that continues it
+    """
+    _print_report(report)
     if report.status == TOKEN_EXPIRED:
         raise PBIError(
             f"{report.message}\nWhat is done is kept: after signing in, run `{again}` "

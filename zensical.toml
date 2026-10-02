@@ -14,6 +14,7 @@ nav = [
     { "Data lake" = "lake.md" },
     { "Sharing a lake" = "sharing.md" },
     { "Sync" = "sync.md" },
+    { "Plan file" = "plan-file.md" },
     { "Terminal UI" = "tui.md" },
     { "Cache (legacy)" = "cache.md" },
   ] },

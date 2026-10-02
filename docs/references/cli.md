@@ -860,7 +860,14 @@ pbi sync plan
 
 # Plus the audit events of the last week, and a scan with lineage
 pbi sync plan default activity scan --days 7 --lineage
+
+# What a plan file would do: each of its steps, and what they cost together
+pbi sync plan --config pbi-plan.yaml
 ```
+
+With `--config` the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; `--force`,
+`--max-age`, `--days` and the like still apply to every step of it.
 
 !!! warning "Requires Admin"
 
@@ -896,6 +903,7 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
 * `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
+* `-c, --config <file>`: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it
 * `--help`: Show this message and exit.
 
 ### `pbi sync run`
@@ -928,7 +936,16 @@ pbi sync run report-users
 
 # Every night, from a scheduler: the events of the last week
 pbi sync run default activity --days 7
+
+# What a plan file says, step after step (the steps for the tenant first)
+pbi sync run --config pbi-plan.yaml
 ```
+
+With `--config` the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; `--force`,
+`--max-age`, `--days`, `--workers` and the like still apply to every step of it. The
+run ends at the first step whose token expired; run it again after signing in and it
+continues, as every step skips what the lake holds fresh.
 
 !!! warning "Requires Admin"
 
@@ -966,6 +983,7 @@ $ pbi sync run [OPTIONS] [TARGET]...
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
 * `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
+* `-c, --config <file>`: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it
 * `--help`: Show this message and exit.
 
 ### `pbi sync status`

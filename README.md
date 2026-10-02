@@ -97,6 +97,12 @@ The details of one item (who has access, data sources, refresh history, ...) com
 who can fetch what, and `SyncOptions.only` limits a sync to the items that are wanted; the
 Details tab and `f` of the Explorer use them through `src/pbi_cli/tui/fetching.py`.
 
+A plan file (`src/pbi_cli/core/planfile.py`) says what to keep, for which workspaces and through
+which account, as a YAML file with no token in it; it compiles to ordinary sync runs (one step for
+the tenant, then one for each set of workspaces, details and account), which
+`src/pbi_cli/core/planrun.py` plans and runs one after the other for `pbi sync plan|run --config`.
+`SyncOptions.workspace_ids` is what limits a step to its workspaces. See `docs/plan-file.md`.
+
 The command palette (`:` or `Ctrl+P`) is fed by `src/pbi_cli/tui/commands.py`, which lists what
 can be done from the screen that is shown (give a new action a `Command` there, and it can be
 searched), and by the providers in `src/pbi_cli/tui/palette.py`.

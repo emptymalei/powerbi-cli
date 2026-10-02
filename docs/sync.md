@@ -120,6 +120,21 @@ never see each other's, a profile that is renamed keeps its history, and the pla
 what is fresh *for the account* it is made for. What is the same for everyone who can see a
 workspace (its reports, datasets, dashboards, dataflows, users) is kept once.
 
+## A plan file instead of names
+
+What to keep, for which workspaces and through which account can also be written once, in a
+[plan file](plan-file.md), and used by every run:
+
+```bash
+pbi sync plan --config pbi-plan.yaml   # each step, and what they cost together
+pbi sync run  --config pbi-plan.yaml
+```
+
+It is the way to fetch the details of *chosen workspaces* (who has access, data sources, pages,
+how a dataset refreshes) within the quotas, and to read some workspaces through a user's
+account. The file replaces the target names and the options that say what to sync;
+`--force`, `--max-age`, `--days`, `--workers` and the like still apply to every step of it.
+
 ## Look before you fetch
 
 `pbi sync plan` works out what a sync would do from what the lake holds. It makes no

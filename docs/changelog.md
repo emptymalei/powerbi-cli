@@ -70,6 +70,14 @@
   other, and reports them as one). A name in the file is a pattern looked up in the list of
   workspaces in the lake; `via: auto` reads with the administrator's account when it can and
   else with the user account whose own list of workspaces holds the workspace.
+- **`pbi sync plan --config FILE` and `pbi sync run --config FILE`** take a [plan file](plan-file.md)
+  instead of target names. `plan` shows each step and what they cost together against the
+  quotas (the steps for the workspaces are worked out after the tenant's, so the plan before
+  the first run says which names it cannot look up yet), and `run` goes step after step and
+  ends at the first expired token (running again continues). `--force`, `--max-age`, `--days`,
+  `--workers`, `--wait`, `--scan-interval` and `--scan-timeout` apply to every step; what the
+  file says (target names, the scan options, `--full-scan`, the profiles) is refused on the
+  command line with a message that says where in the file it goes.
 - `SyncOptions.workspace_ids` limits a sync to some workspaces: besides the scan, the targets
   that fan out over items or workspaces fetch only for those of the chosen workspaces
   (`Target.workspace` says which field of a row holds its workspace; a row that has none is
