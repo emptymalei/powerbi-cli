@@ -64,6 +64,9 @@ _OPTION_BOXES = {
 class SyncScreen(Screen):
     """Plan, run and stop a sync."""
 
+    #: Whether the plan is that of a plan file (`pbi_cli.tui.planscreen.PlanSyncScreen`).
+    plan_mode = False
+
     BINDINGS = [
         Binding("escape", "back", "Explorer"),
         Binding("r", "run", "Run"),
@@ -81,7 +84,9 @@ class SyncScreen(Screen):
         self._log = Text()
         self._log_lines = 0
         self._finished_state: Any = None
-        self._planned: Optional[SyncOptions] = None
+        self._planned: Any = (
+            None  # the options that were planned (a plan file: its plan)
+        )
         self._problem = ""
         self._replan_timer: Optional[Timer] = None
         self.plans = 0  # how many plans were shown: a test waits for the next
@@ -97,41 +102,10 @@ class SyncScreen(Screen):
         return self.pbi.backend.available_scopes()
 
     def compose(self) -> ComposeResult:
-        available = self._available()
         yield StatusBar()
         with Horizontal(id="sync"):
             with VerticalScroll(id="sync-left"):
-                yield Label(
-                    Text.assemble(
-                        "Targets", ("   ⚠ copies personal data or queries", "grey62")
-                    ),
-                    classes="heading",
-                )
-                yield SelectionList[str](
-                    *[
-                        Selection(
-                            Text.assemble(
-                                (target.name, "bold"),
-                                f"  {target.title}",
-                                ("  ⚠" if target.sensitive else "", "yellow"),
-                            ),
-                            target.name,
-                            self._plain(target, available),
-                            id=target.name,
-                        )
-                        for target in TARGETS
-                    ],
-                    id="targets",
-                )
-                yield Static("", id="targets-note")
-                yield Label("Options", classes="heading")
-                for name, text in _OPTION_BOXES.items():
-                    yield Checkbox(text, id=name)
-                with Horizontal(classes="number"):
-                    yield Label("Days of events")
-                    yield Input(value=str(MAX_DAYS), type="integer", id="days")
-                    yield Label("At once")
-                    yield Input(value="4", type="integer", id="workers")
+                yield from self.compose_left()
             with Vertical(id="sync-right"):
                 with Horizontal(id="sync-buttons"):
                     yield Button("Run sync", variant="primary", id="run", compact=True)
@@ -172,6 +146,42 @@ class SyncScreen(Screen):
                             )
         yield Footer(show_command_palette=False)
 
+    def compose_left(self) -> ComposeResult:
+        """What says what to sync: the targets and the options (a session with a plan file
+        shows the file instead)."""
+        available = self._available()
+        yield Label(
+            Text.assemble(
+                "Targets", ("   ⚠ copies personal data or queries", "grey62")
+            ),
+            classes="heading",
+        )
+        yield SelectionList[str](
+            *[
+                Selection(
+                    Text.assemble(
+                        (target.name, "bold"),
+                        f"  {target.title}",
+                        ("  ⚠" if target.sensitive else "", "yellow"),
+                    ),
+                    target.name,
+                    self._plain(target, available),
+                    id=target.name,
+                )
+                for target in TARGETS
+            ],
+            id="targets",
+        )
+        yield Static("", id="targets-note")
+        yield Label("Options", classes="heading")
+        for name, text in _OPTION_BOXES.items():
+            yield Checkbox(text, id=name)
+        with Horizontal(classes="number"):
+            yield Label("Days of events")
+            yield Input(value=str(MAX_DAYS), type="integer", id="days")
+            yield Label("At once")
+            yield Input(value="4", type="integer", id="workers")
+
     @staticmethod
     def _plain(target: Any, available: Set[Scope]) -> bool:
         """Whether a target is chosen at first: the plain ones of the administrator, or of a
@@ -194,9 +204,12 @@ class SyncScreen(Screen):
         if highlighted is not None:  # the note names the accounts that are missing
             self._note_for(str(targets.get_option_at_index(highlighted).value))
 
+    #: The columns of the plan table.
+    PLAN_COLUMNS = ("Target", "Operation", "Units", "Fresh", "To do", "Requests")
+
     def on_mount(self) -> None:
         for table, columns in (
-            ("#plan", ("Target", "Operation", "Units", "Fresh", "To do", "Requests")),
+            ("#plan", self.PLAN_COLUMNS),
             ("#quota", ("Operation", "Needed", "Quota", "Left now")),
             ("#holdings", ("Target", "Operation", "Stored", "Newest")),
             ("#used", ("Operation", "Left (requests left/allowed)")),
@@ -379,6 +392,9 @@ class SyncScreen(Screen):
     # -- running -----------------------------------------------------------------------------
 
     @on(Button.Pressed, "#run")
+    def _run_pressed(self) -> None:
+        self.action_run()
+
     def action_run(self) -> None:
         if self._planned is None:
             self.notify(self._problem or "Wait for the plan.", severity="warning")

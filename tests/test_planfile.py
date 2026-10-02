@@ -12,6 +12,7 @@ from pbi_cli.core.planfile import (
     PlanFile,
     PlanFileError,
     describe_scan,
+    find_workspace,
 )
 from pbi_cli.core.registry import Scope
 from pbi_cli.core.scan import ScanFlags
@@ -117,6 +118,19 @@ def test_a_plan_that_says_only_its_version_is_an_empty_plan():
     assert plan.tenant is None and plan.workspaces == ()
     assert plan.session.lake is None and plan.session.open is None
     assert plan.session.lazy == "ask"
+
+
+@pytest.mark.parametrize(
+    "written, mode",
+    [("ask", "ask"), ("auto", "auto"), ("off", "off"), ('"off"', "off"), ("no", "off")],
+)
+def test_the_modes_of_lazy_are_read_as_they_are_written(written, mode):
+    # YAML reads a bare off (and no) as false, which must not make "off" unusable
+    assert read(f"version: 1\nsession: {{lazy: {written}}}\n").session.lazy == mode
+
+
+def test_a_mode_of_lazy_that_is_true_is_not_a_mode():
+    assert "session.lazy: must be text" in refused("version: 1\nsession: {lazy: on}\n")
 
 
 def test_a_section_with_nothing_under_it_is_an_empty_section():
@@ -415,9 +429,38 @@ def test_a_missing_file_is_said_in_words(tmp_path):
         PlanFile.load(tmp_path / "nope.yaml")
 
 
-def test_a_file_that_is_not_text_is_said_in_words(tmp_path):
+@pytest.mark.parametrize(
+    "encoding", ["utf-8", "utf-8-sig", "utf-16", "utf-16-le-bom", "utf-16-be-bom"]
+)
+def test_a_file_is_read_as_the_tool_that_made_it_wrote_it(tmp_path, encoding):
+    import codecs
+
+    text = "version: 1\nsession: {open: 'Zürich*'}\n"
+    data = {
+        "utf-8": text.encode("utf-8"),
+        "utf-8-sig": text.encode("utf-8-sig"),
+        "utf-16": text.encode(
+            "utf-16"
+        ),  # Python writes the mark and the machine's order
+        "utf-16-le-bom": codecs.BOM_UTF16_LE + text.encode("utf-16-le"),
+        "utf-16-be-bom": codecs.BOM_UTF16_BE + text.encode("utf-16-be"),
+    }[encoding]
     path = tmp_path / "plan.yaml"
-    path.write_bytes(b"\xff\xfe\x00bad")
+    path.write_bytes(data)
+
+    assert PlanFile.load(path).session.open == "Zürich*"
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"version: 1\n\xc3\x28",  # not UTF-8
+        b"\xff\xfev\x00e",  # UTF-16 that stops in the middle of a character
+    ],
+)
+def test_a_file_that_is_not_text_is_said_in_words(tmp_path, data):
+    path = tmp_path / "plan.yaml"
+    path.write_bytes(data)
 
     with pytest.raises(PlanFileError, match="Cannot read the plan file"):
         PlanFile.load(path)
@@ -1109,6 +1152,48 @@ def test_a_flag_that_is_not_given_changes_nothing():
     assert Overrides().apply(options) is options
     assert Overrides(wait=0.0).apply(options).max_wait == 0.0  # zero is a value
     assert Overrides(force=False, days=None).apply(options) == options
+
+
+# ---------------------------------------------------------------------------
+# the workspace a session opens
+# ---------------------------------------------------------------------------
+
+
+def test_the_workspace_to_open_is_the_one_with_the_id_else_the_first_that_matches():
+    found = find_workspace
+    lake = [
+        workspace("Finance EU", "ws-eu"),
+        workspace("Finance US", "ws-us"),
+        workspace("Sales", "ws-sales"),
+    ]
+
+    assert found("ws-us", lake).name == "Finance US"
+    assert found("Finance*", lake).id == "ws-eu"  # the first in the order of the lake
+    assert found("sales", lake).id == "ws-sales"  # case does not matter
+    assert found("Finance ?S", lake).id == "ws-us"
+    assert found("Nothing", lake) is None
+    assert found("Finance", lake) is None  # the whole name has to match
+
+
+def test_an_id_wins_over_a_name_and_an_active_workspace_over_a_deleted_one():
+    found = find_workspace
+    lake = [
+        workspace("Old", "ws-old", state="Deleted"),
+        workspace("ws-new", "ws-1"),  # a workspace whose name looks like an id
+        workspace("Old", "ws-new"),
+    ]
+
+    assert found("ws-new", lake).id == "ws-new"  # the id, not the name
+    assert found("Old", lake).id == "ws-new"  # the active one, not the deleted one
+    assert (
+        found("Old", [lake[0]]).id == "ws-old"
+    )  # but a deleted one if it is all there is
+
+
+def test_a_personal_workspace_can_be_opened_by_name():
+    lake = [workspace("My workspace", "ws-p", kind="PersonalGroup")]
+
+    assert find_workspace("My*", lake).id == "ws-p"
 
 
 # ---------------------------------------------------------------------------

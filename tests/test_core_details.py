@@ -9,9 +9,10 @@ from pbi_cli.core.details import (
     collect,
     detail_names,
     fetch_options,
+    has_margin,
     providers_of,
 )
-from pbi_cli.core.registry import Scope
+from pbi_cli.core.registry import Scope, get_endpoint
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import STATE_NAME
 
@@ -363,3 +364,16 @@ def test_a_unit_that_was_only_held_back_is_not_a_problem(world):
     }
 
     assert found["users"].problems == () and found["users"].refused == ()
+
+
+def test_the_margin_is_half_of_the_smallest_allowance_of_the_operation():
+    users = get_endpoint("admin.reports.users")  # 200 an hour
+    groups = get_endpoint("admin.groups")  # 50 an hour and 15 a minute
+    pages = get_endpoint("user.report_pages")  # no documented quota
+
+    assert has_margin(users, 101) and not has_margin(users, 100)
+    assert has_margin(groups, 8) and not has_margin(
+        groups, 7
+    )  # 15 a minute: half is 7.5
+    assert has_margin(pages, 0) and has_margin(pages, None)
+    assert has_margin(users, None)

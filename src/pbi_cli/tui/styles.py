@@ -101,6 +101,9 @@ DataTable {
 #sync-right {
     width: 1fr;
 }
+PlanSyncScreen #sync-left {
+    width: 38;
+}
 #targets {
     height: auto;
     max-height: 16;

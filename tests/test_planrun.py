@@ -438,6 +438,25 @@ def test_the_reports_of_the_steps_are_added_up():
     )  # a failure in a step is one in the plan
 
 
+def test_a_plan_that_stops_for_a_token_says_whose_it_was():
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    done, expired = report(done=2), report(TOKEN_EXPIRED)
+    expired.group, expired.profile = "user", "svc"
+
+    merged = merge_reports(
+        [done, expired], started=start, finished=start, halted=TOKEN_EXPIRED
+    )
+    stopped = merge_reports(
+        [done, expired], started=start, finished=start, halted=INTERRUPTED
+    )
+
+    assert (merged.group, merged.profile) == ("user", "svc")
+    assert (stopped.group, stopped.profile) == (
+        None,
+        None,
+    )  # not a token that stopped it
+
+
 def test_a_plan_is_complete_when_every_step_is():
     start = datetime(2026, 1, 1, tzinfo=timezone.utc)
 

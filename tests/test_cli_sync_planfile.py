@@ -192,6 +192,19 @@ def test_a_run_goes_step_after_step_and_keeps_what_it_fetched(
     assert not accounts.calls_to(r"^/admin/capacities$")
 
 
+def test_a_plan_that_asks_for_nothing_runs_without_an_account(
+    fake, cache_folder, tmp_path
+):
+    path = write(tmp_path, "version: 1\n")
+
+    result = sync("run", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "Accounts:" not in result.output  # there is none to name
+    assert "Plan file:" in result.output and "Finished in" in result.output
+    assert fake.calls == []
+
+
 def test_a_second_run_fetches_nothing_that_is_fresh(accounts, tmp_path):
     path = write(tmp_path, TENANT_AND_USERS)
     sync("run", "--config", path)

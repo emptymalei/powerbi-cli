@@ -12,7 +12,7 @@ only requests it can make are those of the sync engine, which only reads.
 """
 
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from loguru import logger
 from textual import work
@@ -20,6 +20,8 @@ from textual.app import App
 from textual.binding import Binding
 
 from pbi_cli.core.catalog import Catalog, Match
+from pbi_cli.core.planfile import find_workspace
+from pbi_cli.core.planrun import PlanRun
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
@@ -35,6 +37,7 @@ from pbi_cli.tui.modals import (
     SignInModal,
 )
 from pbi_cli.tui.palette import CommandsProvider, GotoProvider
+from pbi_cli.tui.planscreen import PlanSyncScreen
 from pbi_cli.tui.run import RunState
 from pbi_cli.tui.status import StatusBar
 from pbi_cli.tui.styles import CSS, THEME
@@ -59,6 +62,10 @@ class PBIApp(App[None]):
     :param backend: the lake, the clients and the sign-in
     :param tenant: the tenant to browse (default: that of the token, or the only one in the
         lake)
+
+    A backend with a plan file (``pbi tui --config``) gives the Sync screen of the plan file,
+    and the settings of its ``session`` section: the workspace to open, and what to do about
+    a detail the lake lacks.
     """
 
     TITLE = "pbi"
@@ -80,16 +87,22 @@ class PBIApp(App[None]):
     ]
 
     def __init__(self, backend: Backend, tenant: Optional[str] = None):
+        # before the app reads it: a plan file has a Sync screen of its own
+        self.SCREENS = {
+            "explorer": ExplorerScreen,
+            "sync": PlanSyncScreen if backend.plan is not None else SyncScreen,
+        }
         super().__init__()
         self.backend = backend
         self._wanted = tenant
+        self._opened = False
         self.identity = Identity()
         self.identities: List[Identity] = []
         self.tenant: Optional[str] = None
         self.catalog: Optional[Catalog] = None
         self.run_state: Optional[RunState] = None
         self.lake_label = lake_label(backend.store.root)
-        self._resume: Optional[Tuple[SyncOptions, str]] = None
+        self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
         self._sink: Optional[int] = None
 
     # -- start and end -----------------------------------------------------------------------
@@ -213,9 +226,9 @@ class PBIApp(App[None]):
             self.refresh_identity()
             self.notify(f"Signed in ({signed}).")
             if self._resume is not None:
-                options, label_text = self._resume
+                work_to_do, label_text = self._resume
                 self._resume = None
-                self.start_sync(options, label_text)
+                self.start_sync(work_to_do, label_text)
 
         self.push_screen(SignInModal(self.backend, group, reason, profile), signed_in)
 
@@ -253,13 +266,18 @@ class PBIApp(App[None]):
         self.notify(f"{profile} is now the active profile of the group {group}.")
 
     def explain_sync_problem(
-        self, error: BaseException, resume: Optional[Tuple[SyncOptions, str]]
+        self,
+        error: BaseException,
+        resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]],
     ) -> None:
         """Say why a sync could not run; for a missing or expired token, ask to sign in."""
         if isinstance(error, AuthError):
             self._resume = resume
-            # ask for the kind of token that is missing or expired, not always the admin's
-            self.action_sign_in(reason=str(error), group=error.group or "admin")
+            # ask for the kind of token that is missing or expired, not always the admin's,
+            # and store it under the profile it is about (a plan can use several accounts)
+            self.action_sign_in(
+                reason=str(error), group=error.group or "admin", profile=error.profile
+            )
         elif isinstance(error, PBIError):
             self.notify(str(error), title="Cannot sync", severity="error")
         else:
@@ -399,9 +417,12 @@ class PBIApp(App[None]):
 
     # -- syncing -----------------------------------------------------------------------------
 
-    def start_sync(self, options: SyncOptions, label_text: str) -> bool:
-        """Run a sync in the background.
+    def start_sync(
+        self, work_to_do: Union[SyncOptions, PlanRun], label_text: str
+    ) -> bool:
+        """Run a sync, or the steps of a plan file, in the background.
 
+        :param work_to_do: the options of one sync, or a plan run
         :return: ``False`` if one is running already, or the lake is only looked at
         """
         if self.refuse_when_view_only():
@@ -409,7 +430,7 @@ class PBIApp(App[None]):
         if self.run_state is not None and self.run_state.running:
             self.notify("A sync is already running.", severity="warning")
             return False
-        state = RunState(label_text, options, self.backend.clock())
+        state = RunState(label_text, work_to_do, self.backend.clock())
         self.run_state = state
         self._run_sync(state)
         self.refresh_bars()
@@ -418,9 +439,14 @@ class PBIApp(App[None]):
     @work(thread=True, group="sync")
     def _run_sync(self, state: RunState) -> None:
         try:
-            report = self.backend.engine().run(
-                state.options, on_event=state.on_event, stop=state.stop
-            )
+            if isinstance(state.work, PlanRun):
+                report = state.work.run(
+                    on_event=state.on_event, on_step=state.on_step, stop=state.stop
+                )
+            else:
+                report = self.backend.engine().run(
+                    state.work, on_event=state.on_event, stop=state.stop
+                )
         except Exception as error:
             # no token for a target, tokens of two tenants, or a bug
             state.log(f"{type(error).__name__}: {error}", "red")
@@ -445,13 +471,16 @@ class PBIApp(App[None]):
     ) -> None:
         self.reload_catalog()
         self.refresh_bars()
-        resume = (state.options, state.label)
+        resume = (state.work, state.label)
         if error is not None:
             self.explain_sync_problem(error, resume)
             return
         assert report is not None
         if report.status == TOKEN_EXPIRED:
-            self.explain_sync_problem(TokenExpiredError(report.message), resume)
+            expired = TokenExpiredError(
+                report.message, group=report.group, profile=report.profile
+            )
+            self.explain_sync_problem(expired, resume)
         elif report.status == INTERRUPTED:
             self.notify(
                 f"{state.label}: stopped. What is done is kept; run it again to continue.",
@@ -486,10 +515,38 @@ class PBIApp(App[None]):
         if isinstance(explorer, ExplorerScreen):
             explorer.goto(found.kind, found.id, found.workspace_id)
 
+    @property
+    def lazy(self) -> str:
+        """What the session does about a detail the lake lacks (``session.lazy`` of the plan
+        file): ``ask``, ``auto`` or ``off``."""
+        plan = self.backend.plan
+        return plan.session.lazy if plan is not None else "ask"
+
     def fetching(self) -> Fetching:
-        """What this session can fetch for one item: which accounts are stored, and whether
-        the lake can be written."""
-        return Fetching(self.backend.available_scopes() or None, self.backend.readonly)
+        """What this session can fetch for one item: which accounts are stored, whether the
+        lake can be written, and whether it fetches by itself."""
+        return Fetching(
+            self.backend.available_scopes() or None, self.backend.readonly, self.lazy
+        )
+
+    def workspace_to_open(self) -> Optional[str]:
+        """The id of the workspace that the plan file says to select at the start, once the
+        lake is read; ``None`` when it says none, or after it was selected."""
+        plan = self.backend.plan
+        if self._opened or self.catalog is None:
+            return None
+        self._opened = True
+        if plan is None or not plan.session.open:
+            return None
+        found = find_workspace(plan.session.open, self.catalog.workspaces())
+        if found is None:
+            self.notify(
+                f"No workspace of the lake matches '{plan.session.open}' "
+                "(session.open of the plan file).",
+                severity="warning",
+            )
+            return None
+        return str(found.id)
 
     def stop_sync(self) -> None:
         """Ask the sync that runs to stop: it finishes the requests in flight and starts

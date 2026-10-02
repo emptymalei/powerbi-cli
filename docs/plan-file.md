@@ -31,6 +31,9 @@ pbi sync plan --config pbi-plan.yaml   # reads the lake, calls nothing
 pbi sync run  --config pbi-plan.yaml   # does it
 ```
 
+The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
+writes by default (`Out-File`, `>`), so a file made there needs no conversion.
+
 The file is **strict**. A key that is not known is an error (with a guess at what you
 meant), and so is a key that would do nothing, such as `activity_days` without `activity`
 among the targets, or an entry that asks for nothing. Every message names the file, the
@@ -164,7 +167,7 @@ users of a report), is fetched for those that can, and the plan says which are l
 
 ### `session`
 
-Settings for [`pbi tui --config`](tui.md) (a sync ignores them).
+Settings for [`pbi tui --config`](#in-the-terminal-ui) (a sync ignores them).
 
 ```yaml
 session:
@@ -175,9 +178,9 @@ session:
 
 | Key | What it is |
 | --- | --- |
-| `lake` | The lake to open: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. Any lake but your work lake is [opened read-only](sharing.md). |
+| `lake` | The lake to open: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. `--lake` and `PBI_LAKE` come first; without any, your work lake. Any lake but your work lake is [opened read-only](sharing.md). |
 | `open` | A workspace to select at the start: an id, or a name pattern (the first match). |
-| `lazy` | What to do about a detail the lake lacks: `ask` (press `f`, the default), `auto` or `off`. |
+| `lazy` | What to do about a detail the lake lacks: `ask` (press `f`, the default), `auto` (fetch the harmless ones by itself) or `off` (do nothing). Write `off` as it is: it is not read as a yes or a no. |
 
 ## How a file becomes runs
 
@@ -235,7 +238,7 @@ What a run does, and what it does not:
 - A name that matches **no workspace** fails the run (the exit code is 1) but the other
   entries are done. The same when a unit fails: it is reported and tried again next time.
 - A detail is fetched for the items of the chosen workspaces by reading the **list of items
-  of the whole tenant** (one request, fresh for a day) and picking the items whose
+  of the whole tenant** (one request, skipped while it is fresh) and picking the items whose
   `workspaceId` is in it. A row that does not say its workspace is left out, and the plan and
   the run say so.
 
@@ -254,6 +257,22 @@ be said again, and is refused with a message that says where in the file it goes
 names, the scan options (`--lineage`, `--datasource-details`, `--dataset-schema`,
 `--dataset-expressions`, `--get-artifact-users`), `--full-scan`, `--exclude-personal`,
 `--exclude-inactive`, `--admin-profile` and `--user-profile`.
+
+## In the terminal UI
+
+```bash
+pbi tui --config pbi-plan.yaml
+```
+
+![The Sync screen of a plan file: the file on the left, the numbered steps and their cost on the right](images/tui-planfile.svg)
+
+The Sync screen shows the file and the plan of its steps, **Run plan** goes through them, and
+`l` reads the file again. When a token expires, the dialog asks for the token of the account
+that expired (the kind and the profile), and the plan goes on from the step it was in. The
+`session` section chooses the lake, the workspace to select at the start, and whether the
+Explorer fetches the details of the item you stay on by itself (`lazy: auto`: only the
+harmless ones, and only while quota is left). See [With a plan file](tui.md#with-a-plan-file)
+for all of it.
 
 ## A nightly job
 

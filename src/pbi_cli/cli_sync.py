@@ -761,7 +761,9 @@ def _plan_file_run(config: Path, overrides: Overrides) -> Tuple[RunReport, str]:
     typer.echo(f"Plan file: {plan_file.path}")
     with ClientPool() as clients:
         run = PlanRun(SyncEngine(clients, store), store, plan_file, overrides=overrides)
-        typer.echo(f"Accounts: {', '.join(run.accounting().labels())}")
+        labels = run.accounting().labels()
+        if labels:
+            typer.echo(f"Accounts: {', '.join(labels)}")
 
         def announce(number: int, step: Step) -> None:
             typer.secho(f"\nStep {number}: {step.title}", bold=True)

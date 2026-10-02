@@ -30,6 +30,7 @@ from cloudpathlib.local import LocalS3Client, local_s3_implementation
 from core_helpers import NOW, make_client, make_token
 from sync_helpers import World
 
+from pbi_cli.core.planfile import PlanFile
 from pbi_cli.core.publish import plan_publish, publish
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore
@@ -159,6 +160,26 @@ def patch_scan_result() -> None:
 
 ADMIN = "admin-nlm"
 SERVICE = "svc-finance"
+
+#: The plan file of the picture of the Sync screen of a session that has one.
+PLAN_FILE = """\
+version: 1
+accounts:
+  admin: admin-nlm
+  user: [svc-finance]
+tenant:
+  targets: [default, activity]
+  activity_days: 7
+workspaces:
+  - name: "Finance*"
+    scan: {lineage: true, datasource_details: true}
+    details: [users, datasources, refreshes]
+  - name: "Sales*"
+    details: [users, pages]
+session:
+  open: Finance
+  lazy: ask
+"""
 
 
 def new_token(world: World) -> None:
@@ -499,6 +520,30 @@ def main() -> None:
 
         asyncio.run(shoot(world, "tui-sync.svg", plan))
         asyncio.run(shoot(world, "tui-run.svg", run))
+
+        # a plan file: the Sync screen shows the file and the plan of its steps
+        world.run("user-groups")  # what tells which account lists which workspace
+        plan_path = home / "PowerBI" / "plans" / "pbi-plan.yaml"
+        plan_path.parent.mkdir(parents=True)
+        plan_path.write_text(PLAN_FILE, encoding="utf-8")
+
+        async def planfile(app: PBIApp, pilot: Any) -> None:
+            await pilot.press("s")
+            screen = app.get_screen("sync")
+            await until(lambda: screen.plans > 0)
+
+        asyncio.run(
+            shoot(
+                world,
+                "tui-planfile.svg",
+                planfile,
+                backend_of(
+                    world,
+                    plan=PlanFile.load(plan_path),
+                    reload_plan=lambda: PlanFile.load(plan_path),
+                ),
+            )
+        )
 
         # someone with only a service account: no administrator targets, a plain sync of
         # what the account can see

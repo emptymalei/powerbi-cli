@@ -107,6 +107,159 @@ def test_the_work_lake_is_still_written_when_a_lake_is_named_that_is_the_same(
     assert PBIConfig().recent_lakes == []
 
 
+# ---------------------------------------------------------------------------
+# pbi tui --config
+# ---------------------------------------------------------------------------
+
+
+def write_plan(folder, text):
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "pbi-plan.yaml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_a_plan_file_goes_to_the_backend(opened, cache_folder, tmp_path):
+    path = write_plan(tmp_path, "version: 1\nsession: {lazy: auto, open: Fin}\n")
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 0, result.output
+    backend = opened["backend"]
+    assert backend.plan.session.lazy == "auto" and backend.plan.path == path.resolve()
+    assert backend.store.root == cache_folder / "lake"  # the plan names no lake
+
+
+def test_without_a_plan_file_the_backend_has_none(opened, cache_folder):
+    invoke("tui")
+
+    assert opened["backend"].plan is None and opened["backend"].reload_plan is None
+
+
+def test_the_lake_of_the_plan_file_is_opened_read_only(opened, cache_folder, tmp_path):
+    shared = a_lake(tmp_path / "shared")
+    path = write_plan(
+        tmp_path / "plans", f"version: 1\nsession: {{lake: '{shared}'}}\n"
+    )
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 0, result.output
+    backend = opened["backend"]
+    assert backend.store.root == shared
+    assert "opened with the plan file" in backend.readonly
+
+
+def test_a_lake_of_the_plan_file_is_relative_to_the_file(opened, tmp_path):
+    a_lake(tmp_path / "plans" / "shared")
+    path = write_plan(tmp_path / "plans", "version: 1\nsession: {lake: shared}\n")
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 0, result.output
+    assert opened["backend"].store.root == tmp_path / "plans" / "shared"
+
+
+def test_the_option_and_the_environment_beat_the_lake_of_the_plan_file(
+    opened, tmp_path, monkeypatch
+):
+    planned = a_lake(tmp_path / "planned")
+    typed = a_lake(tmp_path / "typed")
+    from_environment = a_lake(tmp_path / "environment")
+    path = write_plan(tmp_path / "p", f"version: 1\nsession: {{lake: '{planned}'}}\n")
+
+    invoke("tui", "--config", str(path), "--lake", str(typed))
+    option = opened["backend"].store.root
+    monkeypatch.setenv(cli_tui.LAKE_ENV, str(from_environment))
+    invoke("tui", "--config", str(path))
+    environment = opened["backend"].store.root
+
+    assert option == typed and environment == from_environment
+
+
+def test_the_lake_of_the_plan_file_is_remembered_like_any_other(
+    opened, cache_folder, tmp_path
+):
+    shared = a_lake(tmp_path / "shared")
+    path = write_plan(tmp_path / "p", f"version: 1\nsession: {{lake: '{shared}'}}\n")
+
+    invoke("tui", "--config", str(path))
+
+    assert PBIConfig().recent_lakes == [str(shared)]
+
+
+def test_the_plan_file_can_be_read_again(opened, cache_folder, tmp_path):
+    path = write_plan(tmp_path, "version: 1\nsession: {lazy: ask}\n")
+    invoke("tui", "--config", str(path))
+    backend = opened["backend"]
+
+    path.write_text("version: 1\nsession: {lazy: auto}\n", encoding="utf-8")
+    again = backend.read_plan_again()
+
+    assert again.session.lazy == "auto" and backend.plan is again
+
+
+def test_a_plan_file_that_is_wrong_when_it_is_read_again_leaves_the_old_one(
+    opened, cache_folder, tmp_path
+):
+    from pbi_cli.core.planfile import PlanFileError
+
+    path = write_plan(tmp_path, "version: 1\nsession: {lazy: ask}\n")
+    invoke("tui", "--config", str(path))
+    backend = opened["backend"]
+    old = backend.plan
+
+    path.write_text("version: 2\n", encoding="utf-8")
+    with pytest.raises(PlanFileError, match="version: 2 is not a version"):
+        backend.read_plan_again()
+
+    assert backend.plan is old
+
+
+def test_a_session_without_a_plan_file_has_nothing_to_read_again(opened, cache_folder):
+    invoke("tui")
+
+    with pytest.raises(PBIError, match="no plan file"):
+        opened["backend"].read_plan_again()
+    with pytest.raises(PBIError, match="no plan file"):
+        opened["backend"].plan_run()
+
+
+def test_a_way_to_read_a_plan_again_is_no_plan(opened, cache_folder):
+    invoke("tui")
+    backend = opened["backend"]
+    backend.reload_plan = lambda: pytest.fail("there is no plan to read again")
+
+    with pytest.raises(PBIError, match="no plan file to read again"):
+        backend.read_plan_again()
+
+
+def test_a_plan_file_that_is_wrong_is_said_before_the_tui_opens(
+    opened, cache_folder, tmp_path
+):
+    path = write_plan(tmp_path, "version: 1\nsession: {lazy: sometimes}\n")
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 1
+    assert "pbi-plan.yaml:2: session.lazy: 'sometimes' is not a mode" in result.output
+    assert opened == {}
+
+
+def test_a_file_that_does_not_exist_is_a_usage_error(opened, cache_folder, tmp_path):
+    result = invoke("tui", "--config", str(tmp_path / "nope.yaml"))
+
+    assert result.exit_code == 2 and "does not exist" in result.output
+    assert opened == {}
+
+
+def test_the_help_tells_about_the_plan_file():
+    result = invoke("tui", "--help")
+
+    assert "--config" in result.output and "plan file" in result.output.lower()
+    assert "session" in result.output
+
+
 def test_the_environment_names_the_lake_too(opened, tmp_path, monkeypatch):
     monkeypatch.setenv("PBI_LAKE", str(a_lake(tmp_path / "shared")))
 

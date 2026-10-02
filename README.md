@@ -101,7 +101,10 @@ A plan file (`src/pbi_cli/core/planfile.py`) says what to keep, for which worksp
 which account, as a YAML file with no token in it; it compiles to ordinary sync runs (one step for
 the tenant, then one for each set of workspaces, details and account), which
 `src/pbi_cli/core/planrun.py` plans and runs one after the other for `pbi sync plan|run --config`.
-`SyncOptions.workspace_ids` is what limits a step to its workspaces. See `docs/plan-file.md`.
+`SyncOptions.workspace_ids` is what limits a step to its workspaces. `pbi tui --config` gives the
+Sync screen of a plan file (`src/pbi_cli/tui/planscreen.py`) and the `session` settings: the lake
+(`resolve_lake(plan_lake=...)`), the workspace to open and `lazy` (`Fetching.auto` chooses what the
+Explorer may fetch by itself). See `docs/plan-file.md`.
 
 The command palette (`:` or `Ctrl+P`) is fed by `src/pbi_cli/tui/commands.py`, which lists what
 can be done from the screen that is shown (give a new action a `Command` there, and it can be

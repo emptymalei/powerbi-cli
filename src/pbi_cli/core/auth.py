@@ -113,4 +113,5 @@ def ensure_not_expired(
         f"The token{who} expired at {info.expires_at:%Y-%m-%d %H:%M} UTC. "
         f"Sign in again and store a fresh token with `{credentials.sign_in_hint()}`.",
         group=credentials.group,
+        profile=credentials.profile,
     )

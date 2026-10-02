@@ -115,6 +115,9 @@ class RunReport:
     :param cancelled: how many units were not done because the run was stopped
     :param notes: what else the reader should know
     :param message: the reason a run was stopped
+    :param group: for a run that stopped for an expired token: the kind of account it was
+    :param profile: and the profile, when it is known, so that the new token can be stored
+        under it
     """
 
     run_id: str
@@ -128,6 +131,8 @@ class RunReport:
     cancelled: int = 0
     notes: List[str] = field(default_factory=list)
     message: str = ""
+    group: Optional[str] = None
+    profile: Optional[str] = None
 
     @property
     def retry_after(self) -> Optional[float]:
@@ -401,6 +406,7 @@ class SyncEngine:
                 report.message = "stopped before everything was done"
         except TokenExpiredError as error:
             report.status, report.message = TOKEN_EXPIRED, str(error)
+            report.group, report.profile = error.group, error.profile
         except KeyboardInterrupt:
             report.status, report.message = INTERRUPTED, "interrupted by the user"
         finally:

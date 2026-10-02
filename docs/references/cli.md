@@ -1032,10 +1032,15 @@ pbi tui
 
 # Look at a lake that someone shared: no token, no network to Power BI, read-only
 pbi tui --lake s3://my-bucket/pbi-lake
+
+# With a plan file: its steps on the Sync screen, and its session settings
+pbi tui --config pbi-plan.yaml
 ```
 
 A lake given with `--lake` is only read: nothing can be fetched into it, and no account
-is needed. Only the lake of the cache folder is written by a sync.
+is needed. Only the lake of the cache folder is written by a sync. With `--config` the
+lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
+else the lake of the cache folder.
 
 **Usage**:
 
@@ -1047,6 +1052,7 @@ $ pbi tui [OPTIONS]
 
 * `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `-c, --config <file>`: A plan file (YAML): the Sync screen plans and runs its steps, and its session section says which lake to open, which workspace to select and what to do about a detail the lake lacks
 * `--help`: Show this message and exit.
 
 ## `pbi users`

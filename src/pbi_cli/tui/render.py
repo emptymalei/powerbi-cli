@@ -7,6 +7,7 @@ that it can be tested without a terminal. The screens only put the results in wi
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from rich.console import Group, RenderableType
@@ -31,6 +32,8 @@ from pbi_cli.core.catalog import (
     scalar_fields,
 )
 from pbi_cli.core.details import Detail as ItemDetail
+from pbi_cli.core.planfile import PlanFile, describe_scan
+from pbi_cli.core.planrun import SequencePlan
 from pbi_cli.core.store import EventDay
 from pbi_cli.core.sync.plan import Plan
 from pbi_cli.core.timefmt import format_age
@@ -952,3 +955,100 @@ def plan_notes(plan: Plan) -> List[str]:
     if plan.quota and all(line.fits for line in plan.quota):
         notes.append("Everything fits the quota now.")
     return notes
+
+
+def sequence_rows(sequence: SequencePlan) -> List[Tuple[str, ...]]:
+    """The rows of the plan table of a plan file: the number of the step comes first, on the
+    first row of each step."""
+    rows: List[Tuple[str, ...]] = []
+    for number, (_, made) in enumerate(sequence.steps, 1):
+        for index, row in enumerate(plan_rows(made)):
+            rows.append((str(number) if index == 0 else "", *row))
+    return rows
+
+
+def sequence_quota_rows(
+    sequence: SequencePlan,
+) -> List[Tuple[str, str, str, str, bool]]:
+    """The rows of the quota table of a plan file: what all its steps need together."""
+    return quota_rows(Plan("", [], sequence.quota))
+
+
+def sequence_notes(sequence: SequencePlan) -> List[str]:
+    """What else to know about the plan of a plan file: the steps, the names that match no
+    workspace, the notes of the steps, and how it fits the quotas."""
+    notes = [
+        f"step {number}: {step.title}"
+        for number, (step, _) in enumerate(sequence.steps, 1)
+    ]
+    notes.extend(f"{where}: {problem}" for where, problem in sequence.unmatched)
+    notes.extend(sequence.notes)
+    if any(item.implied for _, made in sequence.steps for item in made.targets):
+        notes.append("* only here because another target needs its rows")
+    for number, (_, made) in enumerate(sequence.steps, 1):
+        notes.extend(
+            f"step {number}, {item.target.name}: {note}"
+            for item in made.targets
+            for note in item.notes
+        )
+    if not sequence.steps:
+        notes.append("No step is planned yet.")
+    elif not sequence.quota:
+        notes.append("Nothing to fetch: the lake holds everything fresh.")
+    for line in sequence.quota:
+        if not line.fits:
+            later = f", about {line.hours} more hour(s)" if line.hours else ""
+            notes.append(
+                f"{line.endpoint} needs {line.requests} requests and {line.left} fit now "
+                f"({line.quota}): the rest is held back{later}; run again to continue."
+            )
+    if sequence.quota and all(line.fits for line in sequence.quota):
+        notes.append("Everything fits the quota now.")
+    return notes
+
+
+def short_path(path: Path) -> str:
+    """A folder as short as it can be: ``~`` for the home folder."""
+    try:
+        inside = path.resolve().relative_to(Path.home().resolve()).as_posix()
+    except ValueError:  # not inside the home folder
+        return str(path)
+    return "~" if inside == "." else f"~/{inside}"
+
+
+def plan_file_summary(plan: PlanFile) -> Text:
+    """What a plan file says, for the left of the Sync screen: the accounts, the tenant, each
+    entry for the workspaces, and the settings of the session."""
+    text = Text()
+    text.append("Plan file\n", style="bold")
+    text.append(f"{plan.name}\n", style="cyan")
+    if plan.path is not None:
+        text.append(f"{short_path(plan.path.parent)}\n", style="grey62")
+    admin = plan.accounts.admin or "the active profile"
+    users = ", ".join(plan.accounts.user) or "the active profile"
+    text.append("\nAccounts\n", style="bold")
+    text.append(f"  administrator: {admin}\n  users: {users}\n")
+    if plan.tenant is not None:
+        tenant = plan.tenant
+        text.append("\nTenant\n", style="bold")
+        text.append("  " + (", ".join(tenant.targets) or "the plain sync"))
+        if tenant.activity_days:
+            text.append(f"; {tenant.activity_days} days of events")
+        text.append("\n")
+    if plan.workspaces:
+        text.append("\nWorkspaces\n", style="bold")
+    for entry in plan.workspaces:
+        what = []
+        if entry.scan is not None:
+            what.append(f"scan ({describe_scan(entry.scan)})")
+        what.extend(entry.details)
+        text.append(f"  {entry.label}", style="cyan")
+        text.append(f"\n    {', '.join(what)}; via {entry.via}\n")
+    session = plan.session
+    text.append("\nSession\n", style="bold")
+    text.append(f"  lake: {session.lake or 'the work lake'}\n")
+    if session.open:
+        text.append(f"  open: {session.open}\n")
+    text.append(f"  lazy: {session.lazy}\n")
+    text.append("\nPress l to read the file again.", style="grey62")
+    return text

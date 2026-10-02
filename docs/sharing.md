@@ -16,8 +16,9 @@ pbi sync status --lake s3://my-bucket/pbi-lake  # how its last syncs went
 
 `--lake` takes a folder or a URL. It may be the lake itself (the folder with the `tenant=...`
 folders in it) or a cache folder, in which case its `lake` folder is the lake. Without
-`--lake` the environment variable `PBI_LAKE` is used, and without that the lake of your
-cache folder. A bare `pbi` in a terminal opens the TUI when `PBI_LAKE` is set, too.
+`--lake` the environment variable `PBI_LAKE` is used, then the `session.lake` of the
+[plan file](plan-file.md#session) given with `pbi tui --config`, and without any of them the
+lake of your cache folder. A bare `pbi` in a terminal opens the TUI when `PBI_LAKE` is set, too.
 
 In the TUI the key `o` opens another lake without leaving it: the dialog offers your work
 lake and the lakes you opened lately, or you type a place. A lake that cannot be read

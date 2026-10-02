@@ -210,6 +210,44 @@ def test_the_environment_beats_the_work_lake(cache_folder, tmp_path):
     assert opened.store.root == other and opened.readonly
 
 
+def test_a_plan_file_names_a_lake_that_the_option_and_the_environment_overrule(
+    cache_folder, tmp_path
+):
+    a_lake(cache_folder / "lake")
+    planned = a_lake(tmp_path / "planned").root
+    other = a_lake(tmp_path / "other").root
+
+    by_plan = resolve_lake(None, environ={}, plan_lake=str(planned))
+    by_environment = resolve_lake(
+        None, environ={LAKE_ENV: str(other)}, plan_lake=str(planned)
+    )
+    by_option = resolve_lake(str(other), environ={}, plan_lake=str(planned))
+
+    assert by_plan.store.root == planned and by_plan.source == "the plan file"
+    assert by_plan.readonly and not by_plan.work
+    assert "opened with the plan file" in by_plan.store.why_read_only()
+    assert by_environment.store.root == other and by_environment.source == LAKE_ENV
+    assert by_option.store.root == other and by_option.source == "--lake"
+
+
+def test_a_plan_file_without_a_lake_leaves_the_work_lake(cache_folder):
+    a_lake(cache_folder / "lake")
+
+    opened = resolve_lake(None, environ={}, plan_lake=None)
+
+    assert opened.work and opened.source == "the cache folder"
+    assert resolve_lake(None, environ={}, plan_lake="").work  # nothing named
+
+
+def test_a_plan_file_that_names_the_work_lake_leaves_it_writable(cache_folder):
+    a_lake(cache_folder / "lake")
+
+    opened = resolve_lake(None, environ={}, plan_lake=str(cache_folder))
+
+    assert opened.work and not opened.readonly
+    assert opened.source == "the plan file"
+
+
 @pytest.mark.parametrize("make", ["missing", "empty"])
 def test_a_place_without_a_lake_is_an_error(tmp_path, make):
     place = tmp_path / "nothing"

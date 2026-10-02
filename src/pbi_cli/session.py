@@ -105,7 +105,8 @@ class OpenedLake:
 
     :param store: the lake; it refuses writes unless it is the work lake
     :param work: whether it is the work lake (the lake of the cache folder)
-    :param source: where its location came from: ``--lake``, ``PBI_LAKE`` or the cache folder
+    :param source: where its location came from: ``--lake``, ``PBI_LAKE``, the plan file or
+        the cache folder
     """
 
     store: LakeStore
@@ -145,12 +146,18 @@ def lake_root(path: Any) -> Any:
     return path
 
 
+#: What `OpenedLake.source` says for a lake that a plan file chose.
+PLAN_SOURCE = "the plan file"
+
+
 def resolve_lake(
     location: Optional[str] = None,
     config: Optional[PBIConfig] = None,
     environ: Optional[Mapping[str, str]] = None,
+    plan_lake: Optional[str] = None,
 ) -> Optional[OpenedLake]:
-    """The lake to look at: the one asked for, else ``PBI_LAKE``, else the work lake.
+    """The lake to look at: the one asked for, else ``PBI_LAKE``, else the one a plan file
+    names, else the work lake.
 
     A location is a folder or a URL such as ``s3://bucket/folder``. It may also be a cache
     folder, whose ``lake`` folder is then the lake. Only the work lake is writable (and only
@@ -159,6 +166,8 @@ def resolve_lake(
     :param location: what ``--lake`` or the dialog of the TUI gave
     :param config: the settings (default: the stored ones)
     :param environ: the environment (default: the real one)
+    :param plan_lake: the lake that the plan file of the session names (``session.lake``),
+        which an explicit ``--lake`` and ``PBI_LAKE`` overrule
     :return: the lake, or ``None`` when none was asked for and no cache folder is set
     :raises PBIError: when the location cannot be read, or holds no lake
     """
@@ -170,6 +179,8 @@ def resolve_lake(
         wanted, source = location, "--lake"
     elif environment.get(LAKE_ENV, "").strip():
         wanted, source = environment[LAKE_ENV].strip(), LAKE_ENV
+    elif plan_lake:
+        wanted, source = plan_lake, PLAN_SOURCE
     if wanted is None:
         return None if work is None else OpenedLake(LakeStore(work), True, source)
 

@@ -119,10 +119,26 @@ def _sync(screen: Any) -> List[Command]:
     if screen.can_run:
         found.append(
             Command(
-                "Run the sync",
-                _help("Fetch what the plan lists, within the quotas", "r"),
+                "Run the plan" if screen.plan_mode else "Run the sync",
+                _help(
+                    (
+                        "Go through the steps of the plan file, within the quotas"
+                        if screen.plan_mode
+                        else "Fetch what the plan lists, within the quotas"
+                    ),
+                    "r",
+                ),
                 screen.action_run,
                 "start fetch go",
+            )
+        )
+    if screen.plan_mode:
+        found.append(
+            Command(
+                "Read the plan file again",
+                _help("Use what the file says now, and plan it again", "l"),
+                screen.action_reload_plan,
+                "reload config yaml",
             )
         )
     for key, name, title, text in SYNC_TABS:

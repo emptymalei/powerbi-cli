@@ -9,9 +9,12 @@ from datetime import datetime, timezone
 from typing import Callable, List, Optional, Set
 
 from pbi_cli.core.client import PowerBIClient
-from pbi_cli.core.registry import Scope
+from pbi_cli.core.planfile import PlanFile
+from pbi_cli.core.planrun import PlanRun
+from pbi_cli.core.registry import Endpoint, Scope
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.engine import SyncEngine
+from pbi_cli.errors import PBIError
 
 
 def _utcnow() -> datetime:
@@ -85,6 +88,8 @@ class Backend:
         tokens expire (default: none)
     :param activate: makes a profile the active one of its group, as ``pbi profile switch``
         does, and makes `client_for` use it from then on (default: not possible)
+    :param plan: the plan file of the session (``pbi tui --config``), if there is one
+    :param reload_plan: reads that file again (default: not possible)
     """
 
     store: LakeStore
@@ -98,6 +103,8 @@ class Backend:
     work_lake: Optional[str] = None
     accounts: Callable[[], List[AccountInfo]] = lambda: []
     activate: Optional[Callable[[str, str], None]] = None
+    plan: Optional[PlanFile] = None
+    reload_plan: Optional[Callable[[], PlanFile]] = None
 
     @property
     def readonly(self) -> str:
@@ -112,6 +119,35 @@ class Backend:
         if self.make_engine is not None:
             return self.make_engine()
         return SyncEngine(self.client_for, self.store, clock=self.clock)
+
+    def plan_run(self) -> PlanRun:
+        """The plan file of the session, ready to be planned and run.
+
+        :raises PBIError: when the session has no plan file
+        """
+        if self.plan is None:
+            raise PBIError("This session has no plan file.")
+        return PlanRun(self.engine(), self.store, self.plan, clock=self.clock)
+
+    def read_plan_again(self) -> PlanFile:
+        """Read the plan file again, and use it from now on; the one in use stays when the
+        file is wrong.
+
+        :raises PBIError: when the session has no plan file, or the file is wrong
+        """
+        if self.plan is None or self.reload_plan is None:
+            raise PBIError("This session has no plan file to read again.")
+        self.plan = self.reload_plan()
+        return self.plan
+
+    def quota_left(self, endpoint: Endpoint) -> Optional[int]:
+        """The requests that fit now for an operation, with the account that makes them;
+        ``None`` when there is no documented quota or no account to ask."""
+        try:
+            client = self.client_for(endpoint.scope)
+            return client.limiter.remaining(endpoint, client.tenant_key())
+        except Exception:  # no account, or a settings problem: nothing is known
+            return None
 
     def identities(self) -> List[Identity]:
         """Who the stored tokens are: the administrator's and the user's, those there are.

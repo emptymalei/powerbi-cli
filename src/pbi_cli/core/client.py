@@ -455,6 +455,7 @@ class PowerBIClient:
                 f"Sign in again and store a fresh token with "
                 f"`{credentials.sign_in_hint()}`.",
                 group=credentials.group,
+                profile=credentials.profile,
             )
         if status == 403:
             if endpoint.scope.value == "admin":

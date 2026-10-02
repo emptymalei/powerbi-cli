@@ -17,11 +17,19 @@ class AuthError(PBIError):
     :param message: what is wrong, in words the user can act on
     :param group: the kind of account it is about (``admin`` or ``user``), when known, so
         that something that asks for a new token can ask for the right kind
+    :param profile: the profile it is about, when known, so that the new token is stored
+        under it (several accounts of one kind can be in use)
     """
 
-    def __init__(self, message: str = "", group: Optional[str] = None):
+    def __init__(
+        self,
+        message: str = "",
+        group: Optional[str] = None,
+        profile: Optional[str] = None,
+    ):
         super().__init__(message)
         self.group = group
+        self.profile = profile
 
 
 class TokenExpiredError(AuthError):

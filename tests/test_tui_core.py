@@ -906,3 +906,210 @@ def test_what_is_wanted_is_what_is_missing_and_can_be_fetched(world):
     options = Fetching({Scope.ADMIN}).options(wanted)
     assert options.targets == ("datasources",)
     assert options.only == {"datasetId": ("ds-0001",)}
+
+
+# ---------------------------------------------------------------------------
+# a plan file: the steps of a run, and how its plan is shown
+# ---------------------------------------------------------------------------
+
+PLAN_TEXT = """\
+version: 1
+accounts: {admin: admin-nlm, user: [svc]}
+tenant: {targets: [groups, reports, datasets, dashboards, dataflows, activity], activity_days: 7}
+workspaces:
+  - {name: "Workspace 2", scan: {lineage: true}, details: [users], via: admin}
+  - {name: "Nothing here", details: [datasources], via: admin}
+session: {lake: /shared/lake, open: "Workspace 2", lazy: auto}
+"""
+
+
+def planned_sequence(world):
+    from pathlib import Path
+
+    from pbi_cli.core.planfile import PlanFile
+    from pbi_cli.core.planrun import PlanRun
+
+    plan = PlanFile.parse(PLAN_TEXT, Path("/plans/pbi-plan.yaml"))
+    world.accounts(svc="oid-svc")
+    return plan, PlanRun(world.engine, world.store, plan, clock=world.clock.now).plan()
+
+
+def test_the_rows_of_a_plan_file_start_with_the_step_on_its_first_row(world):
+    _, sequence = planned_sequence(world)
+
+    rows = render.sequence_rows(sequence)
+
+    firsts = [row for row in rows if row[0]]
+    assert [row[0] for row in firsts] == [
+        str(n) for n in range(1, len(sequence.steps) + 1)
+    ]
+    assert all(len(row) == 7 for row in rows)
+    assert rows[0][1] == "groups" and rows[0][0] == "1"
+    assert rows[1][0] == ""  # the second target of the first step: no number again
+    assert any(row[1] == "scan" for row in rows)
+
+
+def test_the_quota_of_a_plan_file_is_what_all_its_steps_need(world):
+    _, sequence = planned_sequence(world)
+
+    quota = render.sequence_quota_rows(sequence)
+
+    assert [row[0] for row in quota] == [line.endpoint for line in sequence.quota]
+    assert all(len(row) == 5 and isinstance(row[4], bool) for row in quota)
+
+
+def test_the_notes_of_a_plan_file_list_its_steps_and_what_is_wrong(world):
+    world.clock.advance(
+        seconds=3 * 86400
+    )  # the lists are old: the plan says what it guesses
+    _, sequence = planned_sequence(world)
+
+    notes = render.sequence_notes(sequence)
+
+    assert notes[0] == f"step 1: {sequence.steps[0][0].title}"
+    assert any(
+        n.startswith("workspaces[1] (Nothing here): no workspace is called")
+        for n in notes
+    )
+    assert "* only here because another target needs its rows" in notes
+    assert any(
+        n.startswith("step ") and ", report-users: worked out from the reports" in n
+        for n in notes
+    )  # a note of one target of a step
+
+
+def test_the_notes_of_an_empty_plan_say_so():
+    from pbi_cli.core.planrun import SequencePlan
+
+    assert render.sequence_notes(SequencePlan()) == ["No step is planned yet."]
+
+
+def test_the_notes_say_when_everything_is_fresh_and_when_it_all_fits(world):
+    from pbi_cli.core.planrun import SequencePlan
+    from pbi_cli.core.sync.plan import Plan, QuotaLine
+
+    world.run("groups")
+    _, fresh = planned_sequence(world)
+    fresh.quota = []
+    fits = SequencePlan(
+        steps=fresh.steps[:1],
+        quota=[QuotaLine("admin.groups", 1, "50/h", 40)],
+    )
+    over = SequencePlan(
+        steps=fresh.steps[:1],
+        quota=[QuotaLine("admin.groups", 80, "50/h", 40, hourly=50)],
+    )
+
+    assert (
+        "Nothing to fetch: the lake holds everything fresh."
+        in render.sequence_notes(fresh)
+    )
+    assert "Everything fits the quota now." in render.sequence_notes(fits)
+    held = [
+        n for n in render.sequence_notes(over) if n.startswith("admin.groups needs")
+    ]
+    assert held == [
+        "admin.groups needs 80 requests and 40 fit now (50/h): the rest is held back, "
+        "about 1 more hour(s); run again to continue."
+    ]
+    assert "Everything fits the quota now." not in render.sequence_notes(over)
+    assert Plan  # (the plans of the steps are the engine's)
+
+
+def test_the_summary_of_a_plan_file_says_what_the_file_says():
+    from pathlib import Path
+
+    from pbi_cli.core.planfile import PlanFile
+
+    summary = text(
+        render.plan_file_summary(
+            PlanFile.parse(PLAN_TEXT, Path("/plans/pbi-plan.yaml"))
+        )
+    )
+
+    assert "pbi-plan.yaml" in summary and "/plans" in summary
+    assert "administrator: admin-nlm" in summary and "users: svc" in summary
+    assert (
+        "groups, reports, datasets, dashboards, dataflows, activity; 7 days" in summary
+    )
+    assert "Workspace 2" in summary and "scan (lineage), users; via admin" in summary
+    assert "datasources; via admin" in summary
+    assert "lake: /shared/lake" in summary and "open: Workspace 2" in summary
+    assert "lazy: auto" in summary and "Press l to read the file again." in summary
+
+
+def test_the_summary_of_a_plan_file_says_what_it_leaves_to_the_defaults():
+    from pbi_cli.core.planfile import PlanFile
+
+    summary = text(render.plan_file_summary(PlanFile.parse("version: 1\ntenant:\n")))
+
+    assert "administrator: the active profile" in summary
+    assert "users: the active profile" in summary
+    assert "the plain sync" in summary
+    assert "lake: the work lake" in summary and "lazy: ask" in summary
+    assert "open:" not in summary and "Workspaces" not in summary
+
+
+def test_a_run_state_names_the_step_a_plan_is_in():
+    from pbi_cli.core.planfile import Step
+
+    state = RunState(
+        "Plan x.yaml", SyncOptions(), datetime(2026, 9, 30, 12, tzinfo=UTC)
+    )
+    state.on_event(Event("stage", stage=3, units=5, targets=("groups",)))
+    state.on_event(event(DONE, done=2, total=5))
+
+    state.on_step(2, Step("scan of 3 workspaces", SyncOptions()))
+
+    stage, done, units, targets, counts = state.progress()
+    assert (stage, done, units, targets) == (
+        0,
+        0,
+        0,
+        (),
+    )  # the stages of a step are its own
+    assert counts[DONE] == 1  # what was done stays counted
+    assert state.step == 2 and state.step_title == "scan of 3 workspaces"
+    assert state.read(0)[0][-1] == ("Step 2: scan of 3 workspaces", "bold")
+    state.on_event(Event("stage", stage=1, units=1, targets=("scan",)))
+    clock = lambda: datetime(2026, 9, 30, 12, tzinfo=UTC)  # noqa: E731
+    assert state.summary(clock) == (
+        "Plan x.yaml: step 2 (scan of 3 workspaces), stage 1: scan 0/1"
+    )
+    state.finish(datetime(2026, 9, 30, 12, 0, 9, tzinfo=UTC))
+    assert state.summary(clock).startswith("Plan x.yaml: finished in 9 s")
+
+
+def test_a_run_state_without_steps_does_not_mention_one():
+    state = RunState("Sync", SyncOptions(), datetime(2026, 9, 30, tzinfo=UTC))
+    state.on_event(Event("stage", stage=1, units=2, targets=("groups",)))
+
+    assert "step" not in state.summary(lambda: datetime(2026, 9, 30, tzinfo=UTC))
+
+
+def test_a_run_state_holds_what_it_runs():
+    options = SyncOptions(targets=("groups",))
+
+    state = RunState("Sync", options, datetime(2026, 9, 30, tzinfo=UTC))
+
+    assert state.work is options and state.options is options
+
+
+def test_the_notes_of_the_plan_itself_are_among_the_notes_of_a_plan_file():
+    from pbi_cli.core.planrun import SequencePlan
+
+    notes = render.sequence_notes(SequencePlan(notes=["Steps share lists", "another"]))
+
+    assert notes[:2] == ["Steps share lists", "another"]
+
+
+def test_a_folder_in_the_home_folder_is_shown_with_a_tilde(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    (tmp_path / "PowerBI" / "plans").mkdir(parents=True)
+    elsewhere = tmp_path.parent
+
+    assert render.short_path(tmp_path / "PowerBI" / "plans") == "~/PowerBI/plans"
+    assert render.short_path(tmp_path) == "~"
+    assert render.short_path(elsewhere) == str(elsewhere)

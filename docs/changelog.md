@@ -70,6 +70,17 @@
   other, and reports them as one). A name in the file is a pattern looked up in the list of
   workspaces in the lake; `via: auto` reads with the administrator's account when it can and
   else with the user account whose own list of workspaces holds the workspace.
+- **`pbi tui --config FILE`** opens the [terminal UI](tui.md#with-a-plan-file) with a plan file.
+  The Sync screen shows the file and the plan of its steps (one table with the number of each
+  step, what they cost together, the names that match nothing yet), **Run plan** goes through the
+  steps and logs each, and `l` reads the file again. A token that expires asks for the token of
+  the account that expired (its kind and its profile, which a plan can use several of; a
+  report of a run now says whose token it was), and the plan goes on from its step. The `session`
+  section chooses the lake (below `--lake` and `PBI_LAKE`, above the work lake; relative to the
+  file), the workspace to select at the start, and what to do about a missing detail: `ask`
+  (press `f`), `off`, or `auto`, which fetches by itself the *harmless* details (those that copy no
+  personal data, queries or connection details) of the item you stay on, while more than half of
+  the smallest allowance of the operation is left, never into a lake that is only looked at.
 - **`pbi sync plan --config FILE` and `pbi sync run --config FILE`** take a [plan file](plan-file.md)
   instead of target names. `plan` shows each step and what they cost together against the
   quotas (the steps for the workspaces are worked out after the tenant's, so the plan before

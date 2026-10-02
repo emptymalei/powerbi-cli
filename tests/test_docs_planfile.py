@@ -84,3 +84,23 @@ def test_the_page_is_in_the_navigation_and_linked_from_where_it_matters():
     assert "(plan-file.md)" in (ROOT / "docs" / "sync.md").read_text(encoding="utf-8")
     assert "(plan-file.md)" in (ROOT / "docs" / "auth.md").read_text(encoding="utf-8")
     assert "docs/plan-file.md" in (ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def test_the_picture_of_the_plan_file_screen_is_where_the_docs_say():
+    picture = ROOT / "docs" / "images" / "tui-planfile.svg"
+    assert picture.exists() and picture.stat().st_size > 1000
+    for page in ("plan-file.md", "tui.md"):
+        text = (ROOT / "docs" / page).read_text(encoding="utf-8")
+        assert "images/tui-planfile.svg" in text, page
+
+
+def test_the_terminal_ui_guide_describes_the_plan_file_session():
+    guide = (ROOT / "docs" / "tui.md").read_text(encoding="utf-8")
+
+    assert "pbi tui --config" in guide and "### With a plan file" in guide
+    for key in planfile._SESSION_KEYS:
+        assert f"`{key}`" in guide, key
+    for mode in planfile.LAZY_MODES:
+        assert f"`{mode}`" in guide, mode
+    assert "| `l` | Sync, with a plan file |" in guide
+    assert "Run plan" in guide

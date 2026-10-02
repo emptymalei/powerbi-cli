@@ -138,6 +138,9 @@ def merge_reports(
         )
     if halted:
         merged.status, merged.message = halted, message
+        # when a token stopped it, the step that stopped it says whose it was
+        if halted == TOKEN_EXPIRED and reports:
+            merged.group, merged.profile = reports[-1].group, reports[-1].profile
     elif merged.counts[FAILED] or any(
         r.status == COMPLETED_WITH_FAILURES for r in reports
     ):

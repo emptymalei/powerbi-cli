@@ -239,6 +239,27 @@ def choose(
     )
 
 
+#: An automatic fetch leaves at least this share of the smallest allowance of an operation to
+#: the fetches that somebody asked for.
+AUTO_KEEPS = 0.5
+
+
+def has_margin(endpoint: Endpoint, left: Optional[int]) -> bool:
+    """Whether a fetch that nobody asked for may spend a request of an operation.
+
+    It may while more than half of the smallest allowance of the operation is left, so that
+    what somebody asks for still fits; an operation with no documented quota always may.
+
+    :param endpoint: the operation
+    :param left: the requests that fit now (`pbi_cli.core.ratelimit.Limiter.remaining`);
+        ``None`` when that is not known
+    """
+    if left is None or endpoint.limit is None:
+        return True
+    smallest = min(count for count, _ in endpoint.limit.windows)
+    return left > smallest * AUTO_KEEPS
+
+
 def fetch_options(providers: Sequence[Provider]) -> SyncOptions:
     """The sync that fetches what these providers fetch, for the items they are about and
     no other (`pbi_cli.core.sync.plan.SyncOptions.only`).

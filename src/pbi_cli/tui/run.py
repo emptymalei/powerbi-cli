@@ -9,8 +9,10 @@ the middle of a run shows everything from the start.
 import threading
 from collections import Counter
 from datetime import datetime
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Union
 
+from pbi_cli.core.planfile import Step
+from pbi_cli.core.planrun import PlanRun
 from pbi_cli.core.ratelimit import format_wait
 from pbi_cli.core.sync.engine import Event, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
@@ -102,14 +104,19 @@ class RunState:
     """One run of a sync, from its start to its end.
 
     :param label: what the run is for, in words
-    :param options: what the sync does
+    :param work: what the sync does: the options of one sync, or a plan file, which is run
+        step after step
     :param started_at: when it began
     """
 
-    def __init__(self, label: str, options: SyncOptions, started_at: datetime):
+    def __init__(
+        self, label: str, work: Union[SyncOptions, PlanRun], started_at: datetime
+    ):
         self.label = label
-        self.options = options
+        self.work = work
         self.started_at = started_at
+        self.step = 0
+        self.step_title = ""
         self.finished_at: Optional[datetime] = None
         self.stop = threading.Event()
         self._lock = threading.Lock()
@@ -133,6 +140,15 @@ class RunState:
             if len(self._lines) > MAX_LINES:
                 del self._lines[0]
                 self._dropped += 1
+
+    def on_step(self, number: int, step: Step) -> None:
+        """Record that a step of a plan file begins, and put it in the log."""
+        with self._lock:
+            self.step = number
+            self.step_title = step.title
+            self.stage = self.stage_units = self.stage_done = 0  # the step's own stages
+            self.stage_targets = ()
+        self.log(f"Step {number}: {step.title}", "bold")
 
     def on_event(self, event: Event) -> None:
         """Record an event of the engine."""
@@ -166,6 +182,11 @@ class RunState:
             self.report = report
             self.error = error
             self._running = False
+
+    @property
+    def options(self) -> Union[SyncOptions, PlanRun]:
+        """What the sync does (the name this attribute had when only one sync could run)."""
+        return self.work
 
     # -- read by the screens ------------------------------------------------------------
 
@@ -211,7 +232,8 @@ class RunState:
                 if stage
                 else "starting"
             )
-            return f"{self.label}: {where}"
+            step = f"step {self.step} ({self.step_title}), " if self.step else ""
+            return f"{self.label}: {step}{where}"
         took = (self.finished_at or clock()) - self.started_at
         return (
             f"{self.label}: finished in {int(took.total_seconds())} s, "

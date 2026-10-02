@@ -8,7 +8,7 @@ that a newer selection replaces.
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from rich.console import Group
 from rich.text import Text
@@ -18,6 +18,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.events import DescendantFocus
 from textual.screen import Screen
+from textual.timer import Timer
 from textual.widgets import (
     DataTable,
     Footer,
@@ -38,6 +39,9 @@ from pbi_cli.tui import render
 from pbi_cli.tui.modals import ConfirmModal
 from pbi_cli.tui.render import Entry, Subject
 from pbi_cli.tui.status import StatusBar
+
+#: Seconds to stay on an item before ``lazy: auto`` fetches its harmless details.
+AUTO_AFTER = 1.5
 
 
 @dataclass(frozen=True)
@@ -125,6 +129,8 @@ class ExplorerScreen(Screen):
         self._table_filter = ""
         self._pending: Optional[Tuple[NodeRef, str]] = None
         self._tree_nodes: Dict[NodeRef, TreeNode] = {}
+        self._auto_timer: Optional[Timer] = None
+        self._auto_tried: Set[Tuple[str, str, str]] = set()
 
     # -- layout --------------------------------------------------------------------------
 
@@ -280,6 +286,10 @@ class ExplorerScreen(Screen):
                     self._node_label(day.day.isoformat(), day.rows), data=day_ref
                 )
 
+        opening = self.pbi.workspace_to_open()
+        if opening is not None:  # the plan file says where to start
+            self.goto("workspace", opening, None)
+            return
         target = self._tree_nodes.get(kept) or tree.root
         self._select(target)
 
@@ -439,6 +449,7 @@ class ExplorerScreen(Screen):
         self._subject = subject
         self._serial += 1
         self._render_tab(self.query_one("#detail", TabbedContent).active)
+        self._plan_auto_fetch()
 
     @on(TabbedContent.TabActivated)
     def _tab_activated(self, event: TabbedContent.TabActivated) -> None:
@@ -508,8 +519,71 @@ class ExplorerScreen(Screen):
         names = render.join_names([d.title.lower() for d, _ in wanted])
         return (f"Fetch the {names} of {subject.name}", fetching.options(wanted))
 
+    # -- fetching by itself (``session.lazy: auto`` of a plan file) -------------------------
+
+    def _plan_auto_fetch(self) -> None:
+        """With ``lazy: auto``, look at what the item you stay on lacks, after a moment."""
+        if self._auto_timer is not None:
+            self._auto_timer.stop()
+            self._auto_timer = None
+        if self.pbi.lazy != "auto" or not isinstance(self._subject, (Workspace, Item)):
+            return
+        serial = self._serial
+        self._auto_timer = self.set_timer(AUTO_AFTER, lambda: self._auto_look(serial))
+
+    def _auto_look(self, serial: int) -> None:
+        self._auto_timer = None
+        if serial == self._serial and isinstance(self._subject, (Workspace, Item)):
+            self._auto_choose(serial, self._subject)
+
+    @work(thread=True, exclusive=True, group="auto")
+    def _auto_choose(self, serial: int, subject: Subject) -> None:
+        """Work out, in a worker, which details may be fetched without asking."""
+        worker = get_current_worker()
+        catalog = self.catalog
+        if catalog is None or not isinstance(subject, (Workspace, Item)):
+            return
+        fetching = self.pbi.fetching()
+        try:
+            wanted = fetching.auto(
+                catalog.details(subject), self.pbi.backend.quota_left
+            )
+        except Exception:  # a broken lake file must not end the UI
+            return
+        if wanted and not worker.is_cancelled:
+            self.app.call_from_thread(
+                self._auto_start, serial, subject, wanted, fetching
+            )
+
+    def _auto_start(
+        self, serial: int, subject: Any, wanted: List[Any], fetching: Any
+    ) -> None:
+        """Fetch what was chosen, unless the user has moved on or a sync is running."""
+        state = self.pbi.run_state
+        if serial != self._serial or (state is not None and state.running):
+            return
+        wanted = [
+            (detail, provider)
+            for detail, provider in wanted
+            if (subject.kind, subject.id, detail.name) not in self._auto_tried
+        ]
+        if not wanted:
+            return
+        self._auto_tried.update(
+            (subject.kind, subject.id, detail.name) for detail, _ in wanted
+        )
+        names = render.join_names([detail.title.lower() for detail, _ in wanted])
+        self._keep_the_row()
+        started = self.pbi.start_sync(
+            fetching.options(wanted), f"Fetch the {names} of {subject.name}"
+        )
+        if started:
+            self.notify(f"Fetching the {names} of {subject.name} ...")
+
     def _nothing_to_fetch(self) -> str:
         """Why ``f`` has nothing to fetch, in a sentence."""
+        if self.pbi.lazy == "off":
+            return "Fetching on demand is switched off by the plan file (session.lazy: off)."
         subject = self._subject
         catalog = self.catalog
         if catalog is None or not isinstance(subject, (Workspace, Item)):

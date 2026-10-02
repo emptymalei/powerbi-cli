@@ -143,6 +143,32 @@ def test_expired_token_raises_with_a_sign_in_hint():
     assert creds.token not in message
 
 
+def test_an_expired_token_says_whose_it_was():
+    creds = Credentials(
+        make_token(expires_in=timedelta(minutes=-5)), profile="svc", group="user"
+    )
+
+    with pytest.raises(TokenExpiredError) as excinfo:
+        ensure_not_expired(creds, now=NOW)
+
+    assert excinfo.value.group == "user" and excinfo.value.profile == "svc"
+
+
+def test_a_token_that_has_no_profile_says_none():
+    creds = Credentials(make_token(expires_in=timedelta(minutes=-5)), group="admin")
+
+    with pytest.raises(TokenExpiredError) as excinfo:
+        ensure_not_expired(creds, now=NOW)
+
+    assert excinfo.value.profile is None and excinfo.value.group == "admin"
+
+
+def test_an_error_about_an_account_may_name_the_profile_or_not():
+    assert AuthError("x").profile is None and AuthError("x").group is None
+    named = AuthError("x", group="user", profile="svc")
+    assert (named.group, named.profile) == ("user", "svc")
+
+
 def test_token_about_to_expire_is_refused():
     creds = Credentials(make_token(expires_in=timedelta(seconds=10)))
     with pytest.raises(TokenExpiredError):

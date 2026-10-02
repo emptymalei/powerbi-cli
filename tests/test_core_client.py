@@ -181,6 +181,8 @@ def test_a_rejected_token_says_which_kind_of_account_it_was():
 
     assert rejected_admin.value.group == "admin"
     assert rejected_user.value.group == "user"
+    assert rejected_admin.value.profile == "admin-nlm"
+    assert rejected_user.value.profile == "svc"
 
 
 def test_403_on_an_admin_endpoint_points_at_the_admin_profile():

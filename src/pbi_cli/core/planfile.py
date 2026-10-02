@@ -41,6 +41,7 @@ later = plan.workspace_steps(accounting, catalog.workspaces())
 ```
 """
 
+import codecs
 import difflib
 import re
 from dataclasses import dataclass, field, replace
@@ -448,6 +449,15 @@ class Accounts(Protocol):
     ) -> Optional[str]: ...
 
 
+def _decode(data: bytes) -> str:
+    """The text of a file: UTF-16 when its byte order mark says so (it is what PowerShell
+    writes by default), else UTF-8 (a byte order mark in front of it is skipped by the YAML
+    reader)."""
+    if data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return data.decode("utf-16")
+    return data.decode("utf-8")
+
+
 class _Listed:
     """A workspace that a plan names by id and the lake has no list entry for."""
 
@@ -482,6 +492,24 @@ def _pattern(text: str) -> "re.Pattern[str]":
     for char in text:
         parts.append(".*" if char == "*" else "." if char == "?" else re.escape(char))
     return re.compile("".join(parts) + r"\Z", re.IGNORECASE | re.DOTALL)
+
+
+def find_workspace(wanted: str, workspaces: Sequence[Any]) -> Optional[Any]:
+    """The workspace that ``session.open`` of a plan file means.
+
+    :param wanted: an id, or a name pattern (as in `WorkspaceEntry.name`)
+    :param workspaces: the workspaces the lake knows, in the order to look at them
+    :return: the one with this id, else the first whose name matches (an active one before
+        another), or ``None``
+    """
+    for workspace in workspaces:
+        if workspace.id == wanted:
+            return workspace
+    pattern = _pattern(wanted)
+    found = [w for w in workspaces if pattern.match(w.name)]
+    # active ones first; the sort is stable, so the names stay in the order they came in
+    found.sort(key=lambda w: not getattr(w, "active", True))
+    return found[0] if found else None
 
 
 class PlanFile:
@@ -528,7 +556,7 @@ class PlanFile:
         """
         place = Path(path).expanduser()
         try:
-            text = place.read_text(encoding="utf-8")
+            text = _decode(place.read_bytes())
         except (OSError, UnicodeDecodeError) as error:
             raise PlanFileError(
                 f"Cannot read the plan file {place}: {error}"
@@ -717,7 +745,12 @@ class PlanFile:
         box = reader.mapping(
             root["session"], "session", _SESSION_KEYS, _line(root, "session")
         )
-        lazy = reader.text(box, "lazy", "session", LAZY_ASK) or LAZY_ASK
+        lazy = LAZY_ASK
+        if "lazy" in box:
+            if box["lazy"] is False:  # YAML reads a bare `off` as false
+                lazy = LAZY_OFF
+            else:
+                lazy = reader.text(box, "lazy", "session") or LAZY_ASK
         if lazy not in LAZY_MODES:
             reader.fail(
                 "session.lazy",

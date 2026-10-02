@@ -31,8 +31,9 @@ pbi tui
 
 A bare `pbi` in a terminal opens the UI too, when Textual is installed and a cache folder is
 set; anywhere else it greets as before. `pbi tui --tenant <id>` browses another tenant of
-the lake than the one of your token. The log of the UI goes to `~/.pbi_cli/tui.log` (it
-would write over the screen otherwise).
+the lake than the one of your token, and `pbi tui --config pbi-plan.yaml` opens it with a
+[plan file](plan-file.md) (see [With a plan file](#with-a-plan-file)). The log of the UI
+goes to `~/.pbi_cli/tui.log` (it would write over the screen otherwise).
 
 ## The command palette
 
@@ -234,6 +235,44 @@ went, the units that failed or were held back, the last complete scan, and the q
 A sync goes on while you look at the Explorer: the header shows it, and the Sync screen
 shows its log from the start when you open it again.
 
+### With a plan file
+
+`pbi tui --config pbi-plan.yaml` opens the UI with a [plan file](plan-file.md), which says
+what to keep, for which workspaces and through which account. The Sync screen then shows the
+file instead of the targets and the options:
+
+![The Sync screen of a plan file: the file on the left, the numbered steps and their cost on the right](images/tui-planfile.svg)
+
+- **The file** (left): the accounts, the tenant, each entry for the workspaces and the
+  settings of the session. `l` reads the file again (a file that is wrong is said in a message
+  and the one in use stays), and the plan follows.
+- **The plan** (right) is the one of `pbi sync plan --config`: one table for all the steps,
+  with the number of the step, the requests that all of them need against the quota of each
+  operation, and under it the steps in words, the names that match no workspace yet, and the
+  notes of the steps. The steps for the workspaces are worked out after the tenant's: before
+  the lake has the list of workspaces, the plan says which names it cannot look up yet.
+- **Run plan** goes through the steps one after the other, and the **Run** tab logs `Step 1:
+  ...`, `Step 2: ...` and the stages of each. **Stop** ends it between units. A token that
+  expires stops it, the dialog asks for the token of **the account that expired** (the kind and
+  the profile, which the plan can use several of) and the plan goes on from the step it was in.
+
+The `session` section of the file sets three things:
+
+- `lake`: the lake to open. `--lake` and `PBI_LAKE` come first, then the file, then your work
+  lake. Any lake but your work lake is [opened read-only](#other-lakes-and-view-only), and
+  there the plan is not run.
+- `open`: a workspace to select at the start, by id or by a pattern for its name (the first
+  match). It is selected once, not again when the lake is read again.
+- `lazy`: what the Explorer does about a [detail](#details-one-item-at-a-time) the lake lacks.
+  `ask`, the default, does nothing until you press `f`. `off` offers nothing: the Details tab says so
+  and `f` says that fetching on demand is switched off. `auto` fetches **by itself** the details of
+  the item you stay on for a moment (one and a half seconds), and only the harmless ones: those whose
+  way of fetching copies no personal data, queries or connection details (the pages of a report, the
+  tiles of a dashboard, the refresh history of a dataset by a user's account), by an account that is
+  stored, not one that refused them the last time, while more than half of the smallest allowance
+  of the operation is left. It does not start while a sync runs, never writes into a lake that is
+  only looked at, and tries a detail once per session. A message says what it fetches.
+
 ## Signing in again
 
 The header shows every account you are signed in as (the administrator and the user, as far
@@ -327,8 +366,9 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `l` | Explorer | read the lake again |
 | `1` to `6` | Explorer | Info, Users, Lineage, JSON, Versions, Details |
 | `f` | Explorer | fetch the details of the selected item that the lake lacks (the users, on the Users tab) |
-| `r` | Sync | run the sync |
+| `r` | Sync | run the sync (the plan, with a plan file) |
 | `x` | Sync | stop the sync |
+| `l` | Sync, with a plan file | read the plan file again |
 | `1` to `3` | Sync | Plan, Run, Lake |
 
 ## Limits
