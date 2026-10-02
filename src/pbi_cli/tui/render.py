@@ -30,9 +30,11 @@ from pbi_cli.core.catalog import (
     name_of,
     scalar_fields,
 )
+from pbi_cli.core.details import Detail as ItemDetail
 from pbi_cli.core.store import EventDay
 from pbi_cli.core.sync.plan import Plan
 from pbi_cli.core.timefmt import format_age
+from pbi_cli.tui.fetching import Fetching
 
 #: Rows shown at most in the table, and nodes at most in the tree; a filter narrows them.
 MAX_ROWS = 2000
@@ -725,10 +727,11 @@ def subject_data(subject: Subject) -> Any:
 # -- the tabs of the detail pane ---------------------------------------------------------
 
 #: The tabs of the detail pane, in order.
-TABS = ("info", "users", "lineage", "json", "versions")
+TABS = ("info", "users", "lineage", "json", "versions", "details")
 
 USER_COLUMNS = ("Name", "E-mail or id", "Access", "Type")
 VERSION_COLUMNS = ("Fetched", "", "Operation", "Rows", "Size", "By profile")
+DETAIL_COLUMNS = ("Detail", "State", "Fetched", "From, or how to get it")
 
 
 @dataclass
@@ -751,13 +754,71 @@ def _hint(text: str) -> Detail:
     return Detail(body=Text(text, style="grey62"))
 
 
-def detail(catalog: Catalog, tab: str, subject: Optional[Subject]) -> Detail:
+def join_names(names: Sequence[str]) -> str:
+    """``a``, ``a and b``, ``a, b and c``."""
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def details_rows(
+    catalog: Catalog, details: Sequence[ItemDetail], fetching: Fetching
+) -> List[Tuple[str, str, str, str]]:
+    """The rows of the Details tab: each detail, what the lake holds of it, and how to get
+    what it lacks."""
+    rows = []
+    for item in details:
+        held = item.held
+        if held is not None:
+            count = "1 row" if held.rows == 1 else f"{held.rows} rows"
+            rows.append(
+                (
+                    item.title,
+                    count,
+                    ago(catalog, held.fetched_at),
+                    held.provider.endpoint.id,
+                )
+            )
+        else:
+            state = "refused" if item.problems else "missing"
+            rows.append((item.title, state, "-", fetching.how(item) or "-"))
+    return rows
+
+
+def details_note(
+    catalog: Catalog, details: Sequence[ItemDetail], fetching: Fetching
+) -> str:
+    """The lines above the Details tab: how many the lake holds, what ``f`` would fetch, and
+    why a request was refused."""
+    held = sum(1 for item in details if item.held is not None)
+    lines = [f"The lake holds {held} of {len(details)} details of this."]
+    wanted = fetching.wanted(list(details))
+    if wanted and not fetching.view_only:
+        names = join_names([item.title.lower() for item, _ in wanted])
+        lines.append(
+            f"Press f to fetch the {names}: it asks first, and shows the cost."
+        )
+    for item in details:
+        if item.held is None and item.problems:
+            lines.append(f"{item.title}: {item.problems[0]}")
+    return "\n".join(lines)
+
+
+def detail(
+    catalog: Catalog,
+    tab: str,
+    subject: Optional[Subject],
+    fetching: Optional[Fetching] = None,
+) -> Detail:
     """What a tab shows for a subject.
 
     :param catalog: the lake
     :param tab: one of `TABS`
     :param subject: what is selected, or ``None``
+    :param fetching: what the session can fetch (default: anything, nothing is said about
+        view only)
     """
+    fetching = fetching or Fetching()
     if subject is None:
         return _hint("Nothing is selected.")
     if tab == "info":
@@ -772,8 +833,29 @@ def detail(catalog: Catalog, tab: str, subject: Optional[Subject]) -> Detail:
                 "Users are listed for workspaces, reports and the other items."
             )
         view = catalog.users(subject)
+        note = users_note(catalog, view)
+        if view.missing:
+            users = next(
+                (d for d in catalog.details(subject) if d.name == "users"), None
+            )
+            how = fetching.how(users) if users is not None else ""
+            if how:
+                note += f"\n{how[0].upper()}{how[1:]}."
+        return Detail(note=note, columns=USER_COLUMNS, rows=users_rows(view))
+    if tab == "details":
+        if not isinstance(subject, (Workspace, Item)):
+            return _hint(
+                "Details are fetched for a workspace or an item, one at a time."
+            )
+        found = catalog.details(subject)
+        if not found:
+            return _hint(
+                f"There is nothing more to fetch for this {label(subject.kind).lower()}."
+            )
         return Detail(
-            note=users_note(catalog, view), columns=USER_COLUMNS, rows=users_rows(view)
+            note=details_note(catalog, found, fetching),
+            columns=DETAIL_COLUMNS,
+            rows=details_rows(catalog, found, fetching),
         )
     if tab == "lineage":
         if isinstance(subject, Item):

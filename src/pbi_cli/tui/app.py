@@ -25,6 +25,7 @@ from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
+from pbi_cli.tui.fetching import Fetching
 from pbi_cli.tui.modals import (
     WORK_LAKE,
     AccountsModal,
@@ -484,6 +485,11 @@ class PBIApp(App[None]):
         explorer = self.get_screen("explorer")
         if isinstance(explorer, ExplorerScreen):
             explorer.goto(found.kind, found.id, found.workspace_id)
+
+    def fetching(self) -> Fetching:
+        """What this session can fetch for one item: which accounts are stored, and whether
+        the lake can be written."""
+        return Fetching(self.backend.available_scopes() or None, self.backend.readonly)
 
     def stop_sync(self) -> None:
         """Ask the sync that runs to stop: it finishes the requests in flight and starts

@@ -77,11 +77,11 @@ Button {
 #detail VerticalScroll, #sync-tabs VerticalScroll {
     padding: 0 1;
 }
-#info, #lineage, #json, #users-note, #versions-note, #plan-head, #plan-notes, #lake-lines {
+#info, #lineage, #json, #users-note, #versions-note, #details-note, #plan-head, #plan-notes, #lake-lines {
     width: 100%;
     padding: 0 1;
 }
-#users, #versions {
+#users, #versions, #details {
     height: 1fr;
 }
 .filter {

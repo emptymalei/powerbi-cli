@@ -52,7 +52,7 @@ What it lists is what can be done *now*, so nothing in it is a dead end:
 
 | Where | Commands |
 | --- | --- |
-| the Explorer | fetch again what is selected (it says what: `Scan Finance`, `Fetch the lists of the tenant`, `Fetch what you can see`, ...), filter, clear the filter, show a tab |
+| the Explorer | fetch again what is selected (it says what: `Scan Finance`, `Fetch the lists of the tenant`, `Fetch what you can see`, ...), fetch the details the selected item lacks (`Fetch the users and data sources of Finance model`), filter, clear the filter, show a tab |
 | the Sync screen | run the sync, show a tab |
 | while a sync runs | stop the sync, from any screen |
 | everywhere | open the Explorer or the Sync screen, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (`Make svc-finance the active user account`), store a new token for a profile, open another lake, the work lake, or one you opened lately |
@@ -114,10 +114,44 @@ Press a number, or click a tab, to switch the details of the selected row:
 | Key | Tab | What it shows |
 | --- | --- | --- |
 | `1` | Info | the plain fields of the row, where they come from, and how old they are; for a workspace also which accounts see it (*Visible to*, when the lake holds the lists of a user account) |
-| `2` | Users | who has access: from the users of the report (`report-users`), from the list of workspaces fetched with `-e users`, or from the scan with `--get-artifact-users`. When the lake does not hold them, the tab says what to fetch |
+| `2` | Users | who has access: from what was fetched for the item (`report-users`, `dataset-users`, ...), from the list of workspaces fetched with `-e users`, or from the scan with `--get-artifact-users`. When the lake does not hold them, the tab says what to fetch, and `f` fetches them |
 | `3` | Lineage | what the item is built from and what is built on it (below) |
 | `4` | JSON | the stored answer, as it came from the API, and the folder of the lake it is in |
 | `5` | Versions | every stored answer that holds this, newest first: when, which operation, how many rows, how big, by which profile |
+| `6` | Details | what more there is to know of the item, and what the lake lacks of it: [fetched one item at a time](#details-one-item-at-a-time) |
+
+### Details, one item at a time
+
+The lists of a sync are cheap (one request for every report of the tenant), but who has
+access to each report, or each dataset's data sources, costs **one request per item**, and
+the administrator's quota for it is 200 an hour. So a sync does not keep them unless you name
+them (`pbi sync run dataset-users`), and the UI fetches them for the one item you look at:
+
+![The details of a dataset: what the lake holds, what it lacks, and how to get it](images/tui-details.svg)
+
+The **Details** tab (`6`) lists what an item can have (a report: users, pages; a dataset:
+users, data sources, refreshes, parameters; a dashboard: users, tiles; a dataflow: users,
+data sources; a workspace: users), what the lake holds of each (how many rows, from which
+operation, how old) and what to do about what it lacks. Press `f` to fetch the missing ones:
+the dialog shows what will be requested, for this item and no other, and how that compares with
+the quota, and **Fetch** runs it. The same row is selected again afterwards, now with the
+details filled in. On the Users tab `f` fetches only the users.
+
+- **Which account.** An administrator's account is used when there is one (it needs no
+  permission on the item), else a user's. What only one kind can read is said: the refresh
+  history, the parameters and the tiles of a dashboard need a user account; who has access to a
+  report or a dashboard needs an administrator's.
+- **When a user is refused.** A user can read the users of a dataset only with Reshare
+  permission on it, and its data sources and refresh history only with Write permission. When
+  the answer is `403` the tab says **refused** and names the permission, and another account may
+  do better (`p`).
+- **Cost.** Fetching a detail for one item may also read a list it depends on, when the lake
+  holds no fresh one (the dialog says so): the datasets of the tenant for a dataset, the
+  workspaces and datasets of the user for a user account.
+- **A lake that is only looked at** fetches nothing: the tab says *view only*.
+
+The command palette offers the same, as the name of what it would fetch (`Fetch the users and
+data sources of Finance model`).
 
 The **Lineage** tab follows what the scan of the workspace says (it needs a scan with
 `--lineage`, and says so when the scan was made without):
@@ -291,7 +325,8 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `Esc` | Explorer | clear the filter |
 | `r` | Explorer | fetch again what is selected |
 | `l` | Explorer | read the lake again |
-| `1` to `5` | Explorer | Info, Users, Lineage, JSON, Versions |
+| `1` to `6` | Explorer | Info, Users, Lineage, JSON, Versions, Details |
+| `f` | Explorer | fetch the details of the selected item that the lake lacks (the users, on the Users tab) |
 | `r` | Sync | run the sync |
 | `x` | Sync | stop the sync |
 | `1` to `3` | Sync | Plan, Run, Lake |

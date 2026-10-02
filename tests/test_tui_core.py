@@ -843,3 +843,66 @@ def test_an_item_that_only_a_users_list_has_says_which_list(tmp_path):
     shown = text(render.info(catalog, catalog.item("report", "rep-0001")))
 
     assert "user.group_reports of the workspace, fetched 0 s ago" in shown
+
+
+# ---------------------------------------------------------------------------
+# what the session can fetch of one item
+# ---------------------------------------------------------------------------
+
+
+def _detail(world, kind, item_id, workspace_id, name):
+    from pbi_cli.core.details import collect
+    from pbi_cli.core.sync.state import STATE_NAME
+
+    state = world.store.read_state(TENANT, STATE_NAME) or {}
+    found = collect(
+        world.store, TENANT, kind, item_id, workspace_id, state.get("units") or {}
+    )
+    return next(d for d in found if d.name == name)
+
+
+def test_a_detail_that_is_held_needs_nothing_to_be_said(world):
+    from pbi_cli.tui.fetching import Fetching
+
+    world.run("datasets", "dataset-users")
+    users = _detail(world, "dataset", "ds-0001", "ws-0001", "users")
+
+    assert Fetching().how(users) == ""
+    assert Fetching(view_only="only reads").how(users) == ""
+    assert Fetching().wanted([users]) == []  # nothing is fetched again
+
+
+def test_a_missing_detail_says_how_to_get_it_by_the_accounts_that_are_stored(world):
+    from pbi_cli.tui.fetching import Fetching
+
+    users = _detail(world, "dataset", "ds-0001", "ws-0001", "users")
+    report_users = _detail(world, "report", "rep-0001", "ws-0001", "users")
+
+    assert Fetching().how(users) == "press f: 1 request, an administrator account"
+    both = Fetching({Scope.ADMIN, Scope.USER})
+    assert both.how(users) == "press f: 1 request, an administrator account"
+    only_user = Fetching({Scope.USER})
+    assert "a user account with Reshare permission" in only_user.how(users)
+    assert only_user.how(report_users) == (
+        "needs an administrator account, and none is stored"
+    )
+    assert Fetching(view_only="only reads").how(users).startswith("view only")
+
+
+def test_what_is_wanted_is_what_is_missing_and_can_be_fetched(world):
+    from pbi_cli.tui.fetching import Fetching
+
+    world.run("datasets", "dataset-users")
+    details = [
+        _detail(world, "dataset", "ds-0001", "ws-0001", name)
+        for name in ("users", "datasources", "parameters")
+    ]
+
+    wanted = Fetching({Scope.ADMIN}).wanted(details)
+
+    assert [d.name for d, _ in wanted] == [
+        "datasources"
+    ]  # users are held, no user account
+    options = Fetching({Scope.ADMIN}).options(wanted)
+    assert options.targets == ("datasources",)
+    assert options.only == {"datasetId": ("ds-0001",)}

@@ -30,7 +30,7 @@ from textual.widgets import (
 from textual.widgets.tree import TreeNode
 from textual.worker import get_current_worker
 
-from pbi_cli.core.catalog import Catalog, Workspace, label
+from pbi_cli.core.catalog import Catalog, Item, Workspace, label
 from pbi_cli.core.registry import Scope
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import Plan, SyncOptions
@@ -71,6 +71,13 @@ TAB_IDS = {name: f"tab-{name}" for name in render.TABS}
 #: The widget that shows the text of each tab that is not a table.
 TEXT_WIDGETS = {"info": "#info", "lineage": "#lineage", "json": "#json"}
 
+#: The table of each tab that is one, and the line above it.
+TABLES = {
+    "users": ("#users", "#users-note"),
+    "versions": ("#versions", "#versions-note"),
+    "details": ("#details", "#details-note"),
+}
+
 
 @dataclass
 class Loaded:
@@ -101,6 +108,8 @@ class ExplorerScreen(Screen):
         Binding("3", "tab('lineage')", "Lineage", show=False),
         Binding("4", "tab('json')", "JSON", show=False),
         Binding("5", "tab('versions')", "Versions", show=False),
+        Binding("6", "tab('details')", "Details", show=False),
+        Binding("f", "fetch_details", "Fetch details"),
     ]
 
     def __init__(self) -> None:
@@ -158,6 +167,11 @@ class ExplorerScreen(Screen):
                         yield Static(id="versions-note")
                         yield DataTable(
                             id="versions", cursor_type="row", zebra_stripes=True
+                        )
+                    with TabPane("Details", id=TAB_IDS["details"]):
+                        yield Static(id="details-note")
+                        yield DataTable(
+                            id="details", cursor_type="row", zebra_stripes=True
                         )
         yield Footer(show_command_palette=False)
 
@@ -443,7 +457,7 @@ class ExplorerScreen(Screen):
         if catalog is None:
             return
         try:
-            detail = render.detail(catalog, name, subject)
+            detail = render.detail(catalog, name, subject, self.pbi.fetching())
         except Exception as error:  # a broken lake file must not end the UI
             detail = render.Detail(
                 body=Text(f"Could not read this: {error}", style="red")
@@ -458,10 +472,8 @@ class ExplorerScreen(Screen):
         if name in TEXT_WIDGETS:
             self.query_one(TEXT_WIDGETS[name], Static).update(detail.body or "")
         else:
-            note_id = "#users-note" if name == "users" else "#versions-note"
-            table = self.query_one(
-                "#users" if name == "users" else "#versions", DataTable
-            )
+            table_id, note_id = TABLES[name]
+            table = self.query_one(table_id, DataTable)
             table.clear(columns=True)
             if detail.rows is None:
                 self.query_one(note_id, Static).update(detail.body or "")
@@ -473,6 +485,66 @@ class ExplorerScreen(Screen):
 
     def action_tab(self, name: str) -> None:
         self.query_one("#detail", TabbedContent).active = TAB_IDS[name]
+
+    # -- fetching the details of one item ---------------------------------------------------
+
+    def fetch_choice(self) -> Optional[Tuple[str, SyncOptions]]:
+        """What ``f`` would fetch: a label for it, and the sync that does it.
+
+        It is the details of what is selected that the lake lacks and that a stored account
+        can fetch (only the users, on the Users tab), for this item and no other.
+        """
+        subject = self._subject
+        catalog = self.catalog
+        if catalog is None or not isinstance(subject, (Workspace, Item)):
+            return None
+        details = catalog.details(subject)
+        if self.query_one("#detail", TabbedContent).active == TAB_IDS["users"]:
+            details = [d for d in details if d.name == "users"]
+        fetching = self.pbi.fetching()
+        wanted = fetching.wanted(details)
+        if not wanted:
+            return None
+        names = render.join_names([d.title.lower() for d, _ in wanted])
+        return (f"Fetch the {names} of {subject.name}", fetching.options(wanted))
+
+    def _nothing_to_fetch(self) -> str:
+        """Why ``f`` has nothing to fetch, in a sentence."""
+        subject = self._subject
+        catalog = self.catalog
+        if catalog is None or not isinstance(subject, (Workspace, Item)):
+            return "Select a workspace or an item to fetch its details."
+        details = catalog.details(subject)
+        if not details:
+            return f"There is nothing more to fetch for this {label(subject.kind).lower()}."
+        if all(d.held is not None for d in details):
+            return "The lake holds every detail of this already."
+        needed = next(
+            (d.providers[0].needs for d in details if d.held is None and d.providers),
+            "another account",
+        )
+        return (
+            f"No stored account can fetch what is missing: it needs {needed} "
+            "(press a to store a token, or p for the accounts)."
+        )
+
+    def action_fetch_details(self) -> None:
+        if self.pbi.refuse_when_view_only():
+            return
+        choice = self.fetch_choice()
+        if choice is None:
+            self.notify(self._nothing_to_fetch(), severity="warning")
+            return
+        title, options = choice
+        self._keep_the_row()
+        self._plan_then_confirm(title, options)
+
+    def _keep_the_row(self) -> None:
+        """Select the same row again when the lake has been read again after a fetch: what
+        was fetched is shown for the item it was fetched for, not for the first row."""
+        entry = self._cursor_entry()
+        if entry is not None and entry.subject is self._subject:
+            self._pending = (self._ref, entry.key)
 
     # -- filtering -----------------------------------------------------------------------
 
@@ -627,6 +699,7 @@ class ExplorerScreen(Screen):
             self.notify("There is nothing here to fetch again.", severity="warning")
             return
         title, options = choice
+        self._keep_the_row()
         self._plan_then_confirm(title, options)
 
     @work(thread=True, exclusive=True, group="plan")

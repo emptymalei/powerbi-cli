@@ -422,6 +422,10 @@ def main() -> None:
                 lambda: app.screen.query("CommandList").first().option_count > 4
             )
 
+        async def details(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001", "dataset:ds-0001")
+            await pilot.press("6")
+
         async def palette_search(app: PBIApp, pilot: Any) -> None:
             await pick(app, pilot, "ws-0001")
             await pilot.press(":")
@@ -467,6 +471,10 @@ def main() -> None:
                     ),
                 )
             )
+
+        # what was fetched of one dataset: its users and data sources, and not the rest
+        world.run("dataset-users", "datasources", only={"datasetId": ["ds-0001"]})
+        asyncio.run(shoot(world, "tui-details.svg", details))
 
         # a day later the lists are stale, so the plan has something to fetch
         world.clock.advance(hours=26)

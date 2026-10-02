@@ -25,6 +25,7 @@ EXPLORER_TABS = (
     ("3", "lineage", "Lineage", "What it is built from, and what is built on it"),
     ("4", "json", "JSON", "The stored answer, as the API gave it"),
     ("5", "versions", "Versions", "Every stored answer that holds it, newest first"),
+    ("6", "details", "Details", "What more there is to know, and what the lake lacks"),
 )
 SYNC_TABS = (
     ("1", "plan", "Plan", "What the sync would do, and what it costs"),
@@ -73,6 +74,16 @@ def _explorer(screen: Any, view_only: bool) -> List[Command]:
                 _help("Asks first, and shows the cost against the quotas", "r"),
                 screen.action_refresh,
                 "fetch again refresh scan sync",
+            )
+        )
+    fetch = None if view_only else screen.fetch_choice()
+    if fetch is not None:
+        found.append(
+            Command(
+                fetch[0],
+                _help("Asks first, and shows the cost against the quotas", "f"),
+                screen.action_fetch_details,
+                "details users data sources pages refresh history tiles parameters",
             )
         )
     found.append(

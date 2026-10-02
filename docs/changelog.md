@@ -62,6 +62,16 @@
 
 ### Added
 
+- **Details of one item, on demand.** Who has access to a dataset, a dashboard, a dataflow or
+  a workspace, the data sources of a dataflow, the refresh history and the parameters of a
+  dataset, the tiles of a dashboard: each costs a request per item, so a sync keeps them only
+  when asked, and the [terminal UI](tui.md#details-one-item-at-a-time) fetches them for the one
+  item you look at. The new **Details** tab (`6`) lists what an item can have, what the lake
+  holds of each (rows, source, age) and how to get the rest; `f` fetches what is missing, after
+  showing the cost, with an administrator's account or a user's, whichever is stored (and says
+  which permission a user lacks when the API refuses). The same row is selected again
+  afterwards, also after `r`. The palette offers it as a command, and the Users tab says how to
+  get the users of the item.
 - New operations in the registry, with the targets that fetch them for every item: the users
   of a workspace, dataset, dashboard and dataflow (`group-users`, `dataset-users`,
   `dashboard-users`, `dataflow-users`, 200 requests an hour each), the data sources of a
