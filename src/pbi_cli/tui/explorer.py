@@ -159,7 +159,7 @@ class ExplorerScreen(Screen):
                         yield DataTable(
                             id="versions", cursor_type="row", zebra_stripes=True
                         )
-        yield Footer()
+        yield Footer(show_command_palette=False)
 
     def on_mount(self) -> None:
         self.query_one("#tree", Tree).focus()
@@ -475,6 +475,11 @@ class ExplorerScreen(Screen):
         self.query_one("#detail", TabbedContent).active = TAB_IDS[name]
 
     # -- filtering -----------------------------------------------------------------------
+
+    @property
+    def filtering(self) -> bool:
+        """Whether the tree or the table is narrowed by a filter."""
+        return bool(self._tree_filter.strip() or self._table_filter.strip())
 
     def action_filter(self) -> None:
         tree = self.query_one("#tree", Tree)

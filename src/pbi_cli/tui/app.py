@@ -12,13 +12,12 @@ only requests it can make are those of the sync engine, which only reads.
 """
 
 from pathlib import Path
-from typing import Any, Iterable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from loguru import logger
 from textual import work
-from textual.app import App, SystemCommand
+from textual.app import App
 from textual.binding import Binding
-from textual.screen import Screen
 
 from pbi_cli.core.catalog import Catalog, Match
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
@@ -34,7 +33,7 @@ from pbi_cli.tui.modals import (
     OpenLakeModal,
     SignInModal,
 )
-from pbi_cli.tui.palette import GotoProvider
+from pbi_cli.tui.palette import CommandsProvider, GotoProvider
 from pbi_cli.tui.run import RunState
 from pbi_cli.tui.status import StatusBar
 from pbi_cli.tui.styles import CSS, THEME
@@ -64,7 +63,7 @@ class PBIApp(App[None]):
     TITLE = "pbi"
     CSS = CSS
     SCREENS = {"explorer": ExplorerScreen, "sync": SyncScreen}
-    COMMANDS = App.COMMANDS | {GotoProvider}
+    COMMANDS = {CommandsProvider, GotoProvider}
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("a", "sign_in", "Sign in"),
@@ -73,6 +72,10 @@ class PBIApp(App[None]):
         Binding("t", "choose_tenant", "Tenant", show=False),
         Binding("o", "open_lake", "Open lake"),
         Binding("p", "accounts", "Accounts"),
+        # the command palette: ":" as in Vim, and Ctrl+P as in VS Code and Obsidian. ":" is a
+        # plain key, so a box that is being typed in (a filter, a token) takes it as text
+        Binding(":", "command_palette", "Commands", key_display=":"),
+        Binding("ctrl+p", "command_palette", "Commands", show=False, priority=True),
     ]
 
     def __init__(self, backend: Backend, tenant: Optional[str] = None):
@@ -117,6 +120,21 @@ class PBIApp(App[None]):
     def on_unmount(self) -> None:
         if self._sink is not None:
             logger.remove(self._sink)
+
+    def call_from_thread(
+        self, callback: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        """Hand something to the app from a worker thread, as Textual does, unless the app is
+        closing: then the screens that a callback would draw on are being taken apart, and
+        what the worker has to say is of no use (it used to fail, now and then, when the
+        app was quit while a sync was ending)."""
+
+        def hand_over() -> Any:
+            if self._exit or not self.is_running:
+                return None
+            return callback(*args, **kwargs)
+
+        return super().call_from_thread(hand_over)
 
     def action_quit(self) -> None:
         """Quit; when a sync is running, ask first, and stop it."""
@@ -211,22 +229,27 @@ class PBIApp(App[None]):
             action, group, profile = picked
             if action == "sign_in":
                 self.action_sign_in(group=group, profile=profile)
-                return
-            activate = self.backend.activate
-            if activate is None:
-                self.notify("This session cannot switch profiles.", severity="warning")
-                return
-            try:
-                activate(group, profile)
-            except Exception as error:  # a settings problem must not end the UI
-                self.notify(f"Cannot switch: {error}", severity="error")
-                return
-            self.refresh_identity()
-            self.notify(f"{profile} is now the active profile of the group {group}.")
+            else:
+                self.activate_profile(group, profile)
 
         self.push_screen(
             AccountsModal(self.backend.accounts(), self.backend.clock()), chosen
         )
+
+    def activate_profile(self, group: str, profile: str) -> None:
+        """Make a stored profile the active one of its group, as ``pbi profile switch``
+        does (what the Accounts dialog and the command palette ask for)."""
+        activate = self.backend.activate
+        if activate is None:
+            self.notify("This session cannot switch profiles.", severity="warning")
+            return
+        try:
+            activate(group, profile)
+        except Exception as error:  # a settings problem must not end the UI
+            self.notify(f"Cannot switch: {error}", severity="error")
+            return
+        self.refresh_identity()
+        self.notify(f"{profile} is now the active profile of the group {group}.")
 
     def explain_sync_problem(
         self, error: BaseException, resume: Optional[Tuple[SyncOptions, str]]
@@ -294,18 +317,31 @@ class PBIApp(App[None]):
             chosen,
         )
 
-    def action_open_lake(self) -> None:
-        """Choose another lake to look at (or the work lake again)."""
+    def _can_open_lakes(self) -> bool:
+        """Whether another lake can be opened now; if not, say why."""
         if self._in_modal():
-            return
+            return False
         if self.backend.open_lake is None:
             self.notify("This session cannot open another lake.", severity="warning")
-            return
+            return False
         if self.run_state is not None and self.run_state.running:
             self.notify(
                 "A sync is running: stop it, or wait for it, before opening another lake.",
                 severity="warning",
             )
+            return False
+        return True
+
+    def open_lake_at(self, location: str) -> None:
+        """Open a lake by its location, without the dialog (the command palette's way)."""
+        if self._can_open_lakes():
+            self.switch_lake(
+                self.backend.work_lake if location == WORK_LAKE else location
+            )
+
+    def action_open_lake(self) -> None:
+        """Choose another lake to look at (or the work lake again)."""
+        if not self._can_open_lakes():
             return
 
         def chosen(location: Optional[str]) -> None:
@@ -449,28 +485,9 @@ class PBIApp(App[None]):
         if isinstance(explorer, ExplorerScreen):
             explorer.goto(found.kind, found.id, found.workspace_id)
 
-    # -- the command palette ---------------------------------------------------------------------
-
-    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
-        yield from super().get_system_commands(screen)
-        yield SystemCommand(
-            "Sync", "Fetch from Power BI into the lake", self.action_open_sync
-        )
-        yield SystemCommand("Explorer", "Browse the lake", self.action_open_explorer)
-        yield SystemCommand(
-            "Sign in", "Store a fresh bearer token", self.action_sign_in
-        )
-        yield SystemCommand(
-            "Accounts",
-            "The stored profiles: switch the active one",
-            self.action_accounts,
-        )
-        yield SystemCommand(
-            "Reload the lake", "Read the lake again", lambda: self.reload_catalog(True)
-        )
-        yield SystemCommand(
-            "Choose the tenant", "Switch tenant", self.action_choose_tenant
-        )
-        yield SystemCommand(
-            "Open a lake", "Look at another data lake", self.action_open_lake
-        )
+    def stop_sync(self) -> None:
+        """Ask the sync that runs to stop: it finishes the requests in flight and starts
+        nothing new."""
+        state = self.run_state
+        if state is not None and state.running:
+            state.request_stop()

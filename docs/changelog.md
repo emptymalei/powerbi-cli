@@ -4,6 +4,8 @@
 
 ### Changed
 
+- The buttons of the [terminal UI](tui.md) are slim, one line each, instead of three-line
+  blocks; everything a button does is also a key and a command of the palette.
 - `pbi workspaces scan batch` scans in batches of up to 100 workspaces per request, not one
   request per workspace: the API allows 500 scan requests an hour, so the old way ran out
   of quota after 500 workspaces. Every workspace still gets its own file, named as before,
@@ -60,6 +62,14 @@
 
 ### Added
 
+- The [terminal UI](tui.md) has a **command palette**: `:` (as in Vim) or `Ctrl+P` (as in VS
+  Code and Obsidian), or a click on `: commands` in the header, opens a search bar over every
+  action of the UI, each with what it does and the key that does the same. Typing narrows
+  the list, `Enter` runs a command. It lists what can be done now (on the Explorer: fetch
+  again what is selected, filter, the tabs; on the Sync screen: run, the tabs; while a sync
+  runs: stop it, from any screen; everywhere: the other screen, reload, accounts, sign in,
+  make a stored profile active, open another lake), and a name jumps to a workspace or an
+  item, as before. A place typed in (`s3://bucket/lake`, `/shared/lake`) offers to open it.
 - **An administrator account is optional.** pbi works with an administrator's token, with a
   user's token (a service account, for example), or with both. `pbi sync` with no names
   syncs the lists of the tenant when an administrator account is stored, and else what a
@@ -150,6 +160,9 @@
 
 ### Fixed
 
+- The [terminal UI](tui.md) no longer fails with an error about a widget that is gone, now and
+  then, when it is quit while a sync is ending: what a worker hands over is dropped once the
+  app is closing.
 - The dialogs of the [terminal UI](tui.md) all come up in the middle of the screen over the
   dimmed one: they are made from one class, `Dialog`, that carries the styles, and a test
   fails for a dialog that is not.

@@ -415,6 +415,24 @@ def main() -> None:
             await pick(app, pilot, "ws-0001")
             await pilot.press("p")
 
+        async def palette(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001")
+            await pilot.press(":")
+            await until(
+                lambda: app.screen.query("CommandList").first().option_count > 4
+            )
+
+        async def palette_search(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001")
+            await pilot.press(":")
+            await until(
+                lambda: app.screen.query("CommandList").first().option_count > 4
+            )
+            await pilot.press(*"sy")
+            await until(
+                lambda: app.screen.query("CommandList").first().option_count < 8
+            )
+
         for name, scenario in (
             ("tui-explorer.svg", workspace),
             ("tui-lineage.svg", lineage),
@@ -430,6 +448,25 @@ def main() -> None:
                 backend_of(world, accounts=stored_accounts),
             )
         )
+        for name, scenario in (
+            ("tui-palette.svg", palette),
+            ("tui-palette-search.svg", palette_search),
+        ):
+            asyncio.run(
+                shoot(
+                    world,
+                    name,
+                    scenario,
+                    backend_of(
+                        world,
+                        accounts=stored_accounts,
+                        activate=lambda group, profile: None,
+                        open_lake=lambda place: world.store,
+                        recent_lakes=lambda: ["s3://contoso-bi/pbi-lake"],
+                        work_lake=str(world.store.root),
+                    ),
+                )
+            )
 
         # a day later the lists are stale, so the plan has something to fetch
         world.clock.advance(hours=26)

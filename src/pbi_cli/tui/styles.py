@@ -32,6 +32,20 @@ StatusBar #who {
 StatusBar #busy {
     width: auto;
 }
+StatusBar #hint {
+    width: auto;
+    padding: 0 1;
+}
+StatusBar #hint:hover {
+    background: $boost;
+}
+
+/* buttons are slim: one line, as wide as their words */
+Button {
+    min-width: 0;
+    width: auto;
+    padding: 0 2;
+}
 
 #explorer, #sync {
     height: 1fr;
@@ -124,7 +138,8 @@ Checkbox {
     height: 1;
 }
 #sync-buttons {
-    height: 3;
+    height: 1;
+    margin: 1 0 1 0;
     padding: 0 1;
 }
 #sync-buttons Button {
@@ -132,7 +147,7 @@ Checkbox {
 }
 #run-line {
     width: 1fr;
-    padding: 1 0 0 0;
+    padding: 0 0 0 0;
     color: $text-muted;
 }
 #plan, #quota, #holdings, #used {
@@ -196,7 +211,7 @@ AccountsModal #dialog {
     height: auto;
 }
 #buttons {
-    height: 5;
+    height: 1;
     margin-top: 1;
     align-horizontal: right;
 }

@@ -92,6 +92,10 @@ read model over the lake with no terminal in it; what it fetches goes through th
 engine. The `pbi_cli.tui` package imports nothing from Textual until it is started, so
 every other command works without the extra. See `docs/tui.md`.
 
+The command palette (`:` or `Ctrl+P`) is fed by `src/pbi_cli/tui/commands.py`, which lists what
+can be done from the screen that is shown (give a new action a `Command` there, and it can be
+searched), and by the providers in `src/pbi_cli/tui/palette.py`.
+
 ### Running the tests
 
 ```bash

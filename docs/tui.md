@@ -3,7 +3,8 @@
 `pbi tui` opens a terminal UI for what the [data lake](lake.md) holds. You browse the
 workspaces of your tenant, what is in each of them, who can open it, what it is built from
 and what is built on it, and how fresh each part is. A second screen plans, runs and stops
-a [sync](sync.md). You do not have to remember a command: everything is a key press away.
+a [sync](sync.md). You do not have to remember a key: press `:` and search for what you want
+to do (see [The command palette](#the-command-palette)).
 
 ![The Explorer: the workspaces of a tenant, the items of Finance, and its details](images/tui-explorer.svg)
 
@@ -32,6 +33,39 @@ A bare `pbi` in a terminal opens the UI too, when Textual is installed and a cac
 set; anywhere else it greets as before. `pbi tui --tenant <id>` browses another tenant of
 the lake than the one of your token. The log of the UI goes to `~/.pbi_cli/tui.log` (it
 would write over the screen otherwise).
+
+## The command palette
+
+Press `:` (as in Vim) or `Ctrl+P` (as in VS Code and Obsidian) anywhere, or click
+`: commands` at the right end of the header. A search bar opens over the screen with every
+action of the UI under it, each with a line that says what it does and the key that does the
+same. Type a few letters, `Enter` runs the highlighted one, `Esc` closes the bar.
+
+![The palette, as it opens on the Explorer: every action, with its key](images/tui-palette.svg)
+
+It narrows as you type, and finds a command by other words for it (`login` finds *Sign in*,
+`cancel` finds *Stop the sync*):
+
+![Typing sy: what has to do with a sync](images/tui-palette-search.svg)
+
+What it lists is what can be done *now*, so nothing in it is a dead end:
+
+| Where | Commands |
+| --- | --- |
+| the Explorer | fetch again what is selected (it says what: `Scan Finance`, `Fetch the lists of the tenant`, `Fetch what you can see`, ...), filter, clear the filter, show a tab |
+| the Sync screen | run the sync, show a tab |
+| while a sync runs | stop the sync, from any screen |
+| everywhere | open the Explorer or the Sync screen, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (`Make svc-finance the active user account`), store a new token for a profile, open another lake, the work lake, or one you opened lately |
+| Textual | its own commands: the theme, the key list, a screenshot, quit |
+
+On a lake that is only looked at ([view only](#other-lakes-and-view-only)) there is nothing
+to sign in to and nothing to fetch, so those commands are not listed. Two things work by what
+you type rather than by a list: a **name** (a workspace, report, dataset, dashboard or
+dataflow) jumps to it, and a **place** (`s3://bucket/lake`, `/shared/lake`, `~/lake`) offers
+*Open lake ...*, which opens it view only.
+
+`:` is an ordinary key, so in a box that you are typing in (a filter, a token, a location) it
+is a colon.
 
 ## The Explorer
 
@@ -104,9 +138,9 @@ The **Lineage** tab follows what the scan of the workspace says (it needs a scan
   the words you type must be in the row (case does not matter), so `report` also finds the
   reports of a workspace. `Esc` clears the filter. A table shows at most 2,000 rows and the
   tree 5,000 workspaces; the filter narrows them.
-- `Ctrl+P` opens the command palette. Type a name to jump to a workspace, report, dataset,
-  dashboard or dataflow, wherever it is; it also lists the commands (Sync, Explorer, Sign
-  in, Reload the lake, Choose the tenant).
+- `:` or `Ctrl+P` opens the [command palette](#the-command-palette). Type a name to jump to
+  a workspace, report, dataset, dashboard or dataflow, wherever it is, or the name of a
+  command to run it.
 - `Tab` and `Shift+Tab` move between the tree, the table and the tabs; the arrow keys and
   `Enter` move and open nodes, and the mouse works.
 
@@ -252,7 +286,7 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `p` | everywhere | the accounts: make a stored profile active, or store a new token for it |
 | `t` | everywhere | choose the tenant |
 | `o` | everywhere | open another lake (view only), or the work lake again |
-| `Ctrl+P` | everywhere | the command palette: jump to a workspace or an item by name |
+| `:`, `Ctrl+P` | everywhere | the command palette: search every action and run it, or jump to a workspace or an item by name |
 | `/` | Explorer | filter the tree or the table, whichever has the focus |
 | `Esc` | Explorer | clear the filter |
 | `r` | Explorer | fetch again what is selected |

@@ -3,6 +3,7 @@
 from typing import Any
 
 from rich.text import Text
+from textual import events, on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.css.query import NoMatches
@@ -16,6 +17,9 @@ SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 #: Seconds between two redraws of the line.
 REFRESH_EVERY = 0.5
 
+#: What the right end of the line says about the command palette (it can be clicked).
+HINT = ": commands"
+
 
 class StatusBar(Horizontal):
     """Tenant, profile, lake and token on the left; the running sync on the right."""
@@ -23,6 +27,11 @@ class StatusBar(Horizontal):
     def compose(self) -> ComposeResult:
         yield Static("", id="who")
         yield Static("", id="busy")
+        yield Static(Text(HINT, style="grey62"), id="hint")
+
+    @on(events.Click, "#hint")
+    def _open_the_palette(self) -> None:
+        self.app.action_command_palette()
 
     def on_mount(self) -> None:
         self._frame = 0

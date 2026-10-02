@@ -11,6 +11,7 @@ from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore, PublishInfo
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.errors import PBIError
+from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import OpenLakeModal, SignInModal
 from pbi_cli.tui.run import RunState
 
@@ -351,8 +352,8 @@ def test_the_dialog_is_reachable_from_the_palette(two_lakes):
     backend, _, _ = two_lakes
 
     async def scenario(ui):
-        commands = {c.title for c in ui.app.get_system_commands(ui.app.screen)}
-        return "Open a lake" in commands
+        commands = {c.title for c in commands_for(ui.app, ui.app.screen)}
+        return "Open a lake…" in commands
 
     assert run_ui(backend, scenario) is True
 

@@ -11,6 +11,7 @@ from tui_helpers import backend_of, run_ui
 from pbi_cli.core.registry import Scope
 from pbi_cli.errors import AuthError
 from pbi_cli.tui.backend import AccountInfo
+from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import AccountsModal, SignInModal, format_left
 
 SKELETON = [
@@ -644,8 +645,6 @@ def test_the_dialog_is_in_the_palette(world):
     world.run("groups")
 
     async def scenario(ui):
-        return "Accounts" in {
-            c.title for c in ui.app.get_system_commands(ui.app.screen)
-        }
+        return "Accounts…" in {c.title for c in commands_for(ui.app, ui.app.screen)}
 
     assert run_ui(backend_of(world), scenario) is True

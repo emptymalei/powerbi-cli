@@ -134,8 +134,10 @@ class SyncScreen(Screen):
                     yield Input(value="4", type="integer", id="workers")
             with Vertical(id="sync-right"):
                 with Horizontal(id="sync-buttons"):
-                    yield Button("Run sync", variant="primary", id="run")
-                    yield Button("Stop", variant="error", id="stop", disabled=True)
+                    yield Button("Run sync", variant="primary", id="run", compact=True)
+                    yield Button(
+                        "Stop", variant="error", id="stop", disabled=True, compact=True
+                    )
                     yield Static("", id="run-line")
                 with TabbedContent(initial="tab-plan", id="sync-tabs"):
                     with TabPane("Plan", id="tab-plan"):
@@ -168,7 +170,7 @@ class SyncScreen(Screen):
                             yield DataTable(
                                 id="used", cursor_type="none", zebra_stripes=True
                             )
-        yield Footer()
+        yield Footer(show_command_palette=False)
 
     @staticmethod
     def _plain(target: Any, available: Set[Scope]) -> bool:
@@ -358,6 +360,16 @@ class SyncScreen(Screen):
         )
         self._buttons()
 
+    @property
+    def can_run(self) -> bool:
+        """Whether **Run** would start the sync now: it is planned, nothing runs, and the lake
+        is not only looked at."""
+        state = self.pbi.run_state
+        running = state is not None and state.running
+        return (
+            not running and self._planned is not None and not self.pbi.backend.readonly
+        )
+
     def _buttons(self) -> None:
         state = self.pbi.run_state
         running = state is not None and state.running
@@ -376,10 +388,8 @@ class SyncScreen(Screen):
 
     @on(Button.Pressed, "#stop")
     def action_stop(self) -> None:
-        state = self.pbi.run_state
-        if state is not None:
-            state.request_stop()
-            self._buttons()
+        self.pbi.stop_sync()
+        self._buttons()
 
     def _tick(self) -> None:
         """Show how the run is going, twice a second and when the screen is shown."""

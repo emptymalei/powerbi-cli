@@ -1,5 +1,6 @@
 """The app: who is signed in, the dialogs, the tenant, and the command palette."""
 
+import asyncio
 from datetime import timedelta
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from tui_helpers import backend_of, plain, run_ui
 from pbi_cli.errors import AuthError
 from pbi_cli.tui import modals
 from pbi_cli.tui.app import lake_label
+from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.palette import GotoProvider
 
 
@@ -431,28 +433,60 @@ def test_the_palette_has_nothing_without_a_lake(tmp_path):
 
 def test_the_palette_offers_the_screens_and_the_sign_in(world):
     async def scenario(ui):
-        return [c.title for c in ui.app.get_system_commands(ui.app.screen)]
+        return [c.title for c in commands_for(ui.app, ui.app.screen)]
 
     titles = run_ui(backend_of(world), scenario)
 
     assert {
-        "Sync",
-        "Explorer",
-        "Sign in",
+        "Open the Sync screen",
+        "Sign in…",
         "Reload the lake",
-        "Choose the tenant",
+        "Choose the tenant…",
     } <= set(titles)
 
 
-def test_a_command_of_the_palette_opens_the_sync_screen(world):
-    async def scenario(ui):
-        for command in ui.app.get_system_commands(ui.app.screen):
-            if command.title == "Sync":
-                command.callback()
-        await ui.settle()
-        return type(ui.app.screen).__name__
+# ---------------------------------------------------------------------------
+# a worker that hands something over as the app closes
+# ---------------------------------------------------------------------------
 
-    assert run_ui(backend_of(world), scenario) == "SyncScreen"
+
+def test_what_a_worker_hands_over_is_used_while_the_app_runs(world):
+    async def scenario(ui):
+        calls = []
+        await asyncio.to_thread(ui.app.call_from_thread, lambda: calls.append("ran"))
+        return calls
+
+    assert run_ui(backend_of(world), scenario) == ["ran"]
+
+
+def test_what_a_worker_hands_over_is_dropped_once_the_app_has_been_asked_to_exit(world):
+    async def scenario(ui):
+        calls = []
+        ui.app._exit = True
+        try:
+            await asyncio.to_thread(
+                ui.app.call_from_thread, lambda: calls.append("ran")
+            )
+        finally:
+            ui.app._exit = False
+        return calls
+
+    assert run_ui(backend_of(world), scenario) == []
+
+
+def test_what_a_worker_hands_over_is_dropped_while_the_app_is_shutting_down(world):
+    async def scenario(ui):
+        calls = []
+        ui.app._running = False
+        try:
+            await asyncio.to_thread(
+                ui.app.call_from_thread, lambda: calls.append("ran")
+            )
+        finally:
+            ui.app._running = True
+        return calls
+
+    assert run_ui(backend_of(world), scenario) == []
 
 
 # ---------------------------------------------------------------------------

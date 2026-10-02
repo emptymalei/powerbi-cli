@@ -97,8 +97,8 @@ class SignInModal(Dialog[Optional[str]]):
             yield Input(password=True, placeholder="paste the token here", id="token")
             yield Static("", id="error")
             with Horizontal(id="buttons"):
-                yield Button("Sign in", variant="primary", id="ok")
-                yield Button("Cancel", id="cancel")
+                yield Button("Sign in", variant="primary", id="ok", compact=True)
+                yield Button("Cancel", id="cancel", compact=True)
 
     def on_mount(self) -> None:
         self.query_one("#token", Input).focus()
@@ -171,8 +171,8 @@ class ConfirmModal(Dialog[bool]):
             with VerticalScroll(id="dialog-body"):
                 yield Static(self._body)
             with Horizontal(id="buttons"):
-                yield Button(self._action, variant="primary", id="yes")
-                yield Button("Cancel", id="no")
+                yield Button(self._action, variant="primary", id="yes", compact=True)
+                yield Button("Cancel", id="no", compact=True)
 
     def on_mount(self) -> None:
         self.query_one("#yes", Button).focus()
@@ -213,7 +213,7 @@ class ChoiceModal(Dialog[Optional[str]]):
                 *[Option(text, id=value) for value, text in self._choices], id="choices"
             )
             with Horizontal(id="buttons"):
-                yield Button("Cancel", id="cancel")
+                yield Button("Cancel", id="cancel", compact=True)
 
     def on_mount(self) -> None:
         self.query_one("#choices", OptionList).focus()
@@ -273,8 +273,8 @@ class OpenLakeModal(Dialog[Optional[str]]):
                 placeholder="s3://bucket/folder or /path/to/lake", id="location"
             )
             with Horizontal(id="buttons"):
-                yield Button("Open", variant="primary", id="ok")
-                yield Button("Cancel", id="cancel")
+                yield Button("Open", variant="primary", id="ok", compact=True)
+                yield Button("Cancel", id="cancel", compact=True)
 
     def on_mount(self) -> None:
         self.query_one("#location", Input).focus()
@@ -325,9 +325,11 @@ class AccountsModal(Dialog[Optional[Tuple[str, str, str]]]):
             )
             yield DataTable(id="accounts", cursor_type="row", zebra_stripes=True)
             with Horizontal(id="buttons"):
-                yield Button("Make active", variant="primary", id="activate")
-                yield Button("New token", id="token")
-                yield Button("Close", id="cancel")
+                yield Button(
+                    "Make active", variant="primary", id="activate", compact=True
+                )
+                yield Button("New token", id="token", compact=True)
+                yield Button("Close", id="cancel", compact=True)
 
     def on_mount(self) -> None:
         table = self.query_one("#accounts", DataTable)
