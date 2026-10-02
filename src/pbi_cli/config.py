@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 from loguru import logger
@@ -312,6 +312,22 @@ class PBIConfig:
         :param value: True to enable caching, False to disable
         """
         self.set("cache_enabled", bool(value))
+
+    #: How many lakes `remember_lake` keeps.
+    RECENT_LAKES = 8
+
+    @property
+    def recent_lakes(self) -> List[str]:
+        """The lakes that were opened lately with ``--lake`` or in the TUI, newest first."""
+        value = self.get("recent_lakes") or []
+        if not isinstance(value, list):
+            return []
+        return [str(item) for item in value if item]
+
+    def remember_lake(self, location: str) -> None:
+        """Put a lake first among the recent ones (each is listed once)."""
+        found = [location] + [item for item in self.recent_lakes if item != location]
+        self.set("recent_lakes", found[: self.RECENT_LAKES])
 
     @property
     def config_dir(self) -> Path:

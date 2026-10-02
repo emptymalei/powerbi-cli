@@ -6,10 +6,12 @@ from pathlib import Path
 import pytest
 from core_helpers import make_client, make_token
 from sync_helpers import TENANT, World
+from textual.screen import ModalScreen
 from textual.widgets import Input, RadioSet
 from tui_helpers import backend_of, plain, run_ui
 
 from pbi_cli.errors import AuthError
+from pbi_cli.tui import modals
 from pbi_cli.tui.app import lake_label
 from pbi_cli.tui.palette import GotoProvider
 
@@ -224,6 +226,42 @@ def test_signing_in_can_be_cancelled(world):
     )
 
     assert screen == "ExplorerScreen" and signed == []
+
+
+def test_every_dialog_is_made_from_the_dialog_class():
+    """The styles of the dialogs belong to ``Dialog``: one that is made another way comes up
+    in a corner of the screen, which no test of what a dialog does would notice."""
+    found = [
+        item
+        for item in vars(modals).values()
+        if isinstance(item, type)
+        and issubclass(item, ModalScreen)
+        and item.__module__ == modals.__name__
+        and item is not modals.Dialog
+    ]
+
+    assert len(found) >= 4
+    assert [
+        item.__name__ for item in found if not issubclass(item, modals.Dialog)
+    ] == []
+
+
+@pytest.mark.parametrize("key", ["a", "o"])
+def test_a_dialog_comes_up_in_the_middle_of_the_screen(world, key):
+    async def scenario(ui):
+        await ui.press(key)
+        screen = ui.app.screen
+        return (
+            type(screen).__name__,
+            screen.styles.align_horizontal,
+            screen.styles.align_vertical,
+        )
+
+    backend = backend_of(world, open_lake=lambda location: world.store)
+    name, horizontal, vertical = run_ui(backend, scenario)
+
+    assert name != "ExplorerScreen"
+    assert (horizontal, vertical) == ("center", "middle")
 
 
 def test_the_token_is_typed_masked(world):

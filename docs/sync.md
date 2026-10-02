@@ -292,7 +292,9 @@ deferred, 1 when a unit failed or the token expired, and 130 when the run was in
 
 `pbi sync status` shows how the last runs went, the units that failed or are held back, the
 scans that were started and not collected, the quota used in the last hour, and what the lake
-holds for each target. It reads the lake only, so it needs no token and no network.
+holds for each target. It reads the lake only, so it needs no token and no network, and
+`--lake <folder or s3://bucket/folder>` shows the status of another lake, such as one that a
+colleague [published](sharing.md).
 
 ```text
 $ pbi sync status
@@ -357,6 +359,8 @@ run works when something stores a fresh token just before it. Some advice:
   A nightly `pbi sync run default activity --days 7` keeps them all.
 - A run that stops because of an expired token, or a quota, is not a problem for the
   schedule: the next one continues.
+- To let others read what the schedule keeps without giving them an account, end it with
+  `pbi lake publish <destination> --yes` (see [Sharing a lake](sharing.md)).
 
 ## What a sync remembers
 

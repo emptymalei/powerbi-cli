@@ -46,6 +46,10 @@ open it, what it is built from and what is built on it, and how fresh each part 
 also plans, runs and stops a sync, so there is nothing to remember. It needs the optional
 extra `pip install "pbi-cli[tui]"`.
 
+A lake can be [shared](sharing.md): `pbi lake publish` copies it to a folder or an S3
+prefix, and anyone can then open it with `pbi tui --lake <place>`, read-only and without a
+token or any Power BI account.
+
 Commands marked "Requires Admin" in the reference need a profile in the `admin` group.
 
 ## Shell completion
@@ -65,5 +69,7 @@ pbi --show-completion      # print the completion script instead
   quotas, continuing where the last run stopped.
 - [Terminal UI](tui.md): browse the lake and run a sync from a terminal, without
   remembering the commands.
+- [Sharing a lake](sharing.md): open a lake that someone else made, without an account, and
+  publish yours.
 - [Cache (legacy)](cache.md): the older cache and what replaced it.
 - [Changelog](changelog.md)

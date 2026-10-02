@@ -152,7 +152,7 @@ Checkbox {
 }
 
 /* dialogs */
-SignInModal, ConfirmModal, ChoiceModal {
+Dialog {
     align: center middle;
     background: $background 70%;
 }

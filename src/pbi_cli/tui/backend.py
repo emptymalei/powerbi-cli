@@ -6,7 +6,7 @@ them in as a `Backend`, so that tests can hand in a fake service and an empty la
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.registry import Scope
@@ -52,6 +52,10 @@ class Backend:
     :param active_profile: the name of the active profile of a group, if there is one
     :param make_engine: builds the sync engine (default: one that uses `client_for`)
     :param clock: the current time (aware, UTC)
+    :param open_lake: opens another lake to look at, from a folder or URL; it raises
+        `~pbi_cli.errors.PBIError` when that is not possible (default: no other lake)
+    :param recent_lakes: the lakes opened lately, newest first
+    :param work_lake: where the work lake is (the lake of the cache folder), if there is one
     """
 
     store: LakeStore
@@ -60,6 +64,17 @@ class Backend:
     active_profile: Callable[[str], Optional[str]] = lambda group: None
     make_engine: Optional[Callable[[], SyncEngine]] = None
     clock: Callable[[], datetime] = _utcnow
+    open_lake: Optional[Callable[[str], LakeStore]] = None
+    recent_lakes: Callable[[], List[str]] = lambda: []
+    work_lake: Optional[str] = None
+
+    @property
+    def readonly(self) -> str:
+        """Why nothing can be fetched into this lake (an empty text when something can).
+
+        A lake that is only looked at needs no account: nothing asks about one.
+        """
+        return self.store.why_read_only()
 
     def engine(self) -> SyncEngine:
         """A sync engine for the lake."""
@@ -70,8 +85,11 @@ class Backend:
     def identity(self) -> Identity:
         """Who the stored tokens are: the administrator's, else the user's.
 
-        Never raises: when there is no usable token the answer says why.
+        Never raises: when there is no usable token the answer says why. A lake that is
+        only looked at has no identity: no account is needed, so none is asked about.
         """
+        if self.readonly:
+            return Identity()
         problems = []
         for scope in (Scope.ADMIN, Scope.USER):
             try:

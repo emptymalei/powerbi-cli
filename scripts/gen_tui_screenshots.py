@@ -19,16 +19,20 @@ import sys
 import tempfile
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests"))
 
 import fake_powerbi
+from cloudpathlib.cloudpath import implementation_registry
+from cloudpathlib.local import LocalS3Client, local_s3_implementation
 from core_helpers import NOW, make_client, make_token
 from sync_helpers import World
 
+from pbi_cli.core.publish import plan_publish, publish
 from pbi_cli.core.scan import ScanFlags
+from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.targets import TARGETS
 from pbi_cli.tui import Backend
 from pbi_cli.tui.app import PBIApp
@@ -265,9 +269,12 @@ async def until(condition: Callable[[], Any], seconds: float = 10.0) -> None:
 
 
 async def shoot(
-    world: World, name: str, scenario: Callable[[PBIApp, Any], Awaitable[None]]
+    world: World,
+    name: str,
+    scenario: Callable[[PBIApp, Any], Awaitable[None]],
+    backend: Optional[Backend] = None,
 ) -> None:
-    app = PBIApp(backend_of(world))
+    app = PBIApp(backend or backend_of(world))
     async with app.run_test(size=SIZE) as pilot:
         await settle(app, pilot)
         await scenario(app, pilot)
@@ -353,6 +360,36 @@ def main() -> None:
 
         asyncio.run(shoot(world, "tui-sync.svg", plan))
         asyncio.run(shoot(world, "tui-run.svg", run))
+
+        # a lake that somebody published to a bucket, looked at by a person with no account
+        implementation_registry["s3"] = local_s3_implementation  # a bucket on this disk
+        LocalS3Client.reset_default_storage_dir()
+        shared = LakeStore("s3://contoso-bi/pbi-lake")
+        publish(
+            plan_publish(
+                world.store,
+                shared,
+                exclude=["activity"],
+                publisher="ann.lee@bi-laptop",
+            ),
+            now=NOW,
+        )
+
+        def refuse(scope: Any) -> Any:
+            raise RuntimeError("a lake that is only looked at asks for no account")
+
+        viewer = Backend(
+            store=LakeStore("s3://contoso-bi/pbi-lake"),
+            client_for=refuse,
+            sign_in=lambda token, profile, group: None,
+            clock=world.clock.now,
+        )
+
+        async def view_only(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001", "report:rep-0001")
+            await pilot.press("2")
+
+        asyncio.run(shoot(world, "tui-viewonly.svg", view_only, viewer))
 
 
 if __name__ == "__main__":

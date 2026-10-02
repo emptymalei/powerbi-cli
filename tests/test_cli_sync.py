@@ -10,6 +10,7 @@ from fake_powerbi import FakePowerBI
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app
+from pbi_cli.config import PBIConfig
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import STATE_NAME
 
@@ -384,6 +385,24 @@ def test_status_of_a_lake_without_a_sync(cache_folder):
     result = sync("status")
 
     assert result.exit_code == 0 and "Nothing has been synced yet" in result.output
+
+
+def test_status_looks_at_another_lake_with_no_cache_folder_and_no_token(
+    ready, cache_folder, monkeypatch
+):
+    sync("run", "groups")
+    root = cache_folder / "lake"
+    PBIConfig().set("cache_folder", None)  # no work lake at all now
+
+    def refuse(profile=None, group="user"):
+        raise AssertionError("status asked for a token")
+
+    monkeypatch.setattr("pbi_cli.cli.load_auth", refuse)
+
+    result = sync("status", "--lake", str(root))
+
+    assert result.exit_code == 0, result.output
+    assert f"Data lake: {root}" in result.output and "Tenant: tenant-1" in result.output
 
 
 def test_status_needs_a_lake(fake):

@@ -156,6 +156,21 @@ ScanArtifactUsers = Annotated[
 ]
 
 
+# -- the lake that a command which only reads looks at ---------------------------------
+
+LakeOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--lake",
+        help=(
+            "The data lake to look at: a folder, or a URL such as s3://bucket/folder "
+            "(default: the lake of the cache folder; the environment variable PBI_LAKE "
+            "names one too). A lake given here is only read, never written"
+        ),
+    ),
+]
+
+
 # -- small helpers for printing and parsing --------------------------------------------
 
 

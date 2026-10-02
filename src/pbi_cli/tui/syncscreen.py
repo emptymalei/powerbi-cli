@@ -249,6 +249,10 @@ class SyncScreen(Screen):
         self._replan_timer = self.set_timer(REPLAN_AFTER, self._start_plan)
 
     def _start_plan(self) -> None:
+        reason = self.pbi.backend.readonly
+        if reason:  # a lake that is only looked at: nothing to plan, nothing to run
+            self._show_problem(f"View only. {reason}", style="yellow")
+            return
         try:
             options = self.options()
         except PBIError as error:
@@ -272,11 +276,11 @@ class SyncScreen(Screen):
         if not worker.is_cancelled:
             self.app.call_from_thread(self._show_plan, options, result)
 
-    def _show_problem(self, text: str) -> None:
+    def _show_problem(self, text: str, style: str = "red") -> None:
         self.plans += 1
         self._planned = None
         self._problem = text
-        self.query_one("#plan-head", Static).update(Text(text, style="red"))
+        self.query_one("#plan-head", Static).update(Text(text, style=style))
         for table in ("#plan", "#quota"):
             self.query_one(table, DataTable).clear()
         self.query_one("#plan-notes", Static).update("")
@@ -392,6 +396,8 @@ class SyncScreen(Screen):
         worker = get_current_worker()
         backend = self.pbi.backend
         try:
+            if backend.readonly:  # only looked at: no account is asked about
+                raise PBIError("view only")
             limiter = backend.client_for(Scope.ADMIN).limiter
         except Exception:
             limiter = None  # not signed in: the quota counters stay out of it

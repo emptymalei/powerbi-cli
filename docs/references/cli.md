@@ -444,6 +444,7 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
+* `publish`: Publish the lake: a complete copy that...
 * `show`: Print a stored response (or its manifest)...
 
 ### `pbi lake ls`
@@ -460,6 +461,9 @@ pbi lake ls
 
 # Only the workspace lists, with every stored version
 pbi lake ls -e admin.groups --all-versions
+
+# What someone shared, without any token
+pbi lake ls --lake s3://my-bucket/pbi-lake
 ```
 
 **Usage**:
@@ -473,6 +477,7 @@ $ pbi lake ls [OPTIONS]
 * `-e, --endpoint <str>`: Only this endpoint, for example admin.groups
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--all-versions`: List every stored version, not only the newest of each request
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake prune`
@@ -490,6 +495,9 @@ pbi lake prune
 pbi lake prune -e admin.groups --keep 3
 ```
 
+Only the lake of the cache folder can be pruned: a lake given with `--lake`, and a
+published lake, are read-only.
+
 **Usage**:
 
 ```console
@@ -502,6 +510,56 @@ $ pbi lake prune [OPTIONS]
 * `-e, --endpoint <str>`: Only this endpoint
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--yes`: Confirm the action without prompting.
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake publish`
+
+Publish the lake: a complete copy that others can open without an account
+
+The copy has the layout of the lake, so `pbi tui --lake DESTINATION` and
+`pbi lake ls --lake DESTINATION` read it as it is. It holds the newest version of every
+request, every day of audit events, the scans and how the last syncs went. It is marked
+as published (`publish.json`), and from then on nothing but a later publish by the same
+person writes to it: anyone who points a sync at it is refused.
+
+The publish shows what it would copy, with what each category holds, and asks before it
+writes. A category that holds personal data or queries can be left out. Nothing that is
+in DESTINATION is overwritten (a version never changes), and DESTINATION must be empty
+or the place of an earlier publish. The lake that is published is the lake of the cache
+folder, or the one given with `--lake`.
+
+```
+# What would be published, without writing anything
+pbi lake publish s3://my-bucket/pbi-lake --dry-run
+
+# Publish, leaving out the audit events and who has access
+pbi lake publish s3://my-bucket/pbi-lake --exclude activity --exclude users
+
+# In a nightly job, after `pbi sync run`
+pbi lake publish s3://my-bucket/pbi-lake --yes
+```
+
+**Usage**:
+
+```console
+$ pbi lake publish [OPTIONS] {DESTINATION}
+```
+
+**Arguments**:
+
+* `DESTINATION`: Where to publish: an empty folder, or a URL such as s3://bucket/folder  [required]
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `-x, --exclude CATEGORY`: Leave a category out: scans, users, datasources, activity (repeatable)
+* `--history`: Publish every stored version, not only the newest of each request
+* `--prune`: Afterwards delete the versions in DESTINATION that are not the newest
+* `--dry-run`: Show what would be published and write nothing
+* `--yes`: Publish without asking
+* `--force`: Publish over a lake that someone else published
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake show`
@@ -544,6 +602,7 @@ $ pbi lake show [OPTIONS] {ENDPOINT}
 * `-v, --version <str>`: Version to show (default: the newest)
 * `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
 * `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
 ## `pbi profile`
@@ -909,6 +968,9 @@ holds for each target. It reads the lake only, so it needs no token and no netwo
 
 ```
 pbi sync status
+
+# A lake that someone shared
+pbi sync status --lake s3://my-bucket/pbi-lake
 ```
 
 **Usage**:
@@ -920,6 +982,7 @@ $ pbi sync status [OPTIONS]
 **Options**:
 
 * `-t, --tenant <str>`: Only this tenant (default: every tenant synced)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
 ## `pbi tui`
@@ -938,7 +1001,13 @@ one of `pbi config set-cache-folder`; it keeps what `pbi sync run` fetches. A ba
 
 ```
 pbi tui
+
+# Look at a lake that someone shared: no token, no network to Power BI, read-only
+pbi tui --lake s3://my-bucket/pbi-lake
 ```
+
+A lake given with `--lake` is only read: nothing can be fetched into it, and no account
+is needed. Only the lake of the cache folder is written by a sync.
 
 **Usage**:
 
@@ -949,6 +1018,7 @@ $ pbi tui [OPTIONS]
 **Options**:
 
 * `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
 ## `pbi users`

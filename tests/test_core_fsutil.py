@@ -3,9 +3,10 @@
 import os
 
 import pytest
+from cloudpathlib import AnyPath
 
 from pbi_cli.core import fsutil
-from pbi_cli.core.fsutil import ATTEMPTS, PAUSE, replace_file
+from pbi_cli.core.fsutil import ATTEMPTS, PAUSE, inside_place, replace_file, same_place
 
 
 def refusing(times, error=PermissionError("in use")):
@@ -94,3 +95,45 @@ def test_other_errors_are_never_tried_again(files, monkeypatch):
         replace_file(source, target, sleep=pauses.append)
 
     assert len(missing.calls) == 1 and pauses == []
+
+
+# ---------------------------------------------------------------------------
+# places
+# ---------------------------------------------------------------------------
+
+
+def test_the_same_folder_is_the_same_place_however_it_is_written(tmp_path):
+    assert same_place(tmp_path / "a" / ".." / "b", tmp_path / "b")
+    assert same_place(str(tmp_path / "b"), tmp_path / "b")
+    assert not same_place(tmp_path / "b", tmp_path / "c")
+
+
+def test_a_home_folder_path_is_expanded(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    assert same_place("~/lake", tmp_path / "lake")
+
+
+def test_a_cloud_url_is_the_same_place_with_or_without_the_closing_slash(local_s3):
+    assert same_place(AnyPath("s3://bucket/x/"), AnyPath("s3://bucket/x"))
+    assert not same_place(AnyPath("s3://bucket/x"), AnyPath("s3://bucket/y"))
+    assert not same_place(AnyPath("s3://bucket/x"), AnyPath("s3://other/x"))
+
+
+def test_a_cloud_url_is_not_a_folder_on_disk(local_s3, tmp_path):
+    assert not same_place(AnyPath("s3://bucket/x"), tmp_path / "x")
+
+
+def test_a_place_is_inside_another_when_it_is_below_it_or_the_same(tmp_path):
+    assert inside_place(tmp_path / "a" / "b", tmp_path / "a")
+    assert inside_place(tmp_path / "a", tmp_path / "a")
+    assert not inside_place(tmp_path / "a", tmp_path / "a" / "b")
+    assert not inside_place(tmp_path / "ab", tmp_path / "a")  # not a prefix of the name
+
+
+def test_inside_works_for_cloud_urls_too(local_s3):
+    assert inside_place(AnyPath("s3://bucket/x/y"), AnyPath("s3://bucket/x"))
+    assert inside_place(AnyPath("s3://bucket/x/"), AnyPath("s3://bucket/x"))
+    assert not inside_place(AnyPath("s3://bucket/xy"), AnyPath("s3://bucket/x"))
+    assert not inside_place(AnyPath("s3://bucket/x"), AnyPath("s3://bucket/x/y"))

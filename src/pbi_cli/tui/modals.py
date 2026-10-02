@@ -1,6 +1,6 @@
-"""The dialogs of the TUI: sign in, confirm, choose."""
+"""The dialogs of the TUI: sign in, confirm, choose, open a lake."""
 
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, TypeVar
 
 from rich.console import RenderableType
 from textual import on
@@ -23,8 +23,18 @@ from pbi_cli.tui.backend import Backend
 
 GROUPS = ("admin", "user")
 
+ResultT = TypeVar("ResultT")
 
-class SignInModal(ModalScreen[Optional[str]]):
+
+class Dialog(ModalScreen[ResultT]):
+    """What every dialog is: a panel in the middle of the screen, over the screen behind it.
+
+    The styles are those of ``Dialog`` in `pbi_cli.tui.styles`, so a dialog that is made from
+    this class cannot come up unstyled in a corner of the screen.
+    """
+
+
+class SignInModal(Dialog[Optional[str]]):
     """Paste a fresh bearer token for a profile.
 
     The token is stored as ``pbi auth`` stores it. The modal closes with the group that was
@@ -123,7 +133,7 @@ class SignInModal(ModalScreen[Optional[str]]):
         self.dismiss(group)
 
 
-class ConfirmModal(ModalScreen[bool]):
+class ConfirmModal(Dialog[bool]):
     """Ask before something that costs requests.
 
     :param title: what is asked
@@ -164,7 +174,7 @@ class ConfirmModal(ModalScreen[bool]):
         self.dismiss(False)
 
 
-class ChoiceModal(ModalScreen[Optional[str]]):
+class ChoiceModal(Dialog[Optional[str]]):
     """Choose one of a few things.
 
     :param title: what is asked
@@ -199,6 +209,74 @@ class ChoiceModal(ModalScreen[Optional[str]]):
     @on(OptionList.OptionSelected)
     def _chosen(self, event: OptionList.OptionSelected) -> None:
         self.dismiss(event.option.id)
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
+#: The value of the choice that stands for the work lake.
+WORK_LAKE = "<work lake>"
+
+
+class OpenLakeModal(Dialog[Optional[str]]):
+    """Choose a lake to look at: the work lake, a recent one, or a location typed in.
+
+    The modal closes with the location (a folder or a URL such as ``s3://bucket/folder``),
+    with `WORK_LAKE` for the work lake, or with ``None`` when the user gives up.
+
+    :param work: where the work lake is, if there is one
+    :param recent: the lakes opened lately, newest first
+    :param current: the lake that is open now
+    """
+
+    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    def __init__(
+        self, work: Optional[str], recent: Sequence[str], current: str
+    ) -> None:
+        super().__init__()
+        self._work = work
+        self._recent = [item for item in recent if item != work]
+        self._current = current
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Open a lake", id="dialog-title")
+            yield Static(
+                "A lake is a folder, or a URL such as s3://bucket/folder. One that is opened "
+                "here is only read: nothing is fetched into it, and no account is needed. "
+                f"Open now: {self._current}"
+            )
+            choices = []
+            if self._work:
+                choices.append(Option(f"Work lake   {self._work}", id=WORK_LAKE))
+            choices.extend(
+                Option(f"Recent      {item}", id=item) for item in self._recent
+            )
+            if choices:
+                yield OptionList(*choices, id="choices")
+            yield Label("Or type a location")
+            yield Input(
+                placeholder="s3://bucket/folder or /path/to/lake", id="location"
+            )
+            with Horizontal(id="buttons"):
+                yield Button("Open", variant="primary", id="ok")
+                yield Button("Cancel", id="cancel")
+
+    def on_mount(self) -> None:
+        self.query_one("#location", Input).focus()
+
+    @on(OptionList.OptionSelected)
+    def _chosen(self, event: OptionList.OptionSelected) -> None:
+        self.dismiss(event.option.id)
+
+    @on(Input.Submitted)
+    @on(Button.Pressed, "#ok")
+    def _typed(self) -> None:
+        text = self.query_one("#location", Input).value.strip()
+        if text:
+            self.dismiss(text)
 
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:

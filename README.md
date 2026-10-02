@@ -72,6 +72,11 @@ threaded scheduler with its error policy (`engine.py`) and the state it leaves i
 (`state.py`). The scan job itself is `src/pbi_cli/core/scan.py`, which `pbi workspaces scan
 batch` uses too. See `docs/sync.md`.
 
+Only the work lake, the lake of the cache folder, is ever written. A lake opened with
+`--lake` or `PBI_LAKE` is read-only (`LakeStore(readonly=True)` raises `ReadOnlyLake`), and
+so is a published one (`pbi lake publish`, `src/pbi_cli/core/publish.py`, marks it with a
+`publish.json`). See `docs/sharing.md`.
+
 `pbi tui` (`src/pbi_cli/cli_tui.py`) opens the terminal UI in `src/pbi_cli/tui`, which is
 built with [Textual](https://textual.textualize.io) and is an optional extra
 (`pip install "pbi-cli[tui]"`). What it shows is read by `src/pbi_cli/core/catalog.py`, a

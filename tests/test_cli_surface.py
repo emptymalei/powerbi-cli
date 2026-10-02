@@ -38,6 +38,7 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi lake ls": "new: pbi lake ls",
     "pbi lake show": "new: pbi lake show",
     "pbi lake prune": "new: pbi lake prune",
+    "pbi lake publish": "new: pbi lake publish",
     # pbi sync: keeps the tenant in the data lake
     "pbi sync": "new: pbi sync",
     "pbi sync plan": "new: pbi sync plan",

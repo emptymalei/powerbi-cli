@@ -60,6 +60,17 @@
 
 ### Added
 
+- A lake can be [shared](sharing.md). `pbi tui`, `pbi lake ls|show|prune` and `pbi sync
+  status` take `--lake <folder or s3://bucket/folder>` (or the environment variable
+  `PBI_LAKE`) to look at another lake than the one of the cache folder, for example one that
+  a colleague made, with no token. Only the work lake (the cache folder's) is ever written:
+  a lake opened any other way is read-only, and the TUI marks it **view only** and asks about
+  no account. `o` in the TUI opens another lake, or the work lake again, and remembers the
+  lakes it opened. `pbi lake publish DESTINATION` copies a complete, consistent snapshot of
+  the lake to a folder or an S3 prefix: it shows what it holds by category (scans, who has
+  access, data sources, audit events), lets you leave categories out, asks, never overwrites
+  a version, and marks the copy as published (`publish.json`), after which nothing but a
+  later publish writes to it.
 - `pbi tui` opens a [terminal UI](tui.md) built with [Textual](https://textual.textualize.io)
   (the optional extra `pbi-cli[tui]`). The Explorer shows the workspaces of the tenant, what
   is in them, who can open it, what it is built from and what is built on it (lineage), the
@@ -109,6 +120,13 @@
 
 ### Fixed
 
+- A workspace that shows no items in the [terminal UI](tui.md) says why: the lists of items
+  are not in the lake (after `pbi sync run groups`, for example), or it was never scanned,
+  or it is empty. Before, it showed `0 item(s)` and nothing else.
+- On Windows the files of the lake were written with CRLF line breaks, and replacing a file
+  that another process had open (the TUI reading what a sync rewrites) could fail with
+  `PermissionError`. Files are written as they are, and the replace is tried again a few
+  times.
 - `pbi users user-access --target-folder` wrote nothing: the code that writes the files
   could not run. It now writes the JSON and Excel files.
 - `pbi workspaces list --use-cache --file-type excel` crashed; it writes the Excel file.

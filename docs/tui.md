@@ -180,6 +180,23 @@ A lake keeps each tenant apart. The UI shows the tenant of your token; with no t
 shows the only tenant in the lake, or asks which one when there are several. Press `t` to
 choose another tenant.
 
+## Other lakes, and view only
+
+The UI shows the lake of your cache folder, your *work lake*, unless you say otherwise.
+`pbi tui --lake <folder or s3://bucket/folder>` opens another lake, such as one that a
+colleague [published](sharing.md), and so does `o` inside the UI: the dialog lists your work
+lake and the lakes you opened lately, or you type a place. If the lake cannot be read, a
+message says why and the lake that was open stays open.
+
+A lake opened this way is **read-only**, and the header says **view only** (and, for a
+published lake, who published it and when). Nothing can be fetched into it and no account is
+needed: the UI does not look up a token, signing in and `r` say that the lake is only looked
+at, and **Run** on the Sync screen is off. Everything that only reads works as before: the
+tree, the tables, the tabs, the filters, `Ctrl+P` and the Lake tab of the Sync screen. Only
+your work lake is ever written by a sync; open it again with `o` to fetch.
+
+![The Explorer on a published lake in S3: view only, published by someone else](images/tui-viewonly.svg)
+
 ## Keys
 
 | Key | Where | What it does |
@@ -189,6 +206,7 @@ choose another tenant.
 | `Esc`, `e` | Sync | back to the Explorer |
 | `a` | everywhere | sign in: store a fresh token |
 | `t` | everywhere | choose the tenant |
+| `o` | everywhere | open another lake (view only), or the work lake again |
 | `Ctrl+P` | everywhere | the command palette: jump to a workspace or an item by name |
 | `/` | Explorer | filter the tree or the table, whichever has the focus |
 | `Esc` | Explorer | clear the filter |
@@ -207,8 +225,9 @@ choose another tenant.
   A filter narrows the tree and the table; the full answer is in the folder of the lake
   that the JSON tab names.
 - The lake can be in S3, as for every command, but the UI has only been tried on a local
-  folder. Reading a lake lists every scan that is stored, which takes a while over the
-  network when there are thousands.
+  folder and on a stand-in for S3 on disk. Reading a lake lists every scan that is stored,
+  which takes a while over the network when there are thousands. See
+  [Sharing a lake](sharing.md).
 - It does not watch the lake: `l` reads it again.
 
 ## For developers

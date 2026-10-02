@@ -89,5 +89,13 @@ class Stopped(PBIError):
     """
 
 
+class ReadOnlyLake(PBIError):
+    """Something tried to write to a lake that can only be read.
+
+    Only the work lake (the configured cache folder) is written. A lake opened with
+    ``--lake`` is read-only, and so is a published lake, whichever way it was opened.
+    """
+
+
 class OfflineCacheMiss(PBIError):
     """Offline mode was requested but the lake holds no matching snapshot."""

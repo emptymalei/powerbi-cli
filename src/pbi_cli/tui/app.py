@@ -26,7 +26,13 @@ from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
-from pbi_cli.tui.modals import ChoiceModal, ConfirmModal, SignInModal
+from pbi_cli.tui.modals import (
+    WORK_LAKE,
+    ChoiceModal,
+    ConfirmModal,
+    OpenLakeModal,
+    SignInModal,
+)
 from pbi_cli.tui.palette import GotoProvider
 from pbi_cli.tui.run import RunState
 from pbi_cli.tui.status import StatusBar
@@ -64,6 +70,7 @@ class PBIApp(App[None]):
         Binding("s", "open_sync", "Sync"),
         Binding("e", "open_explorer", "Explorer", show=False),
         Binding("t", "choose_tenant", "Tenant", show=False),
+        Binding("o", "open_lake", "Open lake"),
     ]
 
     def __init__(self, backend: Backend, tenant: Optional[str] = None):
@@ -92,6 +99,10 @@ class PBIApp(App[None]):
             self.reload_catalog()
         elif len(self.backend.store.tenants()) > 1:
             self.call_after_refresh(self.action_choose_tenant)
+        elif self.backend.readonly:
+            self.notify(
+                "Nothing in this lake yet.", title="View only", severity="warning"
+            )
         else:
             self.notify(
                 self.identity.problem or "Nothing in the lake yet.",
@@ -155,9 +166,18 @@ class PBIApp(App[None]):
         for bar in self.screen.query(StatusBar):
             bar.refresh_status()
 
+    def refuse_when_view_only(self) -> bool:
+        """Say so, and return ``True``, when the lake is only looked at."""
+        reason = self.backend.readonly
+        if reason:
+            self.notify(reason, title="View only", severity="warning")
+        return bool(reason)
+
     def action_sign_in(self, reason: str = "", group: str = "admin") -> None:
         """Ask for a fresh token."""
         if isinstance(self.screen, SignInModal):
+            return
+        if self.refuse_when_view_only():
             return
 
         def signed_in(signed: Optional[str]) -> None:
@@ -238,13 +258,81 @@ class PBIApp(App[None]):
             chosen,
         )
 
+    def action_open_lake(self) -> None:
+        """Choose another lake to look at (or the work lake again)."""
+        if self._in_modal():
+            return
+        if self.backend.open_lake is None:
+            self.notify("This session cannot open another lake.", severity="warning")
+            return
+        if self.run_state is not None and self.run_state.running:
+            self.notify(
+                "A sync is running: stop it, or wait for it, before opening another lake.",
+                severity="warning",
+            )
+            return
+
+        def chosen(location: Optional[str]) -> None:
+            if location is not None:
+                self.switch_lake(
+                    self.backend.work_lake if location == WORK_LAKE else location
+                )
+
+        self.push_screen(
+            OpenLakeModal(
+                self.backend.work_lake,
+                self.backend.recent_lakes(),
+                str(self.backend.store.root),
+            ),
+            chosen,
+        )
+
+    def switch_lake(self, location: Optional[str]) -> None:
+        """Open a lake, in the background, and show it."""
+        if location:
+            self._open_lake(location)
+
+    @work(thread=True, exclusive=True, group="open-lake")
+    def _open_lake(self, location: str) -> None:
+        opener = self.backend.open_lake
+        assert opener is not None
+        try:
+            store = opener(location)
+        except Exception as error:  # a bucket that cannot be read must not end the UI
+            self.call_from_thread(
+                self.notify, f"Cannot open {location}: {error}", severity="error"
+            )
+            return
+        self.call_from_thread(self._lake_opened, store)
+
+    def _lake_opened(self, store: Any) -> None:
+        self.backend.store = store
+        self.lake_label = lake_label(store.root)
+        self.catalog = None
+        self.identity = self.backend.identity()
+        self.tenant = self._pick_tenant()
+        explorer = self.get_screen("explorer")
+        if isinstance(explorer, ExplorerScreen) and explorer.is_mounted:
+            explorer.rebuild_tree()
+        if self.tenant is not None:
+            self.reload_catalog()
+        elif len(store.tenants()) > 1:
+            self.call_after_refresh(self.action_choose_tenant)
+        self.refresh_bars()
+        self.notify(
+            f"Opened {store.root}"
+            + (" (view only)." if self.backend.readonly else "."),
+        )
+
     # -- syncing -----------------------------------------------------------------------------
 
     def start_sync(self, options: SyncOptions, label_text: str) -> bool:
         """Run a sync in the background.
 
-        :return: ``False`` if one is running already
+        :return: ``False`` if one is running already, or the lake is only looked at
         """
+        if self.refuse_when_view_only():
+            return False
         if self.run_state is not None and self.run_state.running:
             self.notify("A sync is already running.", severity="warning")
             return False
@@ -341,4 +429,7 @@ class PBIApp(App[None]):
         )
         yield SystemCommand(
             "Choose the tenant", "Switch tenant", self.action_choose_tenant
+        )
+        yield SystemCommand(
+            "Open a lake", "Look at another data lake", self.action_open_lake
         )

@@ -169,6 +169,12 @@ $ pbi lake prune --yes
 
 `pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
+Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
+than the one of your cache folder, such as one that a colleague shared, with
+`--lake <folder or s3://bucket/folder>`. A lake opened that way is only read, and `prune`
+refuses it. `pbi lake publish` makes a copy of your lake for others to open. See
+[Sharing a lake](sharing.md).
+
 To look around instead of listing, open the [terminal UI](tui.md) (`pbi tui`): the
 workspaces of the tenant, what is in them, who can open it, how it is connected, and how
 fresh each part is, all read from the lake.
@@ -203,6 +209,7 @@ fresh each part is, all read from the lake.
         dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
     _state/
       sync.json                             what `pbi sync` remembers between runs
+  publish.json                              only in a published lake: who, when, what was left out
 ```
 
 The folder names are Hive-style partitions, so tools such as Athena, DuckDB and Spark can
@@ -218,6 +225,9 @@ different `$expand`, or as another tenant, never returns somebody else's answer.
 
 The manifest is written last. A version folder without one is an interrupted write and is
 ignored.
+
+A lake with a `publish.json` at its root has been [published](sharing.md#publish-a-lake). It
+is protected: only `pbi lake publish` writes to it.
 
 ### The manifest of a snapshot
 

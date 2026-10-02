@@ -26,6 +26,7 @@ collect_ignore_glob = (
     else [
         "test_tui_app.py",
         "test_tui_explorer.py",
+        "test_tui_lakes.py",
         "test_tui_sync.py",
         "tui_helpers.py",
     ]
@@ -111,3 +112,16 @@ def signed_in(monkeypatch) -> str:
         "pbi_cli.cli.load_auth", lambda profile=None, group="user": dict(headers)
     )
     return token
+
+
+@pytest.fixture
+def local_s3(monkeypatch):
+    """``s3://`` URLs that live in a folder on disk (cloudpathlib's local stand-in), so that
+    remote lakes can be tested without a bucket or a network."""
+    from cloudpathlib.cloudpath import implementation_registry
+    from cloudpathlib.local import LocalS3Client, local_s3_implementation
+
+    monkeypatch.setitem(implementation_registry, "s3", local_s3_implementation)
+    LocalS3Client.reset_default_storage_dir()
+    yield
+    LocalS3Client.reset_default_storage_dir()

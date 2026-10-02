@@ -13,6 +13,7 @@ import typer
 
 from pbi_cli.cli_support import (
     ClientPool,
+    LakeOption,
     ScanArtifactUsers,
     ScanDatasetExpressions,
     ScanDatasetSchema,
@@ -45,7 +46,7 @@ from pbi_cli.core.sync.state import FAILED as MARKED_FAILED
 from pbi_cli.core.sync.state import STATE_NAME, SyncState
 from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS, select_targets
 from pbi_cli.errors import PBIError
-from pbi_cli.session import lake_hint, lake_path, open_lake, quota_file
+from pbi_cli.session import lake_hint, open_lake, quota_file, resolve_lake
 
 sync_app = new_app("sync")
 
@@ -640,6 +641,7 @@ def sync_status(
             "--tenant", "-t", help="Only this tenant (default: every tenant synced)"
         ),
     ] = None,
+    lake: LakeOption = None,
 ):
     """Show how the last runs went and what the lake holds
 
@@ -649,12 +651,15 @@ def sync_status(
 
     ```
     pbi sync status
+
+    # A lake that someone shared
+    pbi sync status --lake s3://my-bucket/pbi-lake
     ```
     """
-    path = lake_path()
-    if path is None:
+    opened = resolve_lake(lake)
+    if opened is None:
         raise PBIError(f"There is no data lake yet. {lake_hint()}")
-    store = LakeStore(path)
+    store = opened.store
     typer.echo(f"Data lake: {store.root}")
     tenants = [
         t for t in store.tenants() if store.read_state(t, STATE_NAME) is not None

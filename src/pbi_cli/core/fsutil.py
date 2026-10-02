@@ -3,7 +3,10 @@
 import os
 import sys
 import time
-from typing import Callable, Union
+from pathlib import Path
+from typing import Any, Callable, Union
+
+from cloudpathlib import CloudPath
 
 #: Windows refuses to replace a file that something else has open (a reader of the lake,
 #: say), and usually only for a few milliseconds. On Windows the replace is tried again.
@@ -43,3 +46,26 @@ def replace_file(
             if not RETRY_REPLACE or attempt >= ATTEMPTS:
                 raise
             sleep(PAUSE * attempt)
+
+
+def location_of(path: Any) -> str:
+    """A path or a cloud URL as text that is the same for the same place.
+
+    A local path is made absolute and has its ``~`` and its ``..`` resolved (and on Windows
+    its capitals ignored); a cloud URL loses a trailing ``/``.
+    """
+    if isinstance(path, CloudPath):
+        return str(path).rstrip("/")
+    return os.path.normcase(str(Path(path).expanduser().resolve()))
+
+
+def same_place(first: Any, second: Any) -> bool:
+    """Whether two paths or cloud URLs are the same place."""
+    return location_of(first) == location_of(second)
+
+
+def inside_place(inner: Any, outer: Any) -> bool:
+    """Whether ``inner`` is ``outer`` itself or somewhere below it."""
+    below, above = location_of(inner), location_of(outer)
+    separator = "/" if isinstance(outer, CloudPath) else os.sep
+    return below == above or below.startswith(above.rstrip(separator) + separator)

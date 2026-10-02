@@ -8,6 +8,8 @@ from pbi_cli import cli_tui
 from pbi_cli.cli import app, load_auth
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.registry import Scope
+from pbi_cli.core.store import LakeStore
+from pbi_cli.errors import PBIError
 
 
 @pytest.fixture
@@ -49,6 +51,7 @@ def test_it_says_what_to_do_without_a_lake(opened):
     assert result.exit_code == 1
     assert "browses the data lake" in result.output
     assert "pbi config set-cache-folder" in result.output
+    assert "--lake" in result.output
     assert opened == {}
 
 
@@ -59,6 +62,83 @@ def test_it_opens_the_tui_on_the_lake(opened, cache_folder):
     backend = opened["backend"]
     assert backend.store.root == cache_folder / "lake"
     assert opened["tenant"] is None
+
+
+def a_lake(folder):
+    store = LakeStore(folder)
+    store.write_snapshot("tenant-1", "admin.groups", {}, {"value": [{"id": "w"}]})
+    return store.root
+
+
+def test_it_opens_another_lake_read_only_with_no_cache_folder(opened, tmp_path):
+    root = a_lake(tmp_path / "shared")
+
+    result = invoke("tui", "--lake", str(root))
+
+    assert result.exit_code == 0, result.output
+    backend = opened["backend"]
+    assert backend.store.root == root
+    assert "only reads" in backend.readonly
+    assert backend.work_lake is None
+
+
+def test_it_remembers_the_lakes_that_were_opened(opened, cache_folder, tmp_path):
+    first, second = a_lake(tmp_path / "a"), a_lake(tmp_path / "b")
+
+    invoke("tui", "--lake", str(first))
+    invoke("tui", "--lake", str(second))
+    invoke("tui")  # the work lake is not a recent lake
+
+    assert PBIConfig().recent_lakes == [str(second), str(first)]
+
+
+def test_the_work_lake_is_still_written_when_a_lake_is_named_that_is_the_same(
+    opened, cache_folder
+):
+    root = a_lake(cache_folder / "lake")
+
+    invoke("tui", "--lake", str(root))
+
+    backend = opened["backend"]
+    assert backend.readonly == "" and backend.work_lake == str(root)
+    assert PBIConfig().recent_lakes == []
+
+
+def test_the_environment_names_the_lake_too(opened, tmp_path, monkeypatch):
+    monkeypatch.setenv("PBI_LAKE", str(a_lake(tmp_path / "shared")))
+
+    result = invoke("tui")
+
+    assert result.exit_code == 0 and opened["backend"].store.root == tmp_path / "shared"
+
+
+def test_a_place_without_a_lake_is_an_error(opened, tmp_path):
+    result = invoke("tui", "--lake", str(tmp_path / "nothing"))
+
+    assert result.exit_code == 1 and "no data lake at" in result.output
+    assert opened == {}
+
+
+def test_the_backend_can_open_other_lakes_for_the_dialog(
+    opened, cache_folder, tmp_path
+):
+    invoke("tui")
+    backend = opened["backend"]
+    other = a_lake(tmp_path / "other")
+
+    store = backend.open_lake(str(other))
+
+    assert store.root == other and not store.writable
+    assert backend.recent_lakes() == [str(other)]
+    assert backend.open_lake(str(cache_folder / "lake")).writable  # the work lake again
+    assert backend.recent_lakes() == [str(other)]
+
+
+def test_the_backend_says_when_a_lake_cannot_be_opened(opened, cache_folder, tmp_path):
+    invoke("tui")
+
+    with pytest.raises(PBIError, match="no data lake at"):
+        opened["backend"].open_lake(str(tmp_path / "nothing"))
 
 
 def test_a_tenant_can_be_given(opened, cache_folder):
@@ -202,3 +282,18 @@ def test_the_tui_opens_on_a_bare_pbi_only_when_it_can(
         PBIConfig().cache_folder = None
 
     assert cli_tui.should_launch() is expected
+
+
+def test_the_environment_lake_lets_a_bare_pbi_open_the_tui(monkeypatch, tmp_path):
+    class Terminal:
+        def isatty(self):
+            return True
+
+    monkeypatch.setattr("sys.stdin", Terminal())
+    monkeypatch.setattr("sys.stdout", Terminal())
+    monkeypatch.setattr(cli_tui, "textual_available", lambda: True)
+    assert cli_tui.should_launch() is False  # no cache folder, no PBI_LAKE
+
+    monkeypatch.setenv("PBI_LAKE", str(tmp_path))
+
+    assert cli_tui.should_launch() is True

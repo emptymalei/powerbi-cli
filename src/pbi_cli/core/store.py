@@ -16,6 +16,10 @@ such as Athena, DuckDB or Spark read as partitions:
 Progress that belongs to a tenant but is not data, such as the state of a sync, is kept
 in `<root>/tenant=<tenant>/_state/<name>.json`.
 
+A lake that was published (`pbi_cli.core.publish`) has a `<root>/publish.json` that says by
+whom and when. A lake with that file is protected: nothing but the publisher writes to it.
+A store can also be opened read-only, and then every write raises `ReadOnlyLake`.
+
 The manifest is written last: a snapshot without one is an interrupted write and is
 ignored. Local files are created readable by the owner only, because the lake holds
 names, e-mail addresses, IP addresses and query definitions. Tokens are never stored.
@@ -27,21 +31,25 @@ import os
 import re
 import shutil
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
 from cloudpathlib import AnyPath, CloudPath
 from loguru import logger
 
 from pbi_cli.core.fsutil import replace_file
+from pbi_cli.errors import ReadOnlyLake
 
 #: Version of the manifest layout.
 SCHEMA = 1
 MANIFEST = "manifest.json"
 DATA = "data.json"
+
+#: The file at the root of a lake that marks it as published (and so as protected).
+PUBLISH_FILE = "publish.json"
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9_-]")
 _FORBIDDEN_REQUEST_KEYS = {"headers", "authorization", "token", "cookies"}
@@ -68,7 +76,7 @@ def _utc(value: datetime) -> datetime:
     )
 
 
-def _cli_version() -> str:
+def cli_version() -> str:
     try:
         return _package_version("pbi_cli")
     except PackageNotFoundError:
@@ -163,6 +171,68 @@ class EventDay:
         return _utc(datetime.fromisoformat(stamp)) if stamp else None
 
 
+@dataclass(frozen=True)
+class PublishInfo:
+    """What a published lake says about itself (its ``publish.json``).
+
+    :param published_at: when the last complete publish finished (aware, UTC)
+    :param published_by: who published it
+    :param tenants: the tenants it holds
+    :param excluded: the categories that were left out (``activity``, ``users``, ...)
+    :param history: whether every stored version was copied, not only the newest
+    :param files: how many files the publish copied
+    :param size: how many bytes they hold
+    :param cli_version: the version of pbi-cli that published it
+    :param complete: ``False`` while the first publish is under way, or when it stopped half
+        way: the lake is protected already, and publishing again finishes it
+    """
+
+    published_at: datetime
+    published_by: str
+    tenants: List[str] = field(default_factory=list)
+    excluded: List[str] = field(default_factory=list)
+    history: bool = False
+    files: int = 0
+    size: int = 0
+    cli_version: str = "unknown"
+    complete: bool = True
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "version": 1,
+            "protected": True,
+            "published_at": _utc(self.published_at).isoformat(),
+            "published_by": self.published_by,
+            "tenants": list(self.tenants),
+            "excluded": list(self.excluded),
+            "history": self.history,
+            "files": self.files,
+            "bytes": self.size,
+            "cli_version": self.cli_version,
+            "complete": self.complete,
+        }
+
+    @classmethod
+    def from_json(cls, data: Any) -> "PublishInfo":
+        """Read a ``publish.json``; a damaged one still protects the lake."""
+        data = data if isinstance(data, dict) else {}
+        try:
+            when = _utc(datetime.fromisoformat(str(data["published_at"])))
+        except (KeyError, ValueError):
+            when = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        return cls(
+            published_at=when,
+            published_by=str(data.get("published_by") or "someone"),
+            tenants=[str(t) for t in data.get("tenants") or []],
+            excluded=[str(c) for c in data.get("excluded") or []],
+            history=bool(data.get("history")),
+            files=int(data.get("files") or 0),
+            size=int(data.get("bytes") or 0),
+            cli_version=str(data.get("cli_version") or "unknown"),
+            complete=data.get("complete", True) is not False,
+        )
+
+
 class StoreError(Exception):
     """The lake cannot do what was asked (for example appending to a sealed day)."""
 
@@ -172,14 +242,128 @@ class LakeStore:
 
     :param root: folder of the lake: a local path or a cloud URL such as
         ``s3://bucket/lake``. It is created on the first write.
+    :param readonly: refuse every write (`ReadOnlyLake`), for a lake that is only looked at
+    :param reason: why it is read-only, for the message
+    :param publishing: the store of `pbi_cli.core.publish` writes to a published lake; it
+        is the only one that may
     """
 
-    def __init__(self, root: Union[str, os.PathLike, CloudPath]):
+    def __init__(
+        self,
+        root: Union[str, os.PathLike, CloudPath],
+        *,
+        readonly: bool = False,
+        reason: str = "",
+        publishing: bool = False,
+    ):
         path = AnyPath(root)
         if not isinstance(path, CloudPath):
             path = path.expanduser()  # "~/lake" means the home folder, not a folder "~"
         self.root = path
+        self.readonly = readonly
+        self.reason = reason
+        self._publishing = publishing
         self._event_lock = threading.Lock()
+        self._marker_lock = threading.Lock()
+        self._marker: Optional[PublishInfo] = None
+        self._marker_read = False
+
+    # -- published lakes, and lakes that are only read -----------------------------
+
+    def published(self) -> Optional[PublishInfo]:
+        """What ``publish.json`` says, or ``None`` when the lake is not a published one.
+
+        The file is looked for once per store (a published lake is a snapshot); call
+        `refresh_marker` to look again.
+        """
+        with self._marker_lock:
+            if not self._marker_read:
+                self._marker = self._read_marker()
+                self._marker_read = True
+            return self._marker
+
+    def refresh_marker(self) -> Optional[PublishInfo]:
+        """Look for ``publish.json`` again."""
+        with self._marker_lock:
+            self._marker_read = False
+        return self.published()
+
+    def _read_marker(self) -> Optional[PublishInfo]:
+        path = self.root / PUBLISH_FILE
+        try:
+            if not path.exists():
+                return None
+            return PublishInfo.from_json(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            # something is there that cannot be read: it still protects the lake
+            return PublishInfo.from_json(None)
+
+    @property
+    def writable(self) -> bool:
+        """Whether a write would be accepted."""
+        try:
+            self._check_writable()
+        except ReadOnlyLake:
+            return False
+        return True
+
+    def why_read_only(self) -> str:
+        """Why writes are refused, or an empty text when they are accepted."""
+        try:
+            self._check_writable()
+        except ReadOnlyLake as error:
+            return str(error)
+        return ""
+
+    def _check_writable(self) -> None:
+        if self._publishing:
+            return
+        if self.readonly:
+            raise ReadOnlyLake(self.reason or f"The lake {self.root} is read-only.")
+        info = self.published()
+        if info is not None:
+            raise ReadOnlyLake(
+                f"The lake {self.root} was published by {info.published_by} on "
+                f"{info.published_at:%Y-%m-%d %H:%M} UTC, and a published lake is read-only. "
+                "Sync into your own lake and publish it again."
+            )
+
+    def publishable(
+        self, tenant: str, history: bool = False
+    ) -> Iterator[Tuple[str, Any, bool]]:
+        """The folders of a tenant to publish, each to be copied whole.
+
+        A request gives its newest complete version (every complete version with
+        ``history``), an event log gives every day. A version never changes; a day of events
+        does until it is complete.
+
+        :param tenant: the tenant folder value
+        :param history: every version, not only the newest of each request
+        :return: ``(endpoint folder value, folder, mutable)`` for each folder
+        """
+        for endpoint_dir in self._children(self._tenant_dir(tenant), "endpoint="):
+            value = self._value(endpoint_dir, "endpoint=")
+            for params_dir in self._children(endpoint_dir, "params="):
+                for version in self._version_dirs(params_dir):
+                    if not (version / MANIFEST).exists():
+                        continue  # an interrupted write
+                    yield value, version, False
+                    if not history:
+                        break
+            for day_dir in self._children(endpoint_dir, "dt="):  # event logs
+                if (day_dir / MANIFEST).exists():
+                    yield value, day_dir, True
+
+    def write_file(self, path: Any, payload: bytes) -> None:
+        """Write a file of the lake (``path`` below the root) the way every file is written:
+        atomically, readable by the owner only. Copying a lake (`pbi_cli.core.publish`) uses
+        it."""
+        self._write_bytes(path, payload)
+
+    def write_marker(self, info: PublishInfo) -> None:
+        """Mark the lake as published (only the store of the publisher may)."""
+        self._write_bytes(self.root / PUBLISH_FILE, _dump(info.to_json(), indent=2))
+        self.refresh_marker()
 
     # -- paths ---------------------------------------------------------------------
 
@@ -208,6 +392,7 @@ class LakeStore:
 
     def _write_bytes(self, path: Any, payload: bytes) -> None:
         """Write a file atomically (a readable file is never half written)."""
+        self._check_writable()
         if isinstance(path, CloudPath):
             path.write_bytes(payload)
             return
@@ -301,7 +486,7 @@ class LakeStore:
             "data_file": DATA,
             "bytes": len(payload),
             "sha256": hashlib.sha256(payload).hexdigest(),
-            "cli_version": _cli_version(),
+            "cli_version": cli_version(),
         }
         manifest.update(extra or {})
 
@@ -435,6 +620,7 @@ class LakeStore:
         """
         if keep < 1:
             raise ValueError("keep must be at least 1")
+        self._check_writable()
         removed = 0
         tenant_dirs = (
             [self._tenant_dir(tenant)]
@@ -614,7 +800,7 @@ class LakeStore:
             manifest["sealed"] = bool(sealed)
             manifest["profile"] = profile
             manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()
-            manifest["cli_version"] = _cli_version()
+            manifest["cli_version"] = cli_version()
             self._write_bytes(directory / MANIFEST, _dump(manifest, indent=2))
             return len(fresh)
 

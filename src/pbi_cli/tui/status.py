@@ -39,14 +39,33 @@ class StatusBar(Horizontal):
         tenant = app.tenant
         who.append(f"tenant {render.short_id(tenant, 14)}" if tenant else "no tenant")
         who.append("  │  ")
-        if identity.signed_in:
+        view_only = bool(app.backend.readonly)
+        if view_only:
+            who.append("view only", style="bold yellow")
+        elif identity.signed_in:
             who.append(f"{identity.profile or 'profile'} ({identity.group})")
         else:
             who.append("no profile", style="grey62")
         who.append("  │  ")
         who.append(app.lake_label, style="grey62")
-        who.append("  │  ")
-        who.append_text(render.token_text(identity.expires_at, now, identity.signed_in))
+        published = app.backend.store.published()
+        if published is not None:
+            who.append("  │  ")
+            if published.complete:
+                who.append(
+                    f"published {published.published_at:%Y-%m-%d %H:%M} by "
+                    f"{published.published_by}",
+                    style="grey62",
+                )
+            else:
+                who.append(
+                    f"publish by {published.published_by} not finished", style="yellow"
+                )
+        if not view_only:
+            who.append("  │  ")
+            who.append_text(
+                render.token_text(identity.expires_at, now, identity.signed_in)
+            )
         self.query_one("#who", Static).update(who)
 
         busy = Text()

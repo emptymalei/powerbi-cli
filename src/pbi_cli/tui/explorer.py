@@ -584,6 +584,8 @@ class ExplorerScreen(Screen):
         return None
 
     def action_refresh(self) -> None:
+        if self.pbi.refuse_when_view_only():
+            return
         choice = self.refresh_choice()
         if choice is None:
             self.notify("There is nothing here to fetch again.", severity="warning")

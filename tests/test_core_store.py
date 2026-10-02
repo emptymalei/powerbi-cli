@@ -9,7 +9,15 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 from cloudpathlib import CloudPath
 
-from pbi_cli.core.store import LakeStore, StoreError, params_hash, safe_name
+from pbi_cli.core.store import (
+    PUBLISH_FILE,
+    LakeStore,
+    PublishInfo,
+    StoreError,
+    params_hash,
+    safe_name,
+)
+from pbi_cli.errors import ReadOnlyLake
 
 UTC = timezone.utc
 T0 = datetime(2026, 9, 30, 12, 0, 0, 123456, tzinfo=UTC)
@@ -577,3 +585,177 @@ def test_a_file_is_put_in_place_with_the_helper_that_waits_for_readers(
     store._write_bytes(tmp_path / "lake" / "b.json", b"{}")
 
     assert moved == [tmp_path / "lake" / "b.json"]
+
+
+# ---------------------------------------------------------------------------
+# lakes that are only read, and published lakes
+# ---------------------------------------------------------------------------
+
+DAY_ = date(2026, 9, 30)
+
+WRITERS = {
+    "write_snapshot": lambda store: write(store, {"n": 2}),
+    "append_events": lambda store: store.append_events(
+        "t1", "admin.activityevents", DAY_, [{"Id": "a"}]
+    ),
+    "seal_day": lambda store: store.seal_day("t1", "admin.activityevents", DAY_),
+    "write_state": lambda store: store.write_state("t1", "sync", {"runs": []}),
+    "prune": lambda store: store.prune(),
+}
+
+INFO = PublishInfo(
+    published_at=T0,
+    published_by="ana@laptop",
+    tenants=["t1"],
+    excluded=["activity"],
+    files=12,
+    size=3456,
+)
+
+
+@pytest.fixture
+def filled(tmp_path):
+    """A lake with a snapshot, a day of events and some state, written the normal way."""
+    store = LakeStore(tmp_path / "lake")
+    write(store, {"n": 1})
+    store.append_events("t1", "admin.activityevents", DAY_, [{"Id": "a"}])
+    store.write_state("t1", "sync", {"runs": [1]})
+    return store
+
+
+@pytest.mark.parametrize("writer", WRITERS)
+def test_a_read_only_store_refuses_every_kind_of_write(filled, writer):
+    store = LakeStore(
+        filled.root, readonly=True, reason="opened with --lake, so it is read-only"
+    )
+    before = sorted(str(p) for p in filled.root.rglob("*"))
+
+    with pytest.raises(ReadOnlyLake, match="opened with --lake"):
+        WRITERS[writer](store)
+
+    assert sorted(str(p) for p in filled.root.rglob("*")) == before
+
+
+def test_a_read_only_store_reads_everything(filled):
+    store = LakeStore(filled.root, readonly=True)
+
+    assert store.tenants() == ["t1"]
+    assert store.latest("t1", "admin.groups", PARAMS).load() == {"n": 1}
+    assert [d.day for d in store.event_days("t1", "admin.activityevents")] == [DAY_]
+    assert store.read_state("t1", "sync") == {"runs": [1]}
+    assert store.writable is False
+    assert "read-only" in store.why_read_only()
+
+
+def test_a_read_only_store_creates_nothing_not_even_the_folder(tmp_path):
+    store = LakeStore(tmp_path / "never", readonly=True)
+
+    with pytest.raises(ReadOnlyLake):
+        write(store, {"n": 1})
+
+    assert not (tmp_path / "never").exists()
+
+
+def test_a_normal_store_is_writable(filled):
+    assert filled.writable is True and filled.why_read_only() == ""
+
+
+def test_the_marker_protects_a_lake_from_every_store_but_the_publishers(filled):
+    publisher = LakeStore(filled.root, publishing=True)
+    publisher.write_marker(INFO)
+
+    for writer in WRITERS:
+        with pytest.raises(ReadOnlyLake, match="published by ana@laptop"):
+            WRITERS[writer](LakeStore(filled.root))
+    assert LakeStore(filled.root).writable is False
+    write(publisher, {"n": 3})  # the publisher itself still writes
+    assert publisher.latest("t1", "admin.groups", PARAMS).load() == {"n": 3}
+
+
+def test_the_marker_is_looked_for_once_until_it_is_refreshed(filled):
+    store = LakeStore(filled.root)
+    assert store.published() is None
+
+    LakeStore(filled.root, publishing=True).write_marker(INFO)
+
+    assert store.published() is None  # not looked for again
+    assert store.refresh_marker() == INFO
+    assert store.published() == INFO
+
+
+def test_the_marker_says_who_when_and_what(filled):
+    LakeStore(filled.root, publishing=True).write_marker(INFO)
+    raw = json.loads((filled.root / PUBLISH_FILE).read_text(encoding="utf-8"))
+
+    assert raw["protected"] is True and raw["version"] == 1
+    assert raw["published_by"] == "ana@laptop" and raw["tenants"] == ["t1"]
+    assert raw["excluded"] == ["activity"] and raw["files"] == 12
+    assert raw["bytes"] == 3456 and raw["published_at"].startswith("2026-09-30T12:00")
+    assert PublishInfo.from_json(raw) == INFO
+
+
+@pytest.mark.parametrize("content", ["{not json", "[]", "null", "{}"])
+def test_a_damaged_marker_still_protects_the_lake(filled, content):
+    (filled.root / PUBLISH_FILE).write_text(content, encoding="utf-8")
+
+    store = LakeStore(filled.root)
+
+    assert store.published() is not None
+    assert store.writable is False
+    with pytest.raises(ReadOnlyLake, match="published by"):
+        write(store, {"n": 9})
+
+
+# ---------------------------------------------------------------------------
+# what is worth publishing
+# ---------------------------------------------------------------------------
+
+
+def test_publishable_gives_the_newest_complete_version_of_each_request(store):
+    write(store, {"n": 1}, at=T0)
+    newest = write(store, {"n": 2}, at=T0 + timedelta(hours=1))
+    write(store, {"n": 3}, params={"$top": "5"}, at=T0)
+    interrupted = (
+        store.root
+        / "tenant=t1"
+        / "endpoint=admin_groups"
+        / f"params={params_hash(PARAMS)}"
+        / "dt=2026-09-30"
+        / "v=20260930T235959000000Z"
+    )
+    interrupted.mkdir(parents=True)
+    (interrupted / "data.json").write_text("{}", encoding="utf-8")
+
+    found = list(store.publishable("t1"))
+
+    assert len(found) == 2 and all(mutable is False for _, _, mutable in found)
+    assert {endpoint for endpoint, _, _ in found} == {"admin_groups"}
+    assert newest.directory in [directory for _, directory, _ in found]
+    assert interrupted not in [directory for _, directory, _ in found]
+
+
+def test_publishable_gives_every_version_with_history_newest_first(store):
+    first = write(store, {"n": 1}, at=T0)
+    second = write(store, {"n": 2}, at=T0 + timedelta(hours=1))
+
+    found = [directory for _, directory, _ in store.publishable("t1", history=True)]
+
+    assert found == [second.directory, first.directory]
+
+
+def test_publishable_gives_every_day_of_events_as_something_that_can_change(store):
+    store.append_events("t1", "admin.activityevents", date(2026, 9, 29), [{"Id": "a"}])
+    store.append_events("t1", "admin.activityevents", date(2026, 9, 30), [{"Id": "b"}])
+    half = store.root / "tenant=t1" / "endpoint=admin_activityevents" / "dt=2026-09-28"
+    half.mkdir(parents=True)  # no manifest: an interrupted write
+
+    found = list(store.publishable("t1"))
+
+    assert [(e, d.name, m) for e, d, m in found] == [
+        ("admin_activityevents", "dt=2026-09-29", True),
+        ("admin_activityevents", "dt=2026-09-30", True),
+    ]
+
+
+def test_publishable_of_a_tenant_without_data_is_empty(store):
+    assert list(store.publishable("nobody")) == []
