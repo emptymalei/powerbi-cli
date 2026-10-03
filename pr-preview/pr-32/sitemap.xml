@@ -16,6 +16,9 @@
         <loc>https://emptymalei.github.io/powerbi-cli/lake/</loc>
       </url>
       <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/plan-file/</loc>
+      </url>
+      <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/</loc>
       </url>
       <url>
@@ -31,7 +34,22 @@
         <loc>https://emptymalei.github.io/powerbi-cli/references/core/client/</loc>
       </url>
       <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/details/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/fsutil/</loc>
+      </url>
+      <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/core/jwt/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/planfile/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/planrun/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/publish/</loc>
       </url>
       <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/core/ratelimit/</loc>
@@ -101,6 +119,9 @@
       </url>
       <url>
         <loc>https://emptymalei.github.io/powerbi-cli/scan/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/sharing/</loc>
       </url>
       <url>
         <loc>https://emptymalei.github.io/powerbi-cli/sync/</loc>

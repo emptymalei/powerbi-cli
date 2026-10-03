@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/references/">
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/sharing/">
       
       
-        <link rel="prev" href="../cache/">
+        <link rel="prev" href="../lake/">
       
       
-        <link rel="next" href="./cli/">
+        <link rel="next" href="../sync/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Introduction - pbi_cli Documentation</title>
+        <title>Sharing a lake - pbi_cli Documentation</title>
       
     
     
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#references" class="md-skip">
+        <a href="#sharing-a-lake" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introduction
+              Sharing a lake
             
           </span>
         </div>
@@ -215,13 +215,15 @@
   
   
   
+    
+  
   
     
       
     
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../auth/" class="md-tabs__link">
           
   
@@ -237,16 +239,14 @@
   
   
   
-    
-  
   
     
       
     
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="././" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../references/" class="md-tabs__link">
           
   
   References
@@ -348,26 +348,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -385,7 +390,7 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
             <label class="md-nav__title" for="__nav_2">
               <span class="md-nav__icon md-icon"></span>
               
@@ -480,10 +485,38 @@
                   
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../sharing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -498,6 +531,138 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#open-a-lake-that-someone-shared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Open a lake that someone shared
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Open a lake that someone shared">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#only-the-work-lake-is-ever-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only the work lake is ever written
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-a-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Publish a lake
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Publish a lake">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-shows-before-it-copies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it shows before it copies
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-never-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it never does
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-marker-protects-a-published-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The marker protects a published lake
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-nightly-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A nightly job
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-a-lake-can-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where a lake can live
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -623,31 +788,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -665,7 +825,7 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
             <label class="md-nav__title" for="__nav_3">
               <span class="md-nav__icon md-icon"></span>
               
@@ -679,21 +839,10 @@
                   
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        
-      
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
         
   
   
@@ -708,7 +857,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -727,20 +875,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
             
   
   
@@ -775,7 +920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./cli/" class="md-nav__link">
+      <a href="../references/cli/" class="md-nav__link">
         
   
   
@@ -802,7 +947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./errors/" class="md-nav__link">
+      <a href="../references/errors/" class="md-nav__link">
         
   
   
@@ -829,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./session/" class="md-nav__link">
+      <a href="../references/session/" class="md-nav__link">
         
   
   
@@ -907,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/auth/" class="md-nav__link">
+      <a href="../references/core/auth/" class="md-nav__link">
         
   
   
@@ -934,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/catalog/" class="md-nav__link">
+      <a href="../references/core/catalog/" class="md-nav__link">
         
   
   
@@ -961,7 +1106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/client/" class="md-nav__link">
+      <a href="../references/core/client/" class="md-nav__link">
         
   
   
@@ -988,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/details/" class="md-nav__link">
+      <a href="../references/core/details/" class="md-nav__link">
         
   
   
@@ -1015,7 +1160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/fsutil/" class="md-nav__link">
+      <a href="../references/core/fsutil/" class="md-nav__link">
         
   
   
@@ -1042,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/jwt/" class="md-nav__link">
+      <a href="../references/core/jwt/" class="md-nav__link">
         
   
   
@@ -1069,7 +1214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/planfile/" class="md-nav__link">
+      <a href="../references/core/planfile/" class="md-nav__link">
         
   
   
@@ -1096,7 +1241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/planrun/" class="md-nav__link">
+      <a href="../references/core/planrun/" class="md-nav__link">
         
   
   
@@ -1123,7 +1268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/publish/" class="md-nav__link">
+      <a href="../references/core/publish/" class="md-nav__link">
         
   
   
@@ -1150,7 +1295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/ratelimit/" class="md-nav__link">
+      <a href="../references/core/ratelimit/" class="md-nav__link">
         
   
   
@@ -1177,7 +1322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/registry/" class="md-nav__link">
+      <a href="../references/core/registry/" class="md-nav__link">
         
   
   
@@ -1204,7 +1349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/scan/" class="md-nav__link">
+      <a href="../references/core/scan/" class="md-nav__link">
         
   
   
@@ -1231,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/store/" class="md-nav__link">
+      <a href="../references/core/store/" class="md-nav__link">
         
   
   
@@ -1309,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/sync/engine/" class="md-nav__link">
+      <a href="../references/core/sync/engine/" class="md-nav__link">
         
   
   
@@ -1336,7 +1481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/sync/plan/" class="md-nav__link">
+      <a href="../references/core/sync/plan/" class="md-nav__link">
         
   
   
@@ -1363,7 +1508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/sync/runners/" class="md-nav__link">
+      <a href="../references/core/sync/runners/" class="md-nav__link">
         
   
   
@@ -1390,7 +1535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/sync/state/" class="md-nav__link">
+      <a href="../references/core/sync/state/" class="md-nav__link">
         
   
   
@@ -1417,7 +1562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/sync/targets/" class="md-nav__link">
+      <a href="../references/core/sync/targets/" class="md-nav__link">
         
   
   
@@ -1453,7 +1598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./core/timefmt/" class="md-nav__link">
+      <a href="../references/core/timefmt/" class="md-nav__link">
         
   
   
@@ -1540,7 +1685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./tui/backend/" class="md-nav__link">
+      <a href="../references/tui/backend/" class="md-nav__link">
         
   
   
@@ -1567,7 +1712,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./tui/render/" class="md-nav__link">
+      <a href="../references/tui/render/" class="md-nav__link">
         
   
   
@@ -1594,7 +1739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./tui/run/" class="md-nav__link">
+      <a href="../references/tui/run/" class="md-nav__link">
         
   
   
@@ -1621,7 +1766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./tui/summary/" class="md-nav__link">
+      <a href="../references/tui/summary/" class="md-nav__link">
         
   
   
@@ -1708,7 +1853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/" class="md-nav__link">
+      <a href="../references/powerbi/" class="md-nav__link">
         
   
   
@@ -1735,7 +1880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/admin/" class="md-nav__link">
+      <a href="../references/powerbi/admin/" class="md-nav__link">
         
   
   
@@ -1762,7 +1907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/app/" class="md-nav__link">
+      <a href="../references/powerbi/app/" class="md-nav__link">
         
   
   
@@ -1789,7 +1934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/base/" class="md-nav__link">
+      <a href="../references/powerbi/base/" class="md-nav__link">
         
   
   
@@ -1816,7 +1961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/io/" class="md-nav__link">
+      <a href="../references/powerbi/io/" class="md-nav__link">
         
   
   
@@ -1843,7 +1988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./powerbi/report/" class="md-nav__link">
+      <a href="../references/powerbi/report/" class="md-nav__link">
         
   
   
@@ -1937,6 +2082,125 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#open-a-lake-that-someone-shared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Open a lake that someone shared
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Open a lake that someone shared">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#only-the-work-lake-is-ever-written" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only the work lake is ever written
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#publish-a-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Publish a lake
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Publish a lake">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-shows-before-it-copies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it shows before it copies
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-never-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What it never does
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-marker-protects-a-published-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The marker protects a published lake
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-nightly-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A nightly job
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-a-lake-can-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where a lake can live
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1954,8 +2218,149 @@
   
 
 
-<h1 id="references">References<a class="headerlink" href="#references" title="Permanent link">¤</a></h1>
-<p>References for <code>pbi_cli</code>.</p>
+<h1 id="sharing-a-lake">Sharing a lake<a class="headerlink" href="#sharing-a-lake" title="Permanent link">¤</a></h1>
+<p>The <a href="../lake/">data lake</a> is plain files, so what one person fetched can be opened by
+others: from a shared folder, or from S3. The people who open it need no Power BI account
+and no token. They only need to read the files.</p>
+<p><img alt="The Explorer on a published lake: view only, with the place and the time of the publish" src="../images/tui-viewonly.svg" /></p>
+<h2 id="open-a-lake-that-someone-shared">Open a lake that someone shared<a class="headerlink" href="#open-a-lake-that-someone-shared" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>tui<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w">          </span><span class="c1"># the terminal UI</span>
+pbi<span class="w"> </span>lake<span class="w"> </span>ls<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w">      </span><span class="c1"># what it holds</span>
+pbi<span class="w"> </span>sync<span class="w"> </span>status<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w">  </span><span class="c1"># how its last syncs went</span>
+</code></pre></div>
+<p><code>--lake</code> takes a folder or a URL. It may be the lake itself (the folder with the <code>tenant=...</code>
+folders in it) or a cache folder, in which case its <code>lake</code> folder is the lake. Without
+<code>--lake</code> the environment variable <code>PBI_LAKE</code> is used, then the <code>session.lake</code> of the
+<a href="../plan-file/#session">plan file</a> given with <code>pbi tui --config</code>, and without any of them the
+lake of your cache folder. A bare <code>pbi</code> in a terminal opens the TUI when <code>PBI_LAKE</code> is set, too.</p>
+<p>In the TUI the key <code>o</code> opens another lake without leaving it: the dialog offers your work
+lake and the lakes you opened lately, or you type a place. A lake that cannot be read
+(a bucket you have no credentials for, a folder that is not there) is said in a message and
+the lake that was open stays open.</p>
+<h3 id="only-the-work-lake-is-ever-written">Only the work lake is ever written<a class="headerlink" href="#only-the-work-lake-is-ever-written" title="Permanent link">¤</a></h3>
+<p>Your <strong>work lake</strong> is the lake of the cache folder (<code>pbi config set-cache-folder</code>). Every
+<code>pbi sync</code>, every command that fetches, and every fetch of the TUI writes there, and only
+there. A lake that you open any other way, with <code>--lake</code>, with <code>PBI_LAKE</code> or with the dialog
+of the TUI, is <strong>read-only</strong>: the store refuses every write, whatever the command or the
+screen asks, so that nothing you try can change what you opened. There is no flag that
+turns this off. To sync into a lake, make it your cache folder, on purpose.</p>
+<p>In the TUI a read-only lake is marked <strong>view only</strong> in the header. No account is looked up
+or asked about. Signing in, <code>r</code> (fetch again) and <strong>Run</strong> on the Sync screen say that the
+lake is only looked at and do nothing; browsing, the filters, <code>Ctrl+P</code> and the Lake tab of
+the Sync screen (what the lake holds, how the last syncs went) work as always.
+<code>pbi lake prune</code> refuses a lake that is read-only.</p>
+<h2 id="publish-a-lake">Publish a lake<a class="headerlink" href="#publish-a-lake" title="Permanent link">¤</a></h2>
+<p>Publishing makes a complete, consistent copy of your work lake, in a place that others can
+read:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--dry-run<span class="w">     </span><span class="c1"># show what would be copied</span>
+pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w">               </span><span class="c1"># show it, ask, copy</span>
+pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>~/shared/pbi-lake<span class="w"> </span>--exclude<span class="w"> </span>activity<span class="w">  </span><span class="c1"># a folder, leaving a category out</span>
+</code></pre></div>
+<p>The copy has the layout of the lake, so <code>pbi tui --lake</code> reads it as it is. It holds:</p>
+<ul>
+<li>the newest version of every request (with <code>--history</code>, every version);</li>
+<li>every day of audit events;</li>
+<li>the scans;</li>
+<li>how the last five syncs went, and when the last complete scan started (what the freshness
+  dots of the Explorer need). Not the units that failed, and not the ids of scans that were
+  started and not collected.</li>
+</ul>
+<p>It does not hold your token, your settings or anything that is not in the lake.</p>
+<h3 id="what-it-shows-before-it-copies">What it shows before it copies<a class="headerlink" href="#what-it-shows-before-it-copies" title="Permanent link">¤</a></h3>
+<p>Publishing prints what the lake holds by category, with what each one can contain, and asks
+before it writes (<code>--yes</code> skips the question, <code>--dry-run</code> stops after the table). Whoever
+opens the published lake sees all of it:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Leave it out with</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lists</code></td>
+<td>(cannot be left out)</td>
+<td>the names of workspaces and items, and the people who own or last changed them (e-mail addresses)</td>
+</tr>
+<tr>
+<td><code>scans</code></td>
+<td><code>--exclude scans</code></td>
+<td>the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td><code>--exclude users</code></td>
+<td>the people who can open each report, with their e-mail addresses</td>
+</tr>
+<tr>
+<td><code>datasources</code></td>
+<td><code>--exclude datasources</code></td>
+<td>connection details of the data sources: servers, databases, paths</td>
+</tr>
+<tr>
+<td><code>activity</code></td>
+<td><code>--exclude activity</code></td>
+<td>what each person did and when: e-mail addresses, IP addresses, devices</td>
+</tr>
+</tbody>
+</table>
+<p>A scan keeps whatever its options asked for: one made with <code>--get-artifact-users</code> or
+<code>--dataset-expressions</code> holds users and queries. Publishing does not take fields out of a
+scan. Leave the scans out, or scan again without those options, if that matters.</p>
+<h3 id="what-it-never-does">What it never does<a class="headerlink" href="#what-it-never-does" title="Permanent link">¤</a></h3>
+<ul>
+<li>It never overwrites a version: a version of a request does not change, so one that is
+  there already is skipped. Only what can change is copied again: the days of events that
+  are not complete, the state and the marker. Publishing again is cheap.</li>
+<li>It never publishes into the lake itself, into a folder inside it, or into a folder that
+  contains it.</li>
+<li>It never publishes into a folder that has something else in it. The destination must be
+  empty, or the place of an earlier publish by you. A lake that someone else published
+  needs <code>--force</code>.</li>
+<li>It never leaves a half published lake that looks finished. The first publish marks the
+  place as unfinished before it copies anything, and writes the marker that says <em>done</em> last.
+  A publish that stops (the network, the disk) is finished by publishing again.</li>
+<li><code>--prune</code> deletes, afterwards, the versions in the destination that are not the newest of
+  their request (it cannot go with <code>--history</code>).</li>
+</ul>
+<h3 id="the-marker-protects-a-published-lake">The marker protects a published lake<a class="headerlink" href="#the-marker-protects-a-published-lake" title="Permanent link">¤</a></h3>
+<p>A published lake has a <code>publish.json</code> at its root: who published it, when, which tenants,
+what was left out, and <code>"protected": true</code>. Every command refuses to write to a lake that has
+it, even when someone sets their cache folder to it and runs <code>pbi sync</code>: the message says who
+published it and to sync into a lake of your own and publish again. Only <code>pbi lake publish</code>
+writes to a published lake. The TUI shows <code>published &lt;time&gt; by &lt;who&gt;</code> in the header, so a
+reader knows how old the snapshot is.</p>
+<h3 id="a-nightly-job">A nightly job<a class="headerlink" href="#a-nightly-job" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w"> </span>default<span class="w"> </span>activity<span class="w">     </span><span class="c1"># fills your work lake</span>
+pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--yes<span class="w"> </span>--exclude<span class="w"> </span>activity
+</code></pre></div>
+<p>Everyone else opens <code>s3://my-bucket/pbi-lake</code> with <code>pbi tui --lake</code>.</p>
+<h2 id="where-a-lake-can-live">Where a lake can live<a class="headerlink" href="#where-a-lake-can-live" title="Permanent link">¤</a></h2>
+<ul>
+<li><strong>A folder.</strong> A local folder, a network share (<code>\\server\share\pbi-lake</code> on Windows) or a
+  synced folder. A synced folder holds thousands of small files, which some sync clients
+  handle badly.</li>
+<li><strong>S3.</strong> <code>s3://bucket/folder</code>. The usual AWS credentials are used (environment variables,
+  <code>~/.aws</code>, SSO). Someone who only opens a lake needs <code>s3:ListBucket</code> on the bucket and
+  <code>s3:GetObject</code> on the folder; someone who publishes also needs <code>s3:PutObject</code>, and
+  <code>s3:DeleteObject</code> for <code>--prune</code>.</li>
+<li><strong>Azure Blob and Google Cloud Storage.</strong> <code>az://</code> and <code>gs://</code> URLs work when the
+  <a href="https://cloudpathlib.drivendata.org">cloudpathlib</a> extra for them is installed
+  (<code>pip install "cloudpathlib[azure]"</code>, <code>"cloudpathlib[gs]"</code>).</li>
+</ul>
+<h2 id="limits">Limits<a class="headerlink" href="#limits" title="Permanent link">¤</a></h2>
+<ul>
+<li>Only S3 and folders have been tried, and S3 only against a stand-in on disk, not a real
+  bucket. Reading a lake lists the folders of every scan that is stored, which takes a while
+  over a network when there are thousands.</li>
+<li>A published lake is a snapshot. The people who read it see what was there when it was
+  published, not what Power BI holds now.</li>
+<li>The older commands that read the lake only to save a request (<code>pbi workspaces list
+  --cache-only</code> and the like) still need your token, because its tenant tells which data is
+  yours. Only the TUI, <code>pbi lake</code> and <code>pbi sync status</code> take <code>--lake</code>.</li>
+</ul>
 
 
 

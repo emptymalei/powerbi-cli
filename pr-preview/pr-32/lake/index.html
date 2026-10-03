@@ -16,7 +16,7 @@
         <link rel="prev" href="../scan/">
       
       
-        <link rel="next" href="../sync/">
+        <link rel="next" href="../sharing/">
       
       
         
@@ -703,6 +703,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sync/" class="md-nav__link">
         
   
@@ -711,6 +738,33 @@
     
   
   Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
 
     
   </span>
@@ -1134,6 +1188,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/jwt/" class="md-nav__link">
         
   
@@ -1142,6 +1250,87 @@
     
   
   jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
 
     
   </span>
@@ -1282,10 +1471,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_9" id="__nav_3_2_4_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
             
   
   
@@ -1303,8 +1492,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_9">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_14">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2318,6 +2507,11 @@ narrow it down). It asks first, or pass <code>--yes</code>. Event logs are never
 ✓ Deleted 1 old version(s), kept the newest 1 of each request
 </code></pre></div>
 <p><code>pbi cache clear</code> never touches the lake; see <a href="../cache/">Cache (legacy)</a>.</p>
+<p>Every one of these commands (and <code>pbi sync status</code> and <code>pbi tui</code>) can look at another lake
+than the one of your cache folder, such as one that a colleague shared, with
+<code>--lake &lt;folder or s3://bucket/folder&gt;</code>. A lake opened that way is only read, and <code>prune</code>
+refuses it. <code>pbi lake publish</code> makes a copy of your lake for others to open. See
+<a href="../sharing/">Sharing a lake</a>.</p>
 <p>To look around instead of listing, open the <a href="../tui/">terminal UI</a> (<code>pbi tui</code>): the
 workspaces of the tenant, what is in them, who can open it, how it is connected, and how
 fresh each part is, all read from the lake.</p>
@@ -2349,6 +2543,7 @@ fresh each part is, all read from the lake.</p>
         dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
     _state/
       sync.json                             what `pbi sync` remembers between runs
+  publish.json                              only in a published lake: who, when, what was left out
 </code></pre></div>
 <p>The folder names are Hive-style partitions, so tools such as Athena, DuckDB and Spark can
 read them. The tenant comes from the token (see <a href="../auth/">authentication</a>); a token that
@@ -2361,6 +2556,8 @@ case and lists of unordered values, such as <code>$expand</code>, are sorted. As
 different <code>$expand</code>, or as another tenant, never returns somebody else's answer.</p>
 <p>The manifest is written last. A version folder without one is an interrupted write and is
 ignored.</p>
+<p>A lake with a <code>publish.json</code> at its root has been <a href="../sharing/#publish-a-lake">published</a>. It
+is protected: only <code>pbi lake publish</code> writes to it.</p>
 <h3 id="the-manifest-of-a-snapshot">The manifest of a snapshot<a class="headerlink" href="#the-manifest-of-a-snapshot" title="Permanent link">¤</a></h3>
 <table>
 <thead>
@@ -2536,6 +2733,48 @@ locally and rely on the <code>429</code> answer of the API.</p>
 <td>snapshot</td>
 </tr>
 <tr>
+<td><code>admin.groups.users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/groups-get-group-users-as-admin">Users of a workspace</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.datasets.users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-dataset-users-as-admin">Users of a dataset</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.dashboards.users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dashboards-get-dashboard-users-as-admin">Users of a dashboard</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.dataflows.users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-users-as-admin">Users of a dataflow</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.dataflows.datasources</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-datasources-as-admin">Data sources of a dataflow</a></td>
+<td>admin</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>admin.refreshables</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-refreshables">How the datasets of the tenant refresh (a summary of each)</a></td>
+<td>admin</td>
+<td>200/h</td>
+<td>snapshot</td>
+</tr>
+<tr>
 <td><code>admin.workspaces.modified</code></td>
 <td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-modified-workspaces">IDs of the workspaces modified since a time</a></td>
 <td>admin</td>
@@ -2592,14 +2831,95 @@ locally and rely on the <code>429</code> answer of the API.</p>
 <td>snapshot</td>
 </tr>
 <tr>
+<td><code>user.group_datasets</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-datasets-in-group">Datasets of a workspace</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.group_dashboards</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/dashboards/get-dashboards-in-group">Dashboards of a workspace</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.group_dataflows</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/dataflows/get-dataflows">Dataflows of a workspace</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.group_users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-group-users">Users of a workspace</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
 <td><code>user.report_pages</code></td>
 <td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-pages-in-group">Pages of a report</a></td>
 <td>user</td>
 <td>–</td>
 <td>snapshot</td>
 </tr>
+<tr>
+<td><code>user.dataset_users</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-dataset-users-in-group">Users of a dataset</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.dataset_datasources</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-datasources-in-group">Data sources of a dataset</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.dataflow_datasources</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/dataflows/get-dataflow-data-sources">Data sources of a dataflow</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.dataset_refreshes</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-refresh-history-in-group">Refresh history of a dataset</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.dataset_parameters</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-parameters-in-group">Parameters of a dataset</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
+<tr>
+<td><code>user.dashboard_tiles</code></td>
+<td><a href="https://learn.microsoft.com/en-us/rest/api/power-bi/dashboards/get-tiles-in-group">Tiles of a dashboard</a></td>
+<td>user</td>
+<td>–</td>
+<td>snapshot</td>
+</tr>
 </tbody>
 </table>
+<p>Some operations of a user need more than being able to see the item. The users of a dataset
+(<code>user.dataset_users</code>) need Reshare permission on it, and its data sources and refresh history
+(<code>user.dataset_datasources</code>, <code>user.dataset_refreshes</code>) need Write permission. An account that
+lacks it gets <code>403</code>, and the error says which permission is missing. The operations that
+answer about one item (<code>...users</code>, <code>...datasources</code>, <code>user.dataset_refreshes</code>,
+<code>user.dataset_parameters</code>, <code>user.dashboard_tiles</code>, <code>user.report_pages</code>) take the id of the
+item in their path, and the lake keeps the answer for each item under it.</p>
+<p><code>admin.refreshables</code> is different: one list of the whole tenant, with a summary of how each
+dataset refreshed in the last week (how often, how long, how many failed, the last refresh and
+the schedule). It is how an administrator sees the refreshes of a dataset, because the
+refresh history itself (<code>user.dataset_refreshes</code>) is read with a user's account.</p>
 <h2 id="throttling">Throttling<a class="headerlink" href="#throttling" title="Permanent link">¤</a></h2>
 <p>The client counts the requests it sends (the commands keep the counts in
 <code>~/.pbi_cli/quota.json</code>, so a second run knows what the first one used) and waits when a

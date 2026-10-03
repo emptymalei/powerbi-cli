@@ -585,6 +585,33 @@
   
   
     <li class="md-nav__item">
+      <a href="./sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./sync/" class="md-nav__link">
         
   
@@ -593,6 +620,33 @@
     
   
   Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
 
     
   </span>
@@ -1016,6 +1070,60 @@
   
   
     <li class="md-nav__item">
+      <a href="./references/core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./references/core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./references/core/jwt/" class="md-nav__link">
         
   
@@ -1024,6 +1132,87 @@
     
   
   jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./references/core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./references/core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./references/core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
 
     
   </span>
@@ -1164,10 +1353,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_9" id="__nav_3_2_4_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
             
   
   
@@ -1185,8 +1374,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_9">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_14">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1944,6 +2133,9 @@ hour); when a command reports a missing or rejected token, sign in again and run
 open it, what it is built from and what is built on it, and how fresh each part is. It
 also plans, runs and stops a sync, so there is nothing to remember. It needs the optional
 extra <code>pip install "pbi-cli[tui]"</code>.</p>
+<p>A lake can be <a href="sharing/">shared</a>: <code>pbi lake publish</code> copies it to a folder or an S3
+prefix, and anyone can then open it with <code>pbi tui --lake &lt;place&gt;</code>, read-only and without a
+token or any Power BI account.</p>
 <p>Commands marked "Requires Admin" in the reference need a profile in the <code>admin</code> group.</p>
 <h2 id="shell-completion">Shell completion<a class="headerlink" href="#shell-completion" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>--install-completion<span class="w">   </span><span class="c1"># install completion for your current shell</span>
@@ -1959,6 +2151,8 @@ pbi<span class="w"> </span>--show-completion<span class="w">      </span><span c
   quotas, continuing where the last run stopped.</li>
 <li><a href="tui/">Terminal UI</a>: browse the lake and run a sync from a terminal, without
   remembering the commands.</li>
+<li><a href="sharing/">Sharing a lake</a>: open a lake that someone else made, without an account, and
+  publish yours.</li>
 <li><a href="cache/">Cache (legacy)</a>: the older cache and what replaced it.</li>
 <li><a href="changelog/">Changelog</a></li>
 </ul>

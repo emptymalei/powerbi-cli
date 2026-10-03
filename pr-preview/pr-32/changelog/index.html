@@ -481,6 +481,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sync/" class="md-nav__link">
         
   
@@ -489,6 +516,33 @@
     
   
   Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
 
     
   </span>
@@ -912,6 +966,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/jwt/" class="md-nav__link">
         
   
@@ -920,6 +1028,87 @@
     
   
   jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
 
     
   </span>
@@ -1060,10 +1249,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_9" id="__nav_3_2_4_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
             
   
   
@@ -1081,8 +1270,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_9">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_14">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1926,6 +2115,8 @@
 <h2 id="040-unreleased">0.4.0 (unreleased)<a class="headerlink" href="#040-unreleased" title="Permanent link">¤</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">¤</a></h3>
 <ul>
+<li>The buttons of the <a href="../tui/">terminal UI</a> are slim, one line each, instead of three-line
+  blocks; everything a button does is also a key and a command of the palette.</li>
 <li><code>pbi workspaces scan batch</code> scans in batches of up to 100 workspaces per request, not one
   request per workspace: the API allows 500 scan requests an hour, so the old way ran out
   of quota after 500 workspaces. Every workspace still gets its own file, named as before,
@@ -1982,6 +2173,110 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><strong>A plan file</strong> names what to keep in the lake, for which workspaces and through which
+  account, in one YAML file (<code>pbi_cli.core.planfile</code>). It is strict: an unknown key, a key
+  that does nothing and a profile that has no token are errors that name the file, the line and
+  the key. It compiles to ordinary sync runs, one step for the tenant and one for each set of
+  workspaces, details and account (<code>pbi_cli.core.planrun</code> plans and runs them one after the
+  other, and reports them as one). A name in the file is a pattern looked up in the list of
+  workspaces in the lake; <code>via: auto</code> reads with the administrator's account when it can and
+  else with the user account whose own list of workspaces holds the workspace.</li>
+<li><strong><code>pbi tui --config FILE</code></strong> opens the <a href="../tui/#with-a-plan-file">terminal UI</a> with a plan file.
+  The Sync screen shows the file and the plan of its steps (one table with the number of each
+  step, what they cost together, the names that match nothing yet), <strong>Run plan</strong> goes through the
+  steps and logs each, and <code>l</code> reads the file again. A token that expires asks for the token of
+  the account that expired (its kind and its profile, which a plan can use several of; a
+  report of a run now says whose token it was), and the plan goes on from its step. The <code>session</code>
+  section chooses the lake (below <code>--lake</code> and <code>PBI_LAKE</code>, above the work lake; relative to the
+  file), the workspace to select at the start, and what to do about a missing detail: <code>ask</code>
+  (press <code>f</code>), <code>off</code>, or <code>auto</code>, which fetches by itself the <em>harmless</em> details (those that copy no
+  personal data, queries or connection details) of the item you stay on, while more than half of
+  the smallest allowance of the operation is left, never into a lake that is only looked at.</li>
+<li><strong><code>pbi sync plan --config FILE</code> and <code>pbi sync run --config FILE</code></strong> take a <a href="../plan-file/">plan file</a>
+  instead of target names. <code>plan</code> shows each step and what they cost together against the
+  quotas (the steps for the workspaces are worked out after the tenant's, so the plan before
+  the first run says which names it cannot look up yet), and <code>run</code> goes step after step and
+  ends at the first expired token (running again continues). <code>--force</code>, <code>--max-age</code>, <code>--days</code>,
+  <code>--workers</code>, <code>--wait</code>, <code>--scan-interval</code> and <code>--scan-timeout</code> apply to every step; what the
+  file says (target names, the scan options, <code>--full-scan</code>, the profiles) is refused on the
+  command line with a message that says where in the file it goes.</li>
+<li><code>SyncOptions.workspace_ids</code> limits a sync to some workspaces: besides the scan, the targets
+  that fan out over items or workspaces fetch only for those of the chosen workspaces
+  (<code>Target.workspace</code> says which field of a row holds its workspace; a row that has none is
+  left out, and the plan and the run say so). <code>SyncEngine</code> can say whether an account is
+  stored (<code>has_account</code>), under which profile (<code>profile_of</code>) and the tenant of a sync.</li>
+<li><strong>Details of one item, on demand.</strong> Who has access to a dataset, a dashboard, a dataflow or
+  a workspace, the data sources of a dataflow, the refresh history and the parameters of a
+  dataset, the tiles of a dashboard: each costs a request per item, so a sync keeps them only
+  when asked, and the <a href="../tui/#details-one-item-at-a-time">terminal UI</a> fetches them for the one
+  item you look at. The new <strong>Details</strong> tab (<code>6</code>) lists what an item can have, what the lake
+  holds of each (rows, source, age) and how to get the rest; <code>f</code> fetches what is missing, after
+  showing the cost, with an administrator's account or a user's, whichever is stored (and says
+  which permission a user lacks when the API refuses). The same row is selected again
+  afterwards, also after <code>r</code>. The palette offers it as a command, and the Users tab says how to
+  get the users of the item.</li>
+<li>New operations in the registry, with the targets that fetch them for every item: the users
+  of a workspace, dataset, dashboard and dataflow (<code>group-users</code>, <code>dataset-users</code>,
+  <code>dashboard-users</code>, <code>dataflow-users</code>, 200 requests an hour each), the data sources of a
+  dataflow (<code>dataflow-datasources</code>), the refresh summaries of the tenant (<code>refreshables</code>,
+  200 an hour), and for a user account the users, data sources and refresh history of a
+  dataset (<code>user-dataset-users</code>, <code>user-dataset-datasources</code>, <code>user-dataset-refreshes</code>, which
+  need Reshare or Write permission on the dataset), its parameters, the data sources of a
+  dataflow and the tiles of a dashboard. None is in a plain sync. See <a href="../sync/">Sync</a>.</li>
+<li><code>SyncOptions.only</code> limits a sync to some items: the targets that fan out over rows skip the
+  rows whose id (<code>datasetId</code>, <code>reportId</code>, <code>groupId</code>, ...) is not wanted. <code>pbi_cli.core.details</code>
+  says which details an item has, which operations can fetch each, and <code>Catalog.details</code> what the
+  lake holds of them; <code>Catalog.users</code> now reads the users of every kind of item from what was
+  fetched, by an administrator or by a user.</li>
+<li>The <a href="../tui/">terminal UI</a> has a <strong>command palette</strong>: <code>:</code> (as in Vim) or <code>Ctrl+P</code> (as in VS
+  Code and Obsidian), or a click on <code>: commands</code> in the header, opens a search bar over every
+  action of the UI, each with what it does and the key that does the same. Typing narrows
+  the list, <code>Enter</code> runs a command. It lists what can be done now (on the Explorer: fetch
+  again what is selected, filter, the tabs; on the Sync screen: run, the tabs; while a sync
+  runs: stop it, from any screen; everywhere: the other screen, reload, accounts, sign in,
+  make a stored profile active, open another lake), and a name jumps to a workspace or an
+  item, as before. A place typed in (<code>s3://bucket/lake</code>, <code>/shared/lake</code>) offers to open it.</li>
+<li><strong>An administrator account is optional.</strong> pbi works with an administrator's token, with a
+  user's token (a service account, for example), or with both. <code>pbi sync</code> with no names
+  syncs the lists of the tenant when an administrator account is stored, and else what a
+  user can see, workspace by workspace: the new targets <code>user-datasets</code>, <code>user-dashboards</code>
+  and <code>user-dataflows</code> join <code>user-groups</code>, <code>user-apps</code> and <code>user-reports</code>, and
+  <code>user-group-users</code> (who has access to each workspace of the account) is there when named.
+  Naming a target whose account is not stored fails at once, before anything is fetched, and
+  says which <code>pbi auth</code> command to run (<code>pbi sync run scan</code> with only a user account, for
+  example). With no account at all <code>pbi sync</code> says what to store. See
+  <a href="../auth/#which-accounts-you-need">Authentication</a> and <a href="../sync/#which-accounts-a-sync-uses">Sync</a>.</li>
+<li><strong>Several accounts.</strong> <code>pbi sync plan</code> and <code>pbi sync run</code> take <code>--admin-profile</code> and
+  <code>--user-profile</code> to use other profiles than the active ones for one run. What depends on
+  who asks, the workspaces and the apps of a user, is kept in the lake per account, by the
+  object id in the token (<code>oid</code>, or <code>appid</code> of a service principal), so that two accounts
+  never overwrite each other's lists; what is the same for everybody who can open a
+  workspace stays under the workspace. A token also yields a name (<code>upn</code>, ...) to show.</li>
+<li><code>pbi sync plan</code> and <code>pbi sync run</code> say which accounts they use (<code>Accounts: admin-nlm
+  (admin), svc-finance (user)</code>), and so does the plan on the Sync screen of the terminal UI.
+  <code>SyncEngine.accounts(options)</code> and <code>Plan.accounts</code> give the same from Python.</li>
+<li>The <a href="../tui/">terminal UI</a> knows about accounts. The header shows every account that is
+  stored with how long its token lasts, <code>p</code> opens the Accounts dialog (the stored profiles
+  of both groups; make one active, or store a new token for it), a sync that fails for a
+  token asks for the kind that is missing or expired, and the Sync screen dims the targets
+  whose account is not stored and says what to do. With only a user account the Explorer
+  shows the items of the workspaces that account sees, <code>r</code> fetches what you can see, and the
+  Info tab of a workspace says which accounts see it.</li>
+<li><code>pbi_cli.core.catalog</code>: items come from the lists a user made of each workspace as well as
+  from the lists of the tenant (the administrator's list wins for an item both have),
+  <code>Workspace.visible_to</code> names the accounts that see a workspace, and <code>Catalog.listed</code> says
+  whether the lake holds a list that would show the items of a workspace.</li>
+<li>A lake can be <a href="../sharing/">shared</a>. <code>pbi tui</code>, <code>pbi lake ls|show|prune</code> and <code>pbi sync
+  status</code> take <code>--lake &lt;folder or s3://bucket/folder&gt;</code> (or the environment variable
+  <code>PBI_LAKE</code>) to look at another lake than the one of the cache folder, for example one that
+  a colleague made, with no token. Only the work lake (the cache folder's) is ever written:
+  a lake opened any other way is read-only, and the TUI marks it <strong>view only</strong> and asks about
+  no account. <code>o</code> in the TUI opens another lake, or the work lake again, and remembers the
+  lakes it opened. <code>pbi lake publish DESTINATION</code> copies a complete, consistent snapshot of
+  the lake to a folder or an S3 prefix: it shows what it holds by category (scans, who has
+  access, data sources, audit events), lets you leave categories out, asks, never overwrites
+  a version, and marks the copy as published (<code>publish.json</code>), after which nothing but a
+  later publish writes to it.</li>
 <li><code>pbi tui</code> opens a <a href="../tui/">terminal UI</a> built with <a href="https://textual.textualize.io">Textual</a>
   (the optional extra <code>pbi-cli[tui]</code>). The Explorer shows the workspaces of the tenant, what
   is in them, who can open it, what it is built from and what is built on it (lineage), the
@@ -2031,6 +2326,19 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">¤</a></h3>
 <ul>
+<li>The <a href="../tui/">terminal UI</a> no longer fails with an error about a widget that is gone, now and
+  then, when it is quit while a sync is ending: what a worker hands over is dropped once the
+  app is closing.</li>
+<li>The dialogs of the <a href="../tui/">terminal UI</a> all come up in the middle of the screen over the
+  dimmed one: they are made from one class, <code>Dialog</code>, that carries the styles, and a test
+  fails for a dialog that is not.</li>
+<li>A workspace that shows no items in the <a href="../tui/">terminal UI</a> says why: the lists of items
+  are not in the lake (after <code>pbi sync run groups</code>, for example), or it was never scanned,
+  or it is empty. Before, it showed <code>0 item(s)</code> and nothing else.</li>
+<li>On Windows the files of the lake were written with CRLF line breaks, and replacing a file
+  that another process had open (the TUI reading what a sync rewrites) could fail with
+  <code>PermissionError</code>. Files are written as they are, and the replace is tried again a few
+  times.</li>
 <li><code>pbi users user-access --target-folder</code> wrote nothing: the code that writes the files
   could not run. It now writes the JSON and Excel files.</li>
 <li><code>pbi workspaces list --use-cache --file-type excel</code> crashed; it writes the Excel file.</li>
@@ -2040,6 +2348,11 @@
 </ul>
 <h3 id="development">Development<a class="headerlink" href="#development" title="Permanent link">¤</a></h3>
 <ul>
+<li>The fake service in <code>tests/fake_powerbi.py</code> knows who asks: the account is the <code>oid</code> of the
+  token, each account can see its own workspaces (<code>visible_to</code>), the admin operations can be
+  made to refuse a token that is not an administrator's (<code>require_admin</code>), and it serves the
+  per-workspace lists a user can read. <code>World.only_user()</code> and <code>World.accounts(...)</code> make a
+  world with only a user, or with several.</li>
 <li>The tests of the terminal UI start the real app with Textual's test pilot against the
   fake service, and are left out when Textual is not installed. The pictures of the
   <a href="../tui/">terminal UI</a> are made from the real app by <code>scripts/gen_tui_screenshots.py</code>.</li>

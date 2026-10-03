@@ -1,0 +1,2763 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for pbi_cli - a command line interface for Power BI.">
+      
+      
+      
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/plan-file/">
+      
+      
+        <link rel="prev" href="../sync/">
+      
+      
+        <link rel="next" href="../tui/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.67">
+    
+    
+      
+        <title>Plan file - pbi_cli Documentation</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/classic/main.cfc7948b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/classic/palette.bf1c5cd6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plan-file" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="pbi_cli Documentation" class="md-header__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pbi_cli Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plan file
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="red"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../auth/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../references/" class="md-tabs__link">
+          
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="pbi_cli Documentation" class="md-nav__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    pbi_cli Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Workspace Scans
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first plan
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-file-section-by-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The file, section by section
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The file, section by section">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>version</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>accounts</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>tenant</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-scan-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The scan options
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>workspaces</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>session</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-file-becomes-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a file becomes runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#on-the-command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        On the command line
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-the-terminal-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In the terminal UI
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-nightly-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A nightly job
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Terminal UI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Cache (legacy)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  References
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  References
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  pbi_cli
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  pbi_cli
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  cli
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  errors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  session
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  core
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  core
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/ratelimit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ratelimit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  registry
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sync
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_14">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  sync
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  engine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/runners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  runners
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  state
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  targets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/timefmt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  timefmt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tui
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  tui
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backend
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/render/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  render
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/summary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powerbi
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  powerbi
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  index
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  admin
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  app
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  io
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first plan
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-file-section-by-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The file, section by section
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The file, section by section">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>version</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>accounts</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>tenant</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-scan-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The scan options
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>workspaces</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>session</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-file-becomes-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a file becomes runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#on-the-command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        On the command line
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-the-terminal-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In the terminal UI
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-nightly-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A nightly job
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="plan-file">Plan file<a class="headerlink" href="#plan-file" title="Permanent link">¤</a></h1>
+<p>A plan file says <strong>what to keep in the <a href="../lake/">data lake</a>, for which workspaces, and
+through which account</strong>, in one small YAML file that <code>pbi sync</code> and <code>pbi tui</code> both read.</p>
+<p>Without it you type target names and options every time (<code>pbi sync run default activity
+scan --lineage --days 7</code>), the accounts are whichever profiles happen to be active, and
+what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
+<ul>
+<li>some workspaces can be read <strong>only through a user account</strong> (a service account that is
+  a member of them): say <code>via: svc-finance</code> and that account reads them;</li>
+<li>the <strong>details</strong> that cost a request per item (who has access, data sources, pages, how a
+  dataset refreshes) are kept for the workspaces you name, not for the whole tenant, so
+  they stay within the quotas;</li>
+<li>the file can live anywhere, <strong>a git repository</strong> for example, and the same file drives
+  a nightly <code>pbi sync run</code> and the terminal UI of whoever opens it.</li>
+</ul>
+<p>A plan file never holds a token. It names accounts by the profiles of <code>pbi auth</code> (see
+<a href="../auth/">Authentication</a> and <code>pbi profile list</code>).</p>
+<h2 id="a-first-plan">A first plan<a class="headerlink" href="#a-first-plan" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># A plan for `pbi sync plan --config &lt;this file&gt;`, `pbi sync run --config &lt;this file&gt;` and</span>
+<span class="c1"># `pbi tui --config &lt;this file&gt;`.</span>
+<span class="c1">#</span>
+<span class="c1"># It says what to keep in the data lake, for which workspaces, through which account, and</span>
+<span class="c1"># a few settings for a terminal UI session. It never holds a token: accounts are named by</span>
+<span class="c1"># the profiles of `pbi auth` (see `pbi profile list`). Keep it anywhere (a git repository</span>
+<span class="c1"># is a good place); a relative path in it is relative to the folder of this file.</span>
+<span class="c1">#</span>
+<span class="c1"># Check what it would do, and what it costs, before running it:</span>
+<span class="c1">#</span>
+<span class="c1">#     pbi sync plan --config pbi-plan.yaml</span>
+<span class="c1">#</span>
+<span class="c1"># Unknown keys are errors, and so is a key that does nothing, so that a misspelled one does</span>
+<span class="c1"># not silently do nothing.</span>
+
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="c1"># The accounts to use, by the name of their profile. Without this section the active</span>
+<span class="c1"># profile of each group is used.</span>
+<span class="nt">accounts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-nlm</span><span class="w"> </span><span class="c1"># the administrator's profile</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">svc-finance</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">svc-sales</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># user profiles that may read the workspaces below</span>
+
+<span class="c1"># What to keep for the whole tenant, with the administrator's account. The targets are</span>
+<span class="c1"># those of `pbi sync plan --help`; without `targets` it is the plain sync. A target of a</span>
+<span class="c1"># user's account runs once for each of the user profiles above.</span>
+<span class="nt">tenant</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span><span class="w"> </span><span class="c1"># days of audit events (1 to 28); only with `activity` above</span>
+
+<span class="c1"># What to keep for particular workspaces. A workspace is an `id`, or a `name` (a pattern:</span>
+<span class="c1"># `*` and `?` stand for any text and one character) that is looked up in the list of</span>
+<span class="c1"># workspaces in the lake, so the list has to be there (`default` in `tenant.targets` keeps</span>
+<span class="c1"># it). A name matches active workspaces that are not personal.</span>
+<span class="nt">workspaces</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span>
+<span class="w">    </span><span class="c1"># A metadata scan of these workspaces, with these options (those of</span>
+<span class="w">    </span><span class="c1"># `pbi workspaces scan batch`). A scan is always the administrator's.</span>
+<span class="w">    </span><span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> lineage</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> datasource_details</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> get_artifact_users</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="c1"># Details of every item in them: users, datasources, pages, refreshes, parameters, tiles.</span>
+<span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">users</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">datasources</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">refreshes</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="c1"># Whose account reads them: `auto` (the administrator's when it can, else a user whose</span>
+<span class="w">    </span><span class="c1"># own list of workspaces holds it), `admin`, `user` (never the administrator's), or the</span>
+<span class="w">    </span><span class="c1"># name of a profile.</span>
+<span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3f1c9a52-0000-0000-0000-000000000000</span>
+<span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pages</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tiles</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># only a user's account reads these</span>
+<span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">svc-finance</span>
+
+<span class="c1"># Settings for `pbi tui --config &lt;this file&gt;`.</span>
+<span class="nt">session</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lake</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/PowerBI/shared-lake</span><span class="w"> </span><span class="c1"># open this lake (view only, unless it is the work lake)</span>
+<span class="w">  </span><span class="nt">open</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span><span class="w"> </span><span class="c1"># a workspace to select at the start: an id, or a name pattern</span>
+<span class="w">  </span><span class="nt">lazy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ask</span><span class="w"> </span><span class="c1"># what to do about a detail the lake lacks: ask (press f), auto, or off</span>
+</code></pre></div>
+<p>Look at what it would do, and what that costs, before running it:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>plan<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w">   </span><span class="c1"># reads the lake, calls nothing</span>
+pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w">  </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w">   </span><span class="c1"># does it</span>
+</code></pre></div>
+<p>The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
+writes by default (<code>Out-File</code>, <code>&gt;</code>), so a file made there needs no conversion.</p>
+<p>The file is <strong>strict</strong>. A key that is not known is an error (with a guess at what you
+meant), and so is a key that would do nothing, such as <code>activity_days</code> without <code>activity</code>
+among the targets, or an entry that asks for nothing. Every message names the file, the
+line and the key:</p>
+<div class="highlight"><pre><span></span><code>pbi-plan.yaml:12: workspaces[0].details[1]: 'page' is not a detail. Did you mean 'pages'? The details are: users, datasources, pages, refreshes, parameters, tiles.
+</code></pre></div>
+<h2 id="the-file-section-by-section">The file, section by section<a class="headerlink" href="#the-file-section-by-section" title="Permanent link">¤</a></h2>
+<h3 id="version"><code>version</code><a class="headerlink" href="#version" title="Permanent link">¤</a></h3>
+<p>Required, and <code>1</code>. A pbi that does not know the version of a file says so instead of
+guessing.</p>
+<h3 id="accounts"><code>accounts</code><a class="headerlink" href="#accounts" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">accounts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-nlm</span><span class="w">                 </span><span class="c1"># the administrator's profile</span>
+<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">svc-finance</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">svc-sales</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># user profiles that may read the workspaces below</span>
+</code></pre></div>
+<p>Both are optional. Without them the <strong>active profile</strong> of each group is used (the active
+user profile, if there is one, is the only user account). A profile that is named must have
+a token stored, or the plan stops before anything is fetched and says which command stores
+one (<code>pbi auth -t &lt;token&gt; -p svc-sales -g user</code>).</p>
+<p><code>user</code> lists the accounts that <code>via: auto</code> and <code>via: user</code> choose from, in the order of the
+file. A profile named in a <code>via:</code> of an entry is used for that entry whether or not it is
+listed.</p>
+<h3 id="tenant"><code>tenant</code><a class="headerlink" href="#tenant" title="Permanent link">¤</a></h3>
+<p>What to keep for the whole tenant.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">tenant</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>targets</code></td>
+<td>The targets of <a href="../sync/#what-can-be-synced"><code>pbi sync</code></a>. Without it, or with only <code>tenant:</code>, it is the plain sync: the lists of the tenant when there is an administrator account, else what a user can see.</td>
+</tr>
+<tr>
+<td><code>activity_days</code></td>
+<td>Days of audit events, today included, 1 to 28 (default 28). Only with <code>activity</code> among the targets.</td>
+</tr>
+<tr>
+<td><code>scan</code></td>
+<td>What the scan of every workspace includes, with <a href="#the-scan-options">the scan options</a> below; <code>true</code> is a scan with none. Only with <code>scan</code> among the targets.</td>
+</tr>
+<tr>
+<td><code>full_scan</code>, <code>exclude_personal</code>, <code>exclude_inactive</code></td>
+<td>As the options of <code>pbi sync run</code> of the same names. Only with <code>scan</code> among the targets.</td>
+</tr>
+</tbody>
+</table>
+<p>The administrator's targets run once, with the administrator's account. A target of a
+user's account (<code>user-groups</code>, ...) runs <strong>once for each user profile</strong> of the file, each
+keeping its own answers in the lake.</p>
+<h3 id="the-scan-options">The scan options<a class="headerlink" href="#the-scan-options" title="Permanent link">¤</a></h3>
+<p>A <code>scan</code> takes these keys (those of the file of <a href="../scan/"><code>pbi workspaces scan batch</code></a>); each is
+<code>true</code> or <code>false</code>, and <code>false</code> is the default:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What the scan includes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lineage</code></td>
+<td>Upstream dataflows, tiles and data source ids</td>
+</tr>
+<tr>
+<td><code>datasource_details</code></td>
+<td>Connection details of the data sources: servers, databases, paths</td>
+</tr>
+<tr>
+<td><code>dataset_schema</code></td>
+<td>Tables, columns and measures (needs the tenant setting for detailed metadata)</td>
+</tr>
+<tr>
+<td><code>dataset_expressions</code></td>
+<td>DAX and Power Query expressions (needs the same setting)</td>
+</tr>
+<tr>
+<td><code>get_artifact_users</code></td>
+<td>The users of reports, dashboards and other items</td>
+</tr>
+</tbody>
+</table>
+<h3 id="workspaces"><code>workspaces</code><a class="headerlink" href="#workspaces" title="Permanent link">¤</a></h3>
+<p>What to keep for particular workspaces. Each entry says <em>which</em> workspaces, and then what to
+keep for them: a scan, details, or both.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">workspaces</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span>
+<span class="w">    </span><span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">lineage</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">users</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">datasources</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">refreshes</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3f1c9a52-0000-0000-0000-000000000000</span>
+<span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pages</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tiles</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">svc-finance</span>
+</code></pre></div>
+<p><strong>Which workspaces.</strong> Exactly one of:</p>
+<ul>
+<li><code>id</code>: one workspace, by its id. It is used as it is, even when the lake does not know it.</li>
+<li><code>name</code>: a pattern for names. <code>*</code> stands for any text and <code>?</code> for one character, case does
+  not matter, and the whole name has to match (<code>Finance*</code>, not <code>Finance</code>). It is looked up
+  in the <strong>list of workspaces in the lake</strong>, so the list has to be there: the steps for the
+  tenant fetch it (<code>default</code> among <code>tenant.targets</code>) before the workspaces are looked up.
+  A name matches active workspaces that are not personal; name a personal one by <code>id</code>.</li>
+</ul>
+<p><strong>What to keep.</strong></p>
+<ul>
+<li><code>scan</code>: a metadata scan of these workspaces, with the options above (<code>true</code> for none). A
+  scan is always read with the administrator's account, whatever <code>via</code> says.</li>
+<li><code>details</code>: details of every item in the workspaces (and of the workspace itself), from the
+  list below. It costs a request per item, so name only what you need.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Detail</th>
+<th>For</th>
+<th>Fetched by an administrator</th>
+<th>Fetched by a user</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>users</code></td>
+<td>workspace</td>
+<td><code>group-users</code></td>
+<td><code>user-group-users</code></td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>report</td>
+<td><code>report-users</code></td>
+<td>not possible</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>dataset</td>
+<td><code>dataset-users</code></td>
+<td><code>user-dataset-users</code> (needs Reshare permission)</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>dashboard</td>
+<td><code>dashboard-users</code></td>
+<td>not possible</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>dataflow</td>
+<td><code>dataflow-users</code></td>
+<td>not possible</td>
+</tr>
+<tr>
+<td><code>datasources</code></td>
+<td>dataset</td>
+<td><code>datasources</code></td>
+<td><code>user-dataset-datasources</code> (needs Write permission)</td>
+</tr>
+<tr>
+<td><code>datasources</code></td>
+<td>dataflow</td>
+<td><code>dataflow-datasources</code></td>
+<td><code>user-dataflow-datasources</code></td>
+</tr>
+<tr>
+<td><code>pages</code></td>
+<td>report</td>
+<td>not possible</td>
+<td><code>user-pages</code></td>
+</tr>
+<tr>
+<td><code>refreshes</code></td>
+<td>dataset</td>
+<td><code>refreshables</code> (a summary of the last week, one request for every dataset)</td>
+<td><code>user-dataset-refreshes</code> (needs Write permission; the last 60)</td>
+</tr>
+<tr>
+<td><code>parameters</code></td>
+<td>dataset</td>
+<td>not possible</td>
+<td><code>user-dataset-parameters</code></td>
+</tr>
+<tr>
+<td><code>tiles</code></td>
+<td>dashboard</td>
+<td>not possible</td>
+<td><code>user-dashboard-tiles</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Whose account.</strong> <code>via</code> says which account reads the workspaces:</p>
+<table>
+<thead>
+<tr>
+<th><code>via</code></th>
+<th>The account</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto</code> (the default)</td>
+<td>The administrator's, when it can read what is asked (it needs no permission on the item); else a user account whose own list of workspaces holds the workspace.</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>The administrator's account only.</td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td>A user account only, never the administrator's: the first of <code>accounts.user</code> whose own list of workspaces holds the workspace. Use it to spare the quota of the administrator's operations.</td>
+</tr>
+<tr>
+<td>a profile name</td>
+<td>That user profile, whatever its list says.</td>
+</tr>
+</tbody>
+</table>
+<p>Which user account lists a workspace comes from the lake: the list of workspaces that each
+user account keeps (<code>user-groups</code>). When an entry may need it, the plan starts with one
+request for each listed user account to fetch that list, so a file works from an empty lake.</p>
+<p>A detail that no account the entry may use can fetch, such as <code>pages</code> with <code>via: admin</code>
+(only a user's account has the operation), is an error that says so. A detail that only
+<em>some</em> kinds of item can give, such as <code>users</code> with <code>via: user</code> (a user cannot read the
+users of a report), is fetched for those that can, and the plan says which are left out.</p>
+<h3 id="session"><code>session</code><a class="headerlink" href="#session" title="Permanent link">¤</a></h3>
+<p>Settings for <a href="#in-the-terminal-ui"><code>pbi tui --config</code></a> (a sync ignores them).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">session</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">lake</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/PowerBI/shared-lake</span>
+<span class="w">  </span><span class="nt">open</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span>
+<span class="w">  </span><span class="nt">lazy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ask</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lake</code></td>
+<td>The lake to open: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake. Any lake but your work lake is <a href="../sharing/">opened read-only</a>.</td>
+</tr>
+<tr>
+<td><code>open</code></td>
+<td>A workspace to select at the start: an id, or a name pattern (the first match).</td>
+</tr>
+<tr>
+<td><code>lazy</code></td>
+<td>What to do about a detail the lake lacks: <code>ask</code> (press <code>f</code>, the default), <code>auto</code> (fetch the harmless ones by itself) or <code>off</code> (do nothing). Write <code>off</code> as it is: it is not read as a yes or a no.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-a-file-becomes-runs">How a file becomes runs<a class="headerlink" href="#how-a-file-becomes-runs" title="Permanent link">¤</a></h2>
+<p>A plan is a <strong>sequence of ordinary sync runs</strong>, so the engine, the state of a sync, resuming
+and <code>pbi sync status</code> are the ones you know. <code>pbi sync plan --config</code> shows them:</p>
+<div class="highlight"><pre><span></span><code>Data lake: /home/me/PowerBI/cache/lake
+Plan file: /home/me/plans/pbi-plan.yaml
+Accounts: admin-nlm (admin), svc-finance (user), svc-sales (user)
+
+Step 1: the tenant (admin-nlm)
+TARGET      OPERATION         UNITS  FRESH  TO DO  REQUESTS
+groups      admin.groups      1      0      1      1
+apps        admin.apps        1      0      1      1
+...
+Step 2: the workspaces of svc-finance
+TARGET       OPERATION    UNITS  FRESH  TO DO  REQUESTS
+user-groups  user.groups  1      0      1      1
+
+Step 3: the workspaces of svc-sales
+TARGET       OPERATION    UNITS  FRESH  TO DO  REQUESTS
+user-groups  user.groups  1      0      1      1
+  workspaces[0] (Finance*): no workspace is called 'Finance*' (the lake holds no list of workspaces yet: the steps for the tenant fetch it)
+  Steps share lists: one that an earlier step fetches is not fetched again by the next, so the requests may be fewer than the sum shown
+
+Requests against the quota of each operation
+OPERATION         NEEDED  QUOTA         LEFT NOW
+admin.groups      1       50/h, 15/min  15
+...
+Everything fits the quota now.
+</code></pre></div>
+<p>The steps, in order:</p>
+<ol>
+<li><strong>The tenant</strong>: one step for the administrator's targets, and one for each user profile
+   for the targets of a user's account.</li>
+<li><strong>Who lists what</strong>, when an entry may need it: one step per listed user account that
+   fetches its list of workspaces (one request each; skipped when it is fresh).</li>
+<li><strong>The workspaces</strong>, worked out <em>after</em> the steps above from the list of workspaces they
+   left in the lake: first the scans (one step for each set of scan options, with all the
+   workspaces that want it), then the details: one step for each account and set of targets,
+   for the workspaces that need exactly that, the administrator's first and then each user in
+   the order of the file.</li>
+</ol>
+<p>So <strong>the plan you see before the first run is incomplete</strong>: the names of workspaces cannot be
+looked up before the lake has the list, and the plan says so. Plan again after a run, or just
+run: it works out the later steps when it gets there.</p>
+<p>What a run does, and what it does not:</p>
+<ul>
+<li>It stops at the first step whose <strong>token expired</strong> (sign in again and run it again: every
+  step skips what the lake holds fresh, so it continues where it was), or when it is
+  <strong>stopped</strong> (Ctrl-C, or <code>x</code> in the terminal UI).</li>
+<li>A name that matches <strong>no workspace</strong> fails the run (the exit code is 1) but the other
+  entries are done. The same when a unit fails: it is reported and tried again next time.</li>
+<li>A detail is fetched for the items of the chosen workspaces by reading the <strong>list of items
+  of the whole tenant</strong> (one request, skipped while it is fresh) and picking the items whose
+  <code>workspaceId</code> is in it. A row that does not say its workspace is left out, and the plan and
+  the run say so.</li>
+</ul>
+<h2 id="on-the-command-line">On the command line<a class="headerlink" href="#on-the-command-line" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>plan<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml
+pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w">  </span>--config<span class="w"> </span>pbi-plan.yaml
+pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w">  </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w"> </span>--force<span class="w"> </span>--workers<span class="w"> </span><span class="m">8</span>
+</code></pre></div>
+<p><code>--config</code> (<code>-c</code>) replaces the target names. These options still apply, to <strong>every step</strong>:
+<code>--force</code>, <code>--max-age</code>, <code>--workers</code>, <code>--wait</code>, <code>--scan-interval</code>, <code>--scan-timeout</code>, and
+<code>--days</code>, which replaces <code>tenant.activity_days</code> when you type it. What the file says cannot
+be said again, and is refused with a message that says where in the file it goes: target
+names, the scan options (<code>--lineage</code>, <code>--datasource-details</code>, <code>--dataset-schema</code>,
+<code>--dataset-expressions</code>, <code>--get-artifact-users</code>), <code>--full-scan</code>, <code>--exclude-personal</code>,
+<code>--exclude-inactive</code>, <code>--admin-profile</code> and <code>--user-profile</code>.</p>
+<h2 id="in-the-terminal-ui">In the terminal UI<a class="headerlink" href="#in-the-terminal-ui" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>tui<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml
+</code></pre></div>
+<p><img alt="The Sync screen of a plan file: the file on the left, the numbered steps and their cost on the right" src="../images/tui-planfile.svg" /></p>
+<p>The Sync screen shows the file and the plan of its steps, <strong>Run plan</strong> goes through them, and
+<code>l</code> reads the file again. When a token expires, the dialog asks for the token of the account
+that expired (the kind and the profile), and the plan goes on from the step it was in. The
+<code>session</code> section chooses the lake, the workspace to select at the start, and whether the
+Explorer fetches the details of the item you stay on by itself (<code>lazy: auto</code>: only the
+harmless ones, and only while quota is left). See <a href="../tui/#with-a-plan-file">With a plan file</a>
+for all of it.</p>
+<h2 id="a-nightly-job">A nightly job<a class="headerlink" href="#a-nightly-job" title="Permanent link">¤</a></h2>
+<p>Keep the file in a repository, and run it from the scheduler of the machine that has the
+tokens (see <a href="../sync/#on-a-schedule">On a schedule</a>), then publish what it made so that
+others can read it with no account:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>/srv/plans/pbi-plan.yaml<span class="w"> </span>--max-age<span class="w"> </span>20h
+pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--yes
+</code></pre></div>
+<p>Anyone who opens the lake needs no plan file; one that wants <code>session</code> settings can have a
+file of its own with only a <code>session</code> section.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.tabs"],"redirect":null,"search":"../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.67a597eb.min.js"></script>
+      
+    
+  </body>
+</html>

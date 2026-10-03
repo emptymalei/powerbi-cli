@@ -483,6 +483,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../sync/" class="md-nav__link">
         
   
@@ -491,6 +518,33 @@
     
   
   Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
 
     
   </span>
@@ -1004,6 +1058,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>pbi lake prune</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbi-lake-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake publish</code>
       </span>
     </span>
   </a>
@@ -2100,6 +2165,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../core/jwt/" class="md-nav__link">
         
   
@@ -2108,6 +2227,87 @@
     
   
   jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
 
     
   </span>
@@ -2248,10 +2448,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_9" id="__nav_3_2_4_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
             
   
   
@@ -2269,8 +2469,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_9_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_9">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_14">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3153,6 +3353,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>pbi lake prune</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbi-lake-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake publish</code>
       </span>
     </span>
   </a>
@@ -4376,6 +4587,7 @@ pbi cache list -k workspaces
 <ul>
 <li><code>ls</code>: List what the data lake holds</li>
 <li><code>prune</code>: Delete old versions, keeping the newest of...</li>
+<li><code>publish</code>: Publish the lake: a complete copy that...</li>
 <li><code>show</code>: Print a stored response (or its manifest)...</li>
 </ul>
 <h3 id="pbi-lake-ls"><code>pbi lake ls</code><a class="headerlink" href="#pbi-lake-ls" title="Permanent link">¤</a></h3>
@@ -4388,6 +4600,9 @@ pbi lake ls
 
 # Only the workspace lists, with every stored version
 pbi lake ls -e admin.groups --all-versions
+
+# What someone shared, without any token
+pbi lake ls --lake s3://my-bucket/pbi-lake
 </code></pre></div>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>ls<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
@@ -4397,6 +4612,7 @@ pbi lake ls -e admin.groups --all-versions
 <li><code>-e, --endpoint &lt;str&gt;</code>: Only this endpoint, for example admin.groups</li>
 <li><code>-t, --tenant &lt;str&gt;</code>: Only this tenant (default: all)</li>
 <li><code>--all-versions</code>: List every stored version, not only the newest of each request</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-lake-prune"><code>pbi lake prune</code><a class="headerlink" href="#pbi-lake-prune" title="Permanent link">¤</a></h3>
@@ -4409,6 +4625,8 @@ pbi lake prune
 # Keep the last three workspace lists
 pbi lake prune -e admin.groups --keep 3
 </code></pre></div>
+<p>Only the lake of the cache folder can be pruned: a lake given with <code>--lake</code>, and a
+published lake, are read-only.</p>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>prune<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
@@ -4418,6 +4636,47 @@ pbi lake prune -e admin.groups --keep 3
 <li><code>-e, --endpoint &lt;str&gt;</code>: Only this endpoint</li>
 <li><code>-t, --tenant &lt;str&gt;</code>: Only this tenant (default: all)</li>
 <li><code>--yes</code>: Confirm the action without prompting.</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>--help</code>: Show this message and exit.</li>
+</ul>
+<h3 id="pbi-lake-publish"><code>pbi lake publish</code><a class="headerlink" href="#pbi-lake-publish" title="Permanent link">¤</a></h3>
+<p>Publish the lake: a complete copy that others can open without an account</p>
+<p>The copy has the layout of the lake, so <code>pbi tui --lake DESTINATION</code> and
+<code>pbi lake ls --lake DESTINATION</code> read it as it is. It holds the newest version of every
+request, every day of audit events, the scans and how the last syncs went. It is marked
+as published (<code>publish.json</code>), and from then on nothing but a later publish by the same
+person writes to it: anyone who points a sync at it is refused.</p>
+<p>The publish shows what it would copy, with what each category holds, and asks before it
+writes. A category that holds personal data or queries can be left out. Nothing that is
+in DESTINATION is overwritten (a version never changes), and DESTINATION must be empty
+or the place of an earlier publish. The lake that is published is the lake of the cache
+folder, or the one given with <code>--lake</code>.</p>
+<div class="highlight"><pre><span></span><code># What would be published, without writing anything
+pbi lake publish s3://my-bucket/pbi-lake --dry-run
+
+# Publish, leaving out the audit events and who has access
+pbi lake publish s3://my-bucket/pbi-lake --exclude activity --exclude users
+
+# In a nightly job, after `pbi sync run`
+pbi lake publish s3://my-bucket/pbi-lake --yes
+</code></pre></div>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>DESTINATION<span class="o">}</span>
+</code></pre></div>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>DESTINATION</code>: Where to publish: an empty folder, or a URL such as s3://bucket/folder  [required]</li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>-t, --tenant &lt;str&gt;</code>: Only this tenant (default: all)</li>
+<li><code>-x, --exclude CATEGORY</code>: Leave a category out: scans, users, datasources, activity (repeatable)</li>
+<li><code>--history</code>: Publish every stored version, not only the newest of each request</li>
+<li><code>--prune</code>: Afterwards delete the versions in DESTINATION that are not the newest</li>
+<li><code>--dry-run</code>: Show what would be published and write nothing</li>
+<li><code>--yes</code>: Publish without asking</li>
+<li><code>--force</code>: Publish over a lake that someone else published</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-lake-show"><code>pbi lake show</code><a class="headerlink" href="#pbi-lake-show" title="Permanent link">¤</a></h3>
@@ -4452,6 +4711,7 @@ pbi lake show admin.activityevents --day 2026-09-29
 <li><code>-v, --version &lt;str&gt;</code>: Version to show (default: the newest)</li>
 <li><code>-d, --day &lt;str&gt;</code>: For event logs: the UTC day to show (YYYY-MM-DD)</li>
 <li><code>-m, --manifest</code>: Show the manifest (what was asked, when, checksum) instead of the data</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h2 id="pbi-profile"><code>pbi profile</code><a class="headerlink" href="#pbi-profile" title="Permanent link">¤</a></h2>
@@ -4634,17 +4894,26 @@ pbi sync plan
 
 # Plus the audit events of the last week, and a scan with lineage
 pbi sync plan default activity scan --days 7 --lineage
+
+# What a plan file would do: each of its steps, and what they cost together
+pbi sync plan --config pbi-plan.yaml
 </code></pre></div>
+<p>With <code>--config</code> the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; <code>--force</code>,
+<code>--max-age</code>, <code>--days</code> and the like still apply to every step of it.</p>
 <div class="admonition warning">
 <p class="admonition-title">Requires Admin</p>
-<p>The admin targets need an admin account; the <code>user-...</code> targets need a user account.</p>
+<p>The admin targets need an admin account; the <code>user-...</code> targets need a user account.
+Without names the plain targets are synced: the administrator's lists when there is
+an administrator account, and else what a user can see, workspace by workspace.
+<code>--admin-profile</code> and <code>--user-profile</code> choose other profiles than the active ones.</p>
 </div>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>sync<span class="w"> </span>plan<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>TARGET<span class="o">]</span>...
 </code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
-<li><code>[TARGET]...</code>: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.</li>
+<li><code>[TARGET]...</code>: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.</li>
 </ul>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -4661,6 +4930,9 @@ pbi sync plan default activity scan --days 7 --lineage
 <li><code>--exclude-inactive</code>: Leave inactive workspaces out of scans</li>
 <li><code>--scan-interval &lt;float range&gt;</code>: Seconds between status checks of a scan  [default: 5.0; x&gt;=0.1]</li>
 <li><code>--scan-timeout &lt;float range&gt;</code>: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x&gt;=1]</li>
+<li><code>--admin-profile &lt;str&gt;</code>: The profile of the administrator account to use (default: the active profile of the group admin)</li>
+<li><code>--user-profile &lt;str&gt;</code>: The profile of the user account to use (default: the active profile of the group user)</li>
+<li><code>-c, --config &lt;file&gt;</code>: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-sync-run"><code>pbi sync run</code><a class="headerlink" href="#pbi-sync-run" title="Permanent link">¤</a></h3>
@@ -4687,17 +4959,28 @@ pbi sync run report-users
 
 # Every night, from a scheduler: the events of the last week
 pbi sync run default activity --days 7
+
+# What a plan file says, step after step (the steps for the tenant first)
+pbi sync run --config pbi-plan.yaml
 </code></pre></div>
+<p>With <code>--config</code> the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; <code>--force</code>,
+<code>--max-age</code>, <code>--days</code>, <code>--workers</code> and the like still apply to every step of it. The
+run ends at the first step whose token expired; run it again after signing in and it
+continues, as every step skips what the lake holds fresh.</p>
 <div class="admonition warning">
 <p class="admonition-title">Requires Admin</p>
-<p>The admin targets need an admin account; the <code>user-...</code> targets need a user account.</p>
+<p>The admin targets need an admin account; the <code>user-...</code> targets need a user account.
+Without names the plain targets are synced: the administrator's lists when there is
+an administrator account, and else what a user can see, workspace by workspace.
+<code>--admin-profile</code> and <code>--user-profile</code> choose other profiles than the active ones.</p>
 </div>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>TARGET<span class="o">]</span>...
 </code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
-<li><code>[TARGET]...</code>: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages; 'default' stands for the plain ones, 'all' for everything.</li>
+<li><code>[TARGET]...</code>: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.</li>
 </ul>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -4716,6 +4999,9 @@ pbi sync run default activity --days 7
 <li><code>--exclude-inactive</code>: Leave inactive workspaces out of scans</li>
 <li><code>--scan-interval &lt;float range&gt;</code>: Seconds between status checks of a scan  [default: 5.0; x&gt;=0.1]</li>
 <li><code>--scan-timeout &lt;float range&gt;</code>: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x&gt;=1]</li>
+<li><code>--admin-profile &lt;str&gt;</code>: The profile of the administrator account to use (default: the active profile of the group admin)</li>
+<li><code>--user-profile &lt;str&gt;</code>: The profile of the user account to use (default: the active profile of the group user)</li>
+<li><code>-c, --config &lt;file&gt;</code>: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-sync-status"><code>pbi sync status</code><a class="headerlink" href="#pbi-sync-status" title="Permanent link">¤</a></h3>
@@ -4724,6 +5010,9 @@ pbi sync run default activity --days 7
 were started and not collected, the quota used in the last hour, and what the lake
 holds for each target. It reads the lake only, so it needs no token and no network.</p>
 <div class="highlight"><pre><span></span><code>pbi sync status
+
+# A lake that someone shared
+pbi sync status --lake s3://my-bucket/pbi-lake
 </code></pre></div>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>sync<span class="w"> </span>status<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
@@ -4731,6 +5020,7 @@ holds for each target. It reads the lake only, so it needs no token and no netwo
 <p><strong>Options</strong>:</p>
 <ul>
 <li><code>-t, --tenant &lt;str&gt;</code>: Only this tenant (default: every tenant synced)</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h2 id="pbi-tui"><code>pbi tui</code><a class="headerlink" href="#pbi-tui" title="Permanent link">¤</a></h2>
@@ -4744,13 +5034,25 @@ expires, the UI asks for a fresh one and goes on where it stopped.</p>
 one of <code>pbi config set-cache-folder</code>; it keeps what <code>pbi sync run</code> fetches. A bare
 <code>pbi</code> in a terminal opens the UI too.</p>
 <div class="highlight"><pre><span></span><code>pbi tui
+
+# Look at a lake that someone shared: no token, no network to Power BI, read-only
+pbi tui --lake s3://my-bucket/pbi-lake
+
+# With a plan file: its steps on the Sync screen, and its session settings
+pbi tui --config pbi-plan.yaml
 </code></pre></div>
+<p>A lake given with <code>--lake</code> is only read: nothing can be fetched into it, and no account
+is needed. Only the lake of the cache folder is written by a sync. With <code>--config</code> the
+lake is the one of <code>--lake</code>, else of <code>PBI_LAKE</code>, else of the plan file's <code>session.lake</code>,
+else the lake of the cache folder.</p>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>tui<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
 <li><code>-t, --tenant &lt;str&gt;</code>: Tenant of the lake to browse (default: that of the token)</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>-c, --config &lt;file&gt;</code>: A plan file (YAML): the Sync screen plans and runs its steps, and its session section says which lake to open, which workspace to select and what to do about a detail the lake lacks</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h2 id="pbi-users"><code>pbi users</code><a class="headerlink" href="#pbi-users" title="Permanent link">¤</a></h2>
@@ -5144,11 +5446,11 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">508</span>
-<span class="normal">509</span>
-<span class="normal">510</span>
-<span class="normal">511</span>
-<span class="normal">512</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AppRole</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AppRole</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Whose view of the apps ``pbi apps list`` shows."""</span>
 
     <span class="n">admin</span> <span class="o">=</span> <span class="s2">"admin"</span>
@@ -5205,11 +5507,11 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AuthGroup</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AuthGroup</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Auth groups a profile can live in (mirrors ``pbi_cli.config.VALID_GROUPS``)."""</span>
 
     <span class="n">user</span> <span class="o">=</span> <span class="s2">"user"</span>
@@ -5266,10 +5568,10 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ConvertFormat</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ConvertFormat</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Target formats of ``pbi workspaces format-convert``."""</span>
 
     <span class="n">excel</span> <span class="o">=</span> <span class="s2">"excel"</span>
@@ -5325,15 +5627,15 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">515</span>
-<span class="normal">516</span>
-<span class="normal">517</span>
-<span class="normal">518</span>
-<span class="normal">519</span>
-<span class="normal">520</span>
-<span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Expand</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Expand</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Items that can be expanded inline when listing workspaces."""</span>
 
     <span class="n">users</span> <span class="o">=</span> <span class="s2">"users"</span>
@@ -5394,11 +5696,11 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FileType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FileType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Output formats of the commands that save results to files."""</span>
 
     <span class="n">json</span> <span class="o">=</span> <span class="s2">"json"</span>
@@ -5520,18 +5822,18 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">584</span>
-<span class="normal">585</span>
-<span class="normal">586</span>
-<span class="normal">587</span>
-<span class="normal">588</span>
-<span class="normal">589</span>
-<span class="normal">590</span>
-<span class="normal">591</span>
-<span class="normal">592</span>
-<span class="normal">593</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">593</span>
 <span class="normal">594</span>
-<span class="normal">595</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">StoredToken</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What `store_token` did.</span>
 
@@ -5584,16 +5886,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1888</span>
-<span class="normal">1889</span>
-<span class="normal">1890</span>
-<span class="normal">1891</span>
-<span class="normal">1892</span>
-<span class="normal">1893</span>
-<span class="normal">1894</span>
-<span class="normal">1895</span>
-<span class="normal">1896</span>
-<span class="normal">1897</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1897</span>
 <span class="normal">1898</span>
 <span class="normal">1899</span>
 <span class="normal">1900</span>
@@ -5618,7 +5911,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1919</span>
 <span class="normal">1920</span>
 <span class="normal">1921</span>
-<span class="normal">1922</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">)</span>
+<span class="normal">1922</span>
+<span class="normal">1923</span>
+<span class="normal">1924</span>
+<span class="normal">1925</span>
+<span class="normal">1926</span>
+<span class="normal">1927</span>
+<span class="normal">1928</span>
+<span class="normal">1929</span>
+<span class="normal">1930</span>
+<span class="normal">1931</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">app_info</span><span class="p">(</span>
     <span class="n">app_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--app-id"</span><span class="p">,</span> <span class="s2">"-a"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"app id"</span><span class="p">)],</span>
     <span class="n">target</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -5675,11 +5977,11 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1798</span>
-<span class="normal">1799</span>
-<span class="normal">1800</span>
-<span class="normal">1801</span>
-<span class="normal">1802</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1807</span>
+<span class="normal">1808</span>
+<span class="normal">1809</span>
+<span class="normal">1810</span>
+<span class="normal">1811</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@apps_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">apps_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Power BI Apps Command Group"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -5710,16 +6012,7 @@ reuses the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1805</span>
-<span class="normal">1806</span>
-<span class="normal">1807</span>
-<span class="normal">1808</span>
-<span class="normal">1809</span>
-<span class="normal">1810</span>
-<span class="normal">1811</span>
-<span class="normal">1812</span>
-<span class="normal">1813</span>
-<span class="normal">1814</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1814</span>
 <span class="normal">1815</span>
 <span class="normal">1816</span>
 <span class="normal">1817</span>
@@ -5790,7 +6083,16 @@ reuses the stored answer and --cache-only never calls the API.</p>
 <span class="normal">1882</span>
 <span class="normal">1883</span>
 <span class="normal">1884</span>
-<span class="normal">1885</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
+<span class="normal">1885</span>
+<span class="normal">1886</span>
+<span class="normal">1887</span>
+<span class="normal">1888</span>
+<span class="normal">1889</span>
+<span class="normal">1890</span>
+<span class="normal">1891</span>
+<span class="normal">1892</span>
+<span class="normal">1893</span>
+<span class="normal">1894</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">apps_list</span><span class="p">(</span>
     <span class="n">target_folder</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -5893,16 +6195,7 @@ reuses the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1925</span>
-<span class="normal">1926</span>
-<span class="normal">1927</span>
-<span class="normal">1928</span>
-<span class="normal">1929</span>
-<span class="normal">1930</span>
-<span class="normal">1931</span>
-<span class="normal">1932</span>
-<span class="normal">1933</span>
-<span class="normal">1934</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1934</span>
 <span class="normal">1935</span>
 <span class="normal">1936</span>
 <span class="normal">1937</span>
@@ -5932,7 +6225,16 @@ reuses the stored answer and --cache-only never calls the API.</p>
 <span class="normal">1961</span>
 <span class="normal">1962</span>
 <span class="normal">1963</span>
-<span class="normal">1964</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"augment"</span><span class="p">)</span>
+<span class="normal">1964</span>
+<span class="normal">1965</span>
+<span class="normal">1966</span>
+<span class="normal">1967</span>
+<span class="normal">1968</span>
+<span class="normal">1969</span>
+<span class="normal">1970</span>
+<span class="normal">1971</span>
+<span class="normal">1972</span>
+<span class="normal">1973</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">apps_app</span><span class="p">,</span> <span class="s2">"augment"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">augment</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Path</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--source"</span><span class="p">,</span> <span class="s2">"-s"</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"source file"</span><span class="p">)</span>
@@ -6066,16 +6368,7 @@ pbi auth -t &lt;your_bearer_token&gt; -p user-nlm -g user
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">649</span>
-<span class="normal">650</span>
-<span class="normal">651</span>
-<span class="normal">652</span>
-<span class="normal">653</span>
-<span class="normal">654</span>
-<span class="normal">655</span>
-<span class="normal">656</span>
-<span class="normal">657</span>
-<span class="normal">658</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">658</span>
 <span class="normal">659</span>
 <span class="normal">660</span>
 <span class="normal">661</span>
@@ -6125,7 +6418,16 @@ pbi auth -t &lt;your_bearer_token&gt; -p user-nlm -g user
 <span class="normal">705</span>
 <span class="normal">706</span>
 <span class="normal">707</span>
-<span class="normal">708</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"auth"</span><span class="p">)</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"auth"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">auth</span><span class="p">(</span>
     <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--bearer-token"</span><span class="p">,</span> <span class="s2">"-t"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Bearer token"</span><span class="p">)</span>
@@ -6210,16 +6512,16 @@ the data lake.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1183</span>
-<span class="normal">1184</span>
-<span class="normal">1185</span>
-<span class="normal">1186</span>
-<span class="normal">1187</span>
-<span class="normal">1188</span>
-<span class="normal">1189</span>
-<span class="normal">1190</span>
-<span class="normal">1191</span>
-<span class="normal">1192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1192</span>
+<span class="normal">1193</span>
+<span class="normal">1194</span>
+<span class="normal">1195</span>
+<span class="normal">1196</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span>
+<span class="normal">1200</span>
+<span class="normal">1201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@cache_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cache_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Manage the legacy cache (the data lake is under pbi lake)</span>
 
@@ -6309,16 +6611,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1249</span>
-<span class="normal">1250</span>
-<span class="normal">1251</span>
-<span class="normal">1252</span>
-<span class="normal">1253</span>
-<span class="normal">1254</span>
-<span class="normal">1255</span>
-<span class="normal">1256</span>
-<span class="normal">1257</span>
-<span class="normal">1258</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1258</span>
 <span class="normal">1259</span>
 <span class="normal">1260</span>
 <span class="normal">1261</span>
@@ -6386,7 +6679,16 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">1323</span>
 <span class="normal">1324</span>
 <span class="normal">1325</span>
-<span class="normal">1326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">cache_app</span><span class="p">,</span> <span class="s2">"clear"</span><span class="p">)</span>
+<span class="normal">1326</span>
+<span class="normal">1327</span>
+<span class="normal">1328</span>
+<span class="normal">1329</span>
+<span class="normal">1330</span>
+<span class="normal">1331</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
+<span class="normal">1334</span>
+<span class="normal">1335</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">cache_app</span><span class="p">,</span> <span class="s2">"clear"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">clear_cache</span><span class="p">(</span>
     <span class="n">cache_key</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -6486,11 +6788,11 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1000</span>
-<span class="normal">1001</span>
-<span class="normal">1002</span>
-<span class="normal">1003</span>
-<span class="normal">1004</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1009</span>
+<span class="normal">1010</span>
+<span class="normal">1011</span>
+<span class="normal">1012</span>
+<span class="normal">1013</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@config_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">config_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Manage pbi-cli configuration settings"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -6569,100 +6871,100 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">904</span>
-<span class="normal">905</span>
-<span class="normal">906</span>
-<span class="normal">907</span>
-<span class="normal">908</span>
-<span class="normal">909</span>
-<span class="normal">910</span>
-<span class="normal">911</span>
-<span class="normal">912</span>
-<span class="normal">913</span>
-<span class="normal">914</span>
-<span class="normal">915</span>
-<span class="normal">916</span>
-<span class="normal">917</span>
-<span class="normal">918</span>
-<span class="normal">919</span>
-<span class="normal">920</span>
-<span class="normal">921</span>
-<span class="normal">922</span>
-<span class="normal">923</span>
-<span class="normal">924</span>
-<span class="normal">925</span>
-<span class="normal">926</span>
-<span class="normal">927</span>
-<span class="normal">928</span>
-<span class="normal">929</span>
-<span class="normal">930</span>
-<span class="normal">931</span>
-<span class="normal">932</span>
-<span class="normal">933</span>
-<span class="normal">934</span>
-<span class="normal">935</span>
-<span class="normal">936</span>
-<span class="normal">937</span>
-<span class="normal">938</span>
-<span class="normal">939</span>
-<span class="normal">940</span>
-<span class="normal">941</span>
-<span class="normal">942</span>
-<span class="normal">943</span>
-<span class="normal">944</span>
-<span class="normal">945</span>
-<span class="normal">946</span>
-<span class="normal">947</span>
-<span class="normal">948</span>
-<span class="normal">949</span>
-<span class="normal">950</span>
-<span class="normal">951</span>
-<span class="normal">952</span>
-<span class="normal">953</span>
-<span class="normal">954</span>
-<span class="normal">955</span>
-<span class="normal">956</span>
-<span class="normal">957</span>
-<span class="normal">958</span>
-<span class="normal">959</span>
-<span class="normal">960</span>
-<span class="normal">961</span>
-<span class="normal">962</span>
-<span class="normal">963</span>
-<span class="normal">964</span>
-<span class="normal">965</span>
-<span class="normal">966</span>
-<span class="normal">967</span>
-<span class="normal">968</span>
-<span class="normal">969</span>
-<span class="normal">970</span>
-<span class="normal">971</span>
-<span class="normal">972</span>
-<span class="normal">973</span>
-<span class="normal">974</span>
-<span class="normal">975</span>
-<span class="normal">976</span>
-<span class="normal">977</span>
-<span class="normal">978</span>
-<span class="normal">979</span>
-<span class="normal">980</span>
-<span class="normal">981</span>
-<span class="normal">982</span>
-<span class="normal">983</span>
-<span class="normal">984</span>
-<span class="normal">985</span>
-<span class="normal">986</span>
-<span class="normal">987</span>
-<span class="normal">988</span>
-<span class="normal">989</span>
-<span class="normal">990</span>
-<span class="normal">991</span>
-<span class="normal">992</span>
-<span class="normal">993</span>
-<span class="normal">994</span>
-<span class="normal">995</span>
-<span class="normal">996</span>
-<span class="normal">997</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"delete"</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 913</span>
+<span class="normal"> 914</span>
+<span class="normal"> 915</span>
+<span class="normal"> 916</span>
+<span class="normal"> 917</span>
+<span class="normal"> 918</span>
+<span class="normal"> 919</span>
+<span class="normal"> 920</span>
+<span class="normal"> 921</span>
+<span class="normal"> 922</span>
+<span class="normal"> 923</span>
+<span class="normal"> 924</span>
+<span class="normal"> 925</span>
+<span class="normal"> 926</span>
+<span class="normal"> 927</span>
+<span class="normal"> 928</span>
+<span class="normal"> 929</span>
+<span class="normal"> 930</span>
+<span class="normal"> 931</span>
+<span class="normal"> 932</span>
+<span class="normal"> 933</span>
+<span class="normal"> 934</span>
+<span class="normal"> 935</span>
+<span class="normal"> 936</span>
+<span class="normal"> 937</span>
+<span class="normal"> 938</span>
+<span class="normal"> 939</span>
+<span class="normal"> 940</span>
+<span class="normal"> 941</span>
+<span class="normal"> 942</span>
+<span class="normal"> 943</span>
+<span class="normal"> 944</span>
+<span class="normal"> 945</span>
+<span class="normal"> 946</span>
+<span class="normal"> 947</span>
+<span class="normal"> 948</span>
+<span class="normal"> 949</span>
+<span class="normal"> 950</span>
+<span class="normal"> 951</span>
+<span class="normal"> 952</span>
+<span class="normal"> 953</span>
+<span class="normal"> 954</span>
+<span class="normal"> 955</span>
+<span class="normal"> 956</span>
+<span class="normal"> 957</span>
+<span class="normal"> 958</span>
+<span class="normal"> 959</span>
+<span class="normal"> 960</span>
+<span class="normal"> 961</span>
+<span class="normal"> 962</span>
+<span class="normal"> 963</span>
+<span class="normal"> 964</span>
+<span class="normal"> 965</span>
+<span class="normal"> 966</span>
+<span class="normal"> 967</span>
+<span class="normal"> 968</span>
+<span class="normal"> 969</span>
+<span class="normal"> 970</span>
+<span class="normal"> 971</span>
+<span class="normal"> 972</span>
+<span class="normal"> 973</span>
+<span class="normal"> 974</span>
+<span class="normal"> 975</span>
+<span class="normal"> 976</span>
+<span class="normal"> 977</span>
+<span class="normal"> 978</span>
+<span class="normal"> 979</span>
+<span class="normal"> 980</span>
+<span class="normal"> 981</span>
+<span class="normal"> 982</span>
+<span class="normal"> 983</span>
+<span class="normal"> 984</span>
+<span class="normal"> 985</span>
+<span class="normal"> 986</span>
+<span class="normal"> 987</span>
+<span class="normal"> 988</span>
+<span class="normal"> 989</span>
+<span class="normal"> 990</span>
+<span class="normal"> 991</span>
+<span class="normal"> 992</span>
+<span class="normal"> 993</span>
+<span class="normal"> 994</span>
+<span class="normal"> 995</span>
+<span class="normal"> 996</span>
+<span class="normal"> 997</span>
+<span class="normal"> 998</span>
+<span class="normal"> 999</span>
+<span class="normal">1000</span>
+<span class="normal">1001</span>
+<span class="normal">1002</span>
+<span class="normal">1003</span>
+<span class="normal">1004</span>
+<span class="normal">1005</span>
+<span class="normal">1006</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"delete"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">delete_auth</span><span class="p">(</span>
     <span class="n">profile</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span><span class="n">metavar</span><span class="o">=</span><span class="s2">"PROFILE"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Name of the profile to delete"</span><span class="p">)</span>
@@ -6780,17 +7082,17 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1170</span>
-<span class="normal">1171</span>
-<span class="normal">1172</span>
-<span class="normal">1173</span>
-<span class="normal">1174</span>
-<span class="normal">1175</span>
-<span class="normal">1176</span>
-<span class="normal">1177</span>
-<span class="normal">1178</span>
-<span class="normal">1179</span>
-<span class="normal">1180</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"disable-cache"</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"disable-cache"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">disable_cache</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Disable caching of API call results</span>
 
@@ -6825,17 +7127,17 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1157</span>
-<span class="normal">1158</span>
-<span class="normal">1159</span>
-<span class="normal">1160</span>
-<span class="normal">1161</span>
-<span class="normal">1162</span>
-<span class="normal">1163</span>
-<span class="normal">1164</span>
-<span class="normal">1165</span>
-<span class="normal">1166</span>
-<span class="normal">1167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"enable-cache"</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"enable-cache"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">enable_cache</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Enable caching of API call results</span>
 
@@ -6868,16 +7170,7 @@ pbi cache clear -k workspaces -v 20240101_120000
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1329</span>
-<span class="normal">1330</span>
-<span class="normal">1331</span>
-<span class="normal">1332</span>
-<span class="normal">1333</span>
-<span class="normal">1334</span>
-<span class="normal">1335</span>
-<span class="normal">1336</span>
-<span class="normal">1337</span>
-<span class="normal">1338</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1338</span>
 <span class="normal">1339</span>
 <span class="normal">1340</span>
 <span class="normal">1341</span>
@@ -6901,7 +7194,16 @@ pbi cache clear -k workspaces -v 20240101_120000
 <span class="normal">1359</span>
 <span class="normal">1360</span>
 <span class="normal">1361</span>
-<span class="normal">1362</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"export"</span><span class="p">)</span>
+<span class="normal">1362</span>
+<span class="normal">1363</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"export"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">export_report</span><span class="p">(</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--group-id"</span><span class="p">,</span> <span class="s2">"-g"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Group ID"</span><span class="p">)],</span>
     <span class="n">report_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--report-id"</span><span class="p">,</span> <span class="s2">"-r"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Report ID"</span><span class="p">)],</span>
@@ -6961,16 +7263,7 @@ from json to excel.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1498</span>
-<span class="normal">1499</span>
-<span class="normal">1500</span>
-<span class="normal">1501</span>
-<span class="normal">1502</span>
-<span class="normal">1503</span>
-<span class="normal">1504</span>
-<span class="normal">1505</span>
-<span class="normal">1506</span>
-<span class="normal">1507</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1507</span>
 <span class="normal">1508</span>
 <span class="normal">1509</span>
 <span class="normal">1510</span>
@@ -6989,7 +7282,16 @@ from json to excel.</p>
 <span class="normal">1523</span>
 <span class="normal">1524</span>
 <span class="normal">1525</span>
-<span class="normal">1526</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"format-convert"</span><span class="p">)</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span>
+<span class="normal">1529</span>
+<span class="normal">1530</span>
+<span class="normal">1531</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"format-convert"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">format_convert</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Path</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--source"</span><span class="p">,</span> <span class="s2">"-s"</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"source file"</span><span class="p">)</span>
@@ -7042,22 +7344,22 @@ from json to excel.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1139</span>
-<span class="normal">1140</span>
-<span class="normal">1141</span>
-<span class="normal">1142</span>
-<span class="normal">1143</span>
-<span class="normal">1144</span>
-<span class="normal">1145</span>
-<span class="normal">1146</span>
-<span class="normal">1147</span>
-<span class="normal">1148</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1148</span>
 <span class="normal">1149</span>
 <span class="normal">1150</span>
 <span class="normal">1151</span>
 <span class="normal">1152</span>
 <span class="normal">1153</span>
-<span class="normal">1154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"get-cache-folder"</span><span class="p">)</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"get-cache-folder"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_cache_folder</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Get the currently configured cache folder</span>
 
@@ -7097,21 +7399,21 @@ from json to excel.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1042</span>
-<span class="normal">1043</span>
-<span class="normal">1044</span>
-<span class="normal">1045</span>
-<span class="normal">1046</span>
-<span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
-<span class="normal">1050</span>
-<span class="normal">1051</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1051</span>
 <span class="normal">1052</span>
 <span class="normal">1053</span>
 <span class="normal">1054</span>
 <span class="normal">1055</span>
-<span class="normal">1056</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"get-output-folder"</span><span class="p">)</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span>
+<span class="normal">1060</span>
+<span class="normal">1061</span>
+<span class="normal">1062</span>
+<span class="normal">1063</span>
+<span class="normal">1064</span>
+<span class="normal">1065</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"get-output-folder"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_output_folder</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Get the currently configured default output folder</span>
 
@@ -7150,16 +7452,7 @@ from json to excel.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">848</span>
-<span class="normal">849</span>
-<span class="normal">850</span>
-<span class="normal">851</span>
-<span class="normal">852</span>
-<span class="normal">853</span>
-<span class="normal">854</span>
-<span class="normal">855</span>
-<span class="normal">856</span>
-<span class="normal">857</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">857</span>
 <span class="normal">858</span>
 <span class="normal">859</span>
 <span class="normal">860</span>
@@ -7203,7 +7496,16 @@ from json to excel.</p>
 <span class="normal">898</span>
 <span class="normal">899</span>
 <span class="normal">900</span>
-<span class="normal">901</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_auth</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""List all stored authentication profiles</span>
 
@@ -7317,16 +7619,7 @@ pbi cache list -k workspaces
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1195</span>
-<span class="normal">1196</span>
-<span class="normal">1197</span>
-<span class="normal">1198</span>
-<span class="normal">1199</span>
-<span class="normal">1200</span>
-<span class="normal">1201</span>
-<span class="normal">1202</span>
-<span class="normal">1203</span>
-<span class="normal">1204</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1204</span>
 <span class="normal">1205</span>
 <span class="normal">1206</span>
 <span class="normal">1207</span>
@@ -7368,7 +7661,16 @@ pbi cache list -k workspaces
 <span class="normal">1243</span>
 <span class="normal">1244</span>
 <span class="normal">1245</span>
-<span class="normal">1246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">cache_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span>
+<span class="normal">1252</span>
+<span class="normal">1253</span>
+<span class="normal">1254</span>
+<span class="normal">1255</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">cache_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">list_cache</span><span class="p">(</span>
     <span class="n">cache_key</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -7518,9 +7820,7 @@ admin-level access.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">358</span>
-<span class="normal">359</span>
-<span class="normal">360</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">360</span>
 <span class="normal">361</span>
 <span class="normal">362</span>
 <span class="normal">363</span>
@@ -7541,7 +7841,10 @@ admin-level access.</p>
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
-<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_auth</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"user"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Load authentication for the specified profile or active profile.</span>
 
 <span class="sd">    Resolves the auth profile from the given *group* first.  If no profile is</span>
@@ -7561,7 +7864,8 @@ admin-level access.</p>
     <span class="n">token</span> <span class="o">=</span> <span class="n">_get_credential</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">AuthError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"No credentials found for profile '</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">'. Please re-authenticate."</span>
+            <span class="sa">f</span><span class="s2">"No credentials found for profile '</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2">'. Please re-authenticate."</span><span class="p">,</span>
+            <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
@@ -7587,11 +7891,11 @@ admin-level access.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">711</span>
-<span class="normal">712</span>
-<span class="normal">713</span>
-<span class="normal">714</span>
-<span class="normal">715</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span>
+<span class="normal">723</span>
+<span class="normal">724</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@profile_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">profile_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Manage authentication profiles"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -7638,16 +7942,7 @@ use different workspace names for the reports.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1529</span>
-<span class="normal">1530</span>
-<span class="normal">1531</span>
-<span class="normal">1532</span>
-<span class="normal">1533</span>
-<span class="normal">1534</span>
-<span class="normal">1535</span>
-<span class="normal">1536</span>
-<span class="normal">1537</span>
-<span class="normal">1538</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1538</span>
 <span class="normal">1539</span>
 <span class="normal">1540</span>
 <span class="normal">1541</span>
@@ -7792,7 +8087,16 @@ use different workspace names for the reports.</p>
 <span class="normal">1680</span>
 <span class="normal">1681</span>
 <span class="normal">1682</span>
-<span class="normal">1683</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"report-users"</span><span class="p">)</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span>
+<span class="normal">1691</span>
+<span class="normal">1692</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"report-users"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">report_users</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Path</span><span class="p">,</span>
@@ -7969,16 +8273,7 @@ use different workspace names for the reports.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2038</span>
-<span class="normal">2039</span>
-<span class="normal">2040</span>
-<span class="normal">2041</span>
-<span class="normal">2042</span>
-<span class="normal">2043</span>
-<span class="normal">2044</span>
-<span class="normal">2045</span>
-<span class="normal">2046</span>
-<span class="normal">2047</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2047</span>
 <span class="normal">2048</span>
 <span class="normal">2049</span>
 <span class="normal">2050</span>
@@ -8002,7 +8297,16 @@ use different workspace names for the reports.</p>
 <span class="normal">2068</span>
 <span class="normal">2069</span>
 <span class="normal">2070</span>
-<span class="normal">2071</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"export"</span><span class="p">)</span>
+<span class="normal">2071</span>
+<span class="normal">2072</span>
+<span class="normal">2073</span>
+<span class="normal">2074</span>
+<span class="normal">2075</span>
+<span class="normal">2076</span>
+<span class="normal">2077</span>
+<span class="normal">2078</span>
+<span class="normal">2079</span>
+<span class="normal">2080</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"export"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports_export</span><span class="p">(</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--group-id"</span><span class="p">,</span> <span class="s2">"-g"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Group ID"</span><span class="p">)],</span>
     <span class="n">report_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--report-id"</span><span class="p">,</span> <span class="s2">"-r"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Report ID"</span><span class="p">)],</span>
@@ -8058,11 +8362,11 @@ use different workspace names for the reports.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1967</span>
-<span class="normal">1968</span>
-<span class="normal">1969</span>
-<span class="normal">1970</span>
-<span class="normal">1971</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1976</span>
+<span class="normal">1977</span>
+<span class="normal">1978</span>
+<span class="normal">1979</span>
+<span class="normal">1980</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@reports_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Reports Command Group"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -8092,16 +8396,7 @@ is also stored in the data lake (see <code>pbi lake</code>) when a cache folder 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2111</span>
-<span class="normal">2112</span>
-<span class="normal">2113</span>
-<span class="normal">2114</span>
-<span class="normal">2115</span>
-<span class="normal">2116</span>
-<span class="normal">2117</span>
-<span class="normal">2118</span>
-<span class="normal">2119</span>
-<span class="normal">2120</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2120</span>
 <span class="normal">2121</span>
 <span class="normal">2122</span>
 <span class="normal">2123</span>
@@ -8121,7 +8416,16 @@ is also stored in the data lake (see <code>pbi lake</code>) when a cache folder 
 <span class="normal">2137</span>
 <span class="normal">2138</span>
 <span class="normal">2139</span>
-<span class="normal">2140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
+<span class="normal">2140</span>
+<span class="normal">2141</span>
+<span class="normal">2142</span>
+<span class="normal">2143</span>
+<span class="normal">2144</span>
+<span class="normal">2145</span>
+<span class="normal">2146</span>
+<span class="normal">2147</span>
+<span class="normal">2148</span>
+<span class="normal">2149</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports_list_group</span><span class="p">(</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--group-id"</span><span class="p">,</span> <span class="s2">"-g"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Group (workspace) ID"</span><span class="p">)</span>
@@ -8182,16 +8486,7 @@ pbi reports pages -g GROUP_ID
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2143</span>
-<span class="normal">2144</span>
-<span class="normal">2145</span>
-<span class="normal">2146</span>
-<span class="normal">2147</span>
-<span class="normal">2148</span>
-<span class="normal">2149</span>
-<span class="normal">2150</span>
-<span class="normal">2151</span>
-<span class="normal">2152</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2152</span>
 <span class="normal">2153</span>
 <span class="normal">2154</span>
 <span class="normal">2155</span>
@@ -8232,7 +8527,16 @@ pbi reports pages -g GROUP_ID
 <span class="normal">2190</span>
 <span class="normal">2191</span>
 <span class="normal">2192</span>
-<span class="normal">2193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"pages"</span><span class="p">)</span>
+<span class="normal">2193</span>
+<span class="normal">2194</span>
+<span class="normal">2195</span>
+<span class="normal">2196</span>
+<span class="normal">2197</span>
+<span class="normal">2198</span>
+<span class="normal">2199</span>
+<span class="normal">2200</span>
+<span class="normal">2201</span>
+<span class="normal">2202</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"pages"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports_pages</span><span class="p">(</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--group-id"</span><span class="p">,</span> <span class="s2">"-g"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"Group (workspace) ID"</span><span class="p">)</span>
@@ -8305,16 +8609,7 @@ pbi reports pages -g GROUP_ID
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1974</span>
-<span class="normal">1975</span>
-<span class="normal">1976</span>
-<span class="normal">1977</span>
-<span class="normal">1978</span>
-<span class="normal">1979</span>
-<span class="normal">1980</span>
-<span class="normal">1981</span>
-<span class="normal">1982</span>
-<span class="normal">1983</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1983</span>
 <span class="normal">1984</span>
 <span class="normal">1985</span>
 <span class="normal">1986</span>
@@ -8366,7 +8661,16 @@ pbi reports pages -g GROUP_ID
 <span class="normal">2032</span>
 <span class="normal">2033</span>
 <span class="normal">2034</span>
-<span class="normal">2035</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">)</span>
+<span class="normal">2035</span>
+<span class="normal">2036</span>
+<span class="normal">2037</span>
+<span class="normal">2038</span>
+<span class="normal">2039</span>
+<span class="normal">2040</span>
+<span class="normal">2041</span>
+<span class="normal">2042</span>
+<span class="normal">2043</span>
+<span class="normal">2044</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">reports_app</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reports_users</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Path</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--source"</span><span class="p">,</span> <span class="s2">"-s"</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"source file"</span><span class="p">)</span>
@@ -8485,16 +8789,7 @@ same way, so the command stops and says so instead of listing each of them.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2564</span>
-<span class="normal">2565</span>
-<span class="normal">2566</span>
-<span class="normal">2567</span>
-<span class="normal">2568</span>
-<span class="normal">2569</span>
-<span class="normal">2570</span>
-<span class="normal">2571</span>
-<span class="normal">2572</span>
-<span class="normal">2573</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2573</span>
 <span class="normal">2574</span>
 <span class="normal">2575</span>
 <span class="normal">2576</span>
@@ -8640,7 +8935,16 @@ same way, so the command stops and says so instead of listing each of them.</p>
 <span class="normal">2716</span>
 <span class="normal">2717</span>
 <span class="normal">2718</span>
-<span class="normal">2719</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"batch"</span><span class="p">)</span>
+<span class="normal">2719</span>
+<span class="normal">2720</span>
+<span class="normal">2721</span>
+<span class="normal">2722</span>
+<span class="normal">2723</span>
+<span class="normal">2724</span>
+<span class="normal">2725</span>
+<span class="normal">2726</span>
+<span class="normal">2727</span>
+<span class="normal">2728</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"batch"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_batch</span><span class="p">(</span>
     <span class="n">config_path</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Path</span><span class="p">,</span>
@@ -8835,16 +9139,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2443</span>
-<span class="normal">2444</span>
-<span class="normal">2445</span>
-<span class="normal">2446</span>
-<span class="normal">2447</span>
-<span class="normal">2448</span>
-<span class="normal">2449</span>
-<span class="normal">2450</span>
-<span class="normal">2451</span>
-<span class="normal">2452</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2452</span>
 <span class="normal">2453</span>
 <span class="normal">2454</span>
 <span class="normal">2455</span>
@@ -8953,7 +9248,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2558</span>
 <span class="normal">2559</span>
 <span class="normal">2560</span>
-<span class="normal">2561</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"get"</span><span class="p">)</span>
+<span class="normal">2561</span>
+<span class="normal">2562</span>
+<span class="normal">2563</span>
+<span class="normal">2564</span>
+<span class="normal">2565</span>
+<span class="normal">2566</span>
+<span class="normal">2567</span>
+<span class="normal">2568</span>
+<span class="normal">2569</span>
+<span class="normal">2570</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"get"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_get</span><span class="p">(</span>
     <span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">,</span>
     <span class="n">workspace_ids</span><span class="p">:</span> <span class="n">ScanWorkspaceIds</span><span class="p">,</span>
@@ -9103,16 +9407,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2322</span>
-<span class="normal">2323</span>
-<span class="normal">2324</span>
-<span class="normal">2325</span>
-<span class="normal">2326</span>
-<span class="normal">2327</span>
-<span class="normal">2328</span>
-<span class="normal">2329</span>
-<span class="normal">2330</span>
-<span class="normal">2331</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2331</span>
 <span class="normal">2332</span>
 <span class="normal">2333</span>
 <span class="normal">2334</span>
@@ -9138,7 +9433,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2354</span>
 <span class="normal">2355</span>
 <span class="normal">2356</span>
-<span class="normal">2357</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">)</span>
+<span class="normal">2357</span>
+<span class="normal">2358</span>
+<span class="normal">2359</span>
+<span class="normal">2360</span>
+<span class="normal">2361</span>
+<span class="normal">2362</span>
+<span class="normal">2363</span>
+<span class="normal">2364</span>
+<span class="normal">2365</span>
+<span class="normal">2366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_initiate</span><span class="p">(</span>
     <span class="n">workspace_ids</span><span class="p">:</span> <span class="n">ScanWorkspaceIds</span><span class="p">,</span>
     <span class="n">lineage</span><span class="p">:</span> <span class="n">ScanLineage</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -9206,16 +9510,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2360</span>
-<span class="normal">2361</span>
-<span class="normal">2362</span>
-<span class="normal">2363</span>
-<span class="normal">2364</span>
-<span class="normal">2365</span>
-<span class="normal">2366</span>
-<span class="normal">2367</span>
-<span class="normal">2368</span>
-<span class="normal">2369</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2369</span>
 <span class="normal">2370</span>
 <span class="normal">2371</span>
 <span class="normal">2372</span>
@@ -9250,7 +9545,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2401</span>
 <span class="normal">2402</span>
 <span class="normal">2403</span>
-<span class="normal">2404</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"result"</span><span class="p">)</span>
+<span class="normal">2404</span>
+<span class="normal">2405</span>
+<span class="normal">2406</span>
+<span class="normal">2407</span>
+<span class="normal">2408</span>
+<span class="normal">2409</span>
+<span class="normal">2410</span>
+<span class="normal">2411</span>
+<span class="normal">2412</span>
+<span class="normal">2413</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"result"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_result</span><span class="p">(</span>
     <span class="n">scan_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
@@ -9327,16 +9631,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2407</span>
-<span class="normal">2408</span>
-<span class="normal">2409</span>
-<span class="normal">2410</span>
-<span class="normal">2411</span>
-<span class="normal">2412</span>
-<span class="normal">2413</span>
-<span class="normal">2414</span>
-<span class="normal">2415</span>
-<span class="normal">2416</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2416</span>
 <span class="normal">2417</span>
 <span class="normal">2418</span>
 <span class="normal">2419</span>
@@ -9360,7 +9655,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">2437</span>
 <span class="normal">2438</span>
 <span class="normal">2439</span>
-<span class="normal">2440</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">)</span>
+<span class="normal">2440</span>
+<span class="normal">2441</span>
+<span class="normal">2442</span>
+<span class="normal">2443</span>
+<span class="normal">2444</span>
+<span class="normal">2445</span>
+<span class="normal">2446</span>
+<span class="normal">2447</span>
+<span class="normal">2448</span>
+<span class="normal">2449</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">scan_app</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">scan_status</span><span class="p">(</span>
     <span class="n">scan_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
@@ -9455,16 +9759,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1094</span>
-<span class="normal">1095</span>
-<span class="normal">1096</span>
-<span class="normal">1097</span>
-<span class="normal">1098</span>
-<span class="normal">1099</span>
-<span class="normal">1100</span>
-<span class="normal">1101</span>
-<span class="normal">1102</span>
-<span class="normal">1103</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1103</span>
 <span class="normal">1104</span>
 <span class="normal">1105</span>
 <span class="normal">1106</span>
@@ -9497,7 +9792,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1133</span>
 <span class="normal">1134</span>
 <span class="normal">1135</span>
-<span class="normal">1136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"set-cache-folder"</span><span class="p">)</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"set-cache-folder"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_cache_folder</span><span class="p">(</span>
     <span class="n">folder_path</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
@@ -9598,16 +9902,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1007</span>
-<span class="normal">1008</span>
-<span class="normal">1009</span>
-<span class="normal">1010</span>
-<span class="normal">1011</span>
-<span class="normal">1012</span>
-<span class="normal">1013</span>
-<span class="normal">1014</span>
-<span class="normal">1015</span>
-<span class="normal">1016</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1016</span>
 <span class="normal">1017</span>
 <span class="normal">1018</span>
 <span class="normal">1019</span>
@@ -9630,7 +9925,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1036</span>
 <span class="normal">1037</span>
 <span class="normal">1038</span>
-<span class="normal">1039</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"set-output-folder"</span><span class="p">)</span>
+<span class="normal">1039</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"set-output-folder"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_output_folder</span><span class="p">(</span>
     <span class="n">folder_path</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
@@ -9687,16 +9991,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1059</span>
-<span class="normal">1060</span>
-<span class="normal">1061</span>
-<span class="normal">1062</span>
-<span class="normal">1063</span>
-<span class="normal">1064</span>
-<span class="normal">1065</span>
-<span class="normal">1066</span>
-<span class="normal">1067</span>
-<span class="normal">1068</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1068</span>
 <span class="normal">1069</span>
 <span class="normal">1070</span>
 <span class="normal">1071</span>
@@ -9719,7 +10014,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>scan<span class="w"
 <span class="normal">1088</span>
 <span class="normal">1089</span>
 <span class="normal">1090</span>
-<span class="normal">1091</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"show"</span><span class="p">)</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">config_app</span><span class="p">,</span> <span class="s2">"show"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">show_config</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Show all configuration settings</span>
 
@@ -9840,16 +10144,7 @@ group when the group has none.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">598</span>
-<span class="normal">599</span>
-<span class="normal">600</span>
-<span class="normal">601</span>
-<span class="normal">602</span>
-<span class="normal">603</span>
-<span class="normal">604</span>
-<span class="normal">605</span>
-<span class="normal">606</span>
-<span class="normal">607</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">607</span>
 <span class="normal">608</span>
 <span class="normal">609</span>
 <span class="normal">610</span>
@@ -9888,7 +10183,16 @@ group when the group has none.</p>
 <span class="normal">643</span>
 <span class="normal">644</span>
 <span class="normal">645</span>
-<span class="normal">646</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">store_token</span><span class="p">(</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">store_token</span><span class="p">(</span>
     <span class="n">bearer_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoredToken</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Store a bearer token for a profile, as ``pbi auth`` does.</span>
@@ -10015,16 +10319,7 @@ pbi profile switch user-nlm -g user
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">718</span>
-<span class="normal">719</span>
-<span class="normal">720</span>
-<span class="normal">721</span>
-<span class="normal">722</span>
-<span class="normal">723</span>
-<span class="normal">724</span>
-<span class="normal">725</span>
-<span class="normal">726</span>
-<span class="normal">727</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">727</span>
 <span class="normal">728</span>
 <span class="normal">729</span>
 <span class="normal">730</span>
@@ -10142,7 +10437,16 @@ pbi profile switch user-nlm -g user
 <span class="normal">842</span>
 <span class="normal">843</span>
 <span class="normal">844</span>
-<span class="normal">845</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"switch"</span><span class="p">)</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span>
+<span class="normal">848</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">profile_app</span><span class="p">,</span> <span class="s2">"switch"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">switch_profile_cmd</span><span class="p">(</span>
     <span class="n">profile_name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -10299,16 +10603,7 @@ the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1698</span>
-<span class="normal">1699</span>
-<span class="normal">1700</span>
-<span class="normal">1701</span>
-<span class="normal">1702</span>
-<span class="normal">1703</span>
-<span class="normal">1704</span>
-<span class="normal">1705</span>
-<span class="normal">1706</span>
-<span class="normal">1707</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1707</span>
 <span class="normal">1708</span>
 <span class="normal">1709</span>
 <span class="normal">1710</span>
@@ -10396,7 +10691,16 @@ the stored answer and --cache-only never calls the API.</p>
 <span class="normal">1792</span>
 <span class="normal">1793</span>
 <span class="normal">1794</span>
-<span class="normal">1795</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">users_app</span><span class="p">,</span> <span class="s2">"user-access"</span><span class="p">)</span>
+<span class="normal">1795</span>
+<span class="normal">1796</span>
+<span class="normal">1797</span>
+<span class="normal">1798</span>
+<span class="normal">1799</span>
+<span class="normal">1800</span>
+<span class="normal">1801</span>
+<span class="normal">1802</span>
+<span class="normal">1803</span>
+<span class="normal">1804</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">users_app</span><span class="p">,</span> <span class="s2">"user-access"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">user_access</span><span class="p">(</span>
     <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--user-id"</span><span class="p">,</span> <span class="s2">"-u"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"user id"</span><span class="p">)],</span>
     <span class="n">target_folder</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -10516,11 +10820,11 @@ the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1691</span>
-<span class="normal">1692</span>
-<span class="normal">1693</span>
-<span class="normal">1694</span>
-<span class="normal">1695</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@users_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1700</span>
+<span class="normal">1701</span>
+<span class="normal">1702</span>
+<span class="normal">1703</span>
+<span class="normal">1704</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@users_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">users_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Command group for Power BI users"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -10547,12 +10851,12 @@ the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">576</span>
-<span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Show the current version of the pbi CLI tool."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span> <span class="k">as</span> <span class="n">_version</span>
@@ -10580,11 +10884,11 @@ the stored answer and --cache-only never calls the API.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1365</span>
-<span class="normal">1366</span>
-<span class="normal">1367</span>
-<span class="normal">1368</span>
-<span class="normal">1369</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@workspaces_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_group</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Command group for Power BI workspaces"""</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">invoked_subcommand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -10638,16 +10942,7 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>list<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1372</span>
-<span class="normal">1373</span>
-<span class="normal">1374</span>
-<span class="normal">1375</span>
-<span class="normal">1376</span>
-<span class="normal">1377</span>
-<span class="normal">1378</span>
-<span class="normal">1379</span>
-<span class="normal">1380</span>
-<span class="normal">1381</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1381</span>
 <span class="normal">1382</span>
 <span class="normal">1383</span>
 <span class="normal">1384</span>
@@ -10761,7 +11056,16 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>list<span class="w"
 <span class="normal">1492</span>
 <span class="normal">1493</span>
 <span class="normal">1494</span>
-<span class="normal">1495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
+<span class="normal">1495</span>
+<span class="normal">1496</span>
+<span class="normal">1497</span>
+<span class="normal">1498</span>
+<span class="normal">1499</span>
+<span class="normal">1500</span>
+<span class="normal">1501</span>
+<span class="normal">1502</span>
+<span class="normal">1503</span>
+<span class="normal">1504</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@command</span><span class="p">(</span><span class="n">workspaces_app</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_list</span><span class="p">(</span>
     <span class="n">top</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s2">"--top"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"top n results"</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
     <span class="n">expand</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -10911,17 +11215,17 @@ pbi<span class="w"> </span>workspaces<span class="w"> </span>list<span class="w"
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/cli.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2302</span>
-<span class="normal">2303</span>
-<span class="normal">2304</span>
-<span class="normal">2305</span>
-<span class="normal">2306</span>
-<span class="normal">2307</span>
-<span class="normal">2308</span>
-<span class="normal">2309</span>
-<span class="normal">2310</span>
-<span class="normal">2311</span>
-<span class="normal">2312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@scan_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2311</span>
+<span class="normal">2312</span>
+<span class="normal">2313</span>
+<span class="normal">2314</span>
+<span class="normal">2315</span>
+<span class="normal">2316</span>
+<span class="normal">2317</span>
+<span class="normal">2318</span>
+<span class="normal">2319</span>
+<span class="normal">2320</span>
+<span class="normal">2321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@scan_app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">invoke_without_command</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">workspaces_scan</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">typer</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Command group for workspace scan operations.</span>
 
