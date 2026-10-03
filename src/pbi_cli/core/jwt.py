@@ -1,8 +1,8 @@
 """Read a few claims from a bearer token, locally.
 
 The token is only *read*: nothing is sent anywhere, the signature is not checked and
-nothing is stored. The tenant id scopes the data lake by tenant and the expiry lets the
-client (and the TUI) say when the token runs out.
+nothing is stored. The tenant id scopes the data lake by tenant, the expiry lets the client
+(and the TUI) say when the token runs out, and the object id tells accounts apart.
 """
 
 import base64
@@ -19,10 +19,15 @@ class TokenInfo:
 
     :param tenant_id: the ``tid`` claim: the tenant (directory) the token was issued by
     :param expires_at: the ``exp`` claim as an aware UTC datetime
+    :param subject: who the token is for: the object id of the account (``oid``), or of the
+        application for a service principal (``appid``)
+    :param name: how to call them: the user name (``upn``) or the name of the application
     """
 
     tenant_id: Optional[str] = None
     expires_at: Optional[datetime] = None
+    subject: Optional[str] = None
+    name: Optional[str] = None
 
     def seconds_left(self, now: Optional[datetime] = None) -> Optional[float]:
         """Seconds until the token expires, negative once it has; ``None`` if unknown."""
@@ -59,8 +64,16 @@ def decode_claims(token: str) -> Dict[str, Any]:
     return claims if isinstance(claims, dict) else {}
 
 
+def _first_text(claims: Dict[str, Any], *keys: str) -> Optional[str]:
+    for key in keys:
+        value = claims.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
 def token_info(token: str) -> TokenInfo:
-    """Read the tenant and the expiry from a token.
+    """Read the tenant, the expiry and who the token is for from a token.
 
     :param token: the bearer token, without the ``Bearer`` prefix
     """
@@ -77,4 +90,11 @@ def token_info(token: str) -> TokenInfo:
         except (OverflowError, OSError, ValueError):
             expires_at = None
 
-    return TokenInfo(tenant_id=tenant_id, expires_at=expires_at)
+    return TokenInfo(
+        tenant_id=tenant_id,
+        expires_at=expires_at,
+        subject=_first_text(claims, "oid", "appid", "azp"),
+        name=_first_text(
+            claims, "upn", "unique_name", "preferred_username", "name", "email", "appid"
+        ),
+    )

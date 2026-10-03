@@ -18,7 +18,7 @@ from math import ceil
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from pbi_cli.core.client import rows_of
-from pbi_cli.core.registry import Scope, get_endpoint
+from pbi_cli.core.registry import IDENTITY_PARAM, Scope, get_endpoint
 from pbi_cli.core.scan import MAX_WORKSPACES, ScanFlags, batch_key, chunked, latest_scan
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import SyncState
@@ -47,6 +47,9 @@ SCAN_REQUESTS = {"admin.scan.start": 1, "admin.scan.status": 3, "admin.scan.resu
 #: Events per request, when estimating how many requests a day of events takes.
 EVENTS_PER_REQUEST = 1000
 
+#: The placeholder of the requests that are about one workspace (``groups/{groupId}/...``).
+WORKSPACE_PLACEHOLDER = "groupId"
+
 SNAPSHOT = "snapshot"
 EVENTS = "events"
 MODIFIED = "modified"
@@ -74,6 +77,19 @@ class SyncOptions:
     :param exclude_inactive: leave the inactive workspaces out of the scans
     :param scan_interval: seconds between two status checks of a scan
     :param scan_timeout: seconds to wait for one scan to succeed
+    :param workspace_ids: only these workspaces. The scan target scans just them, whatever
+        changed (it does not list the modified workspaces, and does not move the point the
+        next incremental scan continues from); a target that fans out over items fetches only
+        for the items that are in them, and a target that fans out over the workspaces only
+        for them. The lists they are made from are still fetched whole.
+    :param admin_profile: the profile of the administrator account to use (default: the
+        active one)
+    :param user_profile: the profile of the user account to use (default: the active one)
+    :param only: fetch only for these items: a placeholder of the requests (``reportId``,
+        ``datasetId``, ``groupId``, ...) to the ids that are wanted. A target that fans out
+        over rows skips the rows that are not wanted, for each placeholder named here, and
+        does not narrow what is not named. It is how the details of one item are fetched
+        without those of every other.
     """
 
     targets: Tuple[str, ...] = ()
@@ -89,8 +105,42 @@ class SyncOptions:
     exclude_inactive: bool = False
     scan_interval: float = 5.0
     scan_timeout: float = 600.0
+    workspace_ids: Tuple[str, ...] = ()
+    admin_profile: Optional[str] = None
+    user_profile: Optional[str] = None
+    only: Mapping[str, Sequence[str]] = field(default_factory=dict, hash=False)
+
+    def allows(self, placeholder: str, value: Any) -> bool:
+        """Whether the requests for this id of this placeholder are wanted (see `only` and
+        `workspace_ids`)."""
+        if (
+            placeholder == WORKSPACE_PLACEHOLDER
+            and self.workspace_ids
+            and str(value) not in self.workspace_ids
+        ):
+            return False
+        wanted = self.only.get(placeholder)
+        return wanted is None or str(value) in wanted
+
+    def profile_of(self, scope: Scope) -> Optional[str]:
+        """The profile to use for a kind of account: the one asked for, else ``None`` (the
+        active one of the group)."""
+        return self.admin_profile if scope is Scope.ADMIN else self.user_profile
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "workspace_ids",
+            tuple(dict.fromkeys(str(i) for i in self.workspace_ids if i)),
+        )
+        object.__setattr__(
+            self,
+            "only",
+            {
+                str(name): tuple(dict.fromkeys(str(i) for i in ids if i))
+                for name, ids in dict(self.only).items()
+            },
+        )
         if not 1 <= self.workers <= MAX_WORKERS:
             raise PBIError(f"workers must be between 1 and {MAX_WORKERS}")
         if not 1 <= self.days <= MAX_DAYS:
@@ -113,6 +163,10 @@ class SyncOptions:
             "full_scan": self.full_scan,
             "exclude_personal": self.exclude_personal,
             "exclude_inactive": self.exclude_inactive,
+            "only_workspaces": len(self.workspace_ids),
+            "admin_profile": self.admin_profile,
+            "user_profile": self.user_profile,
+            "only": {name: len(ids) for name, ids in sorted(self.only.items())},
         }
 
 
@@ -131,6 +185,8 @@ class Unit:
     :param workspace_ids: the workspaces of a ``scan`` unit
     :param uses: the operations whose quota the unit spends
     :param has_children: whether the units of another target are made from its rows
+    :param account: the profile whose token the requests use (``None``: the active one of
+        the kind of token)
     """
 
     key: str
@@ -144,6 +200,7 @@ class Unit:
     workspace_ids: Tuple[str, ...] = ()
     uses: Tuple[str, ...] = ()
     has_children: bool = False
+    account: Optional[str] = None
 
 
 def unit_key(endpoint_id: str, params: Mapping[str, str]) -> str:
@@ -224,12 +281,14 @@ class Plan:
     :param targets: one entry per target
     :param quota: one line per operation that needs requests
     :param notes: what else the reader should know
+    :param accounts: the accounts the sync would use, each as ``profile (kind)``
     """
 
     tenant: str
     targets: List[TargetPlan]
     quota: List[QuotaLine] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
+    accounts: List[str] = field(default_factory=list)
 
     @property
     def requests(self) -> int:
@@ -245,6 +304,8 @@ class Planner:
     :param tenant: the tenant whose data it holds
     :param state: what earlier runs left behind (for incremental scans)
     :param clock: returns the current time (aware, UTC)
+    :param identity: who an account is, as a key, for the operations whose answer depends on
+        who asks: called with the kind of token and the profile (``None``: the active one)
     """
 
     def __init__(
@@ -256,6 +317,9 @@ class Planner:
         tenant: str,
         state: SyncState,
         clock: Callable[[], datetime] = _utcnow,
+        identity: Callable[[Scope, Optional[str]], str] = lambda scope, account: (
+            "unknown"
+        ),
     ):
         self.selection = selection
         self.options = options
@@ -263,7 +327,11 @@ class Planner:
         self._tenant = tenant
         self._state = state
         self._clock = clock
+        self._identity = identity
         self._selected = {target.name for target in selection.targets}
+        #: by target: how many rows were left out because they do not say which workspace
+        #: they are in, while the sync is limited to some workspaces
+        self.unplaced: Dict[str, int] = {}
 
     # -- building units ---------------------------------------------------------------
 
@@ -273,16 +341,21 @@ class Planner:
 
     def _snapshot(self, target: Target, params: Mapping[str, Any]) -> Unit:
         endpoint = get_endpoint(target.endpoint)
+        account = self.options.profile_of(target.scope)
+        asked = dict(params)
+        if endpoint.per_identity:  # the lake keeps these apart by who asked
+            asked[IDENTITY_PARAM] = self._identity(target.scope, account)
         return Unit(
-            key=unit_key(endpoint.id, endpoint.canonical_params(params)),
+            key=unit_key(endpoint.id, endpoint.canonical_params(asked)),
             target=target.name,
             kind=SNAPSHOT,
             endpoint=endpoint.id,
             scope=target.scope,
-            params=dict(params),
+            params=asked,
             ttl=target.ttl,
             uses=(endpoint.id,),
             has_children=bool(self._children(target.name)),
+            account=account,
         )
 
     def coverage(self) -> Dict[str, bool]:
@@ -325,6 +398,7 @@ class Planner:
             params=params,
             uses=(endpoint.id,),
             has_children=True,
+            account=self.options.profile_of(target.scope),
         )
 
     def _scan_batch(
@@ -340,6 +414,7 @@ class Planner:
             ttl=target.ttl,
             workspace_ids=tuple(ids),
             uses=tuple(SCAN_REQUESTS),
+            account=self.options.profile_of(target.scope),
         )
 
     def _event_days(self, target: Target) -> List[Unit]:
@@ -356,6 +431,7 @@ class Planner:
                 ttl=target.ttl,
                 day=day,
                 uses=(target.endpoint,),
+                account=self.options.profile_of(target.scope),
             )
             for day in (
                 first + timedelta(days=n) for n in range((today - first).days + 1)
@@ -371,7 +447,15 @@ class Planner:
             elif target.mode is Mode.EVENTS:
                 units.extend(self._event_days(target))
             elif target.mode is Mode.SCAN:
-                units.append(self._modified(target))
+                if self.options.workspace_ids:
+                    units.extend(
+                        self._scan_batch(target, batch)
+                        for batch in chunked(
+                            sorted(self.options.workspace_ids), MAX_WORKSPACES
+                        )
+                    )
+                else:
+                    units.append(self._modified(target))
         return units
 
     def expand(self, unit: Unit, rows: Sequence[Any]) -> List[Unit]:
@@ -392,16 +476,25 @@ class Planner:
 
         children: List[Unit] = []
         for child in self._children(unit.target):
-            endpoint = get_endpoint(child.endpoint)
             seen = set()
             for row in rows:
                 if not isinstance(row, dict):
                     continue
+                if child.workspace and self.options.workspace_ids:
+                    home = row.get(child.workspace)
+                    if str(home or "") not in self.options.workspace_ids:
+                        if not home:  # it cannot be told which workspace it is in
+                            self.unplaced[child.name] = (
+                                self.unplaced.get(child.name, 0) + 1
+                            )
+                        continue
                 params: Dict[str, Any] = {}
                 for placeholder, (source, name) in child.bind.items():
                     value = row.get(name) if source == "row" else unit.params.get(name)
                     if value in (None, ""):
                         break
+                    if not self.options.allows(placeholder, value):
+                        break  # not wanted: the details of other items are not fetched
                     params[placeholder] = value
                 else:
                     made = self._snapshot(child, {**child.params, **params})
@@ -409,6 +502,17 @@ class Planner:
                         seen.add(made.key)
                         children.append(made)
         return children
+
+    def unplaced_notes(self) -> Dict[str, str]:
+        """What to say about the rows that were left out for want of a workspace, by target."""
+        found = {}
+        for name, count in self.unplaced.items():
+            child = get_target(name)
+            found[name] = (
+                f"{count} row(s) of {child.parent} have no {child.workspace}, so they cannot "
+                "be matched to the workspaces and were left out"
+            )
+        return found
 
     # -- what the lake holds ----------------------------------------------------------
 
@@ -561,6 +665,8 @@ class Planner:
                         "so there will be more than this"
                     )
             frontier = following
+        for name, note in self.unplaced_notes().items():
+            plans[name].add_note(note)
         return list(plans.values()), needed
 
     def _plan_scan(

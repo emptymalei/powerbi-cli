@@ -13,7 +13,7 @@ import pytest
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app
-from pbi_cli.core.store import LakeStore, params_hash
+from pbi_cli.core.store import LakeStore, PublishInfo, params_hash
 
 NOW = datetime.now(timezone.utc)
 EXPAND = "reports,users"
@@ -552,3 +552,107 @@ def test_ages_are_short(delta, text):
     from pbi_cli.cli_support import format_age
 
     assert format_age(delta) == text
+
+
+# ---------------------------------------------------------------------------
+# a lake that someone else made: --lake, and PBI_LAKE
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def shared(tmp_path) -> LakeStore:
+    """A lake that is not the one of the cache folder, with two versions of one request."""
+    store = LakeStore(tmp_path / "shared")
+    put(store, "admin.groups", PARAMS_TOP50, TOP50_GROUPS, tenant="their-tenant")
+    put(
+        store,
+        "admin.groups",
+        PARAMS_TOP50,
+        OLD_GROUPS,
+        tenant="their-tenant",
+        age=timedelta(hours=2),
+    )
+    return store
+
+
+def test_ls_looks_at_another_lake_without_a_cache_folder_or_a_token(shared):
+    result = run("lake", "ls", "--lake", str(shared.root))
+
+    assert result.exit_code == 0, result.output
+    assert f"Data lake: {shared.root}" in result.output
+    assert "their-tenant" in result.output and "admin.groups" in result.output
+
+
+def test_show_prints_what_another_lake_holds(shared):
+    result = run("lake", "show", "admin.groups", "--lake", str(shared.root))
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == TOP50_GROUPS
+
+
+def test_the_environment_names_a_lake_too(shared, monkeypatch):
+    monkeypatch.setenv("PBI_LAKE", str(shared.root))
+
+    result = run("lake", "ls")
+
+    assert result.exit_code == 0 and f"Data lake: {shared.root}" in result.output
+
+
+def test_the_option_beats_the_environment(shared, tmp_path, monkeypatch):
+    monkeypatch.setenv("PBI_LAKE", str(tmp_path / "nothing"))
+
+    result = run("lake", "ls", "--lake", str(shared.root))
+
+    assert result.exit_code == 0, result.output
+
+
+def test_prune_never_deletes_in_a_lake_that_was_given_with_lake(shared):
+    result = run("lake", "prune", "--yes", "--lake", str(shared.root))
+
+    assert result.exit_code == 1
+    assert "only reads" in result.output and "work lake" in result.output
+    assert len(shared.versions("their-tenant", "admin.groups", PARAMS_TOP50)) == 2
+
+
+def test_prune_never_deletes_in_a_published_lake_even_if_it_is_the_work_lake(
+    cache_folder,
+):
+    store = LakeStore(cache_folder / "lake")
+    put(store, "admin.groups", PARAMS_TOP50, TOP50_GROUPS)
+    put(store, "admin.groups", PARAMS_TOP50, OLD_GROUPS, age=timedelta(hours=2))
+    LakeStore(store.root, publishing=True).write_marker(
+        PublishInfo(published_at=NOW, published_by="ana@laptop")
+    )
+
+    result = run("lake", "prune", "--yes")
+
+    assert result.exit_code == 1 and "published by ana@laptop" in result.output
+    assert len(store.versions("tenant-1", "admin.groups", PARAMS_TOP50)) == 2
+
+
+def test_prune_still_works_on_the_work_lake_when_it_is_named(cache_folder):
+    store = LakeStore(cache_folder / "lake")
+    put(store, "admin.groups", PARAMS_TOP50, TOP50_GROUPS)
+    put(store, "admin.groups", PARAMS_TOP50, OLD_GROUPS, age=timedelta(hours=2))
+
+    result = run("lake", "prune", "--yes", "--lake", str(cache_folder / "lake"))
+
+    assert result.exit_code == 0, result.output
+    assert len(store.versions("tenant-1", "admin.groups", PARAMS_TOP50)) == 1
+
+
+def test_a_place_without_a_lake_is_said_not_listed_as_empty(tmp_path):
+    result = run("lake", "ls", "--lake", str(tmp_path / "nothing"))
+
+    assert result.exit_code == 1 and "no data lake at" in result.output
+
+
+def test_ls_reads_a_remote_lake(local_s3):
+    remote = LakeStore("s3://bucket/shared")
+    put(remote, "admin.groups", PARAMS_TOP50, TOP50_GROUPS, tenant="their-tenant")
+
+    result = run("lake", "ls", "--lake", "s3://bucket/shared")
+
+    assert result.exit_code == 0, result.output
+    assert "Data lake: s3://bucket/shared" in result.output
+    assert "their-tenant" in result.output

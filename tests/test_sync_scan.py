@@ -8,6 +8,7 @@ from sync_helpers import TENANT, World
 
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.engine import COMPLETED, COMPLETED_WITH_FAILURES, TOKEN_EXPIRED
+from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.core.sync.runners import DEFERRED, DONE, FAILED, SKIPPED
 
 RESULT = "admin.scan.result"
@@ -375,3 +376,67 @@ def test_scans_held_back_by_a_quota_set_no_baseline_and_are_done_later(world):
 
     assert again.status == COMPLETED and again.counts[DONE] == 1 + 3
     assert baseline(world) is not None
+
+
+# ---------------------------------------------------------------------------
+# scanning chosen workspaces
+# ---------------------------------------------------------------------------
+
+
+def test_chosen_workspaces_are_scanned_without_listing_the_modified_ones(world):
+    report = world.run("scan", workspace_ids=("ws-0003", "ws-0007"))
+
+    assert report.status == COMPLETED and report.counts[DONE] == 1
+    assert world.fake.calls_to(r"/modified$") == []
+    (call,) = world.fake.calls_to(*POST)
+    assert sorted(call.body["workspaces"]) == ["ws-0003", "ws-0007"]
+    assert scanned(world) == {"ws-0003", "ws-0007"}
+
+
+def test_scanning_chosen_workspaces_does_not_move_the_baseline(world):
+    world.run("scan", workspace_ids=("ws-0003",))
+
+    assert baseline(world) is None  # the next scan still covers every workspace
+
+    world.run("scan")
+    assert baseline(world) is not None
+
+    before = baseline(world)
+    world.clock.advance(hours=3)
+    world.run("scan", workspace_ids=("ws-0005",), force=True)
+    assert baseline(world) == before
+
+
+def test_chosen_workspaces_are_scanned_again_when_forced_and_not_when_fresh(world):
+    world.run("scan", workspace_ids=("ws-0003",))
+    world.fake.reset_calls()
+
+    fresh = world.run("scan", workspace_ids=("ws-0003",))
+    assert fresh.counts[SKIPPED] == 1 and world.fake.calls == []
+
+    forced = world.run("scan", workspace_ids=("ws-0003",), force=True)
+    assert forced.counts[DONE] == 1 and world.fake.count(*POST) == 1
+
+
+def test_many_chosen_workspaces_are_scanned_in_batches_of_100(world):
+    ids = tuple(f"ws-{n:04d}" for n in range(1, 151))
+
+    world.run("scan", workspace_ids=ids)
+
+    sizes = sorted(len(c.body["workspaces"]) for c in world.fake.calls_to(*POST))
+    assert sizes == [50, 100]
+
+
+def test_the_plan_for_chosen_workspaces_is_exact(world):
+    plan = world.plan("scan", workspace_ids=("ws-0003", "ws-0007"))
+
+    (target,) = plan.targets
+    assert (target.units, target.fresh, target.requests) == (1, 0, 5)
+    assert not target.notes  # nothing is incremental or estimated
+
+
+def test_the_chosen_workspaces_are_tidied():
+    options = SyncOptions(workspace_ids=["b", "a", "b", ""])
+
+    assert options.workspace_ids == ("b", "a")
+    assert options.summary()["only_workspaces"] == 2

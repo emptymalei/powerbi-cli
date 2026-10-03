@@ -169,6 +169,16 @@ $ pbi lake prune --yes
 
 `pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
+Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
+than the one of your cache folder, such as one that a colleague shared, with
+`--lake <folder or s3://bucket/folder>`. A lake opened that way is only read, and `prune`
+refuses it. `pbi lake publish` makes a copy of your lake for others to open. See
+[Sharing a lake](sharing.md).
+
+To look around instead of listing, open the [terminal UI](tui.md) (`pbi tui`): the
+workspaces of the tenant, what is in them, who can open it, how it is connected, and how
+fresh each part is, all read from the lake.
+
 ## Why
 
 - The admin APIs allow few requests. The workspace list, for example, allows 50 per hour
@@ -199,6 +209,7 @@ $ pbi lake prune --yes
         dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
     _state/
       sync.json                             what `pbi sync` remembers between runs
+  publish.json                              only in a published lake: who, when, what was left out
 ```
 
 The folder names are Hive-style partitions, so tools such as Athena, DuckDB and Spark can
@@ -214,6 +225,9 @@ different `$expand`, or as another tenant, never returns somebody else's answer.
 
 The manifest is written last. A version folder without one is an interrupted write and is
 ignored.
+
+A lake with a `publish.json` at its root has been [published](sharing.md#publish-a-lake). It
+is protected: only `pbi lake publish` writes to it.
 
 ### The manifest of a snapshot
 
@@ -286,6 +300,12 @@ locally and rely on the `429` answer of the API.
 | `admin.users.artifact_access` | [Items a user has access to](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/users-get-user-artifact-access-as-admin) | admin | 200/h | snapshot |
 | `admin.reports.users` | [Users of a report](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/reports-get-report-users-as-admin) | admin | 200/h | snapshot |
 | `admin.datasets.datasources` | [Data sources of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-datasources-as-admin) | admin | 300/h | snapshot |
+| `admin.groups.users` | [Users of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/groups-get-group-users-as-admin) | admin | 200/h | snapshot |
+| `admin.datasets.users` | [Users of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-dataset-users-as-admin) | admin | 200/h | snapshot |
+| `admin.dashboards.users` | [Users of a dashboard](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dashboards-get-dashboard-users-as-admin) | admin | 200/h | snapshot |
+| `admin.dataflows.users` | [Users of a dataflow](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-users-as-admin) | admin | 200/h | snapshot |
+| `admin.dataflows.datasources` | [Data sources of a dataflow](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-datasources-as-admin) | admin | – | snapshot |
+| `admin.refreshables` | [How the datasets of the tenant refresh (a summary of each)](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-refreshables) | admin | 200/h | snapshot |
 | `admin.workspaces.modified` | [IDs of the workspaces modified since a time](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-modified-workspaces) | admin | 30/h | snapshot |
 | `admin.activityevents` | [Audit activity events of one UTC day](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-activity-events) | admin | 200/h | events |
 | `admin.scan.start` | [Start a metadata scan of up to 100 workspaces](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info) | admin | 500/h, 16 concurrent | job |
@@ -294,7 +314,30 @@ locally and rely on the `429` answer of the API.
 | `user.groups` | [Workspaces the user has access to](https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-groups) | user | – | snapshot |
 | `user.apps` | [Apps installed by the user](https://learn.microsoft.com/en-us/rest/api/power-bi/apps/get-apps) | user | – | snapshot |
 | `user.group_reports` | [Reports of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-reports-in-group) | user | – | snapshot |
+| `user.group_datasets` | [Datasets of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-datasets-in-group) | user | – | snapshot |
+| `user.group_dashboards` | [Dashboards of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/dashboards/get-dashboards-in-group) | user | – | snapshot |
+| `user.group_dataflows` | [Dataflows of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/dataflows/get-dataflows) | user | – | snapshot |
+| `user.group_users` | [Users of a workspace](https://learn.microsoft.com/en-us/rest/api/power-bi/groups/get-group-users) | user | – | snapshot |
 | `user.report_pages` | [Pages of a report](https://learn.microsoft.com/en-us/rest/api/power-bi/reports/get-pages-in-group) | user | – | snapshot |
+| `user.dataset_users` | [Users of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-dataset-users-in-group) | user | – | snapshot |
+| `user.dataset_datasources` | [Data sources of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-datasources-in-group) | user | – | snapshot |
+| `user.dataflow_datasources` | [Data sources of a dataflow](https://learn.microsoft.com/en-us/rest/api/power-bi/dataflows/get-dataflow-data-sources) | user | – | snapshot |
+| `user.dataset_refreshes` | [Refresh history of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-refresh-history-in-group) | user | – | snapshot |
+| `user.dataset_parameters` | [Parameters of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/get-parameters-in-group) | user | – | snapshot |
+| `user.dashboard_tiles` | [Tiles of a dashboard](https://learn.microsoft.com/en-us/rest/api/power-bi/dashboards/get-tiles-in-group) | user | – | snapshot |
+
+Some operations of a user need more than being able to see the item. The users of a dataset
+(`user.dataset_users`) need Reshare permission on it, and its data sources and refresh history
+(`user.dataset_datasources`, `user.dataset_refreshes`) need Write permission. An account that
+lacks it gets `403`, and the error says which permission is missing. The operations that
+answer about one item (`...users`, `...datasources`, `user.dataset_refreshes`,
+`user.dataset_parameters`, `user.dashboard_tiles`, `user.report_pages`) take the id of the
+item in their path, and the lake keeps the answer for each item under it.
+
+`admin.refreshables` is different: one list of the whole tenant, with a summary of how each
+dataset refreshed in the last week (how often, how long, how many failed, the last refresh and
+the schedule). It is how an administrator sees the refreshes of a dataset, because the
+refresh history itself (`user.dataset_refreshes`) is read with a user's account.
 
 ## Throttling
 

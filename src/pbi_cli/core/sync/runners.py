@@ -71,7 +71,8 @@ class Context:
     :param tenant: the tenant the lake data belongs to
     :param state: what earlier runs left behind, and what this one records
     :param planner: tells what the lake holds fresh
-    :param client_for: the client that signs in for a kind of token
+    :param client_for: the client that signs in for a kind of token and a profile (``None``:
+        the active one)
     :param clock: the current time (aware, UTC)
     :param sleep: waits for some seconds
     :param monotonic: a clock for timeouts
@@ -82,7 +83,7 @@ class Context:
     tenant: str
     state: SyncState
     planner: Planner
-    client_for: Callable[[Scope], PowerBIClient]
+    client_for: Callable[[Scope, Optional[str]], PowerBIClient]
     clock: Callable[[], datetime]
     sleep: Callable[[float], None] = time.sleep
     monotonic: Callable[[], float] = time.monotonic
@@ -93,7 +94,7 @@ class Context:
 
 def run_snapshot(ctx: Context, unit: Unit) -> Outcome:
     """Fetch one request into the lake, unless the lake holds it fresh."""
-    client = ctx.client_for(unit.scope)
+    client = ctx.client_for(unit.scope, unit.account)
     max_age = ctx.options.max_age if ctx.options.max_age is not None else unit.ttl
     result = client.fetch(
         unit.endpoint,
@@ -123,7 +124,7 @@ def run_modified(ctx: Context, unit: Unit) -> Outcome:
     The list is an intermediate result, not data: it is not stored, and it is asked for
     every time, as the API allows only 30 of these requests an hour.
     """
-    client = ctx.client_for(unit.scope)
+    client = ctx.client_for(unit.scope, unit.account)
     response = client.request(unit.endpoint, unit.params, max_wait=ctx.options.max_wait)
     ids = [
         str(row["id"])
@@ -167,7 +168,7 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
     end = min(day_end - timedelta(milliseconds=1), now)
     params = {"startDateTime": _quoted(start), "endDateTime": _quoted(end)}
     request = {"method": endpoint.method, "path": endpoint.path, "params": params}
-    client = ctx.client_for(unit.scope)
+    client = ctx.client_for(unit.scope, unit.account)
     profile = client.profile_name()
 
     def read(start_at: Optional[str]) -> Tuple[int, int]:
@@ -240,7 +241,7 @@ def run_scan_batch(ctx: Context, unit: Unit) -> Outcome:
         return Outcome(SKIPPED, "fresh", version=found.version if found else None)
 
     batch = batch_key(unit.workspace_ids)
-    client = ctx.client_for(unit.scope)
+    client = ctx.client_for(unit.scope, unit.account)
     try:
         run = run_scan(
             client,

@@ -386,6 +386,27 @@ class TestLoadAuthAutoGroupResolution:
         with pytest.raises(PBIError):
             load_auth()
 
+    def test_a_missing_account_says_which_group_it_was_asked_for(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        from pbi_cli.errors import AuthError
+
+        with pytest.raises(AuthError) as no_active_profile:
+            load_auth(group="admin")
+        cfg = _cfg(tmp_path)
+        cfg.add_profile_to_group("user", "svc")
+        cfg.set_group_active_profile("user", "svc")  # a profile, but no token
+        with pytest.raises(AuthError) as no_token:
+            load_auth(group="user")
+        with pytest.raises(AuthError) as unknown_profile:
+            load_auth(profile="nobody", group="user")
+
+        assert no_active_profile.value.group == "admin"
+        assert no_token.value.group == "user"
+        assert unknown_profile.value.group == "user"
+
     def test_load_auth_explicit_profile_in_group(self, tmp_path, monkeypatch):
         """load_auth(profile=..., group=...) uses the specified profile from the given group."""
         monkeypatch.setenv("HOME", str(tmp_path))

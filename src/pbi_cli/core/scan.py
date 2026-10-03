@@ -357,9 +357,15 @@ def store_scan(
 ) -> Snapshot:
     """Keep the result of a scan in the lake, as a job snapshot.
 
-    The manifest lists the workspaces and the flags, and the id of the scan.
+    The manifest lists the workspaces (with their name, type and state, so that a lake
+    can be browsed without loading the scans) and the flags, and the id of the scan.
     """
     ids = sorted(workspace_ids)
+    described = {
+        str(w.get("id")): {k: w.get(k) for k in ("name", "type", "state")}
+        for w in run.result.get("workspaces") or []
+        if isinstance(w, dict) and w.get("id")
+    }
     return store.write_snapshot(
         tenant,
         RESULT_ENDPOINT,
@@ -380,6 +386,7 @@ def store_scan(
             "started_at": run.started_at.isoformat(),
             "polls": run.polls,
             "workspace_ids": ids,
+            "workspaces": described,
             "flags": flags.canonical(),
             **dict(extra or {}),
         },

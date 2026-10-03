@@ -43,16 +43,97 @@ every target.
 | `scan` | Metadata scan of every workspace | `admin.scan.result` | admin | no: the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item |
 | `report-users` | The users of every report | `admin.reports.users` | admin | no: the people who can open each report, with their e-mail addresses |
 | `datasources` | The data sources of every dataset | `admin.datasets.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
+| `group-users` | The users of every workspace | `admin.groups.users` | admin | no: the people who have access to each workspace, with their e-mail addresses |
+| `dataset-users` | The users of every dataset | `admin.datasets.users` | admin | no: the people who can use each dataset, with their e-mail addresses |
+| `dashboard-users` | The users of every dashboard | `admin.dashboards.users` | admin | no: the people who can open each dashboard, with their e-mail addresses |
+| `dataflow-users` | The users of every dataflow | `admin.dataflows.users` | admin | no: the people who can use each dataflow, with their e-mail addresses |
+| `dataflow-datasources` | The data sources of every dataflow | `admin.dataflows.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
+| `refreshables` | How each dataset refreshes: a summary of its last week | `admin.refreshables` | admin | no: who owns each dataset (e-mail addresses) and when it refreshes |
 | `activity` | Audit activity events, one log per UTC day | `admin.activityevents` | admin | no: what each person did and when: e-mail addresses, IP addresses, devices |
-| `user-groups` | Workspaces of the user | `user.groups` | user | no: needs a user's token |
-| `user-apps` | Apps of the user | `user.apps` | user | no: needs a user's token |
-| `user-reports` | Reports of each workspace of the user | `user.group_reports` | user | no: needs a user's token |
+| `user-groups` | Workspaces of the user | `user.groups` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-apps` | Apps of the user | `user.apps` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-reports` | Reports of each workspace of the user | `user.group_reports` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-datasets` | Datasets of each workspace of the user | `user.group_datasets` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-dashboards` | Dashboards of each workspace of the user | `user.group_dashboards` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-dataflows` | Dataflows of each workspace of the user | `user.group_dataflows` | user | no: needs a user's token (it is in the plain sync of a user without an administrator) |
+| `user-group-users` | The users of each workspace of the user | `user.group_users` | user | no: the people who have access to each workspace, with their e-mail addresses |
 | `user-pages` | Pages of each report of the user | `user.report_pages` | user | no: needs a user's token |
+| `user-dataset-users` | The users of each dataset of the user | `user.dataset_users` | user | no: the people who can use each dataset (it needs Reshare permission on it) |
+| `user-dataset-datasources` | The data sources of each dataset of the user | `user.dataset_datasources` | user | no: connection details of the data sources: servers, databases, paths (it needs Write permission on the dataset) |
+| `user-dataflow-datasources` | The data sources of each dataflow of the user | `user.dataflow_datasources` | user | no: connection details of the data sources: servers, databases, paths |
+| `user-dataset-refreshes` | The refresh history of each dataset of the user | `user.dataset_refreshes` | user | no: needs a user's token |
+| `user-dataset-parameters` | The parameters of each dataset of the user | `user.dataset_parameters` | user | no: the current values of the parameters, which can hold server names and paths |
+| `user-dashboard-tiles` | The tiles of each dashboard of the user | `user.dashboard_tiles` | user | no: needs a user's token |
 
-`report-users`, `datasources`, `user-reports` and `user-pages` ask once for every row of
-another target (the users of every report, the pages of every report of every workspace).
-Naming one brings the target it needs along, and the plan says so. The quota of each
-operation is in the [table of the data lake](lake.md#endpoints-and-quotas).
+`report-users`, `datasources`, the `user-...` targets that ask for each workspace, and
+`user-pages` ask once for every row of another target (the users of every report, the
+datasets of every workspace, the pages of every report of every workspace). Naming one
+brings the target it needs along, and the plan says so. The quota of each operation is in
+the [table of the data lake](lake.md#endpoints-and-quotas).
+
+## Details of one item
+
+The targets of the kind `...-users`, `...-datasources`, `user-pages` and the like each fetch
+**one detail for every item** of their kind: who has access to every dataset, the data sources of
+every dataflow. They cost a request per item (the quota of an administrator's is 200 an hour for
+the users, 300 for the data sources of datasets), so none of them is in a plain sync, and the
+plan says what they cost before anything is sent.
+
+Fetching a detail for **one item** is what the [terminal UI](tui.md#details-one-item-at-a-time)
+does when you press `f`. It gives the sync `SyncOptions.only`, the placeholders of the
+requests (`datasetId`, `reportId`, `groupId`, ...) and the ids that are wanted, and the targets
+that fan out over rows skip the rows that are not wanted. From Python:
+
+```python
+from pbi_cli.core.sync.plan import SyncOptions
+
+SyncOptions(targets=("dataset-users",), only={"datasetId": ["<dataset id>"]})
+```
+
+## Which accounts a sync uses
+
+A sync uses the accounts you have stored (`pbi profile list`): the active profile of the
+group `admin` for the administrator's targets, and the active profile of the group `user`
+for the `user-...` targets. `--admin-profile` and `--user-profile` use other profiles of
+those groups for one run, for example `pbi sync run user-groups --user-profile svc-finance`.
+`pbi sync plan` and `pbi sync run` print the accounts they use, in an `Accounts:` line
+(`Accounts: admin-nlm (admin), svc-finance (user)`), and so does the plan on the Sync screen of
+the [terminal UI](tui.md).
+
+What a sync does without names depends on the accounts:
+
+- **An administrator account**: the plain targets, the lists of the tenant.
+- **Only a user account** (no administrator): what that user can see, workspace by
+  workspace: `user-groups`, `user-apps`, `user-reports`, `user-datasets`, `user-dashboards`
+  and `user-dataflows`. The Explorer of the [terminal UI](tui.md) shows those lists like the
+  tenant's lists, for the workspaces that account can see.
+- **No account**: `pbi sync` says so and what to run (`pbi auth -t <token> -g admin`, or
+  `-g user`).
+
+Naming a target that needs an account you do not have fails at once, before anything is
+fetched, and says which account to store. `all` is every target the accounts you have can
+run.
+
+The answers that depend on who asks, the workspaces and the apps *of a user*, are kept per
+account in the lake, by the object id that is in the token. Two user accounts of one tenant
+never see each other's, a profile that is renamed keeps its history, and the plan counts
+what is fresh *for the account* it is made for. What is the same for everyone who can see a
+workspace (its reports, datasets, dashboards, dataflows, users) is kept once.
+
+## A plan file instead of names
+
+What to keep, for which workspaces and through which account can also be written once, in a
+[plan file](plan-file.md), and used by every run:
+
+```bash
+pbi sync plan --config pbi-plan.yaml   # each step, and what they cost together
+pbi sync run  --config pbi-plan.yaml
+```
+
+It is the way to fetch the details of *chosen workspaces* (who has access, data sources, pages,
+how a dataset refreshes) within the quotas, and to read some workspaces through a user's
+account. The file replaces the target names and the options that say what to sync;
+`--force`, `--max-age`, `--days`, `--workers` and the like still apply to every step of it.
 
 ## Look before you fetch
 
@@ -63,8 +144,9 @@ and how that compares with the quota that is left:
 ```text
 $ pbi sync plan
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows
-Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages
+Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages
 Tenant: 0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40
 
 TARGET      OPERATION         UNITS  FRESH  TO DO  REQUESTS
@@ -98,6 +180,7 @@ audit events:
 ```text
 $ pbi sync plan default activity scan --lineage --days 3
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, activity
   scan copies the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item
   activity copies what each person did and when: e-mail addresses, IP addresses, devices
@@ -135,8 +218,9 @@ they finish; a big stage prints only its milestones and the units that failed.
 ```text
 $ pbi sync run
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows
-Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-pages
+Not included (name them to include them, see --help): scan, report-users, datasources, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages
 
 Stage 1: 7 unit(s) of groups, apps, capacities, reports, datasets, dashboards, dataflows
   ✓ admin.capacities  1 rows
@@ -156,6 +240,7 @@ also what makes it safe to run from a scheduler.
 ```text
 $ pbi sync run default activity scan --lineage --days 3 --scan-interval 0.1
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, activity
   scan copies the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item
   activity copies what each person did and when: e-mail addresses, IP addresses, devices
@@ -261,6 +346,7 @@ A sync can be stopped at any time, and run again:
 ```text
 $ pbi sync run report-users
 Data lake: ~/PowerBI/cache/lake
+Accounts: admin-nlm (admin)
 Targets: reports, report-users
   report-users copies the people who can open each report, with their e-mail addresses
 
@@ -292,7 +378,9 @@ deferred, 1 when a unit failed or the token expired, and 130 when the run was in
 
 `pbi sync status` shows how the last runs went, the units that failed or are held back, the
 scans that were started and not collected, the quota used in the last hour, and what the lake
-holds for each target. It reads the lake only, so it needs no token and no network.
+holds for each target. It reads the lake only, so it needs no token and no network, and
+`--lake <folder or s3://bucket/folder>` shows the status of another lake, such as one that a
+colleague [published](sharing.md).
 
 ```text
 $ pbi sync status
@@ -336,6 +424,14 @@ report-users  admin.reports.users   3 request(s)  0 s ago
 activity      admin.activityevents  3 day(s)      0 s ago
 ```
 
+## From the terminal UI
+
+The [terminal UI](tui.md) has a Sync screen for everything on this page: choose the
+targets and the options, see the plan and what it costs against the quotas, run the sync,
+watch its log, and stop it. It uses the same planner and engine, so the plan is the one of
+`pbi sync plan`, a stop is the same as Ctrl-C, and running again continues. When the token
+expires it asks for a new one in a dialog and goes on.
+
 ## On a schedule
 
 Run a sync as often as you want the lake to be up to date; nothing is fetched twice, so a
@@ -349,6 +445,8 @@ run works when something stores a fresh token just before it. Some advice:
   A nightly `pbi sync run default activity --days 7` keeps them all.
 - A run that stops because of an expired token, or a quota, is not a problem for the
   schedule: the next one continues.
+- To let others read what the schedule keeps without giving them an account, end it with
+  `pbi lake publish <destination> --yes` (see [Sharing a lake](sharing.md)).
 
 ## What a sync remembers
 
