@@ -16,7 +16,7 @@
         <link rel="prev" href="../../core/timefmt/">
       
       
-        <link rel="next" href="../render/">
+        <link rel="next" href="../plain/">
       
       
         
@@ -1221,6 +1221,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../../core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../core/store/" class="md-nav__link">
         
   
@@ -1261,10 +1315,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
             
   
   
@@ -1282,8 +1336,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_14">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_16">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1768,6 +1822,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../render/" class="md-nav__link">
         
   
@@ -1803,6 +1884,33 @@
     
   
   run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scanview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
 
     
   </span>
@@ -2828,6 +2936,23 @@ does, and makes <code>client_for</code> use it from then on (default: not possib
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>note</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>something to tell the person once the UI is up: not an error, for example
+that the place a plan file names holds no lake and the work lake is open instead</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;&#39;</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3005,7 +3130,10 @@ does, and makes <code>client_for</code> use it from then on (default: not possib
 <span class="normal">232</span>
 <span class="normal">233</span>
 <span class="normal">234</span>
-<span class="normal">235</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Backend</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The world around the TUI.</span>
 
@@ -3028,6 +3156,8 @@ does, and makes <code>client_for</code> use it from then on (default: not possib
 <span class="sd">        does, and makes `client_for` use it from then on (default: not possible)</span>
 <span class="sd">    :param plan: the plan file of the session (``pbi tui --config``), if there is one</span>
 <span class="sd">    :param reload_plan: reads that file again (default: not possible)</span>
+<span class="sd">    :param note: something to tell the person once the UI is up: not an error, for example</span>
+<span class="sd">        that the place a plan file names holds no lake and the work lake is open instead</span>
 <span class="sd">    """</span>
 
     <span class="n">store</span><span class="p">:</span> <span class="n">LakeStore</span>
@@ -3043,6 +3173,7 @@ does, and makes <code>client_for</code> use it from then on (default: not possib
     <span class="n">activate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">plan</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PlanFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">reload_plan</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">PlanFile</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -3230,10 +3361,7 @@ them, and the active profile of a kind that the file does not name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">155</span>
 <span class="normal">156</span>
 <span class="normal">157</span>
 <span class="normal">158</span>
@@ -3244,7 +3372,10 @@ them, and the active profile of a kind that the file does not name.</p>
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
-<span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">account_slots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Scope</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">account_slots</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Scope</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">"""The accounts the session works with, each as a kind and a profile (``None``: the</span>
 <span class="sd">    active one of the kind).</span>
 
@@ -3281,9 +3412,9 @@ them, and the active profile of a kind that the file does not name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">215</span>
-<span class="normal">216</span>
-<span class="normal">217</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">available_scopes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">Scope</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">available_scopes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="n">Scope</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The kinds of account that are stored (none for a lake that is only looked at)."""</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">Scope</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">group</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">identities</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">group</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
@@ -3308,11 +3439,11 @@ them, and the active profile of a kind that the file does not name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">engine</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncEngine</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">engine</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncEngine</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A sync engine for the lake."""</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_engine</span><span class="p">()</span>
@@ -3342,10 +3473,7 @@ is asked about.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">191</span>
 <span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span>
@@ -3367,7 +3495,10 @@ is asked about.</p>
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span>
-<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Identity</span><span class="p">]:</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Identity</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Who the stored tokens are: the administrator's and the user's, those there are</span>
 <span class="sd">    (with a plan file, those of the accounts it names).</span>
 
@@ -3416,10 +3547,7 @@ is asked about.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">222</span>
 <span class="normal">223</span>
 <span class="normal">224</span>
 <span class="normal">225</span>
@@ -3432,7 +3560,10 @@ is asked about.</p>
 <span class="normal">232</span>
 <span class="normal">233</span>
 <span class="normal">234</span>
-<span class="normal">235</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Identity</span><span class="p">:</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Identity</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Who the stored tokens are, for the tenant: the administrator's, else the user's.</span>
 
 <span class="sd">    Never raises: when there is no usable token the answer says why.</span>
@@ -3494,14 +3625,14 @@ is asked about.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
 <span class="normal">128</span>
 <span class="normal">129</span>
-<span class="normal">130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanRun</span><span class="p">:</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanRun</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The plan file of the session, ready to be planned and run.</span>
 
 <span class="sd">    :raises PBIError: when the session has no plan file</span>
@@ -3565,10 +3696,7 @@ to use (the first of the plan when none of them is)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
 <span class="normal">174</span>
@@ -3580,7 +3708,10 @@ to use (the first of the plan when none of them is)</p>
 <span class="normal">180</span>
 <span class="normal">181</span>
 <span class="normal">182</span>
-<span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">profiles_for</span><span class="p">(</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">profiles_for</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">visible_to</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The profiles to fetch something through, as the administrator and as a user: those</span>
@@ -3619,14 +3750,14 @@ to use (the first of the plan when none of them is)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span>
 <span class="normal">149</span>
-<span class="normal">150</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">quota_left</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">quota_left</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The requests that fit now for an operation, with the account that makes them;</span>
 <span class="sd">    ``None`` when there is no documented quota or no account to ask."""</span>
     <span class="k">try</span><span class="p">:</span>
@@ -3680,16 +3811,16 @@ file is wrong.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/tui/backend.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">135</span>
 <span class="normal">136</span>
 <span class="normal">137</span>
 <span class="normal">138</span>
 <span class="normal">139</span>
 <span class="normal">140</span>
-<span class="normal">141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read_plan_again</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanFile</span><span class="p">:</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">read_plan_again</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlanFile</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Read the plan file again, and use it from now on; the one in use stays when the</span>
 <span class="sd">    file is wrong.</span>
 

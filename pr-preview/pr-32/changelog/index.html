@@ -1209,6 +1209,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/store/" class="md-nav__link">
         
   
@@ -1249,10 +1303,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
             
   
   
@@ -1270,8 +1324,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_14">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_16">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1545,6 +1599,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/render/" class="md-nav__link">
         
   
@@ -1580,6 +1661,33 @@
     
   
   run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/scanview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
 
     
   </span>
@@ -2173,6 +2281,32 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li>The <a href="../tui/">terminal UI</a> has a <strong>Scan</strong> tab (key <code>7</code>) that shows what the newest scan says: for a
+  workspace, how much is in it and <strong>where its data comes from</strong>; for a dataset, each table with its
+  columns, measures and what loads it, the places the tables read from, the native queries, the
+  parameters and the DAX of the measures; for a report, the dataset it is built on; for a
+  dashboard, its tiles; for a dataflow, the data sources it reads. The places are <strong>read out of the
+  Power Query expressions</strong> of the tables (<code>pbi_cli.core.sources</code>): the server and database of a SQL,
+  Oracle, PostgreSQL, MySQL, Snowflake, Synapse, Analysis Services (and other) source, the file and
+  sheet of a workbook or CSV, a SharePoint site, a web address, a folder, the SQL of a native query (on
+  one line: the <code>#(lf)</code> of M is a blank) and
+  the tables it reads; a name that stands for a text (a parameter, an earlier step) is followed, and
+  what cannot be followed is said. What the scan lacks because of its options (schema, expressions,
+  datasource details) is said with how to scan again. <code>pbi_cli.core.scanmodel</code> makes the same
+  things (<code>Catalog.scan_model</code>, <code>Catalog.dataset_model</code>) for a script.</li>
+<li>The <strong>Workspaces</strong> node of the Explorer covers all the workspaces its table lists: its Info, Users
+  and Scan tabs combine them (everybody with access to any of them, one line for each person and
+  workspace, counting a person once; the scans summed, with the places that several workspaces read
+  from; how many have their people in the lake), and the table filter <code>/</code> narrows the set. Pick a row
+  for one workspace. What is combined is read from the lake, so it is shared with it.</li>
+<li>A plan file's <strong><code>session.workspaces</code></strong> (<code>plan</code> or <code>all</code>) and the key <strong><code>w</code></strong>: with a plan file that
+  names workspaces the Explorer lists only those (<code>1 of 4,321</code>), and <code>w</code>, or the palette, lists every
+  workspace of the lake and back. Searching and <code>session.open</code> respect it, and going to a
+  workspace the file does not name lists them all and says so.</li>
+<li>The overview of the lake in the Explorer says <strong>where the lake is</strong> and, when it holds nothing for
+  the tenant, what to do (press <code>s</code> and Run, or <code>t</code> when the lake holds another tenant: <code>t</code> used to
+  say that the lake holds only one tenant even when it was not the one shown). The header wraps onto
+  more lines on a narrow terminal instead of cutting off the lake.</li>
 <li><strong>A plan file</strong> names what to keep in the lake, for which workspaces and through which
   account, in one YAML file (<code>pbi_cli.core.planfile</code>). It is strict: an unknown key, a key
   that does nothing and a profile that has no token are errors that name the file, the line and
@@ -2335,6 +2469,16 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi tui --config</code> no longer refuses to start when <code>session.lake</code> names a local folder that holds no
+  lake: it opens the work lake and says so, with the command that makes that folder the work lake
+  (<code>pbi config set-cache-folder</code>). <code>pbi sync plan|run --config</code> says the same. A bucket that holds no
+  lake, and <code>--lake</code> or <code>PBI_LAKE</code> that name a place without one, are still errors.</li>
+<li><strong>Where a token is stored</strong> is told truthfully. On Windows a Power BI token is longer than the
+  Credential Manager holds, so the credentials file is used; <code>pbi auth</code> said <code>saved securely</code> right
+  after <code>Keyring not available</code>, and advised installing a keyring backend, which does not help. It now
+  says where the token went and why. A token that did not fit also left an older, shorter token for
+  the same profile in the keyring, which is read first, so the new one was never used: it is
+  removed.</li>
 <li>The <a href="../tui/">terminal UI</a> showed names as markup: a workspace called
   <code>[Confidential]IT Management</code> was shown as <code>IT Management</code> (the bracket was read as a style
   tag), <code>[Experiment] Test</code> lost its tag the same way, and a name such as <code>Sales [/Q4]</code>

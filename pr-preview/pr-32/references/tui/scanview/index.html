@@ -1,0 +1,3401 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for pbi_cli - a command line interface for Power BI.">
+      
+      
+      
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/references/tui/scanview/">
+      
+      
+        <link rel="prev" href="../run/">
+      
+      
+        <link rel="next" href="../summary/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.67">
+    
+    
+      
+        <title>scanview - pbi_cli Documentation</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../../assets/stylesheets/classic/main.cfc7948b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/classic/palette.bf1c5cd6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pbi_clituiscanview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="pbi_cli Documentation" class="md-header__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pbi_cli Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              scanview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="red"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../auth/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../changelog/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="pbi_cli Documentation" class="md-nav__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    pbi_cli Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Workspace Scans
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../lake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Terminal UI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Cache (legacy)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  References
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  References
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  pbi_cli
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  pbi_cli
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  cli
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  errors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  session
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  core
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  core
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/ratelimit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ratelimit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  registry
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sync
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_16">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  sync
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sync/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  engine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sync/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sync/runners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  runners
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sync/state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  state
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/sync/targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  targets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/timefmt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  timefmt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tui
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_3_2_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  tui
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backend
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../render/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  render
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        scanview
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.dataset_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        dataset_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.item_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        item_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.missing_options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        missing_options
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.one_line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        one_line
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.set_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        set_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.workspace_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        workspace_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.workspace_hint" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        workspace_hint
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../summary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powerbi
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  powerbi
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  index
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  admin
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  app
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  io
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../powerbi/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        scanview
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.dataset_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        dataset_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.item_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        item_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.missing_options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        missing_options
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.one_line" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        one_line
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.set_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        set_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.workspace_body" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        workspace_body
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pbi_cli.tui.scanview.workspace_hint" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        workspace_hint
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="pbi_clituiscanview"><code>pbi_cli.tui.scanview</code><a class="headerlink" href="#pbi_clituiscanview" title="Permanent link">¤</a></h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="pbi_cli.tui.scanview"></a>
+    <div class="doc doc-contents first">
+
+        <p>The Scan tab: what a scan says about a workspace, and where each table gets its data.</p>
+<p>A scan (<code>pbi workspaces scan</code>, the <code>scan</code> target of <code>pbi sync</code>) is the only operation
+that looks inside a workspace: the tables, columns and measures of its datasets, the queries
+that load the tables, and the data sources that are configured. This module puts what the
+lake holds of it in front of the reader, as renderables made from <code>pbi_cli.core.scanmodel</code>:</p>
+<ul>
+<li>a workspace: how much is in it, where its data comes from (read out of the queries, see
+  <code>pbi_cli.core.sources</code>), the data sources the scan lists, and a line for each dataset;</li>
+<li>a dataset: each table with what loads it, the places the tables read from, the native
+  queries, the parameters, the measures;</li>
+<li>a report, a dashboard, a dataflow: what it is built on;</li>
+<li>several workspaces: the same, summed.</li>
+</ul>
+<p>Everything is a <code>rich.text.Text</code> or a table of them, so that a name such as <code>[DEV] Sales</code> is
+shown as it is.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.dataset_body" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">dataset_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">workspace</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">planned</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.dataset_body" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The Scan tab of a dataset: its tables, where they read from, its measures.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">dataset_body</span><span class="p">(</span>
+    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetModel</span><span class="p">,</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WorkspaceModel</span><span class="p">],</span>
+    <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenderableType</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The Scan tab of a dataset: its tables, where they read from, its measures."""</span>
+    <span class="n">subtitle</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"dataset · in </span><span class="si">{</span><span class="n">workspace</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">workspace</span> <span class="k">else</span> <span class="s2">"dataset"</span>
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">subtitle</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" · </span><span class="si">{</span><span class="n">_when</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">facts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">"configured by </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">configured_by</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">configured_by</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">storage_mode</span><span class="p">,</span>
+        <span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">tables</span><span class="p">),</span> <span class="s2">"table"</span><span class="p">),</span>
+        <span class="n">_plural</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="s2">"column"</span><span class="p">),</span>
+        <span class="n">_plural</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">measures</span><span class="p">,</span> <span class="s2">"measure"</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RenderableType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_title</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">subtitle</span><span class="p">),</span>
+        <span class="n">Text</span><span class="p">(</span><span class="s2">" · "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">facts</span> <span class="k">if</span> <span class="n">f</span><span class="p">),</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">has_schema</span> <span class="ow">and</span> <span class="n">dataset</span><span class="o">.</span><span class="n">has_expressions</span><span class="p">):</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">()]</span> <span class="o">+</span> <span class="n">missing_options</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">flags</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Tables"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="s2">"Columns"</span><span class="p">,</span> <span class="s2">"Measures"</span><span class="p">,</span> <span class="s2">"Loaded by"</span><span class="p">,</span> <span class="s2">"Reads from"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">tables</span><span class="p">[:</span><span class="n">MAX_TABLES</span><span class="p">]:</span>
+            <span class="n">reads</span> <span class="o">=</span> <span class="n">Text</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">position</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">sources</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">position</span><span class="p">:</span>
+                    <span class="n">reads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">kind</span><span class="p">,</span> <span class="n">where</span> <span class="o">=</span> <span class="n">_source_cells</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+                <span class="n">reads</span><span class="o">.</span><span class="n">append_text</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
+                <span class="n">reads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  "</span><span class="p">)</span>
+                <span class="n">reads</span><span class="o">.</span><span class="n">append_text</span><span class="p">(</span><span class="n">where</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">item</span><span class="p">:</span>
+                    <span class="n">reads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">item</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">sources</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s2">"DAX"</span><span class="p">:</span>
+                <span class="n">reads</span> <span class="o">=</span> <span class="n">Text</span><span class="p">(</span><span class="s2">"calculated table (DAX)"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">sources</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s2">"M"</span><span class="p">:</span>
+                <span class="n">reads</span> <span class="o">=</span> <span class="n">Text</span><span class="p">(</span>
+                    <span class="s2">"no source this reading knows (see the JSON tab)"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">expression</span><span class="p">:</span>
+                <span class="n">reads</span> <span class="o">=</span> <span class="n">Text</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">Text</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="p">(</span><span class="s2">" (hidden)"</span> <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">hidden</span> <span class="k">else</span> <span class="s2">""</span><span class="p">))</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">measures</span><span class="p">),</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">language</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">reads</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="n">more</span> <span class="o">=</span> <span class="n">_more</span><span class="p">(</span><span class="n">MAX_TABLES</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">tables</span><span class="p">),</span> <span class="s2">"tables"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">more</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">more</span><span class="p">)</span>
+    <span class="n">places</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">places</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">places</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Where the data comes from"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Kind"</span><span class="p">,</span> <span class="s2">"Place"</span><span class="p">,</span> <span class="s2">"Tables"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">place</span> <span class="ow">in</span> <span class="n">places</span><span class="p">:</span>
+            <span class="n">kind</span><span class="p">,</span> <span class="n">where</span> <span class="o">=</span> <span class="n">_source_cells</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">kind</span><span class="p">,</span>
+                <span class="n">where</span><span class="p">,</span>
+                <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">": "</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">place</span><span class="o">.</span><span class="n">tables</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">native</span> <span class="o">=</span> <span class="p">[(</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">tables</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">sources</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">query</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">native</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Native queries"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Table"</span><span class="p">,</span> <span class="s2">"Query"</span><span class="p">,</span> <span class="s2">"Reads"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">native</span><span class="p">:</span>
+            <span class="n">_row</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">one_line</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">query</span><span class="p">),</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">declared</span> <span class="o">=</span> <span class="n">_declared_table</span><span class="p">([</span><span class="n">dataset</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">declared</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Data sources the scan lists for it"</span><span class="p">),</span> <span class="n">declared</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shared</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Parameters and shared queries"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="s2">"Is"</span><span class="p">,</span> <span class="s2">"Value or query"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shared</span><span class="p">:</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">query</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">"parameter"</span> <span class="k">if</span> <span class="n">query</span><span class="o">.</span><span class="n">parameter</span> <span class="k">else</span> <span class="s2">"query"</span><span class="p">,</span>
+                <span class="n">query</span><span class="o">.</span><span class="n">value</span> <span class="ow">or</span> <span class="n">one_line</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">expression</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">measures</span> <span class="o">=</span> <span class="p">[(</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">tables</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">measures</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">measures</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Measures"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Table"</span><span class="p">,</span> <span class="s2">"Measure"</span><span class="p">,</span> <span class="s2">"Expression"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">measure</span> <span class="ow">in</span> <span class="n">measures</span><span class="p">[:</span><span class="n">MAX_MEASURES</span><span class="p">]:</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">measure</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="p">(</span><span class="s2">" (hidden)"</span> <span class="k">if</span> <span class="n">measure</span><span class="o">.</span><span class="n">hidden</span> <span class="k">else</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">one_line</span><span class="p">(</span><span class="n">measure</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="n">more</span> <span class="o">=</span> <span class="n">_more</span><span class="p">(</span><span class="n">MAX_MEASURES</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">measures</span><span class="p">),</span> <span class="s2">"measures"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">more</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">more</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.item_body" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">item_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">planned</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.item_body" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The Scan tab of an item, or <code>None</code> when no scan of its workspace has it.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">item_body</span><span class="p">(</span>
+    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span> <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RenderableType</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The Scan tab of an item, or ``None`` when no scan of its workspace has it."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">scan</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">scan_model</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">workspace_id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">workspace</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">workspace</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">workspace_id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">workspace</span> <span class="k">else</span> <span class="s2">""</span>
+    <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"dataset"</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">dataset_model</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">dataset_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+    <span class="n">parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RenderableType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_title</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">kind</span><span class="si">}</span><span class="s2"> · in </span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">where</span> <span class="k">else</span> <span class="n">item</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Text</span><span class="p">(</span><span class="n">_when</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">model</span><span class="p">),</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"report"</span><span class="p">:</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"datasetId"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">built</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">dataset</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Text</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">built</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Text</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Built on the dataset </span><span class="si">{</span><span class="n">built</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:"</span><span class="p">))</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">built</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">planned</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Text</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Built on the dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2">, which this scan does not hold "</span>
+                    <span class="s2">"(it is in another workspace)."</span><span class="p">,</span>
+                    <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"dashboard"</span><span class="p">:</span>
+        <span class="n">tiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">scan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tiles"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)]</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Tiles (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tiles</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Title"</span><span class="p">,</span> <span class="s2">"Report"</span><span class="p">,</span> <span class="s2">"Dataset"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tile</span> <span class="ow">in</span> <span class="n">tiles</span><span class="p">:</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">tile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">tile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reportId"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">tile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"datasetId"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"dataflow"</span> <span class="ow">and</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">flow</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">dataflows</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Text</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">flow</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">flow</span><span class="o">.</span><span class="n">declared</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_heading</span><span class="p">(</span><span class="s2">"Reads from"</span><span class="p">))</span>
+            <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Type"</span><span class="p">,</span> <span class="s2">"Place"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">declared</span> <span class="ow">in</span> <span class="n">flow</span><span class="o">.</span><span class="n">declared</span><span class="p">:</span>
+                <span class="n">kind</span><span class="p">,</span> <span class="n">place</span> <span class="o">=</span> <span class="n">_declared</span><span class="p">(</span><span class="n">declared</span><span class="p">)</span>
+                <span class="n">_row</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">place</span><span class="p">)</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Text</span><span class="p">(</span>
+                    <span class="s2">"The scan lists no data source for it (it needs the datasource "</span>
+                    <span class="s2">"details option)."</span><span class="p">,</span>
+                    <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.missing_options" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">missing_options</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="n">has_datasets</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.missing_options" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>What the scan lacks because of the options it was made with, and how to get it.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">missing_options</span><span class="p">(</span><span class="n">flags</span><span class="p">:</span> <span class="n">ScanFlags</span><span class="p">,</span> <span class="n">has_datasets</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Text</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""What the scan lacks because of the options it was made with, and how to get it."""</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">has_datasets</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">flags</span><span class="o">.</span><span class="n">dataset_schema</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"The scan was made without the dataset schema: the tables, columns and "</span>
+            <span class="s2">"measures of the datasets are not in it."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">has_datasets</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">flags</span><span class="o">.</span><span class="n">dataset_expressions</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"The scan was made without the dataset expressions: the queries that load "</span>
+            <span class="s2">"the tables are not in it, so where their data comes from cannot be read."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">has_datasets</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">flags</span><span class="o">.</span><span class="n">datasource_details</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"The scan was made without the datasource details: the servers, databases and "</span>
+            <span class="s2">"paths of the configured data sources are not in it."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">notes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">how</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"Scan again with those options: in the plan file `scan: [dataset_schema, "</span>
+        <span class="s2">"dataset_expressions, datasource_details]` on its entry"</span>
+        <span class="k">if</span> <span class="n">planned</span>
+        <span class="k">else</span> <span class="s2">"Scan again with those options (the Sync screen has them as options)"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">Text</span><span class="p">(</span><span class="n">note</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"yellow"</span><span class="p">)</span> <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="n">Text</span><span class="p">(</span>
+            <span class="n">how</span> <span class="o">+</span> <span class="s2">"; the tenant setting for detailed metadata has to be on."</span><span class="p">,</span>
+            <span class="n">style</span><span class="o">=</span><span class="s2">"yellow"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.one_line" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">one_line</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">EXPRESSION_SHOWN</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.one_line" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>A text on one line, cut when it is longer than <code>width</code>.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">one_line</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">EXPRESSION_SHOWN</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A text on one line, cut when it is longer than ``width``."""</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\s+"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">flat</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">width</span> <span class="k">else</span> <span class="n">flat</span><span class="p">[:</span> <span class="n">width</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"…"</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.set_body" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">set_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">workspace_ids</span><span class="p">,</span> <span class="n">planned</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.set_body" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The Scan tab for several workspaces at once: what the scans say, summed.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>workspace_ids</code>
+            </td>
+            <td>
+                  <code><span title="typing.Sequence">Sequence</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the workspaces that are combined</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>planned</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>whether the session has a plan file</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>total</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>how many workspaces the table lists, when more than these are combined</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_body</span><span class="p">(</span>
+    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span><span class="p">,</span>
+    <span class="n">workspace_ids</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">total</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenderableType</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The Scan tab for several workspaces at once: what the scans say, summed.</span>
+
+<span class="sd">    :param workspace_ids: the workspaces that are combined</span>
+<span class="sd">    :param planned: whether the session has a plan file</span>
+<span class="sd">    :param total: how many workspaces the table lists, when more than these are combined</span>
+<span class="sd">    """</span>
+    <span class="n">models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">WorkspaceModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">unscanned</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># the workspaces of one stored scan together, so that each result is read once</span>
+    <span class="k">for</span> <span class="n">workspace_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">workspace_ids</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">catalog</span><span class="o">.</span><span class="n">scan_batch</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">scan_model</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">workspace</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">workspace</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
+            <span class="n">unscanned</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">workspace</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">workspace</span> <span class="k">else</span> <span class="n">workspace_id</span><span class="p">)</span>
+    <span class="n">models</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">casefold</span><span class="p">())</span>
+    <span class="n">unscanned</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">casefold</span><span class="p">)</span>
+    <span class="n">parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RenderableType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_title</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">workspace_ids</span><span class="p">),</span><span class="w"> </span><span class="s1">'workspace'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">models</span><span class="p">)</span><span class="si">}</span><span class="s2"> scanned, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unscanned</span><span class="p">)</span><span class="si">}</span><span class="s2"> not"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">workspace_ids</span><span class="p">):</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">Text</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Only the first </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">workspace_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> of the </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> workspaces are "</span>
+                <span class="s2">"combined: narrow the table with /."</span><span class="p">,</span>
+                <span class="n">style</span><span class="o">=</span><span class="s2">"yellow"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">models</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">Text</span><span class="p">(),</span>
+            <span class="n">Text</span><span class="p">(</span>
+                <span class="s2">"No scan of these workspaces is in the lake. "</span>
+                <span class="o">+</span> <span class="p">(</span>
+                    <span class="s2">"Put a `scan:` on their entries in the plan file and run the plan."</span>
+                    <span class="k">if</span> <span class="n">planned</span>
+                    <span class="k">else</span> <span class="s2">"Select one and press r to scan it."</span>
+                <span class="p">),</span>
+                <span class="n">style</span><span class="o">=</span><span class="s2">"yellow"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">)</span>
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">Text</span><span class="p">(</span>
+            <span class="s2">" · "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">datasets</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">),</span> <span class="s2">"dataset"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">tables</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">),</span> <span class="s2">"table"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">measures</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">),</span> <span class="s2">"measure"</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">flags</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
+    <span class="n">notes</span> <span class="o">=</span> <span class="n">missing_options</span><span class="p">(</span>
+        <span class="n">ScanFlags</span><span class="p">(</span>
+            <span class="n">dataset_schema</span><span class="o">=</span><span class="nb">all</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">dataset_schema</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">),</span>
+            <span class="n">dataset_expressions</span><span class="o">=</span><span class="nb">all</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">dataset_expressions</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">),</span>
+            <span class="n">datasource_details</span><span class="o">=</span><span class="nb">all</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">datasource_details</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">datasets</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">),</span>
+        <span class="n">planned</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">notes</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">()]</span> <span class="o">+</span> <span class="n">notes</span>
+    <span class="n">merged</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Place</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">owners</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">place</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">places</span><span class="p">():</span>
+            <span class="n">have</span> <span class="o">=</span> <span class="n">merged</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">Place</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">source</span><span class="p">))</span>
+            <span class="n">have</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span>
+            <span class="n">owners</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">merged</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Where the data comes from (read from the queries)"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Kind"</span><span class="p">,</span> <span class="s2">"Place"</span><span class="p">,</span> <span class="s2">"Workspaces"</span><span class="p">,</span> <span class="s2">"Datasets"</span><span class="p">,</span> <span class="s2">"Tables"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">place</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">kv</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">kv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tables</span><span class="p">),</span> <span class="n">kv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">):</span>
+            <span class="n">kind</span><span class="p">,</span> <span class="n">where</span> <span class="o">=</span> <span class="n">_source_cells</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">": "</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">place</span><span class="o">.</span><span class="n">tables</span><span class="p">}</span>
+            <span class="n">_row</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">owners</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">datasets</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">place</span><span class="o">.</span><span class="n">tables</span><span class="p">))</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Workspaces"</span><span class="p">)]</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="s2">"Scan"</span><span class="p">,</span> <span class="s2">"Datasets"</span><span class="p">,</span> <span class="s2">"Tables"</span><span class="p">,</span> <span class="s2">"Measures"</span><span class="p">,</span> <span class="s2">"Places"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+        <span class="n">_row</span><span class="p">(</span>
+            <span class="n">table</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">_when</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"scan as of "</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">),</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">tables</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">measures</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">places</span><span class="p">()),</span>
+        <span class="p">)</span>
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unscanned</span><span class="p">:</span>
+        <span class="n">shown</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unscanned</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">" and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unscanned</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s2"> more"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unscanned</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">Text</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Not scanned: </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.workspace_body" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">workspace_body</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">planned</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.workspace_body" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The Scan tab of a workspace.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_body</span><span class="p">(</span>
+    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">WorkspaceModel</span><span class="p">,</span> <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenderableType</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The Scan tab of a workspace."""</span>
+    <span class="n">parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RenderableType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_title</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">_when</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">model</span><span class="p">)),</span>
+        <span class="n">Text</span><span class="p">(</span><span class="sa">f</span><span class="s2">"options: </span><span class="si">{</span><span class="n">describe_scan</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">flags</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"grey62"</span><span class="p">),</span>
+        <span class="n">Text</span><span class="p">(),</span>
+        <span class="n">Text</span><span class="p">(</span>
+            <span class="s2">" · "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">reports</span><span class="p">),</span> <span class="s2">"report"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">),</span> <span class="s2">"dataset"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dashboards</span><span class="p">),</span> <span class="s2">"dashboard"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dataflows</span><span class="p">),</span> <span class="s2">"dataflow"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tables</span><span class="p">,</span> <span class="s2">"table"</span><span class="p">),</span>
+                    <span class="n">_plural</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">measures</span><span class="p">,</span> <span class="s2">"measure"</span><span class="p">),</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">notes</span> <span class="o">=</span> <span class="n">missing_options</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">flags</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">),</span> <span class="n">planned</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">notes</span><span class="p">:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Text</span><span class="p">())</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">notes</span><span class="p">)</span>
+    <span class="n">places</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">places</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">places</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Where the data comes from (read from the queries)"</span><span class="p">)]</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_places_table</span><span class="p">(</span><span class="n">places</span><span class="p">))</span>
+    <span class="n">declared</span> <span class="o">=</span> <span class="n">_declared_table</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">declared</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Data sources the scan lists"</span><span class="p">),</span> <span class="n">declared</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Datasets"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="s2">"Tables"</span><span class="p">,</span> <span class="s2">"Columns"</span><span class="p">,</span> <span class="s2">"Measures"</span><span class="p">,</span> <span class="s2">"Reads from"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">[:</span><span class="n">MAX_DATASETS</span><span class="p">]:</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">has_schema</span> <span class="k">else</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">has_schema</span> <span class="k">else</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">measures</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">has_schema</span> <span class="k">else</span> <span class="s2">"-"</span><span class="p">,</span>
+                <span class="n">_sources_of</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="n">more</span> <span class="o">=</span> <span class="n">_more</span><span class="p">(</span><span class="n">MAX_DATASETS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">datasets</span><span class="p">),</span> <span class="s2">"datasets"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">more</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">more</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">dataflows</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Text</span><span class="p">(),</span> <span class="n">_heading</span><span class="p">(</span><span class="s2">"Dataflows"</span><span class="p">)]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">_grid</span><span class="p">(</span><span class="s2">"Name"</span><span class="p">,</span> <span class="s2">"Reads from"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">flow</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">dataflows</span><span class="p">:</span>
+            <span class="n">_row</span><span class="p">(</span>
+                <span class="n">table</span><span class="p">,</span> <span class="n">flow</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">flow</span><span class="o">.</span><span class="n">declared</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"-"</span>
+            <span class="p">)</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.tui.scanview.workspace_hint" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">workspace_hint</span><span class="p">(</span><span class="n">workspace</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.tui.scanview.workspace_hint" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>What to say when the lake holds no scan of a workspace, and how to get one.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/tui/scanview.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_hint</span><span class="p">(</span><span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Workspace</span><span class="p">],</span> <span class="n">planned</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What to say when the lake holds no scan of a workspace, and how to get one."""</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">workspace</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">workspace</span> <span class="k">else</span> <span class="s2">"this workspace"</span>
+    <span class="k">if</span> <span class="n">planned</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"No scan of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is in the lake. Give its entry in the plan file a "</span>
+            <span class="s2">"`scan:` (with `get_artifact_users`, `dataset_schema`, `dataset_expressions` "</span>
+            <span class="s2">"and `datasource_details` for the inside of its datasets) and run the plan, or "</span>
+            <span class="s2">"press r to scan it now."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"No scan of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is in the lake. Press r to scan it, or run `pbi sync run scan` "</span>
+        <span class="s2">"with the options you want (`--dataset-schema --dataset-expressions "</span>
+        <span class="s2">"--datasource-details`)."</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../../..","features":["content.code.copy","navigation.sections","navigation.tabs"],"redirect":null,"search":"../../../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.67a597eb.min.js"></script>
+      
+    
+  </body>
+</html>

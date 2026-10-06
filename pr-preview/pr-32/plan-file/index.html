@@ -1403,6 +1403,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/store/" class="md-nav__link">
         
   
@@ -1443,10 +1497,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
             
   
   
@@ -1464,8 +1518,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_14">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_16">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1739,6 +1793,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/render/" class="md-nav__link">
         
   
@@ -1774,6 +1855,33 @@
     
   
   run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/scanview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
 
     
   </span>
@@ -2345,9 +2453,11 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 
 <span class="c1"># Settings for `pbi tui --config &lt;this file&gt;`.</span>
 <span class="nt">session</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">lake</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/PowerBI/shared-lake</span><span class="w"> </span><span class="c1"># open this lake (view only, unless it is the work lake)</span>
+<span class="w">  </span><span class="nt">lake</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/PowerBI/shared-lake</span><span class="w"> </span><span class="c1"># a lake somebody shared, to look at (read-only; a sync still writes to</span>
+<span class="w">  </span><span class="c1">#                           # your work lake). Leave it out to open your own lake.</span>
 <span class="w">  </span><span class="nt">open</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span><span class="w"> </span><span class="c1"># a workspace to select at the start: an id, or a name pattern</span>
 <span class="w">  </span><span class="nt">lazy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ask</span><span class="w"> </span><span class="c1"># what to do about a detail the lake lacks: ask (press f), auto, or off</span>
+<span class="w">  </span><span class="nt">workspaces</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plan</span><span class="w"> </span><span class="c1"># list only the workspaces above (plan) or every one (all); w switches</span>
 </code></pre></div>
 <p>Look at what it would do, and what that costs, before running it:</p>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>plan<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w">   </span><span class="c1"># reads the lake, calls nothing</span>
@@ -2607,6 +2717,7 @@ report), is fetched for those that can, and the plan says which are left out.</p
 <span class="w">  </span><span class="nt">lake</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/PowerBI/shared-lake</span>
 <span class="w">  </span><span class="nt">open</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span>
 <span class="w">  </span><span class="nt">lazy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ask</span>
+<span class="w">  </span><span class="nt">workspaces</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plan</span>
 </code></pre></div>
 <table>
 <thead>
@@ -2618,11 +2729,15 @@ report), is fetched for those that can, and the plan says which are left out.</p
 <tbody>
 <tr>
 <td><code>lake</code></td>
-<td>The lake that <code>pbi tui --config</code> opens: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake (the cache folder). Any lake but your work lake is <a href="../sharing/">opened read-only</a>, and has to exist: leave <code>lake</code> out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another.</td>
+<td>The lake that <code>pbi tui --config</code> opens: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake (the cache folder). Any lake but your work lake is <a href="../sharing/">opened read-only</a>. A local folder that holds no lake is not an error: your work lake is opened instead and the UI says so (with the <code>pbi config set-cache-folder</code> command that would make that folder your work lake); a bucket that holds none is an error. Leave <code>lake</code> out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another.</td>
 </tr>
 <tr>
 <td><code>open</code></td>
 <td>A workspace to select at the start: an id, or a name pattern (the first match).</td>
+</tr>
+<tr>
+<td><code>workspaces</code></td>
+<td>Which workspaces the Explorer lists at the start: <code>plan</code> (the default) lists only the ones that <code>workspaces</code> of the file names, by id or by name pattern, when it names any; <code>all</code> lists every workspace of the lake. <code>w</code> switches in the UI, see <a href="../tui/#only-the-workspaces-of-the-plan-file">Only the workspaces of the plan file</a>.</td>
 </tr>
 <tr>
 <td><code>lazy</code></td>

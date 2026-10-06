@@ -1364,6 +1364,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/store/" class="md-nav__link">
         
   
@@ -1404,10 +1458,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_14" id="__nav_3_2_4_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
             
   
   
@@ -1425,8 +1479,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_14_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_14">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_16">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -1700,6 +1754,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/render/" class="md-nav__link">
         
   
@@ -1735,6 +1816,33 @@
     
   
   run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/scanview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
 
     
   </span>
@@ -2285,8 +2393,17 @@ administrator's lists when it has them, and from the user's own lists otherwise;
 the administrator's list wins. The Info tab of a workspace says which accounts see it.</p>
 <h2 id="where-tokens-are-kept">Where tokens are kept<a class="headerlink" href="#where-tokens-are-kept" title="Permanent link">¤</a></h2>
 <p>In your system keyring (Keychain, Credential Manager, Secret Service). When no keyring is
-available they go to <code>~/.pbi_cli/credentials.json</code>, readable by you only. The profile names
-and which profile is active are in <code>~/.pbi_cli/config.yaml</code>.</p>
+available, or it will not take the token, they go to <code>~/.pbi_cli/credentials.json</code> in your
+profile folder. The profile names and which profile is active are in <code>~/.pbi_cli/config.yaml</code>.</p>
+<p><strong>On Windows the file is the usual place</strong>: the Credential Manager holds about 1,200
+characters at most, and a Power BI token is longer. <code>pbi auth</code> says where the token went:</p>
+<div class="highlight"><pre><span></span><code>✓ Credentials saved in C:\Users\me\.pbi_cli\credentials.json (the system keyring did not hold the token) for profile 'adm' in group 'admin'
+</code></pre></div>
+<p>(and <code>saved securely</code> when the keyring has it). The warning that comes with it says why. When
+the keyring refuses a new token for a profile, whatever it still holds for that profile is
+removed, because the keyring is read first and an older, shorter token in it would hide the
+new one. A token expires within the hour, so the file never holds a token that is of use for
+long.</p>
 <h2 id="what-pbi_cli-reads-from-a-token">What pbi_cli reads from a token<a class="headerlink" href="#what-pbi_cli-reads-from-a-token" title="Permanent link">¤</a></h2>
 <p>A token is a signed JWT. pbi_cli reads a few claims from it, on your machine, without
 checking the signature and without sending it anywhere:</p>

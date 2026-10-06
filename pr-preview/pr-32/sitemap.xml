@@ -61,6 +61,12 @@
         <loc>https://emptymalei.github.io/powerbi-cli/references/core/scan/</loc>
       </url>
       <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/scanmodel/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/core/sources/</loc>
+      </url>
+      <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/core/store/</loc>
       </url>
       <url>
@@ -109,10 +115,16 @@
         <loc>https://emptymalei.github.io/powerbi-cli/references/tui/backend/</loc>
       </url>
       <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/tui/plain/</loc>
+      </url>
+      <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/tui/render/</loc>
       </url>
       <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/tui/run/</loc>
+      </url>
+      <url>
+        <loc>https://emptymalei.github.io/powerbi-cli/references/tui/scanview/</loc>
       </url>
       <url>
         <loc>https://emptymalei.github.io/powerbi-cli/references/tui/summary/</loc>
