@@ -1173,6 +1173,20 @@ def test_two_accounts_see_their_own_workspaces_and_the_catalog_knows_both(world)
     }
 
 
+def test_the_catalog_knows_which_accounts_have_a_list_even_when_it_is_empty(world):
+    world.fake.visible_to = {"oid-ana": ["ws-0001"], "oid-bob": []}
+    world.accounts(ana="oid-ana", bob="oid-bob", cy="oid-cy")
+
+    assert catalog_of(world).accounts_with_a_list() == frozenset()  # nobody was asked
+
+    world.run("user-groups", user_profile="ana")
+    world.run("user-groups", user_profile="bob")  # a list with nothing in it
+    found = catalog_of(world)
+
+    assert found.accounts_with_a_list() == {"ana", "bob"}  # cy has none
+    assert found.workspace("ws-0001").visible_to == ["ana"]  # bob lists nothing
+
+
 def test_the_apps_of_a_user_are_in_the_workspaces_they_belong_to(user_world):
     found = catalog_of(user_world)
 

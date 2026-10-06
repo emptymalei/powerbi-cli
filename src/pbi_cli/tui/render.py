@@ -1034,6 +1034,8 @@ def plan_file_summary(plan: PlanFile) -> Text:
         text.append("  " + (", ".join(tenant.targets) or "the plain sync"))
         if tenant.activity_days:
             text.append(f"; {tenant.activity_days} days of events")
+        if "scan" in tenant.targets or "all" in tenant.targets:
+            text.append(f"; scan ({describe_scan(tenant.scan)})")
         text.append("\n")
     if plan.workspaces:
         text.append("\nWorkspaces\n", style="bold")

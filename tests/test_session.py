@@ -1,5 +1,6 @@
 """``pbi_cli.session`` builds the lake and the client from the user's settings."""
 
+import os
 import warnings
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -15,6 +16,8 @@ from pbi_cli.core.store import LakeStore, PublishInfo
 from pbi_cli.errors import PBIError, ReadOnlyLake
 from pbi_cli.session import (
     LAKE_ENV,
+    as_path,
+    is_work_lake,
     lake_hint,
     lake_path,
     lake_root,
@@ -228,6 +231,73 @@ def test_a_plan_file_names_a_lake_that_the_option_and_the_environment_overrule(
     assert "opened with the plan file" in by_plan.store.why_read_only()
     assert by_environment.store.root == other and by_environment.source == LAKE_ENV
     assert by_option.store.root == other and by_option.source == "--lake"
+
+
+@pytest.mark.parametrize("as_cache_folder", [True, False])
+def test_the_work_lake_is_the_work_lake_before_the_first_sync_has_made_it(
+    cache_folder, as_cache_folder
+):
+    assert not (cache_folder / "lake").exists()  # nothing was synced yet
+    asked = cache_folder if as_cache_folder else cache_folder / "lake"
+
+    by_option = resolve_lake(str(asked), environ={})
+    by_plan = resolve_lake(None, environ={}, plan_lake=str(asked))
+
+    for opened in (by_option, by_plan):
+        assert opened.work and not opened.readonly
+        assert opened.store.root == cache_folder / "lake"
+
+
+def test_a_folder_that_is_not_the_cache_folder_is_not_the_work_lake_before_a_sync(
+    cache_folder, tmp_path
+):
+    elsewhere = tmp_path / "somewhere-else"
+    elsewhere.mkdir()
+
+    with pytest.raises(PBIError, match="no data lake at"):
+        resolve_lake(str(elsewhere), environ={})
+
+
+def test_what_is_the_work_lake(cache_folder, tmp_path):
+    assert is_work_lake(cache_folder)
+    assert is_work_lake(cache_folder / "lake")
+    assert is_work_lake(as_path(str(cache_folder) + os.sep))  # a trailing slash
+    assert not is_work_lake(tmp_path / "other")
+    assert not is_work_lake(cache_folder.parent)  # the folder around it
+
+
+def test_there_is_no_work_lake_without_a_cache_folder(tmp_path):
+    assert not is_work_lake(tmp_path)
+
+
+def test_a_place_without_a_lake_says_where_the_location_came_from(
+    cache_folder, tmp_path
+):
+    nothing = str(tmp_path / "nothing-here")
+
+    from_option = _message(lambda: resolve_lake(nothing, environ={}))
+    from_environment = _message(lambda: resolve_lake(None, environ={LAKE_ENV: nothing}))
+    from_plan = _message(lambda: resolve_lake(None, environ={}, plan_lake=nothing))
+
+    assert (
+        f"There is no data lake at {nothing}: nothing there looks like one."
+        in from_option
+    )
+    assert "session.lake" not in from_option and LAKE_ENV not in from_option
+    assert (
+        "environment variable PBI_LAKE: unset it to open your work lake"
+        in from_environment
+    )
+    assert (
+        "the `session.lake` of the plan file: leave that out to open your work lake "
+        "(the cache folder), which a sync writes to"
+    ) in from_plan
+
+
+def _message(call) -> str:
+    with pytest.raises(PBIError) as refused:
+        call()
+    return str(refused.value)
 
 
 def test_a_plan_file_without_a_lake_leaves_the_work_lake(cache_folder):

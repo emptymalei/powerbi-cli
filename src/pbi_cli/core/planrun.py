@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
-from pbi_cli.core.catalog import Catalog, Workspace
+from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.planfile import Accounting, Compiled, Overrides, PlanFile, Step
 from pbi_cli.core.registry import ENDPOINTS
 from pbi_cli.core.store import LakeStore
@@ -192,13 +192,13 @@ class PlanRun:
             )
         return accounting
 
-    def _workspaces(self, accounting: Accounting) -> List[Workspace]:
-        """The workspaces the lake knows, as the accounts of the plan see the tenant."""
+    def _catalog(self, accounting: Accounting) -> Catalog:
+        """What the lake holds, as the accounts of the plan see the tenant."""
         options = SyncOptions(
             admin_profile=accounting.admin,
             user_profile=accounting.users[0] if accounting.users else None,
         )
-        return Catalog(self.store, self.engine.tenant(options)).workspaces()
+        return Catalog(self.store, self.engine.tenant(options))
 
     def _first(self, accounting: Accounting) -> List[Step]:
         return self.plan_file.first_steps(accounting)
@@ -207,7 +207,10 @@ class PlanRun:
         # without workspaces there is nothing to look up: the lake need not be read
         if not self.plan_file.workspaces:
             return Compiled()
-        return self.plan_file.workspace_steps(accounting, self._workspaces(accounting))
+        catalog = self._catalog(accounting)
+        return self.plan_file.workspace_steps(
+            accounting, catalog.workspaces(), catalog.accounts_with_a_list()
+        )
 
     def steps(self) -> Tuple[List[Step], Compiled]:
         """The steps as the lake is now: those for the tenant, and those for the workspaces

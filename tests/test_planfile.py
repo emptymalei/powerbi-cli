@@ -232,6 +232,21 @@ def test_the_workspaces_of_the_file_know_where_they_are():
     assert plan.workspaces[1].names_a_profile and not plan.workspaces[0].names_a_profile
 
 
+def test_an_id_may_come_with_a_name_that_is_only_its_label():
+    # as in the file of `pbi workspaces scan batch`: an id, and a name to tell it by
+    plan = read(
+        "version: 1\nworkspaces:\n"
+        "  - {id: ws-1, name: IT Management, scan: true}\n"
+        "  - {id: ws-2, scan: true}\n  - {name: 'Fin*', scan: true}\n"
+    )
+
+    first, second, third = plan.workspaces
+    assert (first.id, first.name) == ("ws-1", "IT Management")
+    assert first.label == "IT Management"  # what a message calls it
+    assert first.where == "workspaces[0] (IT Management)"
+    assert (second.label, third.label) == ("ws-2", "Fin*")  # the id, else the pattern
+
+
 def test_the_scan_flags_are_described_in_words():
     assert describe_scan(ScanFlags()) == "no options"
     assert (
@@ -317,11 +332,6 @@ def test_the_scan_flags_are_described_in_words():
             "among tenant.targets",
         ),
         (
-            "version: 1\ntenant:\n  scan: {lineage: true}\n",
-            "pbi-plan.yaml:3: tenant.scan: has no effect: 'scan' is not among "
-            "tenant.targets",
-        ),
-        (
             "version: 1\ntenant:\n  full_scan: true\n",
             "pbi-plan.yaml:3: tenant.full_scan: has no effect",
         ),
@@ -351,13 +361,9 @@ def test_the_scan_flags_are_described_in_words():
             "pbi-plan.yaml:3: workspaces[0]: must be a mapping",
         ),
         (
-            "version: 1\nworkspaces:\n  - {id: a, name: b, scan: true}\n",
-            "pbi-plan.yaml:3: workspaces[0]: needs either `id:` (one workspace) or "
-            "`name:` (a pattern), not both and not neither",
-        ),
-        (
             "version: 1\nworkspaces:\n  - {scan: true}\n",
-            "pbi-plan.yaml:3: workspaces[0]: needs either `id:`",
+            "pbi-plan.yaml:3: workspaces[0]: needs `id:` (one workspace) or `name:` "
+            "(a pattern for names); an `id:` may come with a `name:` that is only its label",
         ),
         (
             "version: 1\nworkspaces:\n  - {id: a}\n",
@@ -762,8 +768,8 @@ class _Stand:
         self.visible_to = []
 
 
-def steps_for(extra: str, accounting=BOTH, lake=LAKE):
-    return workspaces_file(extra).workspace_steps(accounting, lake)
+def steps_for(extra: str, accounting=BOTH, lake=LAKE, listed=None):
+    return workspaces_file(extra).workspace_steps(accounting, lake, listed)
 
 
 def test_a_scan_step_is_made_of_the_workspaces_a_pattern_matches():
@@ -799,6 +805,22 @@ def test_a_name_is_a_pattern_over_active_workspaces_that_are_not_personal(
 
     found = [i for s in compiled.steps for i in s.options.workspace_ids]
     assert found == expected
+
+
+def test_the_name_that_comes_with_an_id_is_not_looked_up():
+    compiled = steps_for(
+        "  - {id: ws-eu, name: Something else entirely, scan: true}\n"
+        "  - {id: ws-new, name: Not in the lake yet, details: [pages]}\n"
+    )
+
+    scans = [s for s in compiled.steps if s.options.targets == ("scan",)]
+    assert [s.options.workspace_ids for s in scans] == [("ws-eu",)]  # by its id
+    assert compiled.unmatched == []
+    # the label tells the workspace in a message, though the lake does not know it
+    assert any(
+        "no user account of the plan lists Not in the lake yet (ana, bob)" in note
+        for note in compiled.notes
+    ), compiled.notes
 
 
 def test_an_id_is_taken_as_it_is_even_when_the_lake_does_not_know_it():
@@ -893,9 +915,36 @@ def test_a_workspace_no_user_account_lists_gets_a_note_and_nothing_else():
     assert compiled.steps == []
     assert compiled.notes == [
         "workspaces[0] (Finance H*): no user account of the plan lists Finance Hidden "
-        "(ana, bob), so what only a user can read is not fetched for it; name an "
-        "account with via: <profile>"
+        "(ana, bob), so what only a user can read is not fetched for it; give that "
+        "account access to the workspace, or name another with via: <profile>"
     ]
+
+
+def test_a_workspace_is_not_called_unlisted_while_an_account_has_not_been_asked():
+    entry = "  - {name: 'Finance H*', details: [pages]}\n"
+
+    nobody_asked = steps_for(entry, listed=set())
+    bob_not_asked = steps_for(entry, listed={"ana"})
+    both_asked = steps_for(entry, listed={"ana", "bob"})
+    unknown = steps_for(
+        entry
+    )  # nothing is said about the lists: they are taken as held
+
+    assert nobody_asked.steps == []
+    assert nobody_asked.notes == [
+        "workspaces[0] (Finance H*): which user account lists Finance Hidden is not "
+        "known yet: the lake holds no list of workspaces for ana, bob. A step of the plan "
+        "fetches it, and a run works the rest out from it; until then what only a user "
+        "can read is not planned for it"
+    ]
+    # only the account that was not asked is named
+    assert "the lake holds no list of workspaces for bob. A step" in (
+        bob_not_asked.notes[0]
+    )
+    for answered in (both_asked, unknown):
+        assert "no user account of the plan lists Finance Hidden (ana, bob)" in (
+            answered.notes[0]
+        )
 
 
 def test_the_note_about_workspaces_nobody_lists_names_a_few_of_them():
@@ -1087,6 +1136,71 @@ def test_a_detail_that_no_account_can_give_is_refused_with_the_reason(
     assert "pbi-plan.yaml:3: workspaces[0] (a).details:" in str(error.value)
 
 
+def test_auto_fetches_what_it_can_and_says_what_no_stored_account_can():
+    compiled = steps_for(
+        "  - {id: ws-eu, details: [users, pages, tiles], via: auto}\n",
+        accounting=ADMIN_ONLY,
+    )
+
+    (step,) = compiled.steps
+    assert "group-users" in step.options.targets  # the users: the administrator can
+    assert compiled.notes == [
+        "workspaces[0] (ws-eu): 'pages' needs an account that is not stored: a user's "
+        "(`pbi auth -t <token> -g user`). It is not fetched.",
+        "workspaces[0] (ws-eu): 'tiles' needs an account that is not stored: a user's "
+        "(`pbi auth -t <token> -g user`). It is not fetched.",
+    ]  # and nothing more: there is no user account to look at
+
+
+def test_auto_that_could_fetch_nothing_is_refused_unless_a_scan_is_asked_for_too():
+    with pytest.raises(
+        PlanFileError, match="'pages' needs an account that is not stored"
+    ):
+        steps_for("  - {id: a, details: [pages, tiles]}\n", accounting=ADMIN_ONLY)
+
+    compiled = steps_for(
+        "  - {id: a, scan: true, details: [pages]}\n", accounting=ADMIN_ONLY
+    )
+
+    assert [s.options.targets for s in compiled.steps] == [("scan",)]
+    assert len(compiled.notes) == 1 and "'pages' needs an account" in compiled.notes[0]
+
+
+def test_an_account_that_is_named_is_not_forgiven_what_it_cannot_give():
+    with pytest.raises(PlanFileError, match="'pages' cannot be fetched with the admin"):
+        steps_for("  - {id: a, details: [users, pages], via: admin}\n")
+
+
+def test_the_entry_of_a_user_who_asked_for_everything_about_one_workspace():
+    plan = workspaces_file(
+        "  - id: ws-it\n    name: IT Management\n"
+        "    scan:\n      lineage: true\n      datasource_details: true\n"
+        "      dataset_schema: true\n      dataset_expressions: true\n"
+        "      get_artifact_users: true\n"
+        "    details: [users, datasources, pages, refreshes, parameters, tiles]\n"
+        "    via: auto\n"
+    )
+    lake = [workspace("IT Management", "ws-it", visible_to=["ana"])]
+
+    both = plan.workspace_steps(BOTH, lake)
+    admin_only = plan.workspace_steps(ADMIN_ONLY, [workspace("IT Management", "ws-it")])
+
+    assert [(names(s), s.options.user_profile) for s in both.steps][0] == (
+        ["scan"],
+        None,
+    )
+    assert both.steps[0].options.scan_flags == ALL_FIVE
+    assert any(
+        s.options.user_profile == "ana"
+        and names(s)
+        == ["user-dashboard-tiles", "user-dataset-parameters", "user-pages"]
+        for s in both.steps
+    )
+    assert both.notes == []
+    assert [names(s) for s in admin_only.steps][0] == ["scan"]
+    assert len(admin_only.notes) == 3  # pages, parameters and tiles: no user account
+
+
 def test_a_user_can_read_the_refresh_history_of_a_dataset_so_it_is_not_refused():
     (step,) = steps_for("  - {id: ws-eu, details: [refreshes], via: user}\n").steps
 
@@ -1152,6 +1266,150 @@ def test_a_flag_that_is_not_given_changes_nothing():
     assert Overrides().apply(options) is options
     assert Overrides(wait=0.0).apply(options).max_wait == 0.0  # zero is a value
     assert Overrides(force=False, days=None).apply(options) == options
+
+
+# ---------------------------------------------------------------------------
+# the options of a scan: a mapping, a list of names, or true; and a scan under tenant
+# ---------------------------------------------------------------------------
+
+ALL_FIVE = ScanFlags(True, True, True, True, True)
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        "{lineage: true, datasource_details: true, dataset_schema: true, "
+        "dataset_expressions: true, get_artifact_users: true}",
+        "[lineage, datasource_details, dataset_schema, dataset_expressions, "
+        "get_artifact_users]",
+    ],
+)
+def test_the_options_of_a_scan_are_a_mapping_or_a_list_of_names(written):
+    tenant = read(f"version: 1\ntenant: {{scan: {written}}}\n").tenant
+    entry = read(
+        f"version: 1\nworkspaces:\n  - {{id: a, scan: {written}}}\n"
+    ).workspaces[0]
+
+    assert tenant.scan == ALL_FIVE and entry.scan == ALL_FIVE
+
+
+def test_a_list_names_only_the_options_that_are_on():
+    plan = read("version: 1\ntenant: {scan: [lineage, get_artifact_users]}\n")
+
+    assert plan.tenant.scan == ScanFlags(lineage=True, get_artifact_users=True)
+
+
+def test_an_empty_list_is_a_scan_with_no_options():
+    plan = read("version: 1\ntenant: {scan: []}\nworkspaces:\n  - {id: a, scan: []}\n")
+
+    assert plan.tenant.scan == ScanFlags() and plan.workspaces[0].scan == ScanFlags()
+    assert plan.tenant.targets == ("default", "scan")  # it is a scan
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (
+            "version: 1\ntenant:\n  scan:\n    - lineage\n    - dataset_expression\n",
+            "pbi-plan.yaml:5: tenant.scan[1]: 'dataset_expression' is not a scan option. "
+            "Did you mean 'dataset_expressions'? The options are: lineage, "
+            "datasource_details, dataset_schema, dataset_expressions, get_artifact_users.",
+        ),
+        (
+            "version: 1\nworkspaces:\n  - id: a\n    scan: [lineage, nope]\n",
+            "pbi-plan.yaml:4: workspaces[0].scan[1]: 'nope' is not a scan option.",
+        ),
+        (
+            "version: 1\ntenant: {scan: [lineage, 3]}\n",
+            "pbi-plan.yaml:2: tenant.scan[1]: '3' is not a scan option.",
+        ),
+    ],
+)
+def test_a_name_that_is_not_an_option_of_a_scan_says_which_and_what_was_meant(
+    text, expected
+):
+    assert expected in refused(text)
+
+
+@pytest.mark.parametrize(
+    "written", ["{lineage: true}", "[lineage]", "true"], ids=["mapping", "list", "true"]
+)
+def test_a_scan_under_tenant_asks_for_the_scan_without_naming_it_in_the_targets(
+    written,
+):
+    tenant = read(f"version: 1\ntenant: {{scan: {written}}}\n").tenant
+
+    assert tenant.targets == ("default", "scan")  # the plain sync, and the scan
+
+
+def test_the_scan_that_a_section_asks_for_is_added_to_the_targets_that_are_named():
+    named = read("version: 1\ntenant:\n  targets: [groups]\n  scan: [lineage]\n")
+    twice = read("version: 1\ntenant:\n  targets: [scan]\n  scan: [lineage]\n")
+    everything = read("version: 1\ntenant:\n  targets: [all]\n  scan: [lineage]\n")
+
+    assert named.tenant.targets == ("groups", "scan")
+    assert twice.tenant.targets == ("scan",)  # not named twice
+    assert everything.tenant.targets == ("all",)  # all has it already
+    assert everything.tenant.scan == ScanFlags(lineage=True)
+
+
+def test_scan_false_is_no_scan_and_the_target_still_scans_with_no_options():
+    off = read("version: 1\ntenant:\n  targets: [groups]\n  scan: false\n").tenant
+    named = read("version: 1\ntenant:\n  targets: [scan]\n  scan: false\n").tenant
+
+    assert off.targets == ("groups",) and off.scan == ScanFlags()
+    assert named.targets == ("scan",)
+
+
+def test_the_options_that_only_a_scan_has_need_one_and_say_how_to_get_it():
+    for key in ("full_scan", "exclude_personal", "exclude_inactive"):
+        message = refused(f"version: 1\ntenant:\n  {key}: true\n")
+        assert (
+            f"tenant.{key}: has no effect: 'scan' is not among tenant.targets."
+            in message
+        )
+        assert (
+            "Add a `scan:` section to tenant (or `scan` to tenant.targets)" in message
+        )
+        assert read(f"version: 1\ntenant:\n  {key}: true\n  scan: [lineage]\n").tenant
+        assert read(f"version: 1\ntenant:\n  targets: [scan]\n  {key}: true\n").tenant
+
+
+def test_the_days_of_events_need_the_events_and_the_message_says_how_to_get_them():
+    message = refused("version: 1\ntenant:\n  activity_days: 7\n")
+
+    assert (
+        "tenant.activity_days: has no effect: 'activity' is not among tenant.targets."
+        in (message)
+    )
+    assert (
+        "Add `activity` to tenant.targets" in message and "e-mail addresses" in message
+    )
+
+
+USER_FILE = """\
+version: 1
+tenant:
+  targets: [default, activity]
+  activity_days: 28 # days of audit events (1 to 28); only with `activity` above
+  scan:
+    - lineage
+    - datasource_details
+    - dataset_schema
+    - dataset_expressions
+    - get_artifact_users
+"""
+
+
+def test_a_tenant_that_keeps_the_events_and_scans_every_workspace_with_all_the_options():
+    plan = read(USER_FILE)
+
+    (step,) = plan.first_steps(ADMIN_ONLY)
+
+    assert plan.tenant.targets == ("default", "activity", "scan")
+    assert {"groups", "activity", "scan"} <= set(step.options.targets)
+    assert step.options.days == 28 and step.options.scan_flags == ALL_FIVE
+    assert step.options.admin_profile == "adm"
 
 
 # ---------------------------------------------------------------------------

@@ -49,7 +49,15 @@ from pbi_cli.core.sync.state import FAILED as MARKED_FAILED
 from pbi_cli.core.sync.state import STATE_NAME, SyncState
 from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS, select_targets
 from pbi_cli.errors import PBIError
-from pbi_cli.session import lake_hint, open_lake, quota_file, resolve_lake
+from pbi_cli.session import (
+    as_path,
+    is_work_lake,
+    lake_hint,
+    lake_root,
+    open_lake,
+    quota_file,
+    resolve_lake,
+)
 
 sync_app = new_app("sync")
 
@@ -359,6 +367,24 @@ def _overrides(
     )
 
 
+def _say_what_session_lake_is_for(plan_file: PlanFile) -> None:
+    """A sync writes to the work lake and nowhere else: say so when the plan file names
+    another lake (``session.lake`` is the one that ``pbi tui --config`` opens)."""
+    wanted = plan_file.lake
+    if not wanted:
+        return
+    try:
+        here = is_work_lake(lake_root(as_path(wanted)))
+    except Exception:  # a place that cannot be read is not the work lake either
+        here = False
+    if not here:
+        typer.secho(
+            f"Note: session.lake ({wanted}) is the lake that `pbi tui --config` opens; a "
+            "sync writes to the work lake above, and only there.",
+            fg="yellow",
+        )
+
+
 def _plan_file_plan(config: Path, overrides: Overrides) -> None:
     """``pbi sync plan --config``."""
     store = _lake()
@@ -368,6 +394,7 @@ def _plan_file_plan(config: Path, overrides: Overrides) -> None:
         sequence = run.plan()
     typer.echo(f"Data lake: {store.root}")
     typer.echo(f"Plan file: {plan_file.path}")
+    _say_what_session_lake_is_for(plan_file)
     if sequence.accounts:
         typer.echo(f"Accounts: {', '.join(sequence.accounts)}")
     _print_sequence(sequence)
@@ -759,6 +786,7 @@ def _plan_file_run(config: Path, overrides: Overrides) -> Tuple[RunReport, str]:
     plan_file = PlanFile.load(config)
     typer.echo(f"Data lake: {store.root}")
     typer.echo(f"Plan file: {plan_file.path}")
+    _say_what_session_lake_is_for(plan_file)
     with ClientPool() as clients:
         run = PlanRun(SyncEngine(clients, store), store, plan_file, overrides=overrides)
         labels = run.accounting().labels()

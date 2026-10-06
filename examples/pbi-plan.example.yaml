@@ -27,6 +27,8 @@ accounts:
 tenant:
   targets: [default, activity]
   activity_days: 7 # days of audit events (1 to 28); only with `activity` above
+  # scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan
+  #                                     # only some, use `scan:` in an entry below)
 
 # What to keep for particular workspaces. A workspace is an `id`, or a `name` (a pattern:
 # `*` and `?` stand for any text and one character) that is looked up in the list of
@@ -45,6 +47,7 @@ workspaces:
     via: auto
 
   - id: 3f1c9a52-0000-0000-0000-000000000000
+    name: Finance Controlling # with an id, a name is only a label for messages
     details: [pages, tiles] # only a user's account reads these
     via: svc-finance
 

@@ -33,6 +33,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    FrozenSet,
     Iterable,
     List,
     Mapping,
@@ -550,6 +551,7 @@ class _State:
     baseline: Optional[_Baseline]
     user_lists: Dict[Tuple[str, str], Snapshot]
     user_apps: Optional[datetime]
+    accounts_listing: FrozenSet[str] = frozenset()
 
 
 class Catalog:
@@ -655,10 +657,13 @@ class Catalog:
                 )
 
         # the workspaces that accounts see, each by its own list: the union of them all
+        accounts_listing = set()
         for ps in self._store.parameter_sets(self.tenant, USER_WORKSPACES):
             who = _text(ps.latest.manifest.get("profile")) or _text(
                 ps.params.get(IDENTITY_PARAM)
             )
+            if who:
+                accounts_listing.add(who)  # it has a list, even an empty one
             try:
                 rows = _dicts(rows_of(get_endpoint(USER_WORKSPACES), ps.latest.load()))
             except (OSError, ValueError) as error:
@@ -751,6 +756,7 @@ class Catalog:
             baseline=self._baseline(),
             user_lists=user_lists,
             user_apps=user_apps,
+            accounts_listing=frozenset(accounts_listing),
         )
 
     # -- the lists of the tenant -------------------------------------------------------
@@ -818,6 +824,12 @@ class Catalog:
         if kind == "app":
             return self._s.user_apps is not None
         return (kind, workspace_id) in self._s.user_lists
+
+    def accounts_with_a_list(self) -> FrozenSet[str]:
+        """The accounts (by the name of their profile) whose own list of workspaces the lake
+        holds, even an empty one: for the others, ``Workspace.visible_to`` knows nothing.
+        """
+        return self._s.accounts_listing
 
     def user_list(self, kind: str, workspace_id: str) -> Optional[Snapshot]:
         """The list that an account made of one kind of item in a workspace, if there is

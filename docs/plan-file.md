@@ -81,8 +81,8 @@ tenant:
 | --- | --- |
 | `targets` | The targets of [`pbi sync`](sync.md#what-can-be-synced). Without it, or with only `tenant:`, it is the plain sync: the lists of the tenant when there is an administrator account, else what a user can see. |
 | `activity_days` | Days of audit events, today included, 1 to 28 (default 28). Only with `activity` among the targets. |
-| `scan` | What the scan of every workspace includes, with [the scan options](#the-scan-options) below; `true` is a scan with none. Only with `scan` among the targets. |
-| `full_scan`, `exclude_personal`, `exclude_inactive` | As the options of `pbi sync run` of the same names. Only with `scan` among the targets. |
+| `scan` | **Scan every workspace of the tenant**, with these options: [the scan options](#the-scan-options) below, as a mapping or a list of names; `true` or `[]` is a scan with none. It asks for the scan, so `scan` need not be among the targets as well. (To scan only some workspaces, put `scan:` in an entry of `workspaces` instead.) |
+| `full_scan`, `exclude_personal`, `exclude_inactive` | As the options of `pbi sync run` of the same names. They need a scan: a `scan:` section here, or `scan` among the targets. |
 
 The administrator's targets run once, with the administrator's account. A target of a
 user's account (`user-groups`, ...) runs **once for each user profile** of the file, each
@@ -90,8 +90,14 @@ keeping its own answers in the lake.
 
 ### The scan options
 
-A `scan` takes these keys (those of the file of [`pbi workspaces scan batch`](scan.md)); each is
-`true` or `false`, and `false` is the default:
+A `scan` takes these options (those of the file of [`pbi workspaces scan batch`](scan.md)),
+as a mapping in which each is `true` or `false` (`false` is the default), or as a list of the
+names of those that are on; the two are the same:
+
+```yaml
+scan: {lineage: true, datasource_details: true}
+scan: [lineage, datasource_details]
+```
 
 | Key | What the scan includes |
 | --- | --- |
@@ -117,9 +123,11 @@ workspaces:
     via: svc-finance
 ```
 
-**Which workspaces.** Exactly one of:
+**Which workspaces.** An `id`, or a `name`:
 
 - `id`: one workspace, by its id. It is used as it is, even when the lake does not know it.
+  A `name` may go with it, as in the file of `pbi workspaces scan batch`: it is then only
+  the label that messages call the workspace by, and is not looked up.
 - `name`: a pattern for names. `*` stands for any text and `?` for one character, case does
   not matter, and the whole name has to match (`Finance*`, not `Finance`). It is looked up
   in the **list of workspaces in the lake**, so the list has to be there: the steps for the
@@ -151,7 +159,7 @@ workspaces:
 
 | `via` | The account |
 | --- | --- |
-| `auto` (the default) | The administrator's, when it can read what is asked (it needs no permission on the item); else a user account whose own list of workspaces holds the workspace. |
+| `auto` (the default) | The administrator's, when it can read what is asked (it needs no permission on the item); else a user account whose own list of workspaces holds the workspace. What no stored account can fetch is left out, with a note. |
 | `admin` | The administrator's account only. |
 | `user` | A user account only, never the administrator's: the first of `accounts.user` whose own list of workspaces holds the workspace. Use it to spare the quota of the administrator's operations. |
 | a profile name | That user profile, whatever its list says. |
@@ -160,10 +168,14 @@ Which user account lists a workspace comes from the lake: the list of workspaces
 user account keeps (`user-groups`). When an entry may need it, the plan starts with one
 request for each listed user account to fetch that list, so a file works from an empty lake.
 
-A detail that no account the entry may use can fetch, such as `pages` with `via: admin`
-(only a user's account has the operation), is an error that says so. A detail that only
-*some* kinds of item can give, such as `users` with `via: user` (a user cannot read the
-users of a report), is fetched for those that can, and the plan says which are left out.
+What an entry asks of an account that it names is checked: a detail that this kind of
+account cannot fetch at all, such as `pages` with `via: admin` (only a user's account has
+the operation), is an error that says so. With `via: auto`, which is *whichever account can*,
+a detail that no stored account can fetch (`pages` when no user account is stored) is left
+out with a note that says what to store, as long as the entry still does something (a scan,
+or another detail); an entry that would do nothing is an error. A detail that only *some*
+kinds of item can give, such as `users` with `via: user` (a user cannot read the users of a
+report), is fetched for those that can, and the plan says which are left out.
 
 ### `session`
 
@@ -178,7 +190,7 @@ session:
 
 | Key | What it is |
 | --- | --- |
-| `lake` | The lake to open: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. `--lake` and `PBI_LAKE` come first; without any, your work lake. Any lake but your work lake is [opened read-only](sharing.md). |
+| `lake` | The lake that `pbi tui --config` opens: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. `--lake` and `PBI_LAKE` come first; without any, your work lake (the cache folder). Any lake but your work lake is [opened read-only](sharing.md), and has to exist: leave `lake` out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another. |
 | `open` | A workspace to select at the start: an id, or a name pattern (the first match). |
 | `lazy` | What to do about a detail the lake lacks: `ask` (press `f`, the default), `auto` (fetch the harmless ones by itself) or `off` (do nothing). Write `off` as it is: it is not read as a yes or a no. |
 
@@ -227,8 +239,13 @@ The steps, in order:
    the order of the file.
 
 So **the plan you see before the first run is incomplete**: the names of workspaces cannot be
-looked up before the lake has the list, and the plan says so. Plan again after a run, or just
-run: it works out the later steps when it gets there.
+looked up before the lake has the list, and the plan says so. The same goes for which user
+account reads a workspace: until the lake holds the list of workspaces of each user account of
+the file, the plan says "which user account lists X is not known yet" and plans nothing that
+only a user can read for it. A run fetches those lists first and then knows; if it still says
+that no user account lists the workspace (the note then names the accounts), the account has no
+access to the workspace: give it access, or name another account with `via:`. Plan again after
+a run, or just run: it works out the later steps when it gets there.
 
 What a run does, and what it does not:
 

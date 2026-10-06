@@ -68,8 +68,17 @@
   the key. It compiles to ordinary sync runs, one step for the tenant and one for each set of
   workspaces, details and account (`pbi_cli.core.planrun` plans and runs them one after the
   other, and reports them as one). A name in the file is a pattern looked up in the list of
-  workspaces in the lake; `via: auto` reads with the administrator's account when it can and
-  else with the user account whose own list of workspaces holds the workspace.
+  workspaces in the lake (an `id` may come with a `name` that is only its label, as in the
+  file of `pbi workspaces scan batch`); `via: auto` reads with the administrator's account
+  when it can and else with the user account whose own list of workspaces holds the
+  workspace, and leaves out, with a note, what no stored account can fetch. `scan:` takes a
+  mapping or a list of the names of the options, and under `tenant` it asks for the scan of
+  every workspace. A plan made before the lake holds the list of workspaces of a user
+  account says that it is not known yet which account lists a workspace, instead of saying
+  that none does. `session.lake` that names the cache folder (or its `lake` folder) is the
+  work lake even before the first sync has made it, a lake that is not there says where its
+  location came from and what to leave out, and `pbi sync plan|run --config` says that a
+  `session.lake` that is not the work lake is only for `pbi tui --config`.
 - **`pbi tui --config FILE`** opens the [terminal UI](tui.md#with-a-plan-file) with a plan file.
   The Sync screen shows the file and the plan of its steps (one table with the number of each
   step, what they cost together, the names that match nothing yet), **Run plan** goes through the

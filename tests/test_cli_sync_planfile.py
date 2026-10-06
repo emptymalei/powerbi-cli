@@ -120,6 +120,57 @@ def test_a_plan_after_a_run_has_every_step_and_nothing_left_to_fetch(
     assert "no workspace is called" not in result.output
 
 
+def test_a_scan_section_under_tenant_is_planned_as_the_scan_of_every_workspace(
+    accounts, tmp_path
+):
+    path = write(
+        tmp_path,
+        "version: 1\ntenant:\n  targets: [default, activity]\n  activity_days: 3\n"
+        "  scan:\n    - lineage\n    - datasource_details\n",
+    )
+
+    result = sync("plan", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "Step 1: the tenant (adm)" in result.output
+    targets = [row[0] for row in rows(result.output, "TARGET")]
+    assert "scan" in targets and "activity" in targets and "groups" in targets
+    assert "scan copies the contents of every workspace" in result.output
+
+
+def test_a_name_for_an_option_of_a_scan_that_is_not_one_is_said_with_a_guess(
+    accounts, tmp_path
+):
+    path = write(
+        tmp_path,
+        "version: 1\ntenant:\n  scan:\n    - lineage\n    - dataset_expression\n",
+    )
+
+    result = sync("plan", "--config", path)
+
+    assert result.exit_code == 1
+    assert (
+        "pbi-plan.yaml:5: tenant.scan[1]: 'dataset_expression' is not a scan option. "
+        "Did you mean 'dataset_expressions'?"
+    ) in result.output
+    assert accounts.calls == []
+
+
+def test_an_id_may_come_with_a_name_that_is_only_its_label(accounts, tmp_path):
+    path = write(
+        tmp_path,
+        "version: 1\nworkspaces:\n"
+        "  - id: ws-0002\n    name: IT Management\n    details: [users]\n"
+        "    via: admin\n",
+    )
+
+    result = sync("plan", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "no workspace is called" not in result.output  # the id is used, not the name
+    assert "Step 1: dashboard-users" in result.output
+
+
 def test_a_plan_without_steps_says_so(accounts, tmp_path):
     path = write(tmp_path, "version: 1\n")
 
@@ -522,17 +573,62 @@ def test_a_plan_file_needs_a_lake(fake, signed_in, tmp_path, command):
     assert fake.calls == []
 
 
-def test_the_session_section_does_not_matter_to_a_sync(accounts, tmp_path):
+@pytest.mark.parametrize("command", ["plan", "run"])
+def test_a_sync_writes_to_the_work_lake_and_says_so_when_session_lake_is_another(
+    accounts, tmp_path, cache_folder, command
+):
     path = write(
         tmp_path,
         "version: 1\ntenant: {targets: [groups]}\n"
         "session: {lake: /somewhere/else, open: Finance, lazy: auto}\n",
     )
 
-    result = sync("run", "--config", path)
+    result = sync(command, "--config", path)
 
     assert result.exit_code == 0, result.output
-    assert "/somewhere/else" not in result.output
+    assert f"Data lake: {cache_folder / 'lake'}" in result.output  # where it writes
+    assert (
+        "Note: session.lake (/somewhere/else) is the lake that `pbi tui --config` opens; "
+        "a sync writes to the work lake above, and only there."
+    ) in result.output
+    if command == "run":
+        assert not Path("/somewhere/else").exists()
+        assert lake(cache_folder).tenants() == ["tenant-1"]
+
+
+def test_a_session_lake_that_cannot_be_read_is_not_taken_for_the_work_lake(
+    accounts, tmp_path, monkeypatch
+):
+    def unreadable(path):
+        raise OSError("the bucket cannot be listed")
+
+    monkeypatch.setattr("pbi_cli.cli_sync.lake_root", unreadable)
+    path = write(
+        tmp_path,
+        "version: 1\ntenant: {targets: [groups]}\nsession: {lake: 's3://bucket/lake'}\n",
+    )
+
+    result = sync("plan", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "Note: session.lake (s3://bucket/lake) is the lake that" in result.output
+
+
+@pytest.mark.parametrize("which", ["cache folder", "lake folder", "no session lake"])
+def test_there_is_no_note_when_session_lake_is_the_work_lake(
+    accounts, tmp_path, cache_folder, which
+):
+    named = {
+        "cache folder": f"session: {{lake: '{cache_folder}'}}\n",
+        "lake folder": f"session: {{lake: '{cache_folder / 'lake'}'}}\n",
+        "no session lake": "session: {lazy: ask}\n",
+    }[which]
+    path = write(tmp_path, "version: 1\ntenant: {targets: [groups]}\n" + named)
+
+    result = sync("plan", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "Note: session.lake" not in result.output
 
 
 def test_the_help_tells_about_the_plan_file():

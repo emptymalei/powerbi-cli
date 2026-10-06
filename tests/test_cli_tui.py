@@ -225,6 +225,35 @@ def test_a_session_without_a_plan_file_has_nothing_to_read_again(opened, cache_f
         opened["backend"].plan_run()
 
 
+def test_a_lake_of_the_plan_file_that_is_not_there_says_to_leave_it_out(
+    opened, cache_folder, tmp_path
+):
+    path = write_plan(
+        tmp_path / "p", f"version: 1\nsession: {{lake: '{tmp_path / 'nope'}'}}\n"
+    )
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 1
+    assert "There is no data lake at" in result.output and "nope" in result.output
+    assert "leave that out to open your work lake" in result.output
+    assert opened == {}
+
+
+def test_the_cache_folder_as_the_lake_of_the_plan_file_is_the_work_lake_before_a_sync(
+    opened, cache_folder, tmp_path
+):
+    path = write_plan(
+        tmp_path / "p", f"version: 1\nsession: {{lake: '{cache_folder}'}}\n"
+    )
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 0, result.output
+    backend = opened["backend"]
+    assert backend.store.root == cache_folder / "lake" and not backend.readonly
+
+
 def test_a_way_to_read_a_plan_again_is_no_plan(opened, cache_folder):
     invoke("tui")
     backend = opened["backend"]

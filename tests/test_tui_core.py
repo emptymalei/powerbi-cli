@@ -1038,6 +1038,22 @@ def test_the_summary_of_a_plan_file_says_what_the_file_says():
     assert "lazy: auto" in summary and "Press l to read the file again." in summary
 
 
+def test_the_summary_of_a_plan_file_shows_the_scan_of_the_tenant():
+    from pbi_cli.core.planfile import PlanFile
+
+    scanned = text(
+        render.plan_file_summary(
+            PlanFile.parse(
+                "version: 1\ntenant:\n  scan: [lineage, datasource_details]\n"
+            )
+        )
+    )
+    unscanned = text(render.plan_file_summary(PlanFile.parse("version: 1\ntenant:\n")))
+
+    assert "default, scan; scan (lineage, datasource details)" in scanned
+    assert "scan" not in unscanned.split("Session")[0].replace("workspaces", "")
+
+
 def test_the_summary_of_a_plan_file_says_what_it_leaves_to_the_defaults():
     from pbi_cli.core.planfile import PlanFile
 

@@ -149,6 +149,34 @@ def lake_root(path: Any) -> Any:
 #: What `OpenedLake.source` says for a lake that a plan file chose.
 PLAN_SOURCE = "the plan file"
 
+#: What to add to the message about a place that holds no lake, for where it came from.
+_WHERE_IT_CAME_FROM = {
+    PLAN_SOURCE: (
+        " The location is the `session.lake` of the plan file: leave that out to open your "
+        "work lake (the cache folder), which a sync writes to."
+    ),
+    LAKE_ENV: (
+        f" The location is the environment variable {LAKE_ENV}: unset it to open your work "
+        "lake."
+    ),
+}
+
+
+def is_work_lake(path: Any, config: Optional[PBIConfig] = None) -> bool:
+    """Whether a path is the work lake: the lake of the cache folder, or the cache folder
+    itself (the lake is the ``lake`` folder in it, and may not be there before the first
+    sync).
+
+    :param path: a folder or a cloud URL (`as_path`), as the user gave it or as `lake_root`
+        made it
+    :param config: the settings (default: the stored ones)
+    """
+    config = config or PBIConfig()
+    work = lake_path(config)
+    if work is None:
+        return False
+    return same_place(path, work) or same_place(path, AnyPath(config.cache_folder))
+
 
 def resolve_lake(
     location: Optional[str] = None,
@@ -189,12 +217,12 @@ def resolve_lake(
         found = _holds_a_lake(path)
     except Exception as error:  # missing credentials or client library, bad URL, ...
         raise PBIError(f"Cannot read the lake at {wanted}: {error}") from error
-    if work is not None and same_place(path, work):
-        return OpenedLake(LakeStore(path), True, source)
+    if work is not None and is_work_lake(path, config):
+        return OpenedLake(LakeStore(work), True, source)
     if not found:
         raise PBIError(
             f"There is no data lake at {wanted}: nothing there looks like one. Check the "
-            "location (and, for a bucket, your credentials)."
+            f"location (and, for a bucket, your credentials).{_WHERE_IT_CAME_FROM.get(source, '')}"
         )
     reason = (
         f"The lake {path} was opened with {source}, which only reads. Only the work lake "

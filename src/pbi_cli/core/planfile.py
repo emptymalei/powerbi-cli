@@ -49,6 +49,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import (
     Any,
+    Collection,
     Dict,
     FrozenSet,
     List,
@@ -339,7 +340,8 @@ class WorkspaceEntry:
 
     :param id: the id of a workspace (or ``name``)
     :param name: a pattern for the names of workspaces (``*`` is any text, ``?`` one
-        character), looked up in the list of workspaces in the lake
+        character), looked up in the list of workspaces in the lake; with an ``id`` it is
+        only the label of that workspace, as in the file of ``pbi workspaces scan batch``
     :param scan: a metadata scan of them with these options (``None``: no scan)
     :param details: details of every item in them (`pbi_cli.core.details.TITLES`)
     :param via: whose account reads them: ``auto``, ``admin``, ``user`` or a profile name
@@ -357,8 +359,9 @@ class WorkspaceEntry:
 
     @property
     def label(self) -> str:
-        """What the entry is called in a message."""
-        return self.id or self.name
+        """What the entry is called in a message: its name (the pattern, or the label of an
+        id), else its id."""
+        return self.name or self.id
 
     @property
     def where(self) -> str:
@@ -461,9 +464,9 @@ def _decode(data: bytes) -> str:
 class _Listed:
     """A workspace that a plan names by id and the lake has no list entry for."""
 
-    def __init__(self, workspace_id: str):
+    def __init__(self, workspace_id: str, name: str = ""):
         self.id = workspace_id
-        self.name = workspace_id
+        self.name = name or workspace_id
         self.visible_to: List[str] = []
 
 
@@ -617,11 +620,26 @@ class PlanFile:
 
     @staticmethod
     def _flags(reader: _Reader, box: Mapping[str, Any], key: str, path: str) -> Any:
-        """The options of a scan: a mapping of flags, or ``true`` for a scan with none."""
+        """The options of a scan: a mapping of flags, a list of the names of those that are on,
+        or ``true`` for a scan with none; ``None`` for ``false`` (no scan)."""
         value = box[key]
         where = reader.join(path, key)
         if isinstance(value, bool):
             return ScanFlags() if value else None
+        if isinstance(value, list):
+            on: Dict[str, bool] = {}
+            for index, item in enumerate(value):
+                if not isinstance(item, str) or item.strip() not in SCAN_KEYS:
+                    close = difflib.get_close_matches(str(item), SCAN_KEYS, n=1)
+                    hint = f" Did you mean '{close[0]}'?" if close else ""
+                    reader.fail(
+                        reader.join(where, index),
+                        f"'{item}' is not a scan option.{hint} The options are: "
+                        f"{', '.join(SCAN_KEYS)}.",
+                        _line(value, index) or _line(box, key),
+                    )
+                on[item.strip()] = True
+            return ScanFlags(**on)
         inner = reader.mapping(value, where, SCAN_KEYS, _line(box, key))
         return ScanFlags(
             **{name: reader.boolean(inner, name, where) for name in SCAN_KEYS}
@@ -651,24 +669,41 @@ class PlanFile:
                     f"{', '.join(t.name for t in TARGETS)}; or '{DEFAULT}' and '{ALL}'.",
                     _line(box.get("targets"), index) or _line(box, "targets"),
                 )
-        chosen = {t.name for t in select_targets(targets).targets}
+        scan = ScanFlags()
+        asks_for_scan = False
+        if "scan" in box:
+            found = cls._flags(reader, box, "scan", "tenant")
+            if found is not None:  # `scan: false` is no scan
+                scan, asks_for_scan = found, True
 
-        def needs(key: str, target: str) -> None:
+        chosen = {t.name for t in select_targets(targets).targets}
+        if asks_for_scan and "scan" not in chosen:
+            # a `scan:` asks for the scan, as it does in an entry of `workspaces`: it need not
+            # be named in the targets as well (without targets, the plain sync stays)
+            targets = (targets or (DEFAULT,)) + ("scan",)
+            chosen.add("scan")
+
+        def needs(key: str, target: str, advice: str) -> None:
             if key in box and target not in chosen:
                 reader.fail(
                     f"tenant.{key}",
-                    f"has no effect: '{target}' is not among tenant.targets",
+                    f"has no effect: '{target}' is not among tenant.targets. {advice}",
                     _line(box, key),
                 )
 
-        needs("activity_days", "activity")
-        for key in ("scan", "full_scan", "exclude_personal", "exclude_inactive"):
-            needs(key, "scan")
-
-        scan = ScanFlags()
-        if "scan" in box:
-            found = cls._flags(reader, box, "scan", "tenant")
-            scan = found if found is not None else ScanFlags()
+        needs(
+            "activity_days",
+            "activity",
+            "Add `activity` to tenant.targets to keep the audit events (they hold "
+            "e-mail addresses and IP addresses), or remove this key.",
+        )
+        for key in ("full_scan", "exclude_personal", "exclude_inactive"):
+            needs(
+                key,
+                "scan",
+                "Add a `scan:` section to tenant (or `scan` to tenant.targets) to scan "
+                "every workspace, or remove this key.",
+            )
         return TenantPlan(
             targets=targets,
             activity_days=reader.integer(box, "activity_days", "tenant", 1, MAX_DAYS),
@@ -698,11 +733,11 @@ class PlanFile:
             path = f"workspaces[{index}]"
             line = _line(listing, index)
             box = reader.mapping(item, path, _WORKSPACE_KEYS, line)
-            if ("id" in box) == ("name" in box):
+            if "id" not in box and "name" not in box:
                 reader.fail(
                     path,
-                    "needs either `id:` (one workspace) or `name:` (a pattern), not both "
-                    "and not neither",
+                    "needs `id:` (one workspace) or `name:` (a pattern for names); an "
+                    "`id:` may come with a `name:` that is only its label",
                     line,
                 )
             details = reader.strings(box, "details", path)
@@ -908,8 +943,11 @@ class PlanFile:
     def _check(self, entry: WorkspaceEntry, accounting: Accounting) -> List[str]:
         """Refuse an entry that can never be carried out, and say what in it can not be.
 
-        :return: notes about the details that some kinds of item cannot give
-        :raises PlanFileError: when the entry can fetch nothing it asks for
+        :return: notes about the details that some kinds of item cannot give, and (for
+            ``via: auto``, which means whichever account can) about those that no stored
+            account can
+        :raises PlanFileError: when the entry can fetch nothing it asks for, or asks an
+            account that is named for what it cannot give
         """
         if entry.scan is not None and not accounting.admin:
             raise PlanFileError(
@@ -918,6 +956,7 @@ class PlanFile:
                 "`pbi auth -t <token> -g admin`."
             )
         notes: List[str] = []
+        nobody: List[Tuple[str, str]] = []  # details that no account can fetch, and why
         for detail in entry.details:
             by_kind = _providers(detail)
             served, unserved = [], []
@@ -934,14 +973,25 @@ class PlanFile:
                     ok = user and (bool(accounting.users) or entry.names_a_profile)
                 (served if ok else unserved).append(kind)
             if not served:
-                raise PlanFileError(
-                    f"{self.name}:{entry.line}: {entry.where}.details: {self._cannot(entry, detail, accounting)}"
-                )
+                nobody.append((detail, self._cannot(entry, detail, accounting)))
+                continue
             if unserved:
                 notes.append(
                     f"{entry.where}: the {detail} of {', '.join(sorted(unserved))} are not "
                     f"fetched: {self._reason(entry, detail, accounting)}"
                 )
+        if nobody:
+            # An account that is named is a mistake of the file. `auto` is whichever account
+            # can, so what none can is left out, with the reason, as long as the entry still
+            # does something (a scan, or another detail).
+            does_something = entry.scan is not None or len(nobody) < len(entry.details)
+            if entry.via != VIA_AUTO or not does_something:
+                raise PlanFileError(
+                    f"{self.name}:{entry.line}: {entry.where}.details: {nobody[0][1]}"
+                )
+            notes.extend(
+                f"{entry.where}: {why} It is not fetched." for _, why in nobody
+            )
         return notes
 
     @staticmethod
@@ -1003,7 +1053,7 @@ class PlanFile:
         are not personal)."""
         if entry.id:
             known = [w for w in workspaces if w.id == entry.id]
-            return known or [_Listed(entry.id)]
+            return known or [_Listed(entry.id, entry.name)]
         pattern = _pattern(entry.name)
         return [
             w
@@ -1014,7 +1064,10 @@ class PlanFile:
         ]
 
     def workspace_steps(
-        self, accounting: Accounting, workspaces: Sequence[Any]
+        self,
+        accounting: Accounting,
+        workspaces: Sequence[Any],
+        listed: Optional[Collection[str]] = None,
     ) -> Compiled:
         """The steps for the workspaces of the plan.
 
@@ -1022,6 +1075,9 @@ class PlanFile:
         :param workspaces: the workspaces the lake knows (`pbi_cli.core.catalog.Workspace`):
             names are looked up in them, and ``visible_to`` says which user account lists a
             workspace
+        :param listed: the user accounts whose own list of workspaces the lake holds
+            (default: all of them), so that a workspace that nobody lists can be told from
+            one whose accounts have not been asked yet
         :raises PlanFileError: for an entry that can never be carried out
         """
         compiled = Compiled()
@@ -1066,12 +1122,25 @@ class PlanFile:
                 shown = ", ".join(orphans[:3]) + (
                     f" and {len(orphans) - 3} more" if len(orphans) > 3 else ""
                 )
-                compiled.notes.append(
-                    f"{entry.where}: no user account of the plan lists {shown} "
-                    f"({', '.join(accounting.users) or 'none stored'}), so what only a "
-                    "user can read is not fetched for it; name an account with via: "
-                    "<profile>"
-                )
+                unasked = [
+                    p
+                    for p in accounting.users
+                    if listed is not None and p not in listed
+                ]
+                if unasked:  # not "nobody lists it": nobody has been asked yet
+                    compiled.notes.append(
+                        f"{entry.where}: which user account lists {shown} is not known yet: "
+                        f"the lake holds no list of workspaces for {', '.join(unasked)}. A "
+                        "step of the plan fetches it, and a run works the rest out from it; "
+                        "until then what only a user can read is not planned for it"
+                    )
+                else:
+                    compiled.notes.append(
+                        f"{entry.where}: no user account of the plan lists {shown} "
+                        f"({', '.join(accounting.users)}), so what only a user can read is "
+                        "not fetched for it; give that account access to the workspace, or "
+                        "name another with via: <profile>"
+                    )
 
         compiled.steps.extend(self._scan_steps(scans, accounting))
         compiled.steps.extend(self._detail_steps(needs, accounting))
@@ -1097,6 +1166,8 @@ class PlanFile:
             return None
         if entry.names_a_profile:
             return user, entry.via
+        if not accounting.users:  # no account to look at: the entry says so already
+            return None
         holder = next((p for p in accounting.users if p in workspace.visible_to), None)
         return user, holder
 

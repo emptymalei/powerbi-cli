@@ -302,6 +302,48 @@ def test_the_plan_before_the_first_sync_says_the_names_are_not_known_yet(world):
     assert "no list of workspaces yet" in plan.unmatched[0][1]
 
 
+def test_the_plan_says_that_nobody_was_asked_yet_and_then_that_nobody_lists_it(world):
+    world.accounts(ana="oid-ana")
+    world.fake.visible_to = {"oid-ana": ["ws-0001"]}
+    run = run_of(
+        world,
+        "version: 1\naccounts: {user: [ana]}\nworkspaces:\n"
+        "  - {id: ws-0002, details: [pages]}\n",
+    )
+
+    before = run.plan()
+    world.run("user-groups", user_profile="ana")  # what the first step of the plan does
+    after = run.plan()
+
+    assert any(
+        "not known yet" in n and "for ana" in n for n in before.notes
+    ), before.notes
+    assert not any("not known yet" in n for n in after.notes)
+    assert any(
+        "no user account of the plan lists ws-0002 (ana)" in n for n in after.notes
+    ), after.notes
+
+
+def test_the_run_assigns_a_workspace_to_the_account_that_lists_it_once_it_knows(world):
+    world.accounts(ana="oid-ana", bob="oid-bob")
+    world.fake.visible_to = {"oid-ana": ["ws-0001"], "oid-bob": ["ws-0002"]}
+    run = run_of(
+        world,
+        "version: 1\naccounts: {user: [ana, bob]}\nworkspaces:\n"
+        "  - {id: ws-0002, details: [pages]}\n",
+    )
+    steps = []
+
+    report = run.run(on_step=lambda number, step: steps.append(step))
+
+    assert report.status == COMPLETED and report.counts[FAILED] == 0
+    assert [(s.options.targets, s.options.user_profile) for s in steps][-1] == (
+        ("user-pages",),
+        "bob",  # known only after the lists were fetched
+    )
+    assert not any("not known yet" in n for n in report.notes)
+
+
 def test_the_plan_adds_up_the_requests_and_says_that_steps_share_lists(world):
     plan = run_of(
         world,
