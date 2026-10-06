@@ -224,6 +224,24 @@
 
 ### Fixed
 
+- The [terminal UI](tui.md) showed names as markup: a workspace called
+  `[Confidential]IT Management` was shown as `IT Management` (the bracket was read as a style
+  tag), `[Experiment] Test` lost its tag the same way, and a name such as `Sales [/Q4]`
+  ended the whole app with a `MarkupError` the moment it was selected. Names, titles,
+  tables, dialogs, notices and the details are now shown exactly as they are.
+- The empty state of a workspace in the [terminal UI](tui.md) says what the last sync did
+  about a list it lacks: that it could not be fetched (with the reason Power BI gave), or was
+  held back by a quota. It also names the lists that are missing when only some are, instead
+  of always saying "the lists of items". The notice at the end of a sync that had failures
+  or held units back names the first problem, and stays fifteen seconds.
+- The sign-in dialog of the [terminal UI](tui.md) no longer stores a token that has expired
+  already (it said nothing, and the next request asked again), and says when the token it
+  stored a moment ago is refused as well, so that a second dialog is not taken for the same
+  question. A token that is submitted twice (Enter, then a click before the dialog is gone) is
+  stored, and answered, once. With a [plan file](plan-file.md) the header shows the accounts
+  of the file, and `f` and `lazy: auto` fetch through them: they used the *active* profile of
+  the kind, which could be an account the plan does not name, and was asked for a token the
+  plan never uses.
 - The [terminal UI](tui.md) no longer fails with an error about a widget that is gone, now and
   then, when it is quit while a sync is ending: what a worker hands over is dropped once the
   app is closing.
@@ -246,6 +264,10 @@
 
 ### Development
 
+- `pbi_cli.tui.plain` has the widgets that show a `str` as the text it is (`PlainStatic`,
+  `PlainLabel`, `PlainTable`); the screens use them instead of Textual's, which read a `str`
+  as markup, and `PBIApp.notify` never reads a notice as markup. Nothing in the UI is
+  written in markup: styled text is a `rich.text.Text`.
 - The fake service in `tests/fake_powerbi.py` knows who asks: the account is the `oid` of the
   token, each account can see its own workspaces (`visible_to`), the admin operations can be
   made to refuse a token that is not an administrator's (`require_admin`), and it serves the

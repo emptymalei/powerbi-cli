@@ -31,7 +31,9 @@ collect_ignore_glob = (
         "test_tui_explorer.py",
         "test_tui_lakes.py",
         "test_tui_lazy.py",
+        "test_tui_plain.py",
         "test_tui_planfile.py",
+        "test_tui_signin.py",
         "test_tui_sync.py",
         "tui_helpers.py",
     ]

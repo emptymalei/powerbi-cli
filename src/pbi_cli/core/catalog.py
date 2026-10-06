@@ -50,7 +50,7 @@ from pbi_cli.core.details import Detail, collect
 from pbi_cli.core.registry import IDENTITY_PARAM, get_endpoint
 from pbi_cli.core.scan import RESULT_ENDPOINT, ScanFlags, split_scan_result
 from pbi_cli.core.store import EventDay, LakeStore, Snapshot
-from pbi_cli.core.sync.state import STATE_NAME
+from pbi_cli.core.sync.state import DEFERRED, FAILED, STATE_NAME
 from pbi_cli.core.sync.targets import TARGETS
 
 #: The things that live in a workspace, in the order they are listed.
@@ -552,6 +552,7 @@ class _State:
     user_lists: Dict[Tuple[str, str], Snapshot]
     user_apps: Optional[datetime]
     accounts_listing: FrozenSet[str] = frozenset()
+    troubles: Dict[str, Tuple[str, str]] = field(default_factory=dict)
 
 
 class Catalog:
@@ -635,6 +636,25 @@ class Catalog:
             exclude_personal=bool(coverage.get("excludePersonalWorkspaces")),
             exclude_inactive=bool(coverage.get("excludeInActiveWorkspaces")),
         )
+
+    def _troubles(self) -> Dict[str, Tuple[str, str]]:
+        """What the last syncs could not fetch: for each operation, the newest unit that failed
+        or was held back by a quota, as its status and the first line of the reason."""
+        units = (self._store.read_state(self.tenant, STATE_NAME) or {}).get("units")
+        newest: Dict[str, Tuple[datetime, str, str]] = {}
+        for unit in (units or {}).values():
+            if not isinstance(unit, dict):
+                continue
+            endpoint, status = _text(unit.get("endpoint")), _text(unit.get("status"))
+            at = _parse(unit.get("updated_at"))
+            if not endpoint or status not in (FAILED, DEFERRED) or at is None:
+                continue
+            if endpoint not in newest or at > newest[endpoint][0]:
+                reason = _text(unit.get("error")).strip().splitlines()
+                newest[endpoint] = (at, status, reason[0] if reason else "")
+        return {
+            endpoint: (status, why) for endpoint, (_, status, why) in newest.items()
+        }
 
     def _read(self) -> _State:
         listings: Dict[str, Optional[Listing]] = {
@@ -757,6 +777,7 @@ class Catalog:
             user_lists=user_lists,
             user_apps=user_apps,
             accounts_listing=frozenset(accounts_listing),
+            troubles=self._troubles(),
         )
 
     # -- the lists of the tenant -------------------------------------------------------
@@ -824,6 +845,15 @@ class Catalog:
         if kind == "app":
             return self._s.user_apps is not None
         return (kind, workspace_id) in self._s.user_lists
+
+    def trouble(self, kind: str) -> Optional[Tuple[str, str]]:
+        """What the last sync that tried to fetch the list of a kind did not manage: ``failed``
+        or ``deferred`` (held back for a quota), with the reason. ``None`` when the state of
+        the sync says nothing about it (it was not asked for, or the run never got to it).
+
+        :param kind: ``report``, ``dataset``, ``dashboard``, ``dataflow``, ``app``, ...
+        """
+        return self._s.troubles.get(LIST_ENDPOINTS.get(kind, ""))
 
     def accounts_with_a_list(self) -> FrozenSet[str]:
         """The accounts (by the name of their profile) whose own list of workspaces the lake

@@ -10,6 +10,7 @@ from textual.css.query import NoMatches
 from textual.widgets import Static
 
 from pbi_cli.tui import render
+from pbi_cli.tui.plain import PlainStatic
 
 #: The frames of the little spinner that shows a sync is running.
 SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -25,9 +26,9 @@ class StatusBar(Horizontal):
     """Tenant, profile, lake and token on the left; the running sync on the right."""
 
     def compose(self) -> ComposeResult:
-        yield Static("", id="who")
-        yield Static("", id="busy")
-        yield Static(Text(HINT, style="grey62"), id="hint")
+        yield PlainStatic("", id="who")
+        yield PlainStatic("", id="busy")
+        yield PlainStatic(Text(HINT, style="grey62"), id="hint")
 
     @on(events.Click, "#hint")
     def _open_the_palette(self) -> None:

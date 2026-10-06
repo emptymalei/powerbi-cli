@@ -11,6 +11,7 @@ Everything that talks to the lake or the API runs in a worker thread and reports
 only requests it can make are those of the sync engine, which only reads.
 """
 
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 
@@ -18,12 +19,14 @@ from loguru import logger
 from textual import work
 from textual.app import App
 from textual.binding import Binding
+from textual.notifications import SeverityLevel
 
 from pbi_cli.core.catalog import Catalog, Match
 from pbi_cli.core.planfile import find_workspace
 from pbi_cli.core.planrun import PlanRun
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
+from pbi_cli.core.timefmt import format_age
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
@@ -45,6 +48,26 @@ from pbi_cli.tui.syncscreen import SyncScreen
 
 #: Seconds between two looks at the token (the countdown in the header).
 IDENTITY_EVERY = 30
+
+#: Seconds that a notice with something to read in it stays on the screen.
+NOTICE_LONG = 15
+
+
+def first_trouble(report: RunReport) -> str:
+    """The first thing that went wrong in a run, in a sentence (empty when nothing did)."""
+    if report.failures:
+        where, problem = report.failures[0]
+        lines = problem.strip().splitlines()
+        return f" First failure: {where}: {lines[0] if lines else 'no reason given'}."
+    if report.deferred:
+        key, wait = report.deferred[0]
+        when = (
+            f", to be tried again in {format_age(timedelta(seconds=wait))}"
+            if wait
+            else ""
+        )
+        return f" First held back: {key}{when}."
+    return ""
 
 
 def lake_label(root: Any, width: int = 36) -> str:
@@ -103,6 +126,7 @@ class PBIApp(App[None]):
         self.run_state: Optional[RunState] = None
         self.lake_label = lake_label(backend.store.root)
         self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
+        self._signed_in_as: Optional[Tuple[str, Optional[str]]] = None
         self._sink: Optional[int] = None
 
     # -- start and end -----------------------------------------------------------------------
@@ -149,6 +173,22 @@ class PBIApp(App[None]):
             return callback(*args, **kwargs)
 
         return super().call_from_thread(hand_over)
+
+    def notify(
+        self,
+        message: str,
+        *,
+        title: str = "",
+        severity: SeverityLevel = "information",
+        timeout: Optional[float] = None,
+        markup: bool = True,
+    ) -> None:
+        """Show a notification. What it says is shown as it is, whatever ``markup`` asks for:
+        it holds names (``[Confidential]Sales``) and what an API answered, and a ``[`` in it is
+        not a tag (one that Textual cannot read ends the app)."""
+        super().notify(
+            message, title=title, severity=severity, timeout=timeout, markup=False
+        )
 
     def action_quit(self) -> None:
         """Quit; when a sync is running, ask first, and stop it."""
@@ -223,14 +263,24 @@ class PBIApp(App[None]):
             if signed is None:
                 self._resume = None
                 return
+            logger.info(
+                f"Stored a token for the profile {modal.stored_profile} ({signed})"
+            )
             self.refresh_identity()
             self.notify(f"Signed in ({signed}).")
             if self._resume is not None:
                 work_to_do, label_text = self._resume
                 self._resume = None
+                # if the run that goes on stops for this very account, the token was no good
+                self._signed_in_as = (signed, modal.stored_profile)
                 self.start_sync(work_to_do, label_text)
 
-        self.push_screen(SignInModal(self.backend, group, reason, profile), signed_in)
+        asked = (reason.strip().splitlines() or [""])[0]
+        logger.info(
+            f"Asking for a token of {profile or 'the active profile'} ({group}): {asked}"
+        )
+        modal = SignInModal(self.backend, group, reason, profile)
+        self.push_screen(modal, signed_in)
 
     def action_accounts(self) -> None:
         """List the stored profiles: make one active, or store a new token for it."""
@@ -269,15 +319,31 @@ class PBIApp(App[None]):
         self,
         error: BaseException,
         resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]],
+        signed: Optional[Tuple[str, Optional[str]]] = None,
     ) -> None:
-        """Say why a sync could not run; for a missing or expired token, ask to sign in."""
+        """Say why a sync could not run; for a missing or expired token, ask to sign in.
+
+        :param signed: the kind and the profile of the token that was stored to let this sync
+            go on, when it is the sync that was held up for that
+        """
         if isinstance(error, AuthError):
             self._resume = resume
             # ask for the kind of token that is missing or expired, not always the admin's,
             # and store it under the profile it is about (a plan can use several accounts)
-            self.action_sign_in(
-                reason=str(error), group=error.group or "admin", profile=error.profile
-            )
+            group = error.group or "admin"
+            reason = str(error)
+            if (
+                signed is not None
+                and signed[0] == group
+                and error.profile in (None, signed[1])
+            ):
+                # the token that was stored a moment ago did not do: say so, so that it is
+                # not taken for the same question again
+                reason = (
+                    f"The token that was just stored for {signed[1]} ({group}) was "
+                    f"refused as well. {reason}"
+                )
+            self.action_sign_in(reason=reason, group=group, profile=error.profile)
         elif isinstance(error, PBIError):
             self.notify(str(error), title="Cannot sync", severity="error")
         else:
@@ -472,15 +538,16 @@ class PBIApp(App[None]):
         self.reload_catalog()
         self.refresh_bars()
         resume = (state.work, state.label)
+        signed, self._signed_in_as = self._signed_in_as, None
         if error is not None:
-            self.explain_sync_problem(error, resume)
+            self.explain_sync_problem(error, resume, signed)
             return
         assert report is not None
         if report.status == TOKEN_EXPIRED:
             expired = TokenExpiredError(
                 report.message, group=report.group, profile=report.profile
             )
-            self.explain_sync_problem(expired, resume)
+            self.explain_sync_problem(expired, resume, signed)
         elif report.status == INTERRUPTED:
             self.notify(
                 f"{state.label}: stopped. What is done is kept; run it again to continue.",
@@ -489,8 +556,10 @@ class PBIApp(App[None]):
         elif report.failures or report.deferred:
             self.notify(
                 f"{state.label}: finished, with {len(report.failures)} failure(s) and "
-                f"{len(report.deferred)} unit(s) held back.",
+                f"{len(report.deferred)} unit(s) held back.{first_trouble(report)} "
+                "The Run tab of the Sync screen (s) has the rest.",
                 severity="warning",
+                timeout=NOTICE_LONG,
             )
         else:
             self.notify(f"{state.label}: done.")
@@ -522,11 +591,23 @@ class PBIApp(App[None]):
         plan = self.backend.plan
         return plan.session.lazy if plan is not None else "ask"
 
-    def fetching(self) -> Fetching:
+    def fetching(self, workspace: Optional[str] = None) -> Fetching:
         """What this session can fetch for one item: which accounts are stored, whether the
-        lake can be written, and whether it fetches by itself."""
+        lake can be written, and whether it fetches by itself.
+
+        :param workspace: the id of the workspace of the item, to pick the account of the plan
+            file whose own list holds it
+        """
+        found = (
+            self.catalog.workspace(workspace) if self.catalog and workspace else None
+        )
+        admin, user = self.backend.profiles_for(found.visible_to if found else ())
         return Fetching(
-            self.backend.available_scopes() or None, self.backend.readonly, self.lazy
+            self.backend.available_scopes() or None,
+            self.backend.readonly,
+            self.lazy,
+            admin,
+            user,
         )
 
     def workspace_to_open(self) -> Optional[str]:

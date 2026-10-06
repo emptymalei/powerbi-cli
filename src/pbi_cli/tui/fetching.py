@@ -4,7 +4,7 @@ The Details tab says it, ``f`` does it, and the command palette offers it: all t
 same question (which account fetches it, and what does that cost), so it is answered once.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import AbstractSet, Callable, List, Optional, Tuple
 
 from pbi_cli.core.details import Detail, Provider, choose, fetch_options, has_margin
@@ -26,11 +26,16 @@ class Fetching:
     :param view_only: why nothing can be fetched into the lake (``""``: it can)
     :param lazy: what the session does about a detail the lake lacks: ``ask``, ``auto`` or
         ``off``
+    :param admin_profile: the administrator profile that a fetch is made through (default: the
+        active one); a session with a plan file uses the accounts of the file
+    :param user_profile: the same for the user account
     """
 
     available: Optional[AbstractSet[Scope]] = None
     view_only: str = ""
     lazy: str = ASK
+    admin_profile: Optional[str] = None
+    user_profile: Optional[str] = None
 
     def provider(self, detail: Detail) -> Optional[Provider]:
         """The provider that would fetch a detail now, if a stored account can."""
@@ -98,5 +103,10 @@ class Fetching:
         return found
 
     def options(self, wanted: List[Tuple[Detail, Provider]]) -> SyncOptions:
-        """The sync that fetches them, for this item and no other."""
-        return fetch_options([provider for _, provider in wanted])
+        """The sync that fetches them, for this item and no other, through the accounts of
+        the session."""
+        return replace(
+            fetch_options([provider for _, provider in wanted]),
+            admin_profile=self.admin_profile,
+            user_profile=self.user_profile,
+        )

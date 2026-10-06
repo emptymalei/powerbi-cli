@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Sequence, Tuple, TypeVar
 
 from rich.console import RenderableType
+from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -21,7 +22,10 @@ from textual.widgets import (
 )
 from textual.widgets.option_list import Option
 
+from pbi_cli.core.auth import EXPIRY_LEEWAY
+from pbi_cli.core.jwt import token_info
 from pbi_cli.tui.backend import AccountInfo, Backend
+from pbi_cli.tui.plain import PlainLabel, PlainStatic, PlainTable
 
 GROUPS = ("admin", "user")
 
@@ -62,6 +66,8 @@ class SignInModal(Dialog[Optional[str]]):
         self._group = group if group in GROUPS else "admin"
         self._reason = reason
         self._profile = profile
+        #: the profile the token was stored under, once it was
+        self.stored_profile: Optional[str] = None
 
     def _profile_for(self, group: str) -> str:
         if self._profile and group == self._group:
@@ -70,15 +76,15 @@ class SignInModal(Dialog[Optional[str]]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label("Sign in", id="dialog-title")
+            yield PlainLabel("Sign in", id="dialog-title")
             if self._reason:
-                yield Static(self._reason, id="dialog-reason")
-            yield Static(
+                yield PlainStatic(self._reason, id="dialog-reason")
+            yield PlainStatic(
                 "Paste a fresh bearer token (the Authentication page of the documentation "
                 "says how to get one) and press Enter. It is stored as `pbi auth` stores "
                 "it, in the keyring, and replaces the token of the profile."
             )
-            yield Label("Kind of token")
+            yield PlainLabel("Kind of token")
             with RadioSet(id="group"):
                 for group in GROUPS:
                     yield RadioButton(
@@ -91,11 +97,11 @@ class SignInModal(Dialog[Optional[str]]):
                         value=group == self._group,
                         name=group,
                     )
-            yield Label("Profile")
+            yield PlainLabel("Profile")
             yield Input(value=self._profile_for(self._group), id="profile")
-            yield Label("Token")
+            yield PlainLabel("Token")
             yield Input(password=True, placeholder="paste the token here", id="token")
-            yield Static("", id="error")
+            yield PlainStatic("", id="error")
             with Horizontal(id="buttons"):
                 yield Button("Sign in", variant="primary", id="ok", compact=True)
                 yield Button("Cancel", id="cancel", compact=True)
@@ -125,6 +131,8 @@ class SignInModal(Dialog[Optional[str]]):
         self.dismiss(None)
 
     def _sign_in(self) -> None:
+        if self.stored_profile is not None:
+            return  # Enter pressed twice, or Enter and a click: the token is stored already
         error = self.query_one("#error", Static)
         token = "".join(self.query_one("#token", Input).value.split())
         if token.lower().startswith("bearer"):
@@ -136,12 +144,23 @@ class SignInModal(Dialog[Optional[str]]):
         if not profile:
             error.update("Give the profile a name.")
             return
+        info = token_info(token)
+        if info.expires_at is not None and info.is_expired(
+            now=self._backend.clock(), leeway=EXPIRY_LEEWAY
+        ):
+            # storing it would only make the next request ask again
+            error.update(
+                f"That token expired at {info.expires_at:%Y-%m-%d %H:%M} UTC. "
+                "Paste a fresh one."
+            )
+            return
         group = self._selected_group()
         try:
             self._backend.sign_in(token, profile, group)
         except Exception as problem:  # shown here, never with the token in it
             error.update(f"Could not store the token: {problem}")
             return
+        self.stored_profile = profile
         self.dismiss(group)
 
 
@@ -167,9 +186,9 @@ class ConfirmModal(Dialog[bool]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label(self._title, id="dialog-title")
+            yield PlainLabel(self._title, id="dialog-title")
             with VerticalScroll(id="dialog-body"):
-                yield Static(self._body)
+                yield PlainStatic(self._body)
             with Horizontal(id="buttons"):
                 yield Button(self._action, variant="primary", id="yes", compact=True)
                 yield Button("Cancel", id="no", compact=True)
@@ -206,11 +225,12 @@ class ChoiceModal(Dialog[Optional[str]]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label(self._title, id="dialog-title")
+            yield PlainLabel(self._title, id="dialog-title")
             if self._note:
-                yield Static(self._note)
+                yield PlainStatic(self._note)
             yield OptionList(
-                *[Option(text, id=value) for value, text in self._choices], id="choices"
+                *[Option(Text(text), id=value) for value, text in self._choices],
+                id="choices",
             )
             with Horizontal(id="buttons"):
                 yield Button("Cancel", id="cancel", compact=True)
@@ -254,21 +274,21 @@ class OpenLakeModal(Dialog[Optional[str]]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label("Open a lake", id="dialog-title")
-            yield Static(
+            yield PlainLabel("Open a lake", id="dialog-title")
+            yield PlainStatic(
                 "A lake is a folder, or a URL such as s3://bucket/folder. One that is opened "
                 "here is only read: nothing is fetched into it, and no account is needed. "
                 f"Open now: {self._current}"
             )
             choices = []
             if self._work:
-                choices.append(Option(f"Work lake   {self._work}", id=WORK_LAKE))
+                choices.append(Option(Text(f"Work lake   {self._work}"), id=WORK_LAKE))
             choices.extend(
-                Option(f"Recent      {item}", id=item) for item in self._recent
+                Option(Text(f"Recent      {item}"), id=item) for item in self._recent
             )
             if choices:
                 yield OptionList(*choices, id="choices")
-            yield Label("Or type a location")
+            yield PlainLabel("Or type a location")
             yield Input(
                 placeholder="s3://bucket/folder or /path/to/lake", id="location"
             )
@@ -317,13 +337,13 @@ class AccountsModal(Dialog[Optional[Tuple[str, str, str]]]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label("Accounts", id="dialog-title")
-            yield Static(
+            yield PlainLabel("Accounts", id="dialog-title")
+            yield PlainStatic(
                 "The profiles stored with `pbi auth`. Enter makes the highlighted one the "
                 "active profile of its group, `n` stores a new token for it. The sync uses "
                 "the active profile of each group."
             )
-            yield DataTable(id="accounts", cursor_type="row", zebra_stripes=True)
+            yield PlainTable(id="accounts", cursor_type="row", zebra_stripes=True)
             with Horizontal(id="buttons"):
                 yield Button(
                     "Make active", variant="primary", id="activate", compact=True

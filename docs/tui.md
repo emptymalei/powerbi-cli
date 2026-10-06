@@ -73,6 +73,10 @@ is a colon.
 The Explorer has three parts: a tree of the tenant on the left, a table of what is in the
 selected node at the top right, and the details of the selected row below it.
 
+Names are shown exactly as Power BI has them. Many are tagged in square brackets
+(`[Confidential]Finance`, `[Experiment] Test`), and the brackets stay: nothing the UI shows
+is read as markup, in the tables, the titles, the dialogs and the notices alike.
+
 ### The tree
 
 | Node | What the table lists | Source |
@@ -101,10 +105,19 @@ same options): an unchanged workspace is not shown as old.
 
 A workspace shows what the lake holds of it, and nothing else. After `pbi sync run groups`,
 which fetches only the list of workspaces, every workspace is empty: the title of the table
-says that the lists of items are not in the lake, and the Info tab names each list that is
-missing (reports, datasets, dashboards, dataflows, apps). Press `s` and **Run** to fetch the
-plain targets, or `r` to scan that one workspace. A workspace that really holds nothing says
-so, and one that has the lists but was never scanned says to scan it.
+says that the lists of items are not in the lake (or which of them, when only some are
+missing), and the Info tab names each list that is missing (reports, datasets, dashboards,
+dataflows, apps). Press `s` and **Run** to fetch the plain targets, or `r` to scan that one
+workspace. A workspace that really holds nothing says so, and one that has the lists but was
+never scanned says to scan it.
+
+When the last sync *tried* to fetch a missing list and did not manage, the title says that it
+did not bring it, and the Info tab says why, from the state of the sync: the list **could not
+be fetched** (with what Power BI answered: a `403` means that the token is not an
+administrator's), or it was **held back by a quota** (Power BI throttled the requests for
+longer than a sync waits; the tenant's quotas are shared with every other tool that uses the
+admin APIs, so run the sync again later). The *Contents* rows of the Info tab say the same
+for each list in a few words. The same facts are on the Lake tab of the Sync screen.
 
 ### The details
 
@@ -235,6 +248,11 @@ went, the units that failed or were held back, the last complete scan, and the q
 A sync goes on while you look at the Explorer: the header shows it, and the Sync screen
 shows its log from the start when you open it again.
 
+A sync that ends with failures or held-back units says so in a notice that stays for fifteen
+seconds (the others vanish after five), and the notice names the first problem: `First
+failure: admin.reports: ...`, or `First held back: admin.reports, to be tried again in 12
+min`. The Run tab has all of them.
+
 ### With a plan file
 
 `pbi tui --config pbi-plan.yaml` opens the UI with a [plan file](plan-file.md), which says
@@ -277,7 +295,12 @@ The `session` section of the file sets three things:
 
 The header shows every account you are signed in as (the administrator and the user, as far
 as they are stored), and how long each token lasts: green, then yellow in the last ten
-minutes, then red when it has expired. Browsing does not need a token, but `pbi sync` does.
+minutes, then red when it has expired. With a [plan file](plan-file.md) these are the accounts
+that the file names (`accounts`), each user account on its own, and everything the session
+fetches goes through them: the plan, and also what `f` and `lazy: auto` fetch for one item,
+which uses the first user account of the file whose own list of workspaces holds the
+item's workspace (else the first one). A kind that the file does not name is the active
+profile of the kind. Browsing does not need a token, but `pbi sync` does.
 
 When a sync or a refresh finds that a token is missing or has expired, the UI asks for a
 new one at once, for the kind of account that is the problem (a sync of `user-...` targets
@@ -290,6 +313,17 @@ or `user`, and the profile; the profile is the active one of the kind, so its to
 replaced (a new profile name stores a new account). The token is stored exactly as
 [`pbi auth`](auth.md) stores it, in the keyring. Then the sync that was interrupted starts
 again, and continues where it stopped.
+
+A token that has expired already, or expires within half a minute, is not stored: the
+dialog says when it expired and waits for another, because storing it would only make the
+next request ask again. (A token that says nothing about its expiry is stored: Power BI
+decides.) If the sync that goes on is stopped by **the same account** again, the dialog that
+opens says that *the token that was just stored was refused as well*, followed by the reason:
+that it had expired, or that Power BI answered `401 Unauthorized` (a token of another
+account or tenant, or one that was pasted damaged). A different account that has run out as
+well is asked for as itself, one dialog after the other, as many as there are accounts that
+expired; the header shows how long each lasts, so you can see beforehand which will. Each
+question and each token stored is a line in the log file `~/.pbi_cli/tui.log`.
 
 ## Accounts
 

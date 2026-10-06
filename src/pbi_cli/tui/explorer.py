@@ -37,11 +37,21 @@ from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import Plan, SyncOptions
 from pbi_cli.tui import render
 from pbi_cli.tui.modals import ConfirmModal
+from pbi_cli.tui.plain import PlainStatic, PlainTable
 from pbi_cli.tui.render import Entry, Subject
 from pbi_cli.tui.status import StatusBar
 
 #: Seconds to stay on an item before ``lazy: auto`` fetches its harmless details.
 AUTO_AFTER = 1.5
+
+
+def workspace_of(subject: Any) -> Optional[str]:
+    """The id of the workspace a workspace or an item is in (``None`` for anything else)."""
+    if isinstance(subject, Workspace):
+        return subject.id
+    if isinstance(subject, Item):
+        return subject.workspace_id
+    return None
 
 
 @dataclass(frozen=True)
@@ -149,34 +159,34 @@ class ExplorerScreen(Screen):
                 yield Tree("Lake", id="tree")
             with Vertical(id="right"):
                 with Vertical(id="table-pane"):
-                    yield Static("", id="table-title")
+                    yield PlainStatic("", id="table-title")
                     yield Input(
                         placeholder="filter rows", id="table-filter", classes="filter"
                     )
-                    yield DataTable(id="table", cursor_type="row", zebra_stripes=True)
+                    yield PlainTable(id="table", cursor_type="row", zebra_stripes=True)
                 with TabbedContent(initial=TAB_IDS["info"], id="detail"):
                     with TabPane("Info", id=TAB_IDS["info"]):
                         with VerticalScroll():
-                            yield Static(id="info")
+                            yield PlainStatic(id="info")
                     with TabPane("Users", id=TAB_IDS["users"]):
-                        yield Static(id="users-note")
-                        yield DataTable(
+                        yield PlainStatic(id="users-note")
+                        yield PlainTable(
                             id="users", cursor_type="row", zebra_stripes=True
                         )
                     with TabPane("Lineage", id=TAB_IDS["lineage"]):
                         with VerticalScroll():
-                            yield Static(id="lineage")
+                            yield PlainStatic(id="lineage")
                     with TabPane("JSON", id=TAB_IDS["json"]):
                         with VerticalScroll():
-                            yield Static(id="json")
+                            yield PlainStatic(id="json")
                     with TabPane("Versions", id=TAB_IDS["versions"]):
-                        yield Static(id="versions-note")
-                        yield DataTable(
+                        yield PlainStatic(id="versions-note")
+                        yield PlainTable(
                             id="versions", cursor_type="row", zebra_stripes=True
                         )
                     with TabPane("Details", id=TAB_IDS["details"]):
-                        yield Static(id="details-note")
-                        yield DataTable(
+                        yield PlainStatic(id="details-note")
+                        yield PlainTable(
                             id="details", cursor_type="row", zebra_stripes=True
                         )
         yield Footer(show_command_palette=False)
@@ -211,7 +221,7 @@ class ExplorerScreen(Screen):
         catalog = self.catalog
         tenant = self.pbi.tenant
         title = f"Lake · {render.short_id(tenant)}" if tenant else "Lake"
-        tree.reset(title, NodeRef("root"))
+        tree.reset(Text(title), NodeRef("root"))
         self._tree_nodes[NodeRef("root")] = tree.root
         if catalog is None:
             tree.root.add_leaf(Text("reading the lake ...", style="grey62"))
@@ -512,7 +522,7 @@ class ExplorerScreen(Screen):
         details = catalog.details(subject)
         if self.query_one("#detail", TabbedContent).active == TAB_IDS["users"]:
             details = [d for d in details if d.name == "users"]
-        fetching = self.pbi.fetching()
+        fetching = self.pbi.fetching(workspace_of(subject))
         wanted = fetching.wanted(details)
         if not wanted:
             return None
@@ -543,7 +553,7 @@ class ExplorerScreen(Screen):
         catalog = self.catalog
         if catalog is None or not isinstance(subject, (Workspace, Item)):
             return
-        fetching = self.pbi.fetching()
+        fetching = self.pbi.fetching(workspace_of(subject))
         try:
             wanted = fetching.auto(
                 catalog.details(subject), self.pbi.backend.quota_left

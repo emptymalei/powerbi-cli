@@ -6,7 +6,7 @@ them in as a `Backend`, so that tests can hand in a fake service and an empty la
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, List, Optional, Set
+from typing import Callable, List, Optional, Sequence, Set, Tuple
 
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.planfile import PlanFile
@@ -149,8 +149,45 @@ class Backend:
         except Exception:  # no account, or a settings problem: nothing is known
             return None
 
+    def account_slots(self) -> List[Tuple[Scope, Optional[str]]]:
+        """The accounts the session works with, each as a kind and a profile (``None``: the
+        active one of the kind).
+
+        Without a plan file they are the active profiles of both kinds. With one they are those
+        its ``accounts`` section names, as everything the session fetches is fetched through
+        them, and the active profile of a kind that the file does not name.
+        """
+        plan = self.plan
+        if plan is None:
+            return [(Scope.ADMIN, None), (Scope.USER, None)]
+        users: List[Optional[str]] = list(plan.accounts.user) or [None]
+        return [(Scope.ADMIN, plan.accounts.admin)] + [
+            (Scope.USER, name) for name in users
+        ]
+
+    def profiles_for(
+        self, visible_to: Sequence[str] = ()
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """The profiles to fetch something through, as the administrator and as a user: those
+        that the plan file names, else ``None`` (the active ones).
+
+        :param visible_to: the profiles whose own list of workspaces holds the workspace the
+            fetch is about; of the user accounts of the plan, the first of these is the one
+            to use (the first of the plan when none of them is)
+        """
+        plan = self.plan
+        if plan is None:
+            return None, None
+        users = list(plan.accounts.user)
+        user = next((name for name in users if name in visible_to), None)
+        return plan.accounts.admin, user or (users[0] if users else None)
+
+    def _client(self, scope: Scope, profile: Optional[str]) -> PowerBIClient:
+        return self.client_for(scope, profile) if profile else self.client_for(scope)
+
     def identities(self) -> List[Identity]:
-        """Who the stored tokens are: the administrator's and the user's, those there are.
+        """Who the stored tokens are: the administrator's and the user's, those there are
+        (with a plan file, those of the accounts it names).
 
         Never raises. A lake that is only looked at has none: no account is needed, so none
         is asked about.
@@ -158,9 +195,9 @@ class Backend:
         found: List[Identity] = []
         if self.readonly:
             return found
-        for scope in (Scope.ADMIN, Scope.USER):
+        for scope, profile in self.account_slots():
             try:
-                client = self.client_for(scope)
+                client = self._client(scope, profile)
                 info = client.token_info()
                 found.append(
                     Identity(
@@ -190,9 +227,9 @@ class Backend:
         if found:
             return found[0]
         problems = []
-        for scope in (Scope.ADMIN, Scope.USER):
+        for scope, profile in self.account_slots():
             try:
-                self.client_for(scope).tenant_key()
+                self._client(scope, profile).tenant_key()
             except Exception as error:
                 problems.append(str(error))
         return Identity(problem=problems[0] if problems else "")

@@ -36,6 +36,7 @@ from pbi_cli.core.planfile import PlanFile, describe_scan
 from pbi_cli.core.planrun import SequencePlan
 from pbi_cli.core.store import EventDay
 from pbi_cli.core.sync.plan import Plan
+from pbi_cli.core.sync.state import DEFERRED
 from pbi_cli.core.timefmt import format_age
 from pbi_cli.tui.fetching import Fetching
 
@@ -400,7 +401,8 @@ def _grid(rows: Iterable[Tuple[str, Union[str, Text]]]) -> Table:
     grid.add_column(style="grey62", no_wrap=True)
     grid.add_column(overflow="fold")
     for key, value in rows:
-        grid.add_row(key, value)
+        # a str is read as markup by the table: a name like "[DEV] Sales" must stay as it is
+        grid.add_row(key, Text(value) if isinstance(value, str) else value)
     return grid
 
 
@@ -419,16 +421,29 @@ def _words(names: Sequence[str]) -> str:
     return ", ".join(names[:-1]) + " and " + names[-1]
 
 
+def _held_back(status: str) -> bool:
+    return status == DEFERRED
+
+
 def contents_rows(catalog: Catalog, workspace_id: str) -> List[Tuple[str, str]]:
     """What the lake holds of a workspace, by kind: how many, or that the list of the
-    kind is not in the lake at all (so that nothing can be said about it)."""
+    kind is not in the lake at all (so that nothing can be said about it), and why not when
+    the last sync says."""
     counts = catalog.counts(workspace_id)
     rows = []
     for kind in KINDS:
         if kind in counts:
             rows.append((label(kind, True), str(counts[kind])))
         elif not catalog.listed(kind, workspace_id):
-            rows.append((label(kind, True), "the list is not in the lake"))
+            text = "the list is not in the lake"
+            trouble = catalog.trouble(kind)
+            if trouble is not None:
+                text += (
+                    "; the last sync held it back (a quota)"
+                    if _held_back(trouble[0])
+                    else "; the last sync could not fetch it"
+                )
+            rows.append((label(kind, True), text))
     return rows
 
 
@@ -444,21 +459,50 @@ class Hint:
     long: str
 
 
-def empty_hint(catalog: Catalog, workspace_id: str) -> Hint:
-    """Say why a workspace has no items: the lists are missing, it was never scanned, or
-    it really is empty."""
-    missing = [
-        label(kind, True).lower()
-        for kind in KINDS
-        if not catalog.listed(kind, workspace_id)
-    ]
-    if missing:
-        return Hint(
-            "the lists of items are not in the lake: press s, then Run",
-            f"The lists of {_words(missing)} are not in the lake, so there is nothing "
-            "to show. Press s and Run to fetch the lists of the tenant, or r to scan "
-            "this workspace.",
+def _what_went_wrong(catalog: Catalog, kinds: Sequence[str]) -> List[str]:
+    """What the last sync says about the lists of these kinds that it did not bring."""
+    found = []
+    for kind in kinds:
+        trouble = catalog.trouble(kind)
+        if trouble is None:
+            continue
+        status, why = trouble
+        what = (
+            "was held back by a quota" if _held_back(status) else "could not be fetched"
         )
+        found.append(
+            f"the list of {label(kind, True).lower()} {what}"
+            + (f" ({why})" if why else "")
+        )
+    return found
+
+
+def empty_hint(catalog: Catalog, workspace_id: str) -> Hint:
+    """Say why a workspace has no items: the lists are missing (and what the last sync says of
+    them), it was never scanned, or it really is empty."""
+    missing = [kind for kind in KINDS if not catalog.listed(kind, workspace_id)]
+    if missing:
+        names = [label(kind, True).lower() for kind in missing]
+        went_wrong = _what_went_wrong(catalog, missing)
+        which = "items" if len(missing) == len(KINDS) else _words(names)
+        short = (
+            f"the {'list' if len(missing) == 1 else 'lists'} of {which} "
+            f"{'is' if len(missing) == 1 else 'are'} not in the lake: "
+        )
+        short += (
+            "the last sync did not bring "
+            f"{'it' if len(missing) == 1 else 'them'} (see the Info tab)"
+            if went_wrong
+            else "press s, then Run"
+        )
+        long = (
+            f"The lists of {_words(names)} are not in the lake, so there is nothing "
+            "to show. "
+        )
+        if went_wrong:
+            long += "The last sync did not bring them: " + "; ".join(went_wrong) + ". "
+        long += "Press s and Run to fetch the lists of the tenant, or r to scan this workspace."
+        return Hint(short, long)
     from_administrators = any(catalog.listing(kind) is not None for kind in KINDS)
     if from_administrators and catalog.scan_of(workspace_id) is None:
         return Hint(

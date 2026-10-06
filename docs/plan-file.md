@@ -67,6 +67,13 @@ one (`pbi auth -t <token> -p svc-sales -g user`).
 file. A profile named in a `via:` of an entry is used for that entry whether or not it is
 listed.
 
+In `pbi tui --config` these are the accounts of the **whole session**, not only of **Run
+plan**: the [header](tui.md#signing-in-again) shows them (each user account on its own, with
+how long its token lasts), and what `f` and `lazy: auto` fetch for one item goes through
+them too, by the first user account of the file whose own list of workspaces holds the
+item's workspace. Without this, a fetch would use the *active* profile of the kind, which
+may not be an account of the file.
+
 ### `tenant`
 
 What to keep for the whole tenant.

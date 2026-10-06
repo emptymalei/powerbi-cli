@@ -18,6 +18,7 @@ from textual.worker import get_current_worker
 from pbi_cli.core.planrun import SequencePlan
 from pbi_cli.errors import PBIError
 from pbi_cli.tui import render
+from pbi_cli.tui.plain import PlainStatic
 from pbi_cli.tui.syncscreen import SyncScreen
 
 
@@ -44,7 +45,7 @@ class PlanSyncScreen(SyncScreen):
     # -- the file --------------------------------------------------------------------------
 
     def compose_left(self) -> ComposeResult:
-        yield Static(self._summary(), id="plan-file")
+        yield PlainStatic(self._summary(), id="plan-file")
 
     def _summary(self) -> Text:
         plan = self.pbi.backend.plan

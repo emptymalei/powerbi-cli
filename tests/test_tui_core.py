@@ -260,6 +260,63 @@ def test_a_workspace_says_what_is_missing_when_the_lists_are_not_in_the_lake(tmp
     assert "the list is not in the lake" in shown and "Press s and Run" in shown
 
 
+def test_a_workspace_says_what_the_last_sync_could_not_bring(tmp_path):
+    world = World(tmp_path)
+    world.fake.fail("GET", r"/admin/reports$", 500)
+    world.fake.throttle("/admin/datasets$", retry_after=100000, times=10)
+    world.run("groups", "reports", "datasets")
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    hint = render.empty_hint(catalog, "ws-0001")
+    rows = dict(render.contents_rows(catalog, "ws-0001"))
+
+    assert hint.short == (
+        "the lists of items are not in the lake: the last sync did not bring them (see "
+        "the Info tab)"
+    )
+    assert "The last sync did not bring them: " in hint.long
+    assert (
+        "the list of reports could not be fetched (" in hint.long and "500" in hint.long
+    )
+    assert "the list of datasets was held back by a quota (" in hint.long
+    assert "Press s and Run" in hint.long
+    assert (
+        rows["Reports"]
+        == "the list is not in the lake; the last sync could not fetch it"
+    )
+    assert rows["Datasets"] == (
+        "the list is not in the lake; the last sync held it back (a quota)"
+    )
+    assert rows["Dashboards"] == "the list is not in the lake"  # nothing was asked
+
+
+def test_the_hint_names_the_lists_that_are_missing_when_some_came(tmp_path):
+    world = World(tmp_path)
+    world.fake.fail("GET", r"/admin/apps$", 500)
+    world.run("groups", "reports", "datasets", "dashboards", "dataflows", "apps")
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    hint = render.empty_hint(catalog, "ws-0012")
+
+    assert hint.short == (
+        "the list of apps is not in the lake: the last sync did not bring it (see the "
+        "Info tab)"
+    )
+    assert "The lists of apps are not in the lake" in hint.long
+    assert "the list of apps could not be fetched (" in hint.long
+
+
+def test_the_hint_without_trouble_says_to_press_s_and_names_what_is_missing(tmp_path):
+    world = World(tmp_path)
+    world.run("groups", "reports", "datasets", "dashboards", "dataflows")  # no apps
+    catalog = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    hint = render.empty_hint(catalog, "ws-0012")
+
+    assert hint.short == "the list of apps is not in the lake: press s, then Run"
+    assert "The last sync did not bring" not in hint.long
+
+
 def test_a_workspace_with_the_lists_but_no_item_and_no_scan_says_to_scan_it(tmp_path):
     world = World(tmp_path)
     world.run()  # the lists: no item of the last workspace, which was never scanned

@@ -1,6 +1,7 @@
 """The Sync screen: the plan, running a sync, stopping it, and what goes wrong."""
 
 import threading
+from datetime import datetime, timezone
 
 import pytest
 from sync_helpers import World
@@ -8,9 +9,11 @@ from textual.widgets import Button, Input, Label, SelectionList
 from tui_helpers import backend_of, plain, run_ui
 
 from pbi_cli.core.sync import runners
+from pbi_cli.core.sync.engine import RunReport
 from pbi_cli.core.sync.plan import SNAPSHOT
 from pbi_cli.core.sync.targets import TARGETS
 from pbi_cli.errors import PBIError
+from pbi_cli.tui.app import NOTICE_LONG, first_trouble
 
 
 @pytest.fixture
@@ -278,6 +281,69 @@ def test_a_failed_unit_is_reported_and_listed(world):
     assert "✗ admin.apps:" in log
     assert "failed unit(s)" in lines and "admin.apps" in lines
     assert any("failure" in n for n in notes)
+
+
+def test_the_notice_of_a_run_that_had_trouble_tells_the_first_problem(world):
+    world.fake.fail("GET", r"^/admin/apps$", 500)
+
+    async def scenario(ui):
+        await open_sync(ui)
+        await ui.click("#run")
+        await ui.finish_sync()
+        return [
+            (n.message, n.timeout)
+            for n in ui.app._notifications
+            if "failure" in n.message
+        ]
+
+    [(message, timeout)] = run_ui(backend_of(world), scenario)
+
+    assert (
+        "finished, with 1 failure(s) and 0 unit(s) held back. First failure: admin.apps: "
+        in message
+    )
+    assert "500" in message
+    assert message.endswith("The Run tab of the Sync screen (s) has the rest.")
+    assert timeout == NOTICE_LONG
+
+
+def test_the_notice_of_a_run_that_held_something_back_says_when_to_try_again(world):
+    world.fake.throttle("/admin/datasets$", retry_after=100000, times=10)
+
+    async def scenario(ui):
+        await open_sync(ui)
+        await ui.click("#run")
+        await ui.finish_sync()
+        return [n.message for n in ui.app._notifications if "held back" in n.message]
+
+    [message] = run_ui(backend_of(world), scenario)
+
+    assert "0 failure(s) and 1 unit(s) held back." in message
+    assert " First held back: admin.datasets, to be tried again in " in message
+
+
+def test_the_first_trouble_of_a_run_is_told_in_a_sentence():
+    report = RunReport(
+        run_id="r", started_at=datetime(2026, 9, 30, tzinfo=timezone.utc)
+    )
+    assert first_trouble(report) == ""
+
+    report.failures = [("admin.apps", "first line\nsecond line"), ("admin.x", "later")]
+    assert first_trouble(report) == " First failure: admin.apps: first line."
+    report.failures = [("admin.apps", "")]
+    assert first_trouble(report) == " First failure: admin.apps: no reason given."
+
+    report.failures = []
+    report.deferred = [("admin.datasets", None), ("admin.reports", 5.0)]
+    assert first_trouble(report) == " First held back: admin.datasets."
+    report.deferred = [("admin.datasets", 90.0)]
+    assert (
+        first_trouble(report)
+        == " First held back: admin.datasets, to be tried again in 2 min."
+    )
+
+    report.failures = [("admin.apps", "broken")]  # a failure comes before a quota
+    assert first_trouble(report).startswith(" First failure: admin.apps")
 
 
 def test_a_second_sync_is_not_started_while_one_runs(world, monkeypatch):

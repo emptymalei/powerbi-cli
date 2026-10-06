@@ -38,6 +38,7 @@ from pbi_cli.core.sync.plan import MAX_DAYS, MAX_WORKERS, Plan, SyncOptions
 from pbi_cli.core.sync.targets import TARGETS, get_target
 from pbi_cli.errors import PBIError
 from pbi_cli.tui import render
+from pbi_cli.tui.plain import PlainLabel, PlainStatic, PlainTable
 from pbi_cli.tui.status import StatusBar
 from pbi_cli.tui.summary import summarize
 
@@ -112,36 +113,36 @@ class SyncScreen(Screen):
                     yield Button(
                         "Stop", variant="error", id="stop", disabled=True, compact=True
                     )
-                    yield Static("", id="run-line")
+                    yield PlainStatic("", id="run-line")
                 with TabbedContent(initial="tab-plan", id="sync-tabs"):
                     with TabPane("Plan", id="tab-plan"):
                         with VerticalScroll():
-                            yield Static("", id="plan-head")
-                            yield DataTable(
+                            yield PlainStatic("", id="plan-head")
+                            yield PlainTable(
                                 id="plan", cursor_type="none", zebra_stripes=True
                             )
-                            yield Static("", id="plan-notes")
-                            yield Label(
+                            yield PlainStatic("", id="plan-notes")
+                            yield PlainLabel(
                                 "Requests against the quota of each operation",
                                 classes="heading",
                             )
-                            yield DataTable(
+                            yield PlainTable(
                                 id="quota", cursor_type="none", zebra_stripes=True
                             )
                     with TabPane("Run", id="tab-run"):
                         yield ProgressBar(total=1, show_eta=False, id="progress")
                         with VerticalScroll(id="log-scroll"):
-                            yield Static("", id="log")
+                            yield PlainStatic("", id="log")
                     with TabPane("Lake", id="tab-lake"):
                         with VerticalScroll():
-                            yield DataTable(
+                            yield PlainTable(
                                 id="holdings", cursor_type="none", zebra_stripes=True
                             )
-                            yield Static("", id="lake-lines")
-                            yield Label(
+                            yield PlainStatic("", id="lake-lines")
+                            yield PlainLabel(
                                 "Quota left in the last hour", classes="heading"
                             )
-                            yield DataTable(
+                            yield PlainTable(
                                 id="used", cursor_type="none", zebra_stripes=True
                             )
         yield Footer(show_command_palette=False)
@@ -150,7 +151,7 @@ class SyncScreen(Screen):
         """What says what to sync: the targets and the options (a session with a plan file
         shows the file instead)."""
         available = self._available()
-        yield Label(
+        yield PlainLabel(
             Text.assemble(
                 "Targets", ("   ⚠ copies personal data or queries", "grey62")
             ),
@@ -172,14 +173,14 @@ class SyncScreen(Screen):
             ],
             id="targets",
         )
-        yield Static("", id="targets-note")
-        yield Label("Options", classes="heading")
+        yield PlainStatic("", id="targets-note")
+        yield PlainLabel("Options", classes="heading")
         for name, text in _OPTION_BOXES.items():
             yield Checkbox(text, id=name)
         with Horizontal(classes="number"):
-            yield Label("Days of events")
+            yield PlainLabel("Days of events")
             yield Input(value=str(MAX_DAYS), type="integer", id="days")
-            yield Label("At once")
+            yield PlainLabel("At once")
             yield Input(value="4", type="integer", id="workers")
 
     @staticmethod

@@ -1195,6 +1195,95 @@ def test_the_apps_of_a_user_are_in_the_workspaces_they_belong_to(user_world):
     assert [a.name for a in apps] == ["App 2"]
 
 
+def test_the_catalog_knows_which_lists_the_last_sync_did_not_bring_and_why(world):
+    world.fake.fail("GET", r"/admin/reports$", 500)
+    world.fake.throttle("/admin/datasets$", retry_after=100000, times=10)
+
+    world.run("groups", "reports", "datasets", "dashboards")
+    found = catalog_of(world)
+
+    failed = found.trouble("report")
+    held = found.trouble("dataset")
+    assert failed is not None and failed[0] == "failed" and "500" in failed[1]
+    assert held is not None and held[0] == "deferred" and "429" in held[1]
+    assert found.trouble("dashboard") is None  # it came
+    assert found.trouble("dataflow") is None  # nothing was asked for it
+    assert found.trouble("workspace") is None  # the list of workspaces came too
+
+
+def test_a_list_that_comes_later_is_no_trouble_any_more(world):
+    world.fake.fail("GET", r"/admin/reports$", 500, times=1)
+    world.run("groups", "reports")
+    assert catalog_of(world).trouble("report") is not None
+
+    world.run("groups", "reports")  # the service answers now
+
+    assert catalog_of(world).trouble("report") is None
+
+
+def test_the_newest_trouble_of_an_operation_is_the_one_told(world):
+    world.fake.fail("GET", r"/admin/reports$", 500, times=1)
+    world.run("groups", "reports")
+    world.fake.fail("GET", r"/admin/reports$", 503, times=1)
+    world.clock.advance(minutes=5)
+    world.run("groups", "reports")
+
+    failed = catalog_of(world).trouble("report")
+
+    assert failed is not None and "503" in failed[1]
+
+
+def test_of_several_units_of_one_operation_the_newest_trouble_is_told(world):
+    world.run("groups")
+    state = world.state()
+    state["units"] = {
+        "admin.reports?a": {
+            "status": "failed",
+            "endpoint": "admin.reports",
+            "updated_at": "2026-09-30T12:00:00+00:00",
+            "error": "older\nand more",
+        },
+        "admin.reports?b": {
+            "status": "deferred",
+            "endpoint": "admin.reports",
+            "updated_at": "2026-09-30T13:00:00+00:00",
+            "error": "newer\nand more",
+        },
+        "admin.reports?c": {
+            "status": "failed",
+            "endpoint": "admin.reports",
+            "updated_at": "2026-09-30T11:00:00+00:00",
+            "error": "oldest",
+        },
+    }
+    world.store.write_state(TENANT, STATE_NAME, state)
+
+    assert catalog_of(world).trouble("report") == (
+        "deferred",
+        "newer",
+    )  # the first line
+
+
+def test_trouble_that_the_state_does_not_describe_is_ignored(world):
+    world.run("groups")
+    state = world.state()
+    state["units"] = {
+        "no-endpoint": {"status": "failed", "updated_at": "2026-09-30T12:00:00+00:00"},
+        "no-time": {"status": "failed", "endpoint": "admin.reports"},
+        "not-a-unit": "failed",
+        "done": {
+            "status": "done",
+            "endpoint": "admin.reports",
+            "updated_at": "2026-09-30T12:00:00+00:00",
+        },
+    }
+    world.store.write_state(TENANT, STATE_NAME, state)
+
+    found = catalog_of(world)
+
+    assert found.trouble("report") is None
+
+
 def test_a_lake_of_an_earlier_sync_without_an_identity_is_still_read(world):
     world.only_user()
     world.run("user-groups")
