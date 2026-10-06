@@ -37,6 +37,8 @@ nav = [
         { "ratelimit" = "references/core/ratelimit.md" },
         { "registry" = "references/core/registry.md" },
         { "scan" = "references/core/scan.md" },
+        { "scanmodel" = "references/core/scanmodel.md" },
+        { "sources" = "references/core/sources.md" },
         { "store" = "references/core/store.md" },
         { "sync" = [
           { "engine" = "references/core/sync/engine.md" },
@@ -49,8 +51,10 @@ nav = [
       ] },
       { "tui" = [
         { "backend" = "references/tui/backend.md" },
+        { "plain" = "references/tui/plain.md" },
         { "render" = "references/tui/render.md" },
         { "run" = "references/tui/run.md" },
+        { "scanview" = "references/tui/scanview.md" },
         { "summary" = "references/tui/summary.md" },
       ] },
       { "powerbi" = [

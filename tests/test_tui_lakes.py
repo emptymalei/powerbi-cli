@@ -11,6 +11,7 @@ from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore, PublishInfo
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.errors import PBIError
+from pbi_cli.tui.app import NOTICE_LONG
 from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import OpenLakeModal, SignInModal
 from pbi_cli.tui.run import RunState
@@ -368,3 +369,39 @@ def test_the_dialog_gives_up_on_escape(two_lakes):
         return type(ui.app.screen).__name__
 
     assert run_ui(backend, scenario) == "ExplorerScreen" and opened == []
+
+
+# ---------------------------------------------------------------------------
+# what the person is told when the lake of the plan file was not there
+# ---------------------------------------------------------------------------
+
+
+def test_the_note_of_the_backend_is_shown_once_at_the_start(tmp_path):
+    world = World(tmp_path)
+    world.run()
+    note = (
+        "session.lake (/x) holds no lake, so `pbi tui --config` opens your work lake."
+    )
+
+    async def scenario(ui):
+        await ui.settle()
+        return [
+            (n.message, n.title, n.severity, n.timeout)
+            for n in ui.app._notifications
+            if n.message == note
+        ]
+
+    shown = run_ui(backend_of(world, note=note), scenario)
+
+    assert shown == [(note, "Lake", "warning", NOTICE_LONG)]
+
+
+def test_without_a_note_nothing_is_said_at_the_start(tmp_path):
+    world = World(tmp_path)
+    world.run()
+
+    async def scenario(ui):
+        await ui.settle()
+        return [n for n in ui.app._notifications if n.title == "Lake"]
+
+    assert run_ui(backend_of(world), scenario) == []

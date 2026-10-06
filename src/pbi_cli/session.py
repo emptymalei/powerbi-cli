@@ -107,11 +107,14 @@ class OpenedLake:
     :param work: whether it is the work lake (the lake of the cache folder)
     :param source: where its location came from: ``--lake``, ``PBI_LAKE``, the plan file or
         the cache folder
+    :param note: something the person is to be told: the place a plan file named holds no
+        lake, so the work lake was opened instead
     """
 
     store: LakeStore
     work: bool
     source: str
+    note: str = ""
 
     @property
     def readonly(self) -> bool:
@@ -160,6 +163,49 @@ _WHERE_IT_CAME_FROM = {
         "lake."
     ),
 }
+
+
+def _quoted(text: str) -> str:
+    """A path as a command line takes it: in quotes when it has a space."""
+    return f'"{text}"' if " " in text else text
+
+
+def _fallback_note(wanted: str, work: Any) -> str:
+    """What to tell when the plan file names a place without a lake and the work lake is
+    opened instead."""
+    return (
+        f"session.lake ({wanted}) holds no lake, so `pbi tui --config` opens your work lake "
+        f"instead ({work}). A sync writes to the work lake only: `pbi config "
+        f"set-cache-folder {_quoted(wanted)}` makes that folder your work lake, or leave "
+        "session.lake out of the plan file."
+    )
+
+
+def session_lake_note(wanted: str, config: Optional[PBIConfig] = None) -> str:
+    """What a sync should tell about the ``session.lake`` of a plan file, which is the lake
+    that ``pbi tui --config`` opens and not the one a sync writes to (the work lake).
+
+    :param wanted: the location the plan file names
+    :param config: the settings (default: the stored ones)
+    :return: the note, or an empty text when ``wanted`` is the work lake itself
+    """
+    config = config or PBIConfig()
+    work = lake_path(config)
+    path: Any = None
+    try:
+        path = lake_root(as_path(wanted))
+        if is_work_lake(path, config):
+            return ""
+        found = _holds_a_lake(path)
+    except Exception:
+        # a place that cannot be read is not the work lake either
+        found = True
+    if not found and work is not None and not isinstance(path, CloudPath):
+        return _fallback_note(wanted, work)
+    return (
+        f"session.lake ({wanted}) is the lake that `pbi tui --config` opens; a sync writes "
+        "to the work lake above, and only there."
+    )
 
 
 def is_work_lake(path: Any, config: Optional[PBIConfig] = None) -> bool:
@@ -220,6 +266,16 @@ def resolve_lake(
     if work is not None and is_work_lake(path, config):
         return OpenedLake(LakeStore(work), True, source)
     if not found:
+        if (
+            source == PLAN_SOURCE
+            and work is not None
+            and not isinstance(path, CloudPath)
+        ):
+            # a plan file is shared, and this machine may not have the folder it names: that
+            # is no reason not to open the work lake, but the person is told
+            return OpenedLake(
+                LakeStore(work), True, "the cache folder", _fallback_note(wanted, work)
+            )
         raise PBIError(
             f"There is no data lake at {wanted}: nothing there looks like one. Check the "
             f"location (and, for a bucket, your credentials).{_WHERE_IT_CAME_FROM.get(source, '')}"

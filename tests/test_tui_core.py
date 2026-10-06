@@ -187,6 +187,69 @@ def test_the_overview_lists_every_list_and_the_events(catalog):
     assert workspaces.data["Partial"] == "no"
 
 
+def test_the_title_of_the_overview_says_where_the_lake_is(catalog):
+    assert render.lake_title(catalog, "~/pbi/lake", [TENANT]) == (
+        "What the lake holds · ~/pbi/lake"
+    )
+    assert render.lake_title(catalog, "") == "What the lake holds"
+
+
+def test_the_title_of_the_overview_of_an_empty_lake_says_what_to_do(tmp_path):
+    world = World(tmp_path)
+    nothing = Catalog(world.store, "tenant-9", clock=world.clock.now)
+
+    title = render.lake_title(nothing, "~/lake", [])
+
+    assert title == (
+        "What the lake holds · ~/lake  ·  nothing of tenant tenant-9 yet: press s, then Run "
+        "(a signs in)"
+    )
+    assert render.lake_is_empty(nothing)
+
+
+def test_the_title_of_the_overview_says_when_the_lake_holds_another_tenant(tmp_path):
+    world = World(tmp_path)
+    world.run("groups")
+    nothing = Catalog(world.store, "tenant-9", clock=world.clock.now)
+
+    title = render.lake_title(nothing, "~/lake", [TENANT, "tenant-9"])
+    subject = render.lake_subject(nothing, [TENANT, "tenant-9"])
+
+    assert title.endswith(
+        "nothing of tenant tenant-9 yet, but the lake holds 1 other tenant(s): press t to "
+        "look at one"
+    )
+    assert subject.title == "The lake is empty"
+    assert subject.data["Other tenants in this lake"] == TENANT
+    assert subject.data["Next"] == "press t to look at another tenant of this lake"
+    assert subject.data["Tenant"] == "tenant-9"
+
+
+def test_a_lake_that_holds_only_audit_events_is_not_empty(tmp_path):
+    world = World(tmp_path)
+    world.run("activity", days=2)
+    events = Catalog(world.store, TENANT, clock=world.clock.now)
+
+    assert not render.lake_is_empty(events)
+    assert render.lake_title(events, "~/lake", [TENANT]) == (
+        "What the lake holds · ~/lake"
+    )
+    assert render.lake_subject(events, [TENANT]).title != "The lake is empty"
+
+
+def test_the_subject_of_an_empty_lake_without_other_tenants_says_to_sync(tmp_path):
+    world = World(tmp_path)
+    nothing = Catalog(world.store, "tenant-9", clock=world.clock.now)
+
+    subject = render.lake_subject(nothing, ["tenant-9"])
+
+    assert "Other tenants in this lake" not in subject.data
+    assert (
+        subject.data["Next"] == "press s to open the Sync screen and fetch the tenant"
+    )
+    assert subject.data["Sign in"] == "press a if the token expired or is missing"
+
+
 def test_the_overview_of_an_empty_lake(tmp_path):
     from pbi_cli.core.store import LakeStore
 

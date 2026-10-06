@@ -50,6 +50,25 @@ def user_backend(world, **replace):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("width, lines", [(200, 1), (100, 2), (70, 3)])
+def test_the_header_wraps_when_it_is_long_so_that_the_lake_is_never_cut_off(
+    world, width, lines
+):
+    world.accounts(ana="oid-ana", bob="oid-bob")
+
+    async def scenario(ui):
+        bar = ui.app.screen.query_one("StatusBar")
+        who = ui.app.screen.query_one("#who")
+        return bar.size.height, who.size.height, who.visual.plain
+
+    bar, who, text = run_ui(user_backend(world), scenario, size=(width, 30))
+
+    assert bar == who == lines  # it grows with what it has to say
+    assert text.endswith(
+        "lake"
+    )  # and the lake is the last thing it says: all of it is shown
+
+
 def test_the_header_shows_every_account_that_is_signed_in(world):
     world.run("groups")
 

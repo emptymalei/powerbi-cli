@@ -26,6 +26,12 @@ EXPLORER_TABS = (
     ("4", "json", "JSON", "The stored answer, as the API gave it"),
     ("5", "versions", "Versions", "Every stored answer that holds it, newest first"),
     ("6", "details", "Details", "What more there is to know, and what the lake lacks"),
+    (
+        "7",
+        "scan",
+        "Scan",
+        "What a scan says: tables, measures, and where each table gets its data",
+    ),
 )
 SYNC_TABS = (
     ("1", "plan", "Plan", "What the sync would do, and what it costs"),
@@ -100,6 +106,28 @@ def _explorer(screen: Any, view_only: bool) -> List[Command]:
                 "Clear the filter",
                 _help("Show everything again", "Esc"),
                 screen.action_clear_filter,
+            )
+        )
+    plan = screen.pbi.backend.plan
+    if plan is not None and plan.workspaces:
+        everyone = screen.pbi.show_all_workspaces
+        found.append(
+            Command(
+                (
+                    "Show only the workspaces of the plan file"
+                    if everyone
+                    else "Show every workspace"
+                ),
+                _help(
+                    (
+                        "The tree and the table list the ones the file names"
+                        if everyone
+                        else "The tree and the table list all of the lake's"
+                    ),
+                    "w",
+                ),
+                screen.pbi.action_toggle_scope,
+                "plan config scope filter workspaces all",
             )
         )
     for key, name, title, text in EXPLORER_TABS:

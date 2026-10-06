@@ -90,6 +90,8 @@ class Backend:
         does, and makes `client_for` use it from then on (default: not possible)
     :param plan: the plan file of the session (``pbi tui --config``), if there is one
     :param reload_plan: reads that file again (default: not possible)
+    :param note: something to tell the person once the UI is up: not an error, for example
+        that the place a plan file names holds no lake and the work lake is open instead
     """
 
     store: LakeStore
@@ -105,6 +107,7 @@ class Backend:
     activate: Optional[Callable[[str, str], None]] = None
     plan: Optional[PlanFile] = None
     reload_plan: Optional[Callable[[], PlanFile]] = None
+    note: str = ""
 
     @property
     def readonly(self) -> str:

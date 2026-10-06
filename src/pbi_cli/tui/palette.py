@@ -95,7 +95,17 @@ class GotoProvider(Provider):
         if catalog is None:
             return
         matcher = self.matcher(query)
-        for found in catalog.search(query, limit=30):
+        scope = app.workspace_scope()
+        # the workspaces of the plan file only, while the Explorer shows only those
+        hits = catalog.search(query, limit=30 if scope is None else 1000)
+        if scope is not None:
+            hits = [
+                h
+                for h in hits
+                if (h.id if h.kind == "workspace" else h.workspace_id) in scope
+                or (h.kind != "workspace" and h.workspace_id is None)
+            ][:30]
+        for found in hits:
             where = f"  in {found.workspace}" if found.workspace else ""
             shown = f"{label(found.kind)}: {found.name}{where}"
             yield Hit(

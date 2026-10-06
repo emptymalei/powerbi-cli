@@ -225,18 +225,61 @@ def test_a_session_without_a_plan_file_has_nothing_to_read_again(opened, cache_f
         opened["backend"].plan_run()
 
 
-def test_a_lake_of_the_plan_file_that_is_not_there_says_to_leave_it_out(
+def test_a_lake_of_the_plan_file_that_is_not_there_opens_the_work_lake_and_says_so(
     opened, cache_folder, tmp_path
 ):
-    path = write_plan(
-        tmp_path / "p", f"version: 1\nsession: {{lake: '{tmp_path / 'nope'}'}}\n"
+    nope = tmp_path / "nope"
+    path = write_plan(tmp_path / "p", f"version: 1\nsession: {{lake: '{nope}'}}\n")
+
+    result = invoke("tui", "--config", str(path))
+
+    assert result.exit_code == 0, result.output
+    backend = opened["backend"]
+    assert backend.store.root == cache_folder / "lake" and not backend.readonly
+    assert backend.note == (
+        f"session.lake ({nope}) holds no lake, so `pbi tui --config` opens your work lake "
+        f"instead ({cache_folder / 'lake'}). A sync writes to the work lake only: `pbi "
+        f"config set-cache-folder {nope}` makes that folder your work lake, or leave "
+        "session.lake out of the plan file."
     )
+
+
+def test_there_is_no_note_when_the_lake_is_the_one_asked_for(
+    opened, cache_folder, tmp_path
+):
+    shared = a_lake(tmp_path / "shared")
+    path = write_plan(tmp_path / "p", f"version: 1\nsession: {{lake: '{shared}'}}\n")
+
+    invoke("tui", "--config", str(path))
+    with_plan = opened["backend"].note
+    invoke("tui")
+
+    assert with_plan == "" and opened["backend"].note == ""
+
+
+def test_a_lake_of_the_plan_file_that_is_not_there_is_an_error_without_a_work_lake(
+    opened, tmp_path
+):
+    nope = tmp_path / "nope"
+    path = write_plan(tmp_path / "p", f"version: 1\nsession: {{lake: '{nope}'}}\n")
 
     result = invoke("tui", "--config", str(path))
 
     assert result.exit_code == 1
     assert "There is no data lake at" in result.output and "nope" in result.output
-    assert "leave that out to open your work lake" in result.output
+    assert opened == {}
+
+
+def test_a_lake_of_the_option_that_is_not_there_is_an_error_whatever_the_plan_says(
+    opened, cache_folder, tmp_path
+):
+    path = write_plan(tmp_path / "p", "version: 1\nsession: {lazy: ask}\n")
+
+    result = invoke(
+        "tui", "--config", str(path), "--lake", str(tmp_path / "nothing-here")
+    )
+
+    assert result.exit_code == 1 and "no data lake at" in result.output
     assert opened == {}
 
 

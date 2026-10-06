@@ -38,6 +38,7 @@ from pbi_cli.core.store import EventDay
 from pbi_cli.core.sync.plan import Plan
 from pbi_cli.core.sync.state import DEFERRED
 from pbi_cli.core.timefmt import format_age
+from pbi_cli.tui import scanview
 from pbi_cli.tui.fetching import Fetching
 
 #: Rows shown at most in the table, and nodes at most in the tree; a filter narrows them.
@@ -76,7 +77,32 @@ class Plain:
     data: Dict[str, Any]
 
 
-Subject = Union[Workspace, Item, Plain, EventDay]
+@dataclass(frozen=True)
+class WorkspaceSet:
+    """Several workspaces at once: those that the table lists, after the filter.
+
+    :param ids: their ids
+    :param title: what the table lists
+    """
+
+    ids: Tuple[str, ...]
+    title: str = "Workspaces"
+
+    kind = "workspaces"
+
+    @property
+    def data(self) -> Dict[str, Any]:
+        return {"workspaces": list(self.ids)}
+
+
+Subject = Union[Workspace, Item, Plain, EventDay, WorkspaceSet]
+
+#: How many workspaces the tabs that combine several look at (a filter narrows the table).
+MAX_SET = 500
+
+#: Up to this many workspaces are asked, one by one, whether the lake holds their people (it
+#: reads the lake for each).
+MAX_COUNTED = 200
 
 
 def dot(level: Freshness) -> Text:
@@ -277,8 +303,8 @@ def event_entries(events: Iterable[Dict[str, Any]]) -> List[Entry]:
 OVERVIEW_COLUMNS = ("", "What", "Count", "Fetched")
 
 
-def lake_subject(catalog: Catalog) -> Plain:
-    """What the detail pane shows for the tenant as a whole."""
+def _holdings(catalog: Catalog) -> Dict[str, int]:
+    """How many of each kind of thing the lake holds for the tenant."""
     counts = {
         label(kind, True): len(catalog.all_items(kind))
         for kind in KINDS
@@ -287,18 +313,60 @@ def lake_subject(catalog: Catalog) -> Plain:
     counts[label("app", True)] = len(catalog.all_items("app"))
     counts[label("capacity", True)] = len(catalog.capacities())
     counts["Days of audit events"] = len(catalog.event_days())
-    workspaces = len(catalog.workspaces())
-    if not workspaces and not any(counts.values()):
-        return Plain(
-            "section",
-            "The lake is empty",
-            {
-                "Tenant": catalog.tenant,
-                "Lake": str(catalog.location),
-                "Next": "press s to open the Sync screen and fetch the tenant",
-                "Sign in": "press a if the token expired or is missing",
-            },
+    counts[label("workspace", True)] = len(catalog.workspaces())
+    return counts
+
+
+def lake_is_empty(catalog: Catalog) -> bool:
+    """Whether the lake holds nothing for the tenant."""
+    return not any(_holdings(catalog).values())
+
+
+def _others(catalog: Catalog, tenants: Sequence[str]) -> List[str]:
+    """The tenants of the lake other than the one that is shown."""
+    return [name for name in tenants if name != catalog.tenant]
+
+
+def lake_title(catalog: Catalog, lake: str, tenants: Sequence[str] = ()) -> str:
+    """The line above the overview of the lake: where the lake is, and, when it holds nothing
+    for the tenant, what to do about it.
+
+    :param lake: where the lake is, as the header says it
+    :param tenants: the tenants the lake holds data of
+    """
+    title = f"What the lake holds · {lake}" if lake else "What the lake holds"
+    if not lake_is_empty(catalog):
+        return title
+    nothing = f"{title}  ·  nothing of tenant {short_id(catalog.tenant)} yet"
+    others = _others(catalog, tenants)
+    if others:
+        return (
+            f"{nothing}, but the lake holds {len(others)} other tenant(s): press t to "
+            "look at one"
         )
+    return f"{nothing}: press s, then Run (a signs in)"
+
+
+def lake_subject(catalog: Catalog, tenants: Sequence[str] = ()) -> Plain:
+    """What the detail pane shows for the tenant as a whole.
+
+    :param tenants: the tenants the lake holds data of
+    """
+    counts = _holdings(catalog)
+    workspaces = counts.pop(label("workspace", True))
+    if not workspaces and not any(counts.values()):
+        found = {
+            "Tenant": catalog.tenant,
+            "Lake": str(catalog.location),
+        }
+        others = _others(catalog, tenants)
+        if others:
+            found["Other tenants in this lake"] = ", ".join(others)
+            found["Next"] = "press t to look at another tenant of this lake"
+        else:
+            found["Next"] = "press s to open the Sync screen and fetch the tenant"
+        found["Sign in"] = "press a if the token expired or is missing"
+        return Plain("section", "The lake is empty", found)
     return Plain(
         "lake",
         "The data lake",
@@ -565,6 +633,58 @@ def provenance(
     return rows
 
 
+def set_info(catalog: Catalog, subject: WorkspaceSet) -> RenderableType:
+    """The Info tab of several workspaces: what the lake holds of them together."""
+    ids = subject.ids[:MAX_SET]
+    state = catalog.sync_state()
+    people = scanned = 0
+    counts: Dict[str, int] = {}
+    counted = len(ids) <= MAX_COUNTED
+    for workspace_id in ids:
+        workspace = catalog.workspace(workspace_id)
+        if workspace is None:
+            continue
+        if counted and not catalog.users(workspace, state).missing:
+            people += 1
+        if catalog.has_scan(workspace_id):
+            scanned += 1
+        for kind, count in catalog.counts(workspace_id).items():
+            counts[kind] = counts.get(kind, 0) + count
+    rows: List[Tuple[str, Union[str, Text]]] = [
+        ("Workspaces", str(len(subject.ids))),
+        ("Scanned", f"{scanned} of {len(ids)}"),
+        (
+            "With their people (users tab)",
+            (
+                f"{people} of {len(ids)}"
+                if counted
+                else f"not counted for more than {MAX_COUNTED}: narrow the table with /"
+            ),
+        ),
+    ]
+    rows += [(label(k, True), str(counts[k])) for k in KINDS if k in counts]
+    parts: List[RenderableType] = [
+        _title(subject.title, f"{len(subject.ids)} workspaces"),
+        Text(),
+        _grid(rows),
+        Text(),
+        Text(
+            "The Users and Scan tabs combine these workspaces. Narrow the table with / to "
+            "combine fewer.",
+            style="grey62",
+        ),
+    ]
+    if len(subject.ids) > MAX_SET:
+        parts.append(
+            Text(
+                f"Only the first {MAX_SET} of the {len(subject.ids)} workspaces are "
+                "looked at: narrow the table with /.",
+                style="yellow",
+            )
+        )
+    return Group(*parts)
+
+
 def info(catalog: Catalog, subject: Subject) -> RenderableType:
     """The Info tab: the plain fields, and where they come from."""
     if isinstance(subject, Workspace):
@@ -586,6 +706,8 @@ def info(catalog: Catalog, subject: Subject) -> RenderableType:
             Text(),
             _grid(provenance(catalog, subject)),
         )
+    if isinstance(subject, WorkspaceSet):
+        return set_info(catalog, subject)
     if isinstance(subject, Item):
         head = _title(subject.name, f"{label(subject.kind).lower()} · {subject.id}")
         return Group(
@@ -774,9 +896,10 @@ def subject_data(subject: Subject) -> Any:
 # -- the tabs of the detail pane ---------------------------------------------------------
 
 #: The tabs of the detail pane, in order.
-TABS = ("info", "users", "lineage", "json", "versions", "details")
+TABS = ("info", "users", "lineage", "json", "versions", "details", "scan")
 
 USER_COLUMNS = ("Name", "E-mail or id", "Access", "Type")
+USER_SET_COLUMNS = ("Name", "E-mail or id", "Access", "Type", "Workspace")
 VERSION_COLUMNS = ("Fetched", "", "Operation", "Rows", "Size", "By profile")
 DETAIL_COLUMNS = ("Detail", "State", "Fetched", "From, or how to get it")
 
@@ -851,6 +974,78 @@ def details_note(
     return "\n".join(lines)
 
 
+def set_users(catalog: Catalog, subject: WorkspaceSet, fetching: Fetching) -> Detail:
+    """The Users tab of several workspaces: everybody with access to any of them, with the
+    workspace each can reach."""
+    ids = subject.ids[:MAX_SET]
+    entries, missing = catalog.workspace_users(ids)
+    covered = len(ids) - len(missing)
+    people = len({(e.access.name, e.access.email) for e in entries})
+    note = (
+        f"{len(entries)} {'entry' if len(entries) == 1 else 'entries'}: {people} "
+        f"{'person' if people == 1 else 'people'} with access to {covered} of "
+        f"{len(ids)} workspace{'' if len(ids) == 1 else 's'}."
+    )
+    if missing:
+        shown = ", ".join(missing[:3]) + (
+            f" and {len(missing) - 3} more" if len(missing) > 3 else ""
+        )
+        note += f"\nThe lake holds no users for {shown}. " + (
+            "Put `details: [users]` (or a scan with `get_artifact_users`) on their "
+            "entries in the plan file and run the plan."
+            if fetching.planned
+            else "Select a workspace and press f to fetch them, or run `pbi sync run "
+            "group-users`."
+        )
+    if len(subject.ids) > MAX_SET:
+        note += (
+            f"\nOnly the first {MAX_SET} of the {len(subject.ids)} workspaces are "
+            "combined: narrow the table with /."
+        )
+    rows = [
+        (
+            e.access.name or "-",
+            e.access.email or "-",
+            e.access.role or "-",
+            e.access.type or "-",
+            e.workspace,
+        )
+        for e in entries
+    ]
+    return Detail(note=note, columns=USER_SET_COLUMNS, rows=rows)
+
+
+def scan_detail(
+    catalog: Catalog, subject: Optional[Subject], fetching: Fetching
+) -> Detail:
+    """The Scan tab: what the newest scan says about a workspace, an item, or several
+    workspaces, and where each table reads its data from."""
+    planned = fetching.planned
+    if isinstance(subject, Workspace):
+        model = catalog.scan_model(subject.id)
+        if model is None:
+            return _hint(scanview.workspace_hint(subject, planned))
+        return Detail(body=scanview.workspace_body(catalog, model, planned))
+    if isinstance(subject, Item):
+        body = scanview.item_body(catalog, subject, planned)
+        if body is not None:
+            return Detail(body=body)
+        workspace = catalog.workspace(subject.workspace_id or "")
+        if catalog.scan_of(subject.workspace_id or "") is not None:
+            return _hint(
+                f"The newest scan of {workspace.name if workspace else 'its workspace'} "
+                f"does not hold this {label(subject.kind).lower()}."
+            )
+        return _hint(scanview.workspace_hint(workspace, planned))
+    if isinstance(subject, WorkspaceSet):
+        return Detail(
+            body=scanview.set_body(
+                catalog, subject.ids[:MAX_SET], planned, len(subject.ids)
+            )
+        )
+    return _hint("Select a workspace or an item to see what its scan says.")
+
+
 def detail(
     catalog: Catalog,
     tab: str,
@@ -875,6 +1070,8 @@ def detail(
             body=json_renderable(subject_data(subject), where_stored(subject, catalog))
         )
     if tab == "users":
+        if isinstance(subject, WorkspaceSet):
+            return set_users(catalog, subject, fetching)
         if not isinstance(subject, (Workspace, Item)):
             return _hint(
                 "Users are listed for workspaces, reports and the other items."
@@ -911,6 +1108,8 @@ def detail(
             "Pick a report, dataset, dashboard or dataflow in the table to see how it is "
             "connected."
         )
+    if tab == "scan":
+        return scan_detail(catalog, subject, fetching)
     if tab == "versions":
         if isinstance(subject, Workspace):
             found = catalog.versions("workspace", subject.id)
@@ -1096,5 +1295,7 @@ def plan_file_summary(plan: PlanFile) -> Text:
     if session.open:
         text.append(f"  open: {session.open}\n")
     text.append(f"  lazy: {session.lazy}\n")
+    if plan.workspaces:
+        text.append(f"  workspaces shown: {session.workspaces}\n")
     text.append("\nPress l to read the file again.", style="grey62")
     return text

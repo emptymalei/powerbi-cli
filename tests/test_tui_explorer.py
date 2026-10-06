@@ -52,6 +52,38 @@ def test_the_tree_shows_what_the_lake_holds(synced):
     assert any(line.startswith("  2026-09-30") for line in tree)
 
 
+def test_the_overview_of_the_lake_says_where_the_lake_is(synced):
+    async def scenario(ui):
+        await ui.select("root")
+        return ui.app.lake_label, plain(ui.explorer.query_one("#table-title").content)
+
+    label, title = run_ui(backend_of(synced), scenario)
+
+    assert title == f"What the lake holds · {label}" and label.endswith("lake")
+
+
+def test_the_overview_of_a_lake_without_the_tenant_says_what_to_do(tmp_path):
+    world = World(tmp_path)
+    world.run("groups")
+
+    async def scenario(ui):
+        await ui.select("root")
+        return (
+            plain(ui.explorer.query_one("#table-title").content),
+            ui.static("#info"),
+        )
+
+    title, info = run_ui(backend_of(world), scenario, tenant="tenant-9")
+
+    assert title.endswith(
+        "nothing of tenant tenant-9 yet, but the lake holds 1 other tenant(s): press t "
+        "to look at one"
+    )
+    assert (
+        "The lake is empty" in info and "Other tenants in this lake  tenant-1" in info
+    )
+
+
 def test_the_header_says_who_and_where(synced):
     async def scenario(ui):
         return ui.static("#who")

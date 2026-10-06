@@ -95,6 +95,11 @@ LAZY_AUTO = "auto"
 LAZY_OFF = "off"
 LAZY_MODES = (LAZY_ASK, LAZY_AUTO, LAZY_OFF)
 
+#: Which workspaces a terminal UI session shows: only those that the file names, or every one.
+SHOW_PLAN = "plan"
+SHOW_ALL = "all"
+SHOW_MODES = (SHOW_PLAN, SHOW_ALL)
+
 #: The keys of the options of a scan, as in the file of ``pbi workspaces scan batch``.
 SCAN_KEYS = (
     "lineage",
@@ -115,7 +120,7 @@ _TENANT_KEYS = (
     "exclude_inactive",
 )
 _WORKSPACE_KEYS = ("id", "name", "scan", "details", "via")
-_SESSION_KEYS = ("lake", "open", "lazy")
+_SESSION_KEYS = ("lake", "open", "lazy", "workspaces")
 
 _URL = re.compile(r"^\w[\w+.-]*://")
 
@@ -381,11 +386,14 @@ class SessionPlan:
     :param open: a workspace to select at the start: an id, or a name pattern
     :param lazy: what to do about a detail the lake does not hold: ``ask`` (press ``f``),
         ``auto`` (fetch the harmless ones after you stay on an item) or ``off``
+    :param workspaces: which workspaces the Explorer shows at the start: ``plan`` (only the
+        ones the file names, when it names any) or ``all``; a key switches between them
     """
 
     lake: Optional[str] = None
     open: Optional[str] = None
     lazy: str = LAZY_ASK
+    workspaces: str = SHOW_PLAN
 
 
 @dataclass(frozen=True)
@@ -792,10 +800,18 @@ class PlanFile:
                 f"'{lazy}' is not a mode. The modes are: {', '.join(LAZY_MODES)}.",
                 _line(box, "lazy"),
             )
+        shown = reader.text(box, "workspaces", "session") or SHOW_PLAN
+        if shown not in SHOW_MODES:
+            reader.fail(
+                "session.workspaces",
+                f"'{shown}' is not a choice. The choices are: {', '.join(SHOW_MODES)}.",
+                _line(box, "workspaces"),
+            )
         return SessionPlan(
             lake=reader.text(box, "lake", "session"),
             open=reader.text(box, "open", "session"),
             lazy=lazy,
+            workspaces=shown,
         )
 
     # -- what the file says about itself ------------------------------------------------------
@@ -1062,6 +1078,20 @@ class PlanFile:
             and getattr(w, "active", True)
             and not getattr(w, "personal", False)
         ]
+
+    def named_workspaces(self, workspaces: Sequence[Any]) -> List[str]:
+        """The ids of the workspaces that the file names: by id (as it is, whether or not the
+        lake knows it) or by a name pattern, looked up in the workspaces the lake knows.
+
+        :param workspaces: the workspaces the lake knows (`pbi_cli.core.catalog.Workspace`)
+        :return: each id once, in the order of the file
+        """
+        found: List[str] = []
+        for entry in self.workspaces:
+            for workspace in self._match(entry, workspaces):
+                if workspace.id not in found:
+                    found.append(workspace.id)
+        return found
 
     def workspace_steps(
         self,

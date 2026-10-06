@@ -152,28 +152,55 @@ def _check_keyring_availability():
         return True
 
 
-def _set_credential(profile: str, token: str):
-    """Set credential for a profile using keyring or fallback to file storage"""
+#: What `_set_credential` answers when the system keyring holds the token.
+IN_KEYRING = "keyring"
+
+
+def _forget_keyring_entry(profile: str) -> None:
+    """Remove the token of a profile from the keyring, if it has one.
+
+    The keyring is read before the file, so an older token in it would hide a newer one that
+    went to the file (a token that is too long for the Windows Credential Manager does).
+    """
+    try:
+        keyring.delete_password(KEYRING_SERVICE, profile)
+    except Exception:
+        # nothing there, or no keyring at all: there is nothing to forget
+        pass
+
+
+def _set_credential(profile: str, token: str) -> str:
+    """Set credential for a profile using keyring or fallback to file storage
+
+    :return: where the token went: ``keyring``, or the path of the credentials file
+    """
+    refused = False
     if _check_keyring_availability():
         try:
             keyring.set_password(KEYRING_SERVICE, profile, token)
-            return
+            return IN_KEYRING
         except NoKeyringError:
             pass
         except (OSError, Exception) as e:
             # Handle Windows Credential Manager errors (e.g., token too long)
             # and other keyring-specific errors
             logger.debug(f"Keyring error: {e}")
-            pass
+            refused = True
 
     # Fallback to file-based storage
-    logger.warning(
-        "Keyring not available, storing credentials in file. "
-        "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
-    )
-
     config_dir = _get_config_dir()
     credentials_file = _get_credentials_file()
+    if refused:
+        logger.warning(
+            "The system keyring did not take the token (on Windows usually because it is "
+            f"longer than the Credential Manager holds): storing it in {credentials_file}"
+        )
+        _forget_keyring_entry(profile)
+    else:
+        logger.warning(
+            "Keyring not available, storing credentials in file. "
+            "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
+        )
     if not config_dir.exists():
         config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -189,6 +216,7 @@ def _set_credential(profile: str, token: str):
 
     # Set restrictive permissions on the credentials file
     credentials_file.chmod(0o600)
+    return str(credentials_file)
 
 
 def _get_credential(profile: str) -> Optional[str]:
@@ -597,11 +625,13 @@ class StoredToken:
     :param profile: the profile the token was stored for
     :param group: the group the profile is in (``None``: the flat, legacy profiles)
     :param active: whether the profile is now the active one
+    :param where: where the token went: ``keyring``, or the path of the credentials file
     """
 
     profile: str
     group: Optional[str]
     active: bool
+    where: str = IN_KEYRING
 
 
 def store_token(
@@ -627,7 +657,7 @@ def store_token(
         config_dir.mkdir(parents=True, exist_ok=True)
 
     # Store token securely (keyed by profile name)
-    _set_credential(profile, bearer_token)
+    where = _set_credential(profile, bearer_token)
 
     if group is not None:
         # Store in group-based config
@@ -637,7 +667,10 @@ def store_token(
         if not pbi_config.get_group_active_profile(group):
             pbi_config.set_group_active_profile(group, profile)
         return StoredToken(
-            profile, group, pbi_config.get_group_active_profile(group) == profile
+            profile,
+            group,
+            pbi_config.get_group_active_profile(group) == profile,
+            where,
         )
 
     # Legacy: store in flat profiles
@@ -652,7 +685,7 @@ def store_token(
         profiles_data["active_profile"] = profile
 
     _save_profiles(profiles_data)
-    return StoredToken(profile, None, profiles_data["active_profile"] == profile)
+    return StoredToken(profile, None, profiles_data["active_profile"] == profile, where)
 
 
 @command(app, "auth")
@@ -699,9 +732,14 @@ def auth(
 
     group_name = group.value if group is not None else None
     stored = store_token(bearer_token, profile, group_name)
+    where = (
+        "securely"
+        if stored.where == IN_KEYRING
+        else f"in {stored.where} (the system keyring did not hold the token)"
+    )
     if stored.group is not None:
         typer.secho(
-            f"✓ Credentials saved securely for profile '{stored.profile}' in group '{stored.group}'",
+            f"✓ Credentials saved {where} for profile '{stored.profile}' in group '{stored.group}'",
             fg="green",
         )
         if stored.active:
@@ -711,7 +749,7 @@ def auth(
             )
     else:
         typer.secho(
-            f"✓ Credentials saved securely for profile '{stored.profile}'", fg="green"
+            f"✓ Credentials saved {where} for profile '{stored.profile}'", fg="green"
         )
         if stored.active:
             typer.secho(f"✓ Profile '{stored.profile}' is now active", fg="green")

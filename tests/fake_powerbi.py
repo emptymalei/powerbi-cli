@@ -726,6 +726,73 @@ class FakePowerBI(BaseAdapter):
             return None
         return scan
 
+    @staticmethod
+    def _scan_tables(
+        dataset: Dict[str, Any], expressions: bool
+    ) -> List[Dict[str, Any]]:
+        """The tables of a dataset as a scan with ``datasetSchema`` has them, and with
+        ``datasetExpressions`` also the queries that load them and the DAX of the measures:
+        a table of a database, a sheet of a workbook, and a calculated table."""
+
+        def table(name, columns, measures=(), source=None):
+            found: Dict[str, Any] = {
+                "name": name,
+                "isHidden": False,
+                "columns": [
+                    {
+                        "name": column,
+                        "dataType": kind,
+                        "isHidden": False,
+                        "columnType": "Calculated" if calculated else "Data",
+                        **(
+                            {"expression": calculated}
+                            if expressions and calculated
+                            else {}
+                        ),
+                    }
+                    for column, kind, calculated in columns
+                ],
+                "measures": [
+                    {
+                        "name": measure,
+                        "description": "",
+                        "isHidden": False,
+                        **({"expression": dax} if expressions else {}),
+                    }
+                    for measure, dax in measures
+                ],
+            }
+            if expressions and source:
+                found["source"] = [{"expression": source}]
+            return found
+
+        return [
+            table(
+                "Sales",
+                [
+                    ("Id", "Int64", ""),
+                    ("Total", "Double", ""),
+                    ("Margin", "Double", "[Total] * 0.2"),
+                ],
+                [("Total Sales", "SUM(Sales[Total])")],
+                'let\n    Source = Sql.Database(ServerName, "' + dataset["id"] + '"),\n'
+                '    dbo_Sales = Source{[Schema="dbo",Item="Sales"]}[Data]\nin\n    dbo_Sales',
+            ),
+            table(
+                "Customers",
+                [("Id", "Int64", ""), ("Name", "String", "")],
+                (),
+                'let\n    Source = Excel.Workbook(File.Contents("C:\\data\\customers.xlsx"), null, true),\n'
+                '    Customers_Sheet = Source{[Item="Customers",Kind="Sheet"]}[Data]\nin\n    Customers_Sheet',
+            ),
+            table(
+                "Calendar",
+                [("Date", "DateTime", "")],
+                (),
+                "CALENDAR(DATE(2020, 1, 1), DATE(2025, 12, 31))",
+            ),
+        ]
+
     def _scan_status(self, match, query, body, origin):
         scan_id = match.group("id")
         scan = self._scan(scan_id)
@@ -798,6 +865,19 @@ class FakePowerBI(BaseAdapter):
                         else []
                     ),
                 }
+                if flags["datasetSchema"] or flags["datasetExpressions"]:
+                    dataset["tables"] = self._scan_tables(
+                        d, flags["datasetExpressions"]
+                    )
+                if flags["datasetExpressions"]:
+                    dataset["expressions"] = [
+                        {
+                            "name": "ServerName",
+                            "description": "The server of the warehouse",
+                            "expression": '"sql.example" meta [IsParameterQuery=true, '
+                            'Type="Text", IsParameterQueryRequired=true]',
+                        }
+                    ]
                 if flags["lineage"]:
                     if n == 0 and self.dataflows:
                         flow = self.dataflows[0]

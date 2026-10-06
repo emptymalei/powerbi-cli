@@ -97,8 +97,21 @@ the administrator's list wins. The Info tab of a workspace says which accounts s
 ## Where tokens are kept
 
 In your system keyring (Keychain, Credential Manager, Secret Service). When no keyring is
-available they go to `~/.pbi_cli/credentials.json`, readable by you only. The profile names
-and which profile is active are in `~/.pbi_cli/config.yaml`.
+available, or it will not take the token, they go to `~/.pbi_cli/credentials.json` in your
+profile folder. The profile names and which profile is active are in `~/.pbi_cli/config.yaml`.
+
+**On Windows the file is the usual place**: the Credential Manager holds about 1,200
+characters at most, and a Power BI token is longer. `pbi auth` says where the token went:
+
+```
+✓ Credentials saved in C:\Users\me\.pbi_cli\credentials.json (the system keyring did not hold the token) for profile 'adm' in group 'admin'
+```
+
+(and `saved securely` when the keyring has it). The warning that comes with it says why. When
+the keyring refuses a new token for a profile, whatever it still holds for that profile is
+removed, because the keyring is read first and an older, shorter token in it would hide the
+new one. A token expires within the hour, so the file never holds a token that is of use for
+long.
 
 ## What pbi_cli reads from a token
 

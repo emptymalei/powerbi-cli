@@ -129,6 +129,24 @@ def test_the_modes_of_lazy_are_read_as_they_are_written(written, mode):
     assert read(f"version: 1\nsession: {{lazy: {written}}}\n").session.lazy == mode
 
 
+@pytest.mark.parametrize("choice", ["plan", "all"])
+def test_the_session_says_which_workspaces_it_shows(choice):
+    plan = read(f"version: 1\nsession: {{workspaces: {choice}}}\n")
+
+    assert plan.session.workspaces == choice
+
+
+def test_the_session_shows_the_workspaces_of_the_plan_unless_it_says_otherwise():
+    assert read("version: 1\n").session.workspaces == "plan"
+    assert read("version: 1\nsession: {lazy: ask}\n").session.workspaces == "plan"
+
+
+def test_a_choice_of_workspaces_is_case_sensitive_like_the_other_words():
+    assert "session.workspaces: 'ALL' is not a choice" in refused(
+        "version: 1\nsession: {workspaces: ALL}\n"
+    )
+
+
 def test_a_mode_of_lazy_that_is_true_is_not_a_mode():
     assert "session.lazy: must be text" in refused("version: 1\nsession: {lazy: on}\n")
 
@@ -403,6 +421,11 @@ def test_the_scan_flags_are_described_in_words():
         (
             "version: 1\nsession:\n  laze: ask\n",
             "pbi-plan.yaml:3: session.laze: unknown key. Did you mean 'lazy'?",
+        ),
+        (
+            "version: 1\nsession:\n  workspaces: some\n",
+            "pbi-plan.yaml:3: session.workspaces: 'some' is not a choice. The choices "
+            "are: plan, all.",
         ),
         (
             "version: 1\nsession:\n  lake: 7\n",
@@ -1488,3 +1511,62 @@ def test_the_example_file_is_a_plan_that_uses_every_section_and_compiles():
     assert later.unmatched == []
     assert [s.options.targets for s in later.steps][0] == ("scan",)
     assert {s.options.user_profile for s in later.steps} >= {"svc-finance"}
+
+
+# ---------------------------------------------------------------------------
+# the workspaces a file names
+# ---------------------------------------------------------------------------
+
+LAKE = [
+    workspace("Finance EU", "fin-eu"),
+    workspace("Finance US", "fin-us"),
+    workspace("Finance Old", "fin-old", state="Deleted"),
+    workspace("Finance Private", "fin-private", kind="PersonalGroup"),
+    workspace("Sales", "sales"),
+]
+
+
+def named(text):
+    return read(text).named_workspaces(LAKE)
+
+
+def test_a_file_that_names_no_workspace_names_none():
+    assert named("version: 1\ntenant: {targets: [groups]}\n") == []
+
+
+def test_a_workspace_is_named_by_its_id_as_it_is():
+    assert named("version: 1\nworkspaces:\n  - {id: sales, scan: true}\n") == ["sales"]
+
+
+def test_an_id_that_the_lake_does_not_know_is_still_named():
+    assert named("version: 1\nworkspaces:\n  - {id: elsewhere, scan: true}\n") == [
+        "elsewhere"
+    ]
+
+
+def test_a_pattern_names_the_active_workspaces_that_are_not_personal():
+    found = named('version: 1\nworkspaces:\n  - {name: "Finance*", scan: true}\n')
+
+    assert found == ["fin-eu", "fin-us"]  # not the deleted one, not the personal one
+
+
+def test_a_personal_workspace_is_named_by_its_id():
+    found = named("version: 1\nworkspaces:\n  - {id: fin-private, scan: true}\n")
+
+    assert found == ["fin-private"]
+
+
+def test_every_workspace_is_named_once_in_the_order_of_the_file():
+    found = named(
+        "version: 1\nworkspaces:\n"
+        '  - {name: "Sales", scan: true}\n'
+        '  - {name: "Finance ??", scan: true}\n'
+        "  - {id: sales, details: [users]}\n"
+        '  - {name: "*", details: [users]}\n'
+    )
+
+    assert found == ["sales", "fin-eu", "fin-us"]
+
+
+def test_a_pattern_that_matches_nothing_names_nothing():
+    assert named('version: 1\nworkspaces:\n  - {name: "Nope*", scan: true}\n') == []

@@ -360,6 +360,36 @@ def test_one_tenant_is_not_asked_about(world):
     assert screen == "ExplorerScreen" and "The lake holds only one tenant." in notes
 
 
+def test_t_offers_the_tenant_of_the_lake_when_it_is_not_the_one_that_is_shown(world):
+    async def scenario(ui):
+        shown = ui.app.tenant
+        await ui.press("t")
+        asked = type(ui.app.screen).__name__
+        await ui.press("enter")
+        return shown, asked, ui.app.tenant, ui.tree()[0]
+
+    shown, asked, tenant, first = run_ui(backend_of(world), scenario, tenant="tenant-9")
+
+    assert (shown, asked, tenant, first) == (
+        "tenant-9",
+        "ChoiceModal",
+        TENANT,
+        "● Workspaces  12",
+    )
+
+
+def test_t_says_when_the_lake_holds_nothing(tmp_path):
+    empty = World(tmp_path)
+
+    async def scenario(ui):
+        await ui.press("t")
+        return type(ui.app.screen).__name__, [n.message for n in ui.app._notifications]
+
+    screen, notes = run_ui(backend_of(empty), scenario)
+
+    assert screen == "ExplorerScreen" and "The lake holds no data yet." in notes
+
+
 def test_the_choice_of_a_tenant_can_be_cancelled(world):
     two_tenants(world)
 

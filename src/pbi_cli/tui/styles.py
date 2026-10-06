@@ -23,11 +23,13 @@ Screen {
 }
 
 StatusBar {
-    height: 1;
+    height: auto;
+    min-height: 1;
     background: $panel;
 }
 StatusBar #who {
     width: 1fr;
+    height: auto;
 }
 StatusBar #busy {
     width: auto;

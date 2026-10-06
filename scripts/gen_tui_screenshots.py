@@ -153,6 +153,20 @@ def patch_scan_result() -> None:
                     instance["datasourceId"], ("sql", "db")
                 )
                 instance["connectionDetails"] = {"server": server, "database": database}
+            for workspace in found[1]["workspaces"]:  # the queries say the same
+                for dataset in workspace["datasets"]:
+                    server, database = databases.get(
+                        f"dsi-{dataset['id']}", ("sql", "db")
+                    )
+                    for query in dataset.get("expressions", []):
+                        query["expression"] = query["expression"].replace(
+                            "sql.example", server
+                        )
+                    for table in dataset.get("tables", []):
+                        for part in table.get("source", []):
+                            part["expression"] = part["expression"].replace(
+                                f'"{dataset["id"]}"', f'"{database}"'
+                            )
         return found
 
     fake_powerbi.FakePowerBI._scan_result = scan_result  # type: ignore[method-assign]
@@ -597,6 +611,27 @@ def main() -> None:
             await pilot.press("2")
 
         asyncio.run(shoot(world, "tui-viewonly.svg", view_only, viewer))
+
+        # a scan with the schema and the expressions: what a dataset is made of, and where its
+        # tables read from
+        world.run(
+            "scan",
+            workspace_ids=("ws-0001",),
+            scan_flags=ScanFlags(
+                lineage=True,
+                datasource_details=True,
+                dataset_schema=True,
+                dataset_expressions=True,
+                get_artifact_users=True,
+            ),
+            force=True,
+        )
+
+        async def scan_tab(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001", "dataset:ds-0001")
+            await pilot.press("7")
+
+        asyncio.run(shoot(world, "tui-scan.svg", scan_tab))
 
 
 if __name__ == "__main__":

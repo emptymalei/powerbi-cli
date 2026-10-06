@@ -1,11 +1,10 @@
 """Run the TUI against a fake Power BI service and read what is on the screen."""
 
 import asyncio
-import io
 from typing import Any, Awaitable, Callable, List, Optional
 
 import pytest
-from rich.console import Console
+from render_helpers import plain
 from textual.widgets import DataTable, Static, Tree
 from textual.worker import WorkerCancelled
 
@@ -14,21 +13,6 @@ from pbi_cli.tui.app import PBIApp
 from pbi_cli.tui.backend import Backend
 from pbi_cli.tui.explorer import ExplorerScreen, NodeRef
 from pbi_cli.tui.syncscreen import SyncScreen
-
-
-def plain(renderable: Any) -> str:
-    """The text of anything a widget can show."""
-    if isinstance(renderable, str):
-        return renderable
-    console = Console(
-        file=io.StringIO(),
-        width=200,
-        force_terminal=False,
-        color_system=None,
-        record=True,
-    )
-    console.print(renderable)
-    return console.export_text().rstrip("\n")
 
 
 def backend_of(world, **replace: Any) -> Backend:

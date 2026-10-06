@@ -122,6 +122,7 @@ def build_backend(
         activate=activate,
         plan=plan,
         reload_plan=reload_plan if plan is not None and plan.path else None,
+        note=opened.note,
     )
 
 

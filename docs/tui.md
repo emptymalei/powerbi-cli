@@ -82,7 +82,7 @@ is read as markup, in the tables, the titles, the dialogs and the notices alike.
 | Node | What the table lists | Source |
 | --- | --- | --- |
 | **Lake** (the top) | each list the lake holds, how many rows it has and how fresh it is | the lists of `pbi sync` |
-| **Workspaces** | the workspaces; open one to see what is in it | `groups` |
+| **Workspaces** | the workspaces; open one to see what is in it. With a [plan file](#only-the-workspaces-of-the-plan-file) only the ones it names (`1 of 4,321`), until you press `w` | `groups` |
 | **Personal workspaces** | the same for personal workspaces (they are many, so they are apart) | `groups` |
 | a workspace | its reports, datasets, dashboards, dataflows and apps | the lists, with the newest scan over them |
 | **Apps** | the apps of the tenant (with only a user account: the apps of that account) | `apps`, or `user-apps` |
@@ -133,6 +133,66 @@ Press a number, or click a tab, to switch the details of the selected row:
 | `4` | JSON | the stored answer, as it came from the API, and the folder of the lake it is in |
 | `5` | Versions | every stored answer that holds this, newest first: when, which operation, how many rows, how big, by which profile |
 | `6` | Details | what more there is to know of the item, and what the lake lacks of it: [fetched one item at a time](#details-one-item-at-a-time) |
+| `7` | Scan | what the newest scan says about it: [its tables, measures and where the data comes from](#the-scan-tab) |
+
+### Several workspaces at once
+
+Select the **Workspaces** node (or **Personal workspaces**) and leave the table alone: the Info, Users
+and Scan tabs then cover **every workspace the table lists**, not one. The Users tab lists everybody
+with access to any of them, one line for each person and workspace, ordered by person (so that the
+workspaces of one person are together), and says for how many workspaces the lake holds the people
+and which it does not hold them for (*"6 entries: 4 people with access to 3 of 5 workspaces"*; a
+person who is in several workspaces is counted once). The Info tab counts the workspaces, how many were
+scanned, how many have their people in the lake (counted for up to 200 workspaces: above that, narrow the
+table) and the items they hold. The Scan tab sums the scans (below). **Narrow the table with `/`**
+and the tabs follow: type part of a name, and they cover only the workspaces that match. Pick a row
+(move into the table) and the tabs are about that one workspace again. Up to 500 workspaces are
+combined; the tabs say when the list is longer.
+
+Everything in these tabs is read from the lake, so it can be shared with it: publish the lake
+(see [Sharing a lake](sharing.md)) and the people who open it see the same tabs. What is not in the
+lake yet is fetched by the [plan file](plan-file.md): `details: [users]` for the people of each
+workspace, and a `scan:` for what is inside it.
+
+### The Scan tab
+
+![The Scan tab of a dataset: its tables, where each reads from, and its measures](images/tui-scan.svg)
+
+A scan is the only operation that looks **inside** a workspace. Press `7` for what the newest scan of
+the selected workspace or item says (with `r` on a workspace you scan it, and the plan file's `scan:`
+does it for the workspaces it names):
+
+- **A workspace**: how many reports, datasets, dashboards, dataflows, tables and measures it has; **where
+  the data comes from** (every server and database, file, SharePoint site or URL that the queries of
+  its tables read, with how many datasets and tables read each); the data sources the scan lists; and
+  a line for each dataset.
+- **A dataset**: each table with its columns, its measures, what loads it (M or DAX) and **where it reads
+  from**; the places the tables read from; the **native queries** (the SQL that is sent to a database, and
+  the tables it reads); the parameters and shared queries; the measures with their DAX.
+- **A report**: the dataset it is built on, as above. **A dashboard**: its tiles. **A dataflow**: the data
+  sources it reads, when the scan lists them.
+- **Several workspaces** (the list): the same, summed, and a line for each scanned workspace.
+
+What the tab can show depends on the options of the scan: without `dataset_schema` there are no tables,
+without `dataset_expressions` there are no queries (so no sources to read), without `datasource_details`
+no servers or paths of the data sources. The tab says which is missing and how to scan again with it
+(`scan: [dataset_schema, dataset_expressions, datasource_details]` on the entry of the plan file). The
+tenant setting for detailed metadata has to be on.
+
+**The sources are read from the queries.** The expression of a table is Power Query (M); the tab finds the
+connectors that it calls and what it gives them: `Sql.Database("srv", "db")` is the server and database,
+`Source{[Schema="dbo",Item="Sales"]}[Data]` the table, `Excel.Workbook(File.Contents("C:\x.xlsx"))` the
+file (and the sheet that is taken from it), `SharePoint.Files("https://...")` the site, `Web.Contents` the
+address. A name that stands for a text (a parameter of the dataset, or an earlier step of the query) is
+followed; text joined with `&` is put together, and a part that cannot be followed is shown as `{Name}`
+and listed as *not known*. A native query (`[Query="select ..."]`, or `Value.NativeQuery`) is shown on
+one line (the line breaks and tabs that M writes as `#(lf)`, `#(cr,lf)` and `#(tab)` are blanks), and
+the tables after its `FROM` and `JOIN`. It is not an M parser: a connector it does not know is not a
+source (the table says so, and the JSON tab has the whole expression), and a calculated table (DAX)
+reads from nothing. The databases it knows are SQL Server, Azure Synapse, Oracle, PostgreSQL, MySQL, Teradata, SAP
+HANA, Snowflake, Databricks, BigQuery, Redshift, Analysis Services and Azure Data Explorer; the files and
+services Excel, CSV, JSON, XML, PDF, Parquet, folders, SharePoint, OData, ODBC and OLE DB, web addresses and
+Azure storage, Dataverse, Salesforce and Fabric lakehouses (`pbi_cli.core.sources` has the list).
 
 ### Details, one item at a time
 
@@ -274,13 +334,19 @@ file instead of the targets and the options:
   expires stops it, the dialog asks for the token of **the account that expired** (the kind and
   the profile, which the plan can use several of) and the plan goes on from the step it was in.
 
-The `session` section of the file sets three things:
+The `session` section of the file sets four things:
 
 - `lake`: the lake to open. `--lake` and `PBI_LAKE` come first, then the file, then your work
   lake. Any lake but your work lake is [opened read-only](#other-lakes-and-view-only), and
-  there the plan is not run.
+  there the plan is not run. **A local folder that holds no lake is not an error**: your work
+  lake is opened instead, and a notice says so, with the command that would make that folder your
+  work lake (`pbi config set-cache-folder <folder>`; a sync writes to the work lake only, so this
+  is how a sync fills the lake the file names). A bucket that holds no lake is an error.
 - `open`: a workspace to select at the start, by id or by a pattern for its name (the first
   match). It is selected once, not again when the lake is read again.
+- `workspaces`: which workspaces the Explorer lists at the start: `plan` (the default: only the ones
+  the file names, when it names any) or `all`. See
+  [Only the workspaces of the plan file](#only-the-workspaces-of-the-plan-file).
 - `lazy`: what the Explorer does about a [detail](#details-one-item-at-a-time) the lake lacks.
   `ask`, the default, does nothing until you press `f`. `off` offers nothing: the Details tab says so
   and `f` says that fetching on demand is switched off. `auto` fetches **by itself** the details of
@@ -290,6 +356,25 @@ The `session` section of the file sets three things:
   stored, not one that refused them the last time, while more than half of the smallest allowance
   of the operation is left. It does not start while a sync runs, never writes into a lake that is
   only looked at, and tries a detail once per session. A message says what it fetches.
+
+### Only the workspaces of the plan file
+
+A plan file that names workspaces (`workspaces:`) is a statement of which ones you care about, so the
+Explorer shows **only those**: the tree and the table list the workspaces the file names, by id or by
+a name pattern that matches the lake's list, and say how many that is of how many
+(`Workspaces  1 of 4,321`). Press **`w`** to list every workspace of the lake, and `w` again to go
+back to the file's; the palette has the same two commands (*Show every workspace*, *Show only the
+workspaces of the plan file*). The file can start the session either way with `session.workspaces`.
+
+- The choice is about the lists. The Lake overview, the apps, the capacities and the audit events are
+  the lake's, and the Lake tab of the Sync screen too.
+- The palette's search finds only the workspaces of the file (and their items) while only those are
+  listed. Going to a workspace that is not one of them, with the search or with `session.open`, lists
+  every workspace and says so.
+- A personal workspace is listed only when the file names it by id.
+- A name pattern is looked up in the list of workspaces in the lake: until the list is there, or when
+  nothing in it matches, the count is `0 of N` and the title says so.
+- Without a plan file, or with one that names no workspace, every workspace is listed and `w` says so.
 
 ## Signing in again
 
@@ -398,7 +483,8 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `Esc` | Explorer | clear the filter |
 | `r` | Explorer | fetch again what is selected |
 | `l` | Explorer | read the lake again |
-| `1` to `6` | Explorer | Info, Users, Lineage, JSON, Versions, Details |
+| `1` to `7` | Explorer | Info, Users, Lineage, JSON, Versions, Details, Scan |
+| `w` | Explorer, with a plan file | list only the workspaces of the plan file, or every workspace |
 | `f` | Explorer | fetch the details of the selected item that the lake lacks (the users, on the Users tab) |
 | `r` | Sync | run the sync (the plan, with a plan file) |
 | `x` | Sync | stop the sync |
@@ -416,6 +502,10 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
   folder and on a stand-in for S3 on disk. Reading a lake lists every scan that is stored,
   which takes a while over the network when there are thousands. See
   [Sharing a lake](sharing.md).
+- The Scan tab reads sources out of the queries by pattern: it knows the connectors listed in
+  `pbi_cli.core.sources`, follows names that stand for a text, and does not run anything. A query that
+  builds its source in a way it cannot follow shows what it could read and says what it could not.
+- The tabs that combine workspaces look at 500 at a time (narrow the table with `/`).
 - It does not watch the lake: `l` reads it again.
 
 ## For developers

@@ -29,6 +29,8 @@ class Fetching:
     :param admin_profile: the administrator profile that a fetch is made through (default: the
         active one); a session with a plan file uses the accounts of the file
     :param user_profile: the same for the user account
+    :param planned: whether the session has a plan file, which is where what to keep is said
+        (so that what is missing can be told as a line to add to it)
     """
 
     available: Optional[AbstractSet[Scope]] = None
@@ -36,6 +38,7 @@ class Fetching:
     lazy: str = ASK
     admin_profile: Optional[str] = None
     user_profile: Optional[str] = None
+    planned: bool = False
 
     def provider(self, detail: Detail) -> Optional[Provider]:
         """The provider that would fetch a detail now, if a stored account can."""

@@ -62,6 +62,32 @@
 
 ### Added
 
+- The [terminal UI](tui.md) has a **Scan** tab (key `7`) that shows what the newest scan says: for a
+  workspace, how much is in it and **where its data comes from**; for a dataset, each table with its
+  columns, measures and what loads it, the places the tables read from, the native queries, the
+  parameters and the DAX of the measures; for a report, the dataset it is built on; for a
+  dashboard, its tiles; for a dataflow, the data sources it reads. The places are **read out of the
+  Power Query expressions** of the tables (`pbi_cli.core.sources`): the server and database of a SQL,
+  Oracle, PostgreSQL, MySQL, Snowflake, Synapse, Analysis Services (and other) source, the file and
+  sheet of a workbook or CSV, a SharePoint site, a web address, a folder, the SQL of a native query (on
+  one line: the `#(lf)` of M is a blank) and
+  the tables it reads; a name that stands for a text (a parameter, an earlier step) is followed, and
+  what cannot be followed is said. What the scan lacks because of its options (schema, expressions,
+  datasource details) is said with how to scan again. `pbi_cli.core.scanmodel` makes the same
+  things (`Catalog.scan_model`, `Catalog.dataset_model`) for a script.
+- The **Workspaces** node of the Explorer covers all the workspaces its table lists: its Info, Users
+  and Scan tabs combine them (everybody with access to any of them, one line for each person and
+  workspace, counting a person once; the scans summed, with the places that several workspaces read
+  from; how many have their people in the lake), and the table filter `/` narrows the set. Pick a row
+  for one workspace. What is combined is read from the lake, so it is shared with it.
+- A plan file's **`session.workspaces`** (`plan` or `all`) and the key **`w`**: with a plan file that
+  names workspaces the Explorer lists only those (`1 of 4,321`), and `w`, or the palette, lists every
+  workspace of the lake and back. Searching and `session.open` respect it, and going to a
+  workspace the file does not name lists them all and says so.
+- The overview of the lake in the Explorer says **where the lake is** and, when it holds nothing for
+  the tenant, what to do (press `s` and Run, or `t` when the lake holds another tenant: `t` used to
+  say that the lake holds only one tenant even when it was not the one shown). The header wraps onto
+  more lines on a narrow terminal instead of cutting off the lake.
 - **A plan file** names what to keep in the lake, for which workspaces and through which
   account, in one YAML file (`pbi_cli.core.planfile`). It is strict: an unknown key, a key
   that does nothing and a profile that has no token are errors that name the file, the line and
@@ -224,6 +250,16 @@
 
 ### Fixed
 
+- `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
+  lake: it opens the work lake and says so, with the command that makes that folder the work lake
+  (`pbi config set-cache-folder`). `pbi sync plan|run --config` says the same. A bucket that holds no
+  lake, and `--lake` or `PBI_LAKE` that name a place without one, are still errors.
+- **Where a token is stored** is told truthfully. On Windows a Power BI token is longer than the
+  Credential Manager holds, so the credentials file is used; `pbi auth` said `saved securely` right
+  after `Keyring not available`, and advised installing a keyring backend, which does not help. It now
+  says where the token went and why. A token that did not fit also left an older, shorter token for
+  the same profile in the keyring, which is read first, so the new one was never used: it is
+  removed.
 - The [terminal UI](tui.md) showed names as markup: a workspace called
   `[Confidential]IT Management` was shown as `IT Management` (the bracket was read as a style
   tag), `[Experiment] Test` lost its tag the same way, and a name such as `Sales [/Q4]`

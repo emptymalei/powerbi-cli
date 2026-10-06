@@ -577,6 +577,31 @@ def test_a_plan_file_needs_a_lake(fake, signed_in, tmp_path, command):
 def test_a_sync_writes_to_the_work_lake_and_says_so_when_session_lake_is_another(
     accounts, tmp_path, cache_folder, command
 ):
+    shared = tmp_path / "shared"
+    shared.joinpath("tenant=other").mkdir(parents=True)  # a lake of somebody else
+    path = write(
+        tmp_path,
+        f"version: 1\ntenant: {{targets: [groups]}}\n"
+        f"session: {{lake: '{shared}', open: Finance, lazy: auto}}\n",
+    )
+
+    result = sync(command, "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert f"Data lake: {cache_folder / 'lake'}" in result.output  # where it writes
+    assert (
+        f"Note: session.lake ({shared}) is the lake that `pbi tui --config` opens; "
+        "a sync writes to the work lake above, and only there."
+    ) in result.output
+    if command == "run":
+        assert [p.name for p in shared.iterdir()] == ["tenant=other"]  # untouched
+        assert lake(cache_folder).tenants() == ["tenant-1"]
+
+
+@pytest.mark.parametrize("command", ["plan", "run"])
+def test_a_session_lake_without_a_lake_is_told_to_open_the_work_lake_instead(
+    accounts, tmp_path, cache_folder, command
+):
     path = write(
         tmp_path,
         "version: 1\ntenant: {targets: [groups]}\n"
@@ -586,10 +611,12 @@ def test_a_sync_writes_to_the_work_lake_and_says_so_when_session_lake_is_another
     result = sync(command, "--config", path)
 
     assert result.exit_code == 0, result.output
-    assert f"Data lake: {cache_folder / 'lake'}" in result.output  # where it writes
+    assert f"Data lake: {cache_folder / 'lake'}" in result.output
     assert (
-        "Note: session.lake (/somewhere/else) is the lake that `pbi tui --config` opens; "
-        "a sync writes to the work lake above, and only there."
+        "Note: session.lake (/somewhere/else) holds no lake, so `pbi tui --config` opens "
+        f"your work lake instead ({cache_folder / 'lake'}). A sync writes to the work "
+        "lake only: `pbi config set-cache-folder /somewhere/else` makes that folder your "
+        "work lake, or leave session.lake out of the plan file."
     ) in result.output
     if command == "run":
         assert not Path("/somewhere/else").exists()
@@ -602,7 +629,7 @@ def test_a_session_lake_that_cannot_be_read_is_not_taken_for_the_work_lake(
     def unreadable(path):
         raise OSError("the bucket cannot be listed")
 
-    monkeypatch.setattr("pbi_cli.cli_sync.lake_root", unreadable)
+    monkeypatch.setattr("pbi_cli.session.lake_root", unreadable)
     path = write(
         tmp_path,
         "version: 1\ntenant: {targets: [groups]}\nsession: {lake: 's3://bucket/lake'}\n",

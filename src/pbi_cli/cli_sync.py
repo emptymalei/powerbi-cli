@@ -50,13 +50,11 @@ from pbi_cli.core.sync.state import STATE_NAME, SyncState
 from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS, select_targets
 from pbi_cli.errors import PBIError
 from pbi_cli.session import (
-    as_path,
-    is_work_lake,
     lake_hint,
-    lake_root,
     open_lake,
     quota_file,
     resolve_lake,
+    session_lake_note,
 )
 
 sync_app = new_app("sync")
@@ -373,16 +371,9 @@ def _say_what_session_lake_is_for(plan_file: PlanFile) -> None:
     wanted = plan_file.lake
     if not wanted:
         return
-    try:
-        here = is_work_lake(lake_root(as_path(wanted)))
-    except Exception:  # a place that cannot be read is not the work lake either
-        here = False
-    if not here:
-        typer.secho(
-            f"Note: session.lake ({wanted}) is the lake that `pbi tui --config` opens; a "
-            "sync writes to the work lake above, and only there.",
-            fg="yellow",
-        )
+    note = session_lake_note(wanted)
+    if note:
+        typer.secho(f"Note: {note}", fg="yellow")
 
 
 def _plan_file_plan(config: Path, overrides: Overrides) -> None:

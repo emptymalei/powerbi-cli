@@ -25,6 +25,7 @@ from pbi_cli.session import (
     open_lake,
     quota_file,
     resolve_lake,
+    session_lake_note,
 )
 
 TOKEN = make_token(tenant="tenant-1", expires_in=timedelta(days=36500))
@@ -277,7 +278,6 @@ def test_a_place_without_a_lake_says_where_the_location_came_from(
 
     from_option = _message(lambda: resolve_lake(nothing, environ={}))
     from_environment = _message(lambda: resolve_lake(None, environ={LAKE_ENV: nothing}))
-    from_plan = _message(lambda: resolve_lake(None, environ={}, plan_lake=nothing))
 
     assert (
         f"There is no data lake at {nothing}: nothing there looks like one."
@@ -288,10 +288,87 @@ def test_a_place_without_a_lake_says_where_the_location_came_from(
         "environment variable PBI_LAKE: unset it to open your work lake"
         in from_environment
     )
-    assert (
-        "the `session.lake` of the plan file: leave that out to open your work lake "
-        "(the cache folder), which a sync writes to"
-    ) in from_plan
+
+
+@pytest.mark.parametrize("make", ["missing", "empty"])
+def test_a_place_the_plan_file_names_without_a_lake_opens_the_work_lake_and_says_so(
+    cache_folder, tmp_path, make
+):
+    place = tmp_path / "coedata lake"
+    if make == "empty":
+        place.mkdir()
+
+    opened = resolve_lake(None, environ={}, plan_lake=str(place))
+
+    assert opened.work and not opened.readonly
+    assert opened.store.root == cache_folder / "lake"
+    assert opened.source == "the cache folder"
+    assert opened.note == (
+        f"session.lake ({place}) holds no lake, so `pbi tui --config` opens your work "
+        f"lake instead ({cache_folder / 'lake'}). A sync writes to the work lake only: "
+        f'`pbi config set-cache-folder "{place}"` makes that folder your work lake, or '
+        "leave session.lake out of the plan file."
+    )
+
+
+def test_a_place_the_plan_file_names_without_a_lake_is_an_error_without_a_work_lake(
+    tmp_path,
+):
+    nothing = str(tmp_path / "nothing-here")
+
+    message = _message(lambda: resolve_lake(None, environ={}, plan_lake=nothing))
+
+    assert f"There is no data lake at {nothing}" in message
+    assert "the `session.lake` of the plan file" in message
+
+
+def test_a_bucket_the_plan_file_names_without_a_lake_is_an_error(
+    cache_folder, local_s3
+):
+    message = _message(
+        lambda: resolve_lake(None, environ={}, plan_lake="s3://bucket/nothing")
+    )
+
+    assert "There is no data lake at s3://bucket/nothing" in message
+    assert "the `session.lake` of the plan file" in message
+
+
+def test_the_note_of_a_session_lake(cache_folder, tmp_path):
+    shared = a_lake(tmp_path / "shared").root
+    nothing = tmp_path / "nothing"
+
+    assert session_lake_note(str(cache_folder)) == ""  # the work lake
+    assert session_lake_note(str(cache_folder / "lake")) == ""
+    assert session_lake_note(str(shared)) == (
+        f"session.lake ({shared}) is the lake that `pbi tui --config` opens; a sync "
+        "writes to the work lake above, and only there."
+    )
+    assert session_lake_note(str(nothing)).startswith(
+        f"session.lake ({nothing}) holds no lake, so `pbi tui --config` opens your work "
+        "lake instead"
+    )
+
+
+def test_the_note_of_a_session_lake_that_cannot_be_read_is_the_plain_one(
+    cache_folder, monkeypatch
+):
+    def unreadable(path):
+        raise OSError("the bucket cannot be listed")
+
+    monkeypatch.setattr("pbi_cli.session.lake_root", unreadable)
+
+    assert session_lake_note("s3://bucket/lake") == (
+        "session.lake (s3://bucket/lake) is the lake that `pbi tui --config` opens; a "
+        "sync writes to the work lake above, and only there."
+    )
+
+
+def test_the_note_of_a_session_lake_that_is_a_bucket_without_a_lake_is_the_plain_one(
+    cache_folder, local_s3
+):
+    assert session_lake_note("s3://bucket/nothing").startswith(
+        "session.lake (s3://bucket/nothing) is the lake that"
+    )
 
 
 def _message(call) -> str:

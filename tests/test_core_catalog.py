@@ -308,6 +308,28 @@ def test_the_newest_scan_of_a_workspace_wins(world):
     assert [d["id"] for d in view.items("dataset")] == ["ds-0001"]
 
 
+def test_the_catalog_knows_which_workspaces_have_a_scan_without_reading_it(world):
+    world.run("scan", scan_flags=ScanFlags(), workspace_ids=("ws-0001",))
+    catalog = catalog_of(world)
+
+    assert catalog.has_scan("ws-0001")
+    assert not catalog.has_scan("ws-0002") and not catalog.has_scan("nope")
+    assert not catalog._pieces  # nothing was read to say so
+
+
+def test_the_workspaces_of_one_stored_scan_share_its_batch(world):
+    world.run("scan", scan_flags=FULL)
+    world.clock.advance(minutes=5)
+    world.run("scan", scan_flags=FULL, workspace_ids=("ws-0001",), force=True)
+    catalog = catalog_of(world)
+
+    older = catalog.scan_batch("ws-0002")
+
+    assert older != "" and older == catalog.scan_batch("ws-0003")
+    assert catalog.scan_batch("ws-0001") not in ("", older)  # the newer result has it
+    assert catalog.scan_batch("nope") == ""
+
+
 def test_loaded_scans_are_kept_and_the_cache_is_bounded(world):
     world.run("scan")
     catalog = catalog_of(world)

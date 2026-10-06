@@ -13,7 +13,7 @@ only requests it can make are those of the sync engine, which only reads.
 
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, FrozenSet, List, Optional, Tuple, Union
 
 from loguru import logger
 from textual import work
@@ -22,7 +22,7 @@ from textual.binding import Binding
 from textual.notifications import SeverityLevel
 
 from pbi_cli.core.catalog import Catalog, Match
-from pbi_cli.core.planfile import find_workspace
+from pbi_cli.core.planfile import SHOW_ALL, find_workspace
 from pbi_cli.core.planrun import PlanRun
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
@@ -128,6 +128,10 @@ class PBIApp(App[None]):
         self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
         self._signed_in_as: Optional[Tuple[str, Optional[str]]] = None
         self._sink: Optional[int] = None
+        #: whether the Explorer shows every workspace (else only those the plan file names)
+        self.show_all_workspaces = (
+            backend.plan is None or backend.plan.session.workspaces == SHOW_ALL
+        )
 
     # -- start and end -----------------------------------------------------------------------
 
@@ -140,6 +144,10 @@ class PBIApp(App[None]):
         self._sink = logger.add(self._to_log, level="INFO", format="{message}")
         self.push_screen("explorer")
         self.set_interval(IDENTITY_EVERY, self.refresh_identity)
+        if self.backend.note:
+            self.notify(
+                self.backend.note, title="Lake", severity="warning", timeout=NOTICE_LONG
+            )
         if self.tenant is not None:
             self.reload_catalog()
         elif len(self.backend.store.tenants()) > 1:
@@ -382,8 +390,13 @@ class PBIApp(App[None]):
     def action_choose_tenant(self) -> None:
         """Choose which tenant of the lake to browse."""
         found = self.backend.store.tenants()
-        if len(found) < 2:
-            self.notify("The lake holds only one tenant.")
+        if not [name for name in found if name != self.tenant]:
+            # nothing to choose: the lake holds the tenant that is shown, or nothing
+            self.notify(
+                "The lake holds only one tenant."
+                if found
+                else "The lake holds no data yet."
+            )
             return
 
         def chosen(tenant: Optional[str]) -> None:
@@ -608,7 +621,67 @@ class PBIApp(App[None]):
             self.lazy,
             admin,
             user,
+            self.backend.plan is not None,
         )
+
+    def workspace_scope(
+        self, catalog: Optional[Catalog] = None
+    ) -> Optional[FrozenSet[str]]:
+        """The ids of the workspaces the Explorer shows, when it shows only those that the plan
+        file names; ``None`` when it shows them all (no plan file, a plan that names no
+        workspace, or the choice of every workspace)."""
+        plan = self.backend.plan
+        catalog = catalog or self.catalog
+        if (
+            plan is None
+            or not plan.workspaces
+            or self.show_all_workspaces
+            or catalog is None
+        ):
+            return None
+        return frozenset(plan.named_workspaces(catalog.workspaces()))
+
+    def action_toggle_scope(self) -> None:
+        """Show only the workspaces that the plan file names, or every workspace."""
+        plan = self.backend.plan
+        if plan is None or not plan.workspaces:
+            self.notify(
+                "There is no plan file that names workspaces: every workspace is shown.",
+                severity="warning",
+            )
+            return
+        self.show_all_workspaces = not self.show_all_workspaces
+        self._scope_changed()
+
+    def _scope_changed(self) -> None:
+        explorer = self.get_screen("explorer")
+        if isinstance(explorer, ExplorerScreen) and explorer.is_mounted:
+            explorer.rebuild_tree()
+        self._announce_scope()
+
+    def _announce_scope(self) -> None:
+        catalog = self.catalog
+        total = len(catalog.workspaces()) if catalog is not None else 0
+        scope = self.workspace_scope()
+        self.notify(
+            f"Showing every workspace ({total}). Press w for those of the plan file."
+            if scope is None
+            else f"Showing the {len(scope)} workspace(s) of the plan file, of {total}. "
+            "Press w for every workspace."
+        )
+
+    def reveal_workspace(self, workspace_id: str) -> bool:
+        """Make sure the Explorer can show a workspace: when it shows only the plan file's and
+        this is not one of them, show every workspace and say so.
+
+        :return: whether the choice changed, so that the Explorer has to draw its tree again
+        """
+        scope = self.workspace_scope()
+        if scope is None or workspace_id in scope:
+            return False
+        self.show_all_workspaces = True
+        self._announce_scope()
+        return True
 
     def workspace_to_open(self) -> Optional[str]:
         """The id of the workspace that the plan file says to select at the start, once the

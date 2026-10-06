@@ -8,7 +8,7 @@ that a newer selection replaces.
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, cast
 
 from rich.console import Group
 from rich.text import Text
@@ -83,7 +83,12 @@ COLUMNS: Dict[str, Tuple[str, ...]] = {
 TAB_IDS = {name: f"tab-{name}" for name in render.TABS}
 
 #: The widget that shows the text of each tab that is not a table.
-TEXT_WIDGETS = {"info": "#info", "lineage": "#lineage", "json": "#json"}
+TEXT_WIDGETS = {
+    "info": "#info",
+    "lineage": "#lineage",
+    "json": "#json",
+    "scan": "#scan",
+}
 
 #: The table of each tab that is one, and the line above it.
 TABLES = {
@@ -123,7 +128,9 @@ class ExplorerScreen(Screen):
         Binding("4", "tab('json')", "JSON", show=False),
         Binding("5", "tab('versions')", "Versions", show=False),
         Binding("6", "tab('details')", "Details", show=False),
+        Binding("7", "tab('scan')", "Scan", show=False),
         Binding("f", "fetch_details", "Fetch details"),
+        Binding("w", "app.toggle_scope", "Plan or all workspaces", show=False),
     ]
 
     def __init__(self) -> None:
@@ -189,6 +196,9 @@ class ExplorerScreen(Screen):
                         yield PlainTable(
                             id="details", cursor_type="row", zebra_stripes=True
                         )
+                    with TabPane("Scan", id=TAB_IDS["scan"]):
+                        with VerticalScroll():
+                            yield PlainStatic(id="scan")
         yield Footer(show_command_palette=False)
 
     def on_mount(self) -> None:
@@ -202,7 +212,11 @@ class ExplorerScreen(Screen):
         return cast(Optional[Catalog], self.pbi.catalog)
 
     def _node_label(
-        self, text: str, count: Optional[int] = None, dot: Optional[Text] = None
+        self,
+        text: str,
+        count: Optional[int] = None,
+        dot: Optional[Text] = None,
+        of: Optional[int] = None,
     ) -> Text:
         label_text = Text()
         if dot is not None:
@@ -210,7 +224,8 @@ class ExplorerScreen(Screen):
             label_text.append(" ")
         label_text.append(text)
         if count is not None:
-            label_text.append(f"  {count}", style="grey62")
+            shown = f"{count} of {of}" if of is not None else f"{count}"
+            label_text.append(f"  {shown}", style="grey62")
         return label_text
 
     def rebuild_tree(self) -> None:
@@ -231,15 +246,26 @@ class ExplorerScreen(Screen):
         tree.root.expand()
         text = self._tree_filter.lower().strip()
 
+        scope = self.pbi.workspace_scope(catalog)
+
         def workspaces(kind: str, title_text: str, personal: bool) -> None:
-            found = catalog.workspaces(personal=personal)
-            if not found:
-                return
+            everyone = catalog.workspaces(personal=personal)
+            found = (
+                everyone if scope is None else [w for w in everyone if w.id in scope]
+            )
+            if not found and (scope is None or not everyone or personal):
+                return  # (the plan's workspaces that the lake lacks still show a node)
             wanted = [w for w in found if text in w.name.lower()] if text else found
             ref = NodeRef(kind)
             level = catalog.listing_freshness("workspace")
             node = tree.root.add(
-                self._node_label(title_text, len(found), render.dot(level)), data=ref
+                self._node_label(
+                    title_text,
+                    len(found),
+                    render.dot(level),
+                    of=len(everyone) if scope is not None else None,
+                ),
+                data=ref,
             )
             self._tree_nodes[ref] = node
             for workspace in wanted[: render.MAX_NODES]:
@@ -331,25 +357,52 @@ class ExplorerScreen(Screen):
         catalog = self.catalog
         if catalog is None:
             return
-        loaded = self._compute_node(catalog, ref)
+        loaded = self._compute_node(
+            catalog,
+            ref,
+            self.pbi.lake_label,
+            self.pbi.backend.store.tenants() if ref.kind == "root" else (),
+            self.pbi.workspace_scope(catalog),
+        )
         if not worker.is_cancelled:
             self.app.call_from_thread(self._show_node, loaded)
 
     @staticmethod
-    def _compute_node(catalog: Catalog, ref: NodeRef) -> Loaded:
-        """What the table and the detail pane show for a node (runs in a worker)."""
+    def _compute_node(
+        catalog: Catalog,
+        ref: NodeRef,
+        lake: str = "",
+        tenants: Sequence[str] = (),
+        scope: Optional[FrozenSet[str]] = None,
+    ) -> Loaded:
+        """What the table and the detail pane show for a node (runs in a worker).
+
+        :param lake: where the lake is, as the header says it
+        :param tenants: the tenants the lake holds data of
+        :param scope: the ids of the workspaces that are shown (``None``: every one)
+        """
         if ref.kind == "root":
             entries = render.overview_entries(catalog)
             return Loaded(
-                ref, "What the lake holds", entries, render.lake_subject(catalog)
+                ref,
+                render.lake_title(catalog, lake, tenants),
+                entries,
+                render.lake_subject(catalog, tenants),
             )
         if ref.kind in ("workspaces", "personal"):
-            found = catalog.workspaces(personal=ref.kind == "personal")
-            return Loaded(
-                ref,
-                f"{label('workspace', True)}: {len(found)}",
-                render.workspace_entries(catalog, found),
+            everyone = catalog.workspaces(personal=ref.kind == "personal")
+            found = (
+                everyone if scope is None else [w for w in everyone if w.id in scope]
             )
+            title = f"{label('workspace', True)}: {len(found)}"
+            if scope is not None:
+                title += (
+                    f" of {len(everyone)}  ·  only those of the plan file: "
+                    "press w for every workspace"
+                )
+            if len(found) > 1:
+                title += "  ·  the tabs below cover all of them until you pick a row"
+            return Loaded(ref, title, render.workspace_entries(catalog, found))
         if ref.kind == "workspace":
             workspace = catalog.workspace(ref.id)
             if workspace is None:
@@ -419,8 +472,19 @@ class ExplorerScreen(Screen):
                 table.move_cursor(row=table.get_row_index(key))
                 self._show_subject(self._by_key[key].subject)
                 return
-        if loaded.subject is not None:
-            self._show_subject(loaded.subject)
+        subject = loaded.subject
+        if subject is None and loaded.ref.kind in ("workspaces", "personal") and wanted:
+            # the tabs below combine the workspaces the table lists (the filter narrows them)
+            subject = render.WorkspaceSet(
+                tuple(entry.key for entry in wanted),
+                (
+                    "Personal workspaces"
+                    if loaded.ref.kind == "personal"
+                    else "Workspaces"
+                ),
+            )
+        if subject is not None:
+            self._show_subject(subject)
         elif shown:
             self._show_subject(shown[0].subject)
         else:
@@ -686,6 +750,8 @@ class ExplorerScreen(Screen):
                 "The lake does not say which workspace it is in.", severity="warning"
             )
             return
+        if self.pbi.reveal_workspace(target):
+            self.rebuild_tree()
         node = self._tree_nodes.get(NodeRef("workspace", target))
         if node is None:
             self.notify("That workspace is not in the tree.", severity="warning")

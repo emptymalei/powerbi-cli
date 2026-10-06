@@ -53,6 +53,8 @@ workspaces:
 
 # Settings for `pbi tui --config <this file>`.
 session:
-  lake: ~/PowerBI/shared-lake # open this lake (view only, unless it is the work lake)
+  lake: ~/PowerBI/shared-lake # a lake somebody shared, to look at (read-only; a sync still writes to
+  #                           # your work lake). Leave it out to open your own lake.
   open: "Finance*" # a workspace to select at the start: an id, or a name pattern
   lazy: ask # what to do about a detail the lake lacks: ask (press f), auto, or off
+  workspaces: plan # list only the workspaces above (plan) or every one (all); w switches

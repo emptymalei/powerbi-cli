@@ -38,6 +38,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -49,6 +50,12 @@ from pbi_cli.core.client import rows_of
 from pbi_cli.core.details import Detail, collect
 from pbi_cli.core.registry import IDENTITY_PARAM, get_endpoint
 from pbi_cli.core.scan import RESULT_ENDPOINT, ScanFlags, split_scan_result
+from pbi_cli.core.scanmodel import (
+    DatasetModel,
+    WorkspaceModel,
+    dataset_model,
+    workspace_model,
+)
 from pbi_cli.core.store import EventDay, LakeStore, Snapshot
 from pbi_cli.core.sync.state import DEFERRED, FAILED, STATE_NAME
 from pbi_cli.core.sync.targets import TARGETS
@@ -402,6 +409,20 @@ class Access:
     type: str
 
 
+@dataclass(frozen=True)
+class WorkspaceAccess:
+    """Somebody with access to a workspace.
+
+    :param workspace_id: the workspace
+    :param workspace: its name
+    :param access: the person (or group) and what they may do
+    """
+
+    workspace_id: str
+    workspace: str
+    access: Access
+
+
 @dataclass
 class UsersView:
     """Who has access to something, and where the lake knows that from.
@@ -576,6 +597,7 @@ class Catalog:
         self._lock = threading.Lock()
         self._pieces: "OrderedDict[str, Dict[str, Dict[str, Any]]]" = OrderedDict()
         self._views: "OrderedDict[str, ScanView]" = OrderedDict()
+        self._models: "OrderedDict[str, WorkspaceModel]" = OrderedDict()
         self._s = self._read()
 
     # -- reading the lake --------------------------------------------------------------
@@ -586,6 +608,7 @@ class Catalog:
         with self._lock:
             self._pieces.clear()
             self._views.clear()
+            self._models.clear()
             self._s = state
 
     def now(self) -> datetime:
@@ -940,6 +963,45 @@ class Catalog:
                 self._views.popitem(last=False)
         return view
 
+    def has_scan(self, workspace_id: str) -> bool:
+        """Whether a scan of the workspace is in the lake (nothing is loaded to say so)."""
+        return workspace_id in self._s.scans
+
+    def scan_batch(self, workspace_id: str) -> str:
+        """Which stored scan result has the workspace (empty when none).
+
+        The workspaces of one result share it, so that they can be taken together and the
+        result is read once.
+        """
+        ref = self._s.scans.get(workspace_id)
+        return str(ref.snapshot.directory) if ref is not None else ""
+
+    def scan_model(self, workspace_id: str) -> Optional[WorkspaceModel]:
+        """What the newest scan of a workspace says about its inside, as things: its datasets
+        with their tables, columns and measures, and the sources their queries read from
+        (`pbi_cli.core.scanmodel`). ``None`` when no scan of it is in the lake."""
+        with self._lock:
+            if workspace_id in self._models:
+                self._models.move_to_end(workspace_id)
+                return self._models[workspace_id]
+        view = self.scan_of(workspace_id)
+        if view is None:
+            return None
+        model = workspace_model(view.workspace, view.instances, view.as_of, view.flags)
+        with self._lock:
+            self._models[workspace_id] = model
+            while len(self._models) > VIEW_CACHE:
+                self._models.popitem(last=False)
+        return model
+
+    def dataset_model(self, item: "Item") -> Optional[DatasetModel]:
+        """What the scan says about the inside of a dataset (``None`` for another kind of
+        item, or when the dataset is not in a scan of the lake)."""
+        if item.kind != "dataset" or not item.scan:
+            return None
+        view = self.scan_of(item.workspace_id or "")
+        return dataset_model(item.scan, view.instances if view else ())
+
     def workspace_freshness(self, workspace_id: str) -> Freshness:
         """How fresh what the lake knows about a workspace is: the least fresh of its lists
         and its scan (when it has one)."""
@@ -1040,15 +1102,21 @@ class Catalog:
             )
         return sorted(found, key=lambda a: (a.name.casefold(), a.email.casefold()))
 
-    def details(self, subject: Subject) -> List[Detail]:
+    def details(
+        self, subject: Subject, state: Optional[Mapping[str, Any]] = None
+    ) -> List[Detail]:
         """The details of a workspace or an item (who has access to it, its data sources,
         the pages of a report, ...), each with what the lake holds of it, and the targets
-        that can fetch it. See `pbi_cli.core.details`."""
+        that can fetch it. See `pbi_cli.core.details`.
+
+        :param state: the state of the sync, when it was read already (for many subjects)
+        """
         if isinstance(subject, Workspace):
             kind, workspace_id = "workspace", subject.id
         else:
             kind, workspace_id = subject.kind, subject.workspace_id
-        state = self._store.read_state(self.tenant, STATE_NAME) or {}
+        if state is None:
+            state = self._store.read_state(self.tenant, STATE_NAME) or {}
         return collect(
             self._store,
             self.tenant,
@@ -1058,8 +1126,13 @@ class Catalog:
             state.get("units") or {},
         )
 
-    def users(self, subject: Subject) -> UsersView:
-        """Who has access to a workspace or an item, as far as the lake knows."""
+    def users(
+        self, subject: Subject, state: Optional[Mapping[str, Any]] = None
+    ) -> UsersView:
+        """Who has access to a workspace or an item, as far as the lake knows.
+
+        :param state: the state of the sync, when it was read already (for many subjects)
+        """
         if isinstance(subject, Workspace) and subject.raw.get("users"):
             found = self.listing("workspace")
             return UsersView(
@@ -1067,7 +1140,9 @@ class Catalog:
                 "admin.groups",
                 found.fetched_at if found else None,
             )
-        detail = next((d for d in self.details(subject) if d.name == "users"), None)
+        detail = next(
+            (d for d in self.details(subject, state) if d.name == "users"), None
+        )
         if detail is not None and detail.held is not None:
             held = detail.held
             rows = rows_of(held.provider.endpoint, held.snapshot.load())
@@ -1106,6 +1181,44 @@ class Catalog:
         return UsersView(
             missing=f"The lake does not hold the users of this item. Fetch them with {ways}."
         )
+
+    def sync_state(self) -> Dict[str, Any]:
+        """The state of the sync of the tenant, as the lake keeps it (for the calls that look
+        at many subjects and would read it for each)."""
+        return dict(self._store.read_state(self.tenant, STATE_NAME) or {})
+
+    def workspace_users(
+        self, workspace_ids: Sequence[str]
+    ) -> Tuple[List[WorkspaceAccess], List[str]]:
+        """Who has access to each of several workspaces, as far as the lake knows: one entry
+        for each person and workspace, by person and then workspace.
+
+        :param workspace_ids: the workspaces
+        :return: the entries, and the names of the workspaces whose users the lake does not
+            hold
+        """
+        state = self.sync_state()
+        found: List[WorkspaceAccess] = []
+        missing: List[str] = []
+        for workspace_id in workspace_ids:
+            workspace = self._s.workspaces.get(workspace_id)
+            if workspace is None:
+                continue
+            view = self.users(workspace, state)
+            if view.missing:
+                missing.append(workspace.name)
+                continue
+            found.extend(
+                WorkspaceAccess(workspace.id, workspace.name, a) for a in view.rows
+            )
+        found.sort(
+            key=lambda w: (
+                w.access.name.casefold(),
+                w.access.email.casefold(),
+                w.workspace.casefold(),
+            )
+        )
+        return found, missing
 
     # -- lineage -----------------------------------------------------------------------
 
