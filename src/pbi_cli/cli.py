@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from contextlib import contextmanager
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import (
@@ -38,9 +39,11 @@ from pbi_cli.cli_support import (
     ScanDatasourceDetails,
     ScanLineage,
     command,
+    fail,
     new_app,
 )
 from pbi_cli.cli_sync import sync_app
+from pbi_cli.cli_tui import launch, should_launch, tui
 from pbi_cli.config import (
     VALID_GROUPS,
     PBIConfig,
@@ -149,28 +152,55 @@ def _check_keyring_availability():
         return True
 
 
-def _set_credential(profile: str, token: str):
-    """Set credential for a profile using keyring or fallback to file storage"""
+#: What `_set_credential` answers when the system keyring holds the token.
+IN_KEYRING = "keyring"
+
+
+def _forget_keyring_entry(profile: str) -> None:
+    """Remove the token of a profile from the keyring, if it has one.
+
+    The keyring is read before the file, so an older token in it would hide a newer one that
+    went to the file (a token that is too long for the Windows Credential Manager does).
+    """
+    try:
+        keyring.delete_password(KEYRING_SERVICE, profile)
+    except Exception:
+        # nothing there, or no keyring at all: there is nothing to forget
+        pass
+
+
+def _set_credential(profile: str, token: str) -> str:
+    """Set credential for a profile using keyring or fallback to file storage
+
+    :return: where the token went: ``keyring``, or the path of the credentials file
+    """
+    refused = False
     if _check_keyring_availability():
         try:
             keyring.set_password(KEYRING_SERVICE, profile, token)
-            return
+            return IN_KEYRING
         except NoKeyringError:
             pass
         except (OSError, Exception) as e:
             # Handle Windows Credential Manager errors (e.g., token too long)
             # and other keyring-specific errors
             logger.debug(f"Keyring error: {e}")
-            pass
+            refused = True
 
     # Fallback to file-based storage
-    logger.warning(
-        "Keyring not available, storing credentials in file. "
-        "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
-    )
-
     config_dir = _get_config_dir()
     credentials_file = _get_credentials_file()
+    if refused:
+        logger.warning(
+            "The system keyring did not take the token (on Windows usually because it is "
+            f"longer than the Credential Manager holds): storing it in {credentials_file}"
+        )
+        _forget_keyring_entry(profile)
+    else:
+        logger.warning(
+            "Keyring not available, storing credentials in file. "
+            "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
+        )
     if not config_dir.exists():
         config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -186,6 +216,7 @@ def _set_credential(profile: str, token: str):
 
     # Set restrictive permissions on the credentials file
     credentials_file.chmod(0o600)
+    return str(credentials_file)
 
 
 def _get_credential(profile: str) -> Optional[str]:
@@ -342,12 +373,14 @@ def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
         raise AuthError(
             f"No active profile set for group '{group}'. "
             f"Use 'pbi auth -g {group}' to create a profile or "
-            f"'pbi profile switch -g {group}' to switch profiles."
+            f"'pbi profile switch -g {group}' to switch profiles.",
+            group=group,
         )
     if profile not in profiles_data.get("profiles", {}):
         raise AuthError(
             f"Profile '{profile}' not found in group '{group}' or flat profiles. "
-            "Use 'pbi profile list' to see available profiles."
+            "Use 'pbi profile list' to see available profiles.",
+            group=group,
         )
     return profile
 
@@ -372,43 +405,50 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     token = _get_credential(profile)
     if token is None:
         raise AuthError(
-            f"No credentials found for profile '{profile}'. Please re-authenticate."
+            f"No credentials found for profile '{profile}'. Please re-authenticate.",
+            group=group,
         )
 
     return {"Authorization": f"Bearer {token}"}
 
 
-def _credentials_provider(group: str) -> Callable[[], Credentials]:
+def _credentials_provider(
+    group: str, profile: Optional[str] = None
+) -> Callable[[], Credentials]:
     """What the API client asks before each request for the token of *group*.
 
     The client asks several times per request, and a command runs for seconds, so the
     token is looked up once (not in the settings and the keyring for every request). A
     token stored with ``pbi auth`` while the command runs is used by the next command.
+
+    :param group: ``admin`` or ``user``
+    :param profile: the profile to use instead of the active one of the group
     """
     found: List[Credentials] = []
 
     def provide() -> Credentials:
         if not found:
-            headers = load_auth(group=group)
+            headers = load_auth(profile=profile, group=group)
             try:
-                profile: Optional[str] = _resolve_profile(None, group)
+                name: Optional[str] = _resolve_profile(profile, group)
             except PBIError:
-                profile = None  # only used to name the profile in messages
-            found.append(
-                credentials_from_headers(headers, profile=profile, group=group)
-            )
+                name = None  # only used to name the profile in messages
+            found.append(credentials_from_headers(headers, profile=name, group=group))
         return found[0]
 
     return provide
 
 
 @contextmanager
-def _client(group: str) -> Iterator[PowerBIClient]:
+def _client(group: str, profile: Optional[str] = None) -> Iterator[PowerBIClient]:
     """An API client that signs in as *group* and keeps what it fetches in the data lake.
 
     TLS certificates are not verified, as before (see the ``tls_verify`` follow-up).
+
+    :param group: ``admin`` or ``user``
+    :param profile: the profile to use instead of the active one of the group
     """
-    with open_client(_credentials_provider(group), verify=False) as client:
+    with open_client(_credentials_provider(group, profile), verify=False) as client:
         yield client
 
 
@@ -557,8 +597,17 @@ app.add_typer(reports_app, name="reports")
 @app.callback(invoke_without_command=True)
 def root(ctx: typer.Context):
     if ctx.invoked_subcommand is None:
+        if should_launch():  # in a terminal, with Textual and a data lake
+            try:
+                launch()
+            except PBIError as error:
+                fail(str(error))
+            return
         typer.echo("Hello {}".format(os.environ.get("USER", "")))
         typer.echo("Welcome to pbi cli. Use pbi --help for help.")
+
+
+command(app, "tui")(tui)
 
 
 @command(app, "version")
@@ -567,6 +616,76 @@ def version():
     from importlib.metadata import version as _version
 
     typer.echo(_version("pbi_cli"))
+
+
+@dataclass
+class StoredToken:
+    """What `store_token` did.
+
+    :param profile: the profile the token was stored for
+    :param group: the group the profile is in (``None``: the flat, legacy profiles)
+    :param active: whether the profile is now the active one
+    :param where: where the token went: ``keyring``, or the path of the credentials file
+    """
+
+    profile: str
+    group: Optional[str]
+    active: bool
+    where: str = IN_KEYRING
+
+
+def store_token(
+    bearer_token: str, profile: str = "default", group: Optional[str] = None
+) -> StoredToken:
+    """Store a bearer token for a profile, as ``pbi auth`` does.
+
+    The token goes to the keyring (or to a file readable by the owner only when there is
+    no keyring); the profile is added to its group, and becomes the active one of the
+    group when the group has none.
+
+    :param bearer_token: the token, with or without the ``Bearer`` prefix
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` keeps the profile in the flat, legacy list
+    """
+    if bearer_token.startswith("Bearer"):
+        logger.warning("Do not include the Bearer string in the beginning")
+        bearer_token = bearer_token.replace("Bearer ", "")
+
+    config_dir = _get_config_dir()
+    if not config_dir.exists():
+        logger.info(f"Creating config folder: {config_dir}")
+        config_dir.mkdir(parents=True, exist_ok=True)
+
+    # Store token securely (keyed by profile name)
+    where = _set_credential(profile, bearer_token)
+
+    if group is not None:
+        # Store in group-based config
+        pbi_config = PBIConfig()
+        pbi_config.add_profile_to_group(group, profile, {"name": profile})
+        # Activate this profile in the group if none is set yet
+        if not pbi_config.get_group_active_profile(group):
+            pbi_config.set_group_active_profile(group, profile)
+        return StoredToken(
+            profile,
+            group,
+            pbi_config.get_group_active_profile(group) == profile,
+            where,
+        )
+
+    # Legacy: store in flat profiles
+    profiles_data = _load_profiles()
+    if "profiles" not in profiles_data:
+        profiles_data["profiles"] = {}
+
+    profiles_data["profiles"][profile] = {"name": profile}
+
+    # Set as active profile if it's the first one or if it's 'default'
+    if not profiles_data.get("active_profile") or profile == "default":
+        profiles_data["active_profile"] = profile
+
+    _save_profiles(profiles_data)
+    return StoredToken(profile, None, profiles_data["active_profile"] == profile, where)
 
 
 @command(app, "auth")
@@ -611,53 +730,29 @@ def auth(
     :param group: Optional group ('user' or 'admin') to store the profile in
     """
 
-    if bearer_token.startswith("Bearer"):
-        logger.warning("Do not include the Bearer string in the beginning")
-        bearer_token = bearer_token.replace("Bearer ", "")
-
-    config_dir = _get_config_dir()
-    if not config_dir.exists():
-        logger.info(f"Creating config folder: {config_dir}")
-        config_dir.mkdir(parents=True, exist_ok=True)
-
-    # Store token securely (keyed by profile name)
-    _set_credential(profile, bearer_token)
-
     group_name = group.value if group is not None else None
-    if group_name is not None:
-        # Store in group-based config
-        pbi_config = PBIConfig()
-        pbi_config.add_profile_to_group(group_name, profile, {"name": profile})
-        # Activate this profile in the group if none is set yet
-        if not pbi_config.get_group_active_profile(group_name):
-            pbi_config.set_group_active_profile(group_name, profile)
-        active_in_group = pbi_config.get_group_active_profile(group_name)
+    stored = store_token(bearer_token, profile, group_name)
+    where = (
+        "securely"
+        if stored.where == IN_KEYRING
+        else f"in {stored.where} (the system keyring did not hold the token)"
+    )
+    if stored.group is not None:
         typer.secho(
-            f"✓ Credentials saved securely for profile '{profile}' in group '{group_name}'",
+            f"✓ Credentials saved {where} for profile '{stored.profile}' in group '{stored.group}'",
             fg="green",
         )
-        if active_in_group == profile:
+        if stored.active:
             typer.secho(
-                f"✓ Profile '{profile}' is now active in group '{group_name}'",
+                f"✓ Profile '{stored.profile}' is now active in group '{stored.group}'",
                 fg="green",
             )
     else:
-        # Legacy: store in flat profiles
-        profiles_data = _load_profiles()
-        if "profiles" not in profiles_data:
-            profiles_data["profiles"] = {}
-
-        profiles_data["profiles"][profile] = {"name": profile}
-
-        # Set as active profile if it's the first one or if it's 'default'
-        if not profiles_data.get("active_profile") or profile == "default":
-            profiles_data["active_profile"] = profile
-
-        _save_profiles(profiles_data)
-
-        typer.secho(f"✓ Credentials saved securely for profile '{profile}'", fg="green")
-        if profiles_data["active_profile"] == profile:
-            typer.secho(f"✓ Profile '{profile}' is now active", fg="green")
+        typer.secho(
+            f"✓ Credentials saved {where} for profile '{stored.profile}'", fg="green"
+        )
+        if stored.active:
+            typer.secho(f"✓ Profile '{stored.profile}' is now active", fg="green")
 
 
 @profile_app.callback(invoke_without_command=True)

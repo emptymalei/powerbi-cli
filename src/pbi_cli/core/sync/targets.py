@@ -18,7 +18,7 @@ Naming ``default`` adds the plain ones, ``all`` adds everything.
 from dataclasses import dataclass, field
 from datetime import timedelta
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import AbstractSet, Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from pbi_cli.core.registry import Scope
 from pbi_cli.errors import PBIError
@@ -47,6 +47,8 @@ class Target:
     :param endpoint: registry id of the requests (for scans: where the results are stored)
     :param scope: the kind of token the requests need
     :param default: whether a sync without target names includes it
+    :param default_user: whether it is part of the plain sync of someone who has only a user
+        account (no administrator): what a user can see, workspace by workspace
     :param sensitive: why it is only fetched when named (empty for the plain targets)
     :param parent: the target whose rows it fans out over
     :param bind: how a fan-out fills the path of its requests: placeholder to
@@ -54,6 +56,17 @@ class Target:
         parameter of the parent's request)
     :param params: fixed parameters of the requests
     :param ttl: how long a stored answer stays fresh (default: the endpoint's ``ttl``)
+    :param item: the kind of item whose *detail* it fetches (``report``, ``dataset``,
+        ``dashboard``, ``dataflow`` or ``workspace``), for a target that exists to answer
+        something about one item at a time
+    :param detail: which detail of the item it is (``users``, ``datasources``, ``pages``,
+        ``refreshes``, ``parameters`` or ``tiles``)
+    :param match: for a target that lists many items in one answer (the refresh summaries
+        of the tenant): the field of its rows that holds the id of the item the row is about
+    :param workspace: for a fan-out over the rows of a list of items: the field of a row that
+        holds the id of the workspace the item is in, so that a sync of chosen workspaces
+        (`pbi_cli.core.sync.plan.SyncOptions.workspace_ids`) fetches for the items of those
+        workspaces only
     """
 
     name: str
@@ -62,11 +75,16 @@ class Target:
     endpoint: str
     scope: Scope
     default: bool = False
+    default_user: bool = False
     sensitive: str = ""
     parent: Optional[str] = None
     bind: Mapping[str, Tuple[str, str]] = field(default_factory=dict)
     params: Mapping[str, Any] = field(default_factory=dict)
     ttl: Optional[timedelta] = None
+    item: str = ""
+    detail: str = ""
+    match: str = ""
+    workspace: str = ""
 
 
 TARGETS: Tuple[Target, ...] = (
@@ -105,6 +123,9 @@ TARGETS: Tuple[Target, ...] = (
         sensitive="the people who can open each report, with their e-mail addresses",
         parent="reports",
         bind={"reportId": ("row", "id")},
+        item="report",
+        detail="users",
+        workspace="workspaceId",
     ),
     Target(
         "datasources",
@@ -115,6 +136,84 @@ TARGETS: Tuple[Target, ...] = (
         sensitive="connection details of the data sources: servers, databases, paths",
         parent="datasets",
         bind={"datasetId": ("row", "id")},
+        item="dataset",
+        detail="datasources",
+        workspace="workspaceId",
+    ),
+    Target(
+        "group-users",
+        "The users of every workspace",
+        Mode.FANOUT,
+        "admin.groups.users",
+        Scope.ADMIN,
+        sensitive="the people who have access to each workspace, with their e-mail addresses",
+        parent="groups",
+        bind={"groupId": ("row", "id")},
+        item="workspace",
+        detail="users",
+    ),
+    Target(
+        "dataset-users",
+        "The users of every dataset",
+        Mode.FANOUT,
+        "admin.datasets.users",
+        Scope.ADMIN,
+        sensitive="the people who can use each dataset, with their e-mail addresses",
+        parent="datasets",
+        bind={"datasetId": ("row", "id")},
+        item="dataset",
+        detail="users",
+        workspace="workspaceId",
+    ),
+    Target(
+        "dashboard-users",
+        "The users of every dashboard",
+        Mode.FANOUT,
+        "admin.dashboards.users",
+        Scope.ADMIN,
+        sensitive="the people who can open each dashboard, with their e-mail addresses",
+        parent="dashboards",
+        bind={"dashboardId": ("row", "id")},
+        item="dashboard",
+        detail="users",
+        workspace="workspaceId",
+    ),
+    Target(
+        "dataflow-users",
+        "The users of every dataflow",
+        Mode.FANOUT,
+        "admin.dataflows.users",
+        Scope.ADMIN,
+        sensitive="the people who can use each dataflow, with their e-mail addresses",
+        parent="dataflows",
+        bind={"dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="users",
+        workspace="workspaceId",
+    ),
+    Target(
+        "dataflow-datasources",
+        "The data sources of every dataflow",
+        Mode.FANOUT,
+        "admin.dataflows.datasources",
+        Scope.ADMIN,
+        sensitive="connection details of the data sources: servers, databases, paths",
+        parent="dataflows",
+        bind={"dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="datasources",
+        workspace="workspaceId",
+    ),
+    Target(
+        "refreshables",
+        "How each dataset refreshes: a summary of its last week",
+        Mode.SNAPSHOT,
+        "admin.refreshables",
+        Scope.ADMIN,
+        sensitive="who owns each dataset (e-mail addresses) and when it refreshes",
+        item="dataset",
+        detail="refreshes",
+        match="id",
     ),
     Target(
         "activity",
@@ -133,16 +232,67 @@ TARGETS: Tuple[Target, ...] = (
         Mode.SNAPSHOT,
         "user.groups",
         Scope.USER,
+        default_user=True,
     ),
-    Target("user-apps", "Apps of the user", Mode.SNAPSHOT, "user.apps", Scope.USER),
+    Target(
+        "user-apps",
+        "Apps of the user",
+        Mode.SNAPSHOT,
+        "user.apps",
+        Scope.USER,
+        default_user=True,
+    ),
     Target(
         "user-reports",
         "Reports of each workspace of the user",
         Mode.FANOUT,
         "user.group_reports",
         Scope.USER,
+        default_user=True,
         parent="user-groups",
         bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-datasets",
+        "Datasets of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_datasets",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-dashboards",
+        "Dashboards of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_dashboards",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-dataflows",
+        "Dataflows of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_dataflows",
+        Scope.USER,
+        default_user=True,
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+    ),
+    Target(
+        "user-group-users",
+        "The users of each workspace of the user",
+        Mode.FANOUT,
+        "user.group_users",
+        Scope.USER,
+        sensitive="the people who have access to each workspace, with their e-mail addresses",
+        parent="user-groups",
+        bind={"groupId": ("row", "id")},
+        item="workspace",
+        detail="users",
     ),
     Target(
         "user-pages",
@@ -152,6 +302,81 @@ TARGETS: Tuple[Target, ...] = (
         Scope.USER,
         parent="user-reports",
         bind={"groupId": ("param", "groupId"), "reportId": ("row", "id")},
+        item="report",
+        detail="pages",
+    ),
+    Target(
+        "user-dataset-users",
+        "The users of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_users",
+        Scope.USER,
+        sensitive="the people who can use each dataset (it needs Reshare permission on it)",
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="users",
+    ),
+    Target(
+        "user-dataset-datasources",
+        "The data sources of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_datasources",
+        Scope.USER,
+        sensitive=(
+            "connection details of the data sources: servers, databases, paths "
+            "(it needs Write permission on the dataset)"
+        ),
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="datasources",
+    ),
+    Target(
+        "user-dataflow-datasources",
+        "The data sources of each dataflow of the user",
+        Mode.FANOUT,
+        "user.dataflow_datasources",
+        Scope.USER,
+        sensitive="connection details of the data sources: servers, databases, paths",
+        parent="user-dataflows",
+        bind={"groupId": ("param", "groupId"), "dataflowId": ("row", "objectId")},
+        item="dataflow",
+        detail="datasources",
+    ),
+    Target(
+        "user-dataset-refreshes",
+        "The refresh history of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_refreshes",
+        Scope.USER,
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="refreshes",
+    ),
+    Target(
+        "user-dataset-parameters",
+        "The parameters of each dataset of the user",
+        Mode.FANOUT,
+        "user.dataset_parameters",
+        Scope.USER,
+        sensitive="the current values of the parameters, which can hold server names and paths",
+        parent="user-datasets",
+        bind={"groupId": ("param", "groupId"), "datasetId": ("row", "id")},
+        item="dataset",
+        detail="parameters",
+    ),
+    Target(
+        "user-dashboard-tiles",
+        "The tiles of each dashboard of the user",
+        Mode.FANOUT,
+        "user.dashboard_tiles",
+        Scope.USER,
+        parent="user-dashboards",
+        bind={"groupId": ("param", "groupId"), "dashboardId": ("row", "id")},
+        item="dashboard",
+        detail="tiles",
     ),
 )
 
@@ -194,22 +419,64 @@ class Selection:
         return [target.name for target in self.targets]
 
 
-def select_targets(names: Sequence[str] = ()) -> Selection:
+def _article(scope: Scope) -> str:
+    return "an administrator" if scope is Scope.ADMIN else "a user"
+
+
+def _require(target: Target, available: Optional[AbstractSet[Scope]]) -> None:
+    """Refuse a target that needs an account that is not stored, and say what to do."""
+    if available is None or target.scope in available:
+        return
+    have = ", ".join(sorted(f"{s.value}" for s in available))
+    raise PBIError(
+        f"'{target.name}' needs {_article(target.scope)} account, and none is stored. "
+        f"Store one with `pbi auth -t <token> -g {target.scope.value}`."
+        + (f" The accounts you have are: {have}." if have else "")
+    )
+
+
+def _plain(available: Optional[AbstractSet[Scope]]) -> List[str]:
+    """The names of the plain targets: those of the administrator's account when there is
+    one, else those of a user's."""
+    if available is None or Scope.ADMIN in available:
+        return [
+            t.name
+            for t in TARGETS
+            if t.default and (available is None or t.scope in available)
+        ]
+    if Scope.USER in available:
+        return [t.name for t in TARGETS if t.default_user and t.scope in available]
+    return []
+
+
+def select_targets(
+    names: Sequence[str] = (), available: Optional[AbstractSet[Scope]] = None
+) -> Selection:
     """Turn what the user named into the targets to sync.
 
     Without names the plain targets are synced. ``default`` stands for them, ``all`` for
     every target. A fan-out brings along the target it fans out over.
 
-    :raises PBIError: for a name that is not a target
+    :param names: what the user named
+    :param available: the kinds of account that are stored (default: all of them). What the
+        plain sync is depends on it: the administrator's lists when there is an
+        administrator account, else what a user can see. ``all`` is every target the
+        accounts can run, and naming one they cannot is an error.
+    :raises PBIError: for a name that is not a target, or a target that needs an account
+        that is not stored
     """
     wanted: Set[str] = set()
     for name in names or (DEFAULT,):
         if name == DEFAULT:
-            wanted.update(t.name for t in TARGETS if t.default)
+            wanted.update(_plain(available))
         elif name == ALL:
-            wanted.update(t.name for t in TARGETS)
+            wanted.update(
+                t.name for t in TARGETS if available is None or t.scope in available
+            )
         else:
-            wanted.add(get_target(name).name)
+            target = get_target(name)
+            _require(target, available)
+            wanted.add(target.name)
 
     implied: Set[str] = set()
     pending = list(wanted)

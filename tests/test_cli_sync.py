@@ -9,9 +9,11 @@ from core_helpers import make_token
 from fake_powerbi import FakePowerBI
 from typer.testing import CliRunner
 
-from pbi_cli.cli import app
+from pbi_cli.cli import app, store_token
+from pbi_cli.config import PBIConfig
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import STATE_NAME
+from pbi_cli.errors import AuthError
 
 PLAIN = "groups, apps, capacities, reports, datasets, dashboards, dataflows"
 
@@ -367,11 +369,104 @@ def test_both_kinds_of_token_can_be_used_in_one_run(ready):
     assert result.exit_code == 0 and "2 fetched" in result.output
 
 
-def test_a_missing_profile_is_reported_before_anything_is_fetched(fake, cache_folder):
+@pytest.fixture
+def user_only(fake, cache_folder, monkeypatch):
+    """Only a user is signed in: the administrators' group has no profile."""
+    token = make_token(
+        tenant="tenant-1",
+        expires_in=timedelta(days=36500),
+        oid="oid-svc",
+        upn="svc@x.com",
+    )
+
+    def load_auth(profile=None, group="user"):
+        if group == "admin":
+            raise AuthError("No active profile set for group 'admin'.", group="admin")
+        return {"Authorization": f"Bearer {token}"}
+
+    monkeypatch.setattr("pbi_cli.cli.load_auth", load_auth)
+    return fake
+
+
+def test_a_user_without_an_administrator_plans_what_a_user_can_see(user_only):
+    result = sync("plan")
+
+    assert result.exit_code == 0, result.output
+    assert (
+        "Targets: user-groups, user-apps, user-reports, user-datasets, "
+        "user-dashboards, user-dataflows" in result.output
+    )
+    assert "user-group-users" in result.output  # not plain: named to be included
+    advertised = next(
+        line for line in result.output.splitlines() if line.startswith("Not included")
+    )
+    assert "user-group-users" in advertised and "user-pages" in advertised
+    assert "scan" not in advertised and "activity" not in advertised  # no admin account
+    assert "Tenant: tenant-1" in result.output
+    assert user_only.calls == []
+
+
+def test_a_user_without_an_administrator_syncs_what_a_user_can_see(
+    user_only, cache_folder
+):
+    result = sync("run")
+
+    assert result.exit_code == 0, result.output
+    header = result.output.split("Stage 1")[0]
+    assert (
+        "Targets: user-groups, user-apps, user-reports, user-datasets, "
+        "user-dashboards, user-dataflows" in header
+    )
+    assert "capacities" not in header  # none of the administrator's targets
+    assert not user_only.calls_to(r"^/admin")
+    assert user_only.calls_to(r"^/groups$") and user_only.calls_to(r"^/apps$")
+    held = lake(cache_folder).parameter_sets("tenant-1", "user.groups")
+    assert [s.params["_as"] for s in held] == ["oid-svc"]
+    assert held[0].latest.manifest["tenant"] == "tenant-1"
+
+
+def test_a_user_who_names_an_admin_target_is_told_what_to_do(user_only):
+    result = sync("run", "scan")
+
+    assert result.exit_code == 1
+    assert "'scan' needs an administrator account" in result.output
+    assert "pbi auth -t <token> -g admin" in result.output
+    assert "The accounts you have are: user." in result.output
+    assert user_only.calls == []
+
+
+def test_a_plan_and_a_run_name_the_profiles_they_use(fake, cache_folder):
+    forever = timedelta(days=36500)
+    for profile, group, oid in (
+        ("adm", "admin", "o-adm"),
+        ("svc", "user", "o-svc"),
+        ("bob", "user", "o-bob"),
+    ):
+        token = make_token(tenant="tenant-1", expires_in=forever, oid=oid)
+        store_token(token, profile, group)
+
+    both = sync("plan", "groups", "user-groups")
+    other = sync("plan", "user-groups", "--user-profile", "bob")
+    run = sync("run", "groups")
+
+    assert "Accounts: adm (admin), svc (user)" in both.output
+    assert "Accounts: bob (user)" in other.output and "adm" not in other.output
+    assert "Accounts: adm (admin)" in run.output and "svc" not in run.output
+
+
+def test_a_plan_without_an_account_names_none(fake, cache_folder):
+    result = sync("plan")
+
+    assert result.exit_code == 1 and "Accounts:" not in result.output
+
+
+def test_no_account_at_all_is_reported_before_anything_is_fetched(fake, cache_folder):
     result = sync("run")  # nobody is signed in
 
     assert result.exit_code == 1
-    assert "No active profile set for group 'admin'" in result.output
+    assert "No account is stored" in result.output
+    assert "pbi auth -t <token> -g admin" in result.output
+    assert "-g user" in result.output
     assert fake.calls == []
 
 
@@ -384,6 +479,24 @@ def test_status_of_a_lake_without_a_sync(cache_folder):
     result = sync("status")
 
     assert result.exit_code == 0 and "Nothing has been synced yet" in result.output
+
+
+def test_status_looks_at_another_lake_with_no_cache_folder_and_no_token(
+    ready, cache_folder, monkeypatch
+):
+    sync("run", "groups")
+    root = cache_folder / "lake"
+    PBIConfig().set("cache_folder", None)  # no work lake at all now
+
+    def refuse(profile=None, group="user"):
+        raise AssertionError("status asked for a token")
+
+    monkeypatch.setattr("pbi_cli.cli.load_auth", refuse)
+
+    result = sync("status", "--lake", str(root))
+
+    assert result.exit_code == 0, result.output
+    assert f"Data lake: {root}" in result.output and "Tenant: tenant-1" in result.output
 
 
 def test_status_needs_a_lake(fake):
@@ -492,6 +605,11 @@ def test_a_plain_sync_says_which_targets_it_leaves_out(ready):
 
     assert (
         "Not included (name them to include them, see --help): scan, report-users, "
-        "datasources, activity, user-groups, user-apps, user-reports, user-pages"
+        "datasources, group-users, dataset-users, dashboard-users, dataflow-users, "
+        "dataflow-datasources, refreshables, activity, user-groups, user-apps, "
+        "user-reports, user-datasets, user-dashboards, user-dataflows, "
+        "user-group-users, user-pages, user-dataset-users, user-dataset-datasources, "
+        "user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, "
+        "user-dashboard-tiles"
     ) in plain.output
     assert "Not included" not in named.output

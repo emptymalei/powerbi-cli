@@ -12,7 +12,24 @@ class PBIError(Exception):
 
 
 class AuthError(PBIError):
-    """The credentials are missing or were refused."""
+    """The credentials are missing or were refused.
+
+    :param message: what is wrong, in words the user can act on
+    :param group: the kind of account it is about (``admin`` or ``user``), when known, so
+        that something that asks for a new token can ask for the right kind
+    :param profile: the profile it is about, when known, so that the new token is stored
+        under it (several accounts of one kind can be in use)
+    """
+
+    def __init__(
+        self,
+        message: str = "",
+        group: Optional[str] = None,
+        profile: Optional[str] = None,
+    ):
+        super().__init__(message)
+        self.group = group
+        self.profile = profile
 
 
 class TokenExpiredError(AuthError):
@@ -79,6 +96,21 @@ class ScanTimeout(ScanError):
 
     The scan may still succeed: its id is kept in `ScanError.scan_id` so that the result
     can be collected later (the API keeps it for 24 hours).
+    """
+
+
+class Stopped(PBIError):
+    """Work was stopped on request (for example by the Stop button of the TUI).
+
+    It is not a failure: a sync that is stopped keeps what is done and can be run again.
+    """
+
+
+class ReadOnlyLake(PBIError):
+    """Something tried to write to a lake that can only be read.
+
+    Only the work lake (the configured cache folder) is written. A lake opened with
+    ``--lake`` is read-only, and so is a published lake, whichever way it was opened.
     """
 
 

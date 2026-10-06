@@ -29,6 +29,11 @@ _DOCS = "https://learn.microsoft.com/en-us/rest/api/power-bi"
 HOUR = 3600
 MINUTE = 60
 
+#: The pseudo parameter that says who is asking, for the operations whose answer depends on
+#: it (see `Endpoint.per_identity`). It is part of the key of a request in the lake and is
+#: never sent to the API.
+IDENTITY_PARAM = "_as"
+
 
 class Scope(str, Enum):
     """Which kind of token an operation needs."""
@@ -102,6 +107,12 @@ class Endpoint:
     :param ttl: how long a snapshot counts as fresh
     :param parent: id of the operation that lists the items this one is called for
     :param parent_field: field of the parent's rows that fills the path placeholder
+    :param per_identity: whether the answer depends on who asks (the workspaces *a user*
+        has access to, the apps *a user* installed): the lake then keeps the answers of
+        each account apart, by the parameter `IDENTITY_PARAM`
+    :param needs: the permission a user needs on the item, when the documentation states one
+        beyond being able to see it (``Write permission on the dataset``); it is said when the
+        API refuses
     """
 
     id: str
@@ -120,6 +131,8 @@ class Endpoint:
     ttl: timedelta = timedelta(hours=24)
     parent: Optional[str] = None
     parent_field: str = "id"
+    per_identity: bool = False
+    needs: str = ""
 
     @property
     def path_params(self) -> Tuple[str, ...]:
@@ -136,6 +149,8 @@ class Endpoint:
         :raises ValueError: for a missing placeholder or an unknown query parameter
         """
         given = {k: v for k, v in (params or {}).items() if v is not None}
+        if self.per_identity:
+            given.pop(IDENTITY_PARAM, None)  # a part of the key, not of the request
         path_params = {k: given.pop(k) for k in self.path_params if k in given}
         missing = [k for k in self.path_params if k not in path_params]
         if missing:
@@ -171,10 +186,15 @@ class Endpoint:
     def canonical_params(self, params: Optional[Mapping[str, Any]]) -> Dict[str, str]:
         """Path and query parameters together as sorted canonical strings.
 
-        This is what identifies a request in the lake.
+        This is what identifies a request in the lake. For an operation whose answer depends
+        on who asks it includes ``_as``, the identity of the account, when one is given.
         """
         path_params, query = self.split_canonical(params)
-        return dict(sorted({**path_params, **query}.items()))
+        found = {**path_params, **query}
+        identity = (params or {}).get(IDENTITY_PARAM)
+        if self.per_identity and identity:
+            found[IDENTITY_PARAM] = str(identity)
+        return dict(sorted(found.items()))
 
     def build_url(
         self,
@@ -328,6 +348,61 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         RateLimit(windows=((300, HOUR),)),
         parent="admin.datasets",
     ),
+    _admin_list(
+        "admin.groups.users",
+        "Users of a workspace",
+        "/admin/groups/{groupId}/users",
+        "groups-get-group-users-as-admin",
+        RateLimit(windows=((200, HOUR),)),
+        parent="admin.groups",
+    ),
+    _admin_list(
+        "admin.datasets.users",
+        "Users of a dataset",
+        "/admin/datasets/{datasetId}/users",
+        "datasets-get-dataset-users-as-admin",
+        RateLimit(windows=((200, HOUR),)),
+        parent="admin.datasets",
+    ),
+    _admin_list(
+        "admin.dashboards.users",
+        "Users of a dashboard",
+        "/admin/dashboards/{dashboardId}/users",
+        "dashboards-get-dashboard-users-as-admin",
+        RateLimit(windows=((200, HOUR),)),
+        parent="admin.dashboards",
+    ),
+    _admin_list(
+        "admin.dataflows.users",
+        "Users of a dataflow",
+        "/admin/dataflows/{dataflowId}/users",
+        "dataflows-get-dataflow-users-as-admin",
+        RateLimit(windows=((200, HOUR),)),
+        parent="admin.dataflows",
+        parent_field="objectId",
+    ),
+    Endpoint(
+        id="admin.dataflows.datasources",
+        title="Data sources of a dataflow",
+        method="GET",
+        path="/admin/dataflows/{dataflowId}/datasources",
+        scope=Scope.ADMIN,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/admin/dataflows-get-dataflow-datasources-as-admin",
+        parent="admin.dataflows",
+        parent_field="objectId",
+    ),
+    _admin_list(
+        "admin.refreshables",
+        "How the datasets of the tenant refresh (a summary of each)",
+        "/admin/capacities/refreshables",
+        "get-refreshables",
+        RateLimit(windows=((200, HOUR),)),
+        paging=Paging.SKIP,
+        page_size=1000,
+        query=("$expand", "$filter", "$top", "$skip"),
+        multi_value=("$expand",),
+    ),
     # --- admin: change tracking and audit ---------------------------------------------
     _admin_list(
         "admin.workspaces.modified",
@@ -408,6 +483,7 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         doc_url=f"{_DOCS}/groups/get-groups",
         query=("$filter", "$top", "$skip"),
         ttl=timedelta(hours=1),
+        per_identity=True,
     ),
     Endpoint(
         id="user.apps",
@@ -418,6 +494,7 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         kind=Kind.SNAPSHOT,
         doc_url=f"{_DOCS}/apps/get-apps",
         ttl=timedelta(hours=1),
+        per_identity=True,
     ),
     Endpoint(
         id="user.group_reports",
@@ -431,6 +508,50 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         parent="user.groups",
     ),
     Endpoint(
+        id="user.group_datasets",
+        title="Datasets of a workspace",
+        method="GET",
+        path="/groups/{groupId}/datasets",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-datasets-in-group",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_dashboards",
+        title="Dashboards of a workspace",
+        method="GET",
+        path="/groups/{groupId}/dashboards",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dashboards/get-dashboards-in-group",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_dataflows",
+        title="Dataflows of a workspace",
+        method="GET",
+        path="/groups/{groupId}/dataflows",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dataflows/get-dataflows",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
+        id="user.group_users",
+        title="Users of a workspace",
+        method="GET",
+        path="/groups/{groupId}/users",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/groups/get-group-users",
+        ttl=timedelta(hours=1),
+        parent="user.groups",
+    ),
+    Endpoint(
         id="user.report_pages",
         title="Pages of a report",
         method="GET",
@@ -438,6 +559,70 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         scope=Scope.USER,
         kind=Kind.SNAPSHOT,
         doc_url=f"{_DOCS}/reports/get-pages-in-group",
+        ttl=timedelta(hours=1),
+    ),
+    Endpoint(
+        id="user.dataset_users",
+        title="Users of a dataset",
+        method="GET",
+        path="/groups/{groupId}/datasets/{datasetId}/users",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-dataset-users-in-group",
+        ttl=timedelta(hours=1),
+        needs="Reshare permission on the dataset (ReadWriteReshare)",
+    ),
+    Endpoint(
+        id="user.dataset_datasources",
+        title="Data sources of a dataset",
+        method="GET",
+        path="/groups/{groupId}/datasets/{datasetId}/datasources",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-datasources-in-group",
+        ttl=timedelta(hours=1),
+        needs="Write permission on the dataset",
+    ),
+    Endpoint(
+        id="user.dataflow_datasources",
+        title="Data sources of a dataflow",
+        method="GET",
+        path="/groups/{groupId}/dataflows/{dataflowId}/datasources",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dataflows/get-dataflow-data-sources",
+        ttl=timedelta(hours=1),
+    ),
+    Endpoint(
+        id="user.dataset_refreshes",
+        title="Refresh history of a dataset",
+        method="GET",
+        path="/groups/{groupId}/datasets/{datasetId}/refreshes",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-refresh-history-in-group",
+        query=("$top",),
+        ttl=timedelta(hours=1),
+        needs="Write permission on the dataset",
+    ),
+    Endpoint(
+        id="user.dataset_parameters",
+        title="Parameters of a dataset",
+        method="GET",
+        path="/groups/{groupId}/datasets/{datasetId}/parameters",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/datasets/get-parameters-in-group",
+        ttl=timedelta(hours=1),
+    ),
+    Endpoint(
+        id="user.dashboard_tiles",
+        title="Tiles of a dashboard",
+        method="GET",
+        path="/groups/{groupId}/dashboards/{dashboardId}/tiles",
+        scope=Scope.USER,
+        kind=Kind.SNAPSHOT,
+        doc_url=f"{_DOCS}/dashboards/get-tiles-in-group",
         ttl=timedelta(hours=1),
     ),
 )

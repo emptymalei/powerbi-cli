@@ -107,6 +107,17 @@ workspace as failed. Files that were already saved stay.
 
 A workspace that Power BI does not know gets a file with an empty result, and a note.
 
+### Seeing the results
+
+The files are what the command writes. What the lake keeps of a scan is shown by the
+[terminal UI](tui.md#the-scan-tab): its **Scan** tab (key `7`) lists, for a workspace, a dataset, a
+report or several workspaces at once, the tables, columns and measures of the datasets, the
+queries that load them, and **where each table gets its data**, read out of those queries (the
+server and database of a SQL source, the file or address of a workbook, the SharePoint site, the
+native SQL and the tables it reads). The scan has to be made with `--dataset-schema`
+and `--dataset-expressions` (and `--datasource-details` for the data sources the scan lists); the
+tab says what is missing from the scan it shows.
+
 ### The data lake
 
 When a [cache folder](lake.md) is configured, the scan of every batch is also kept in the

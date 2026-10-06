@@ -17,7 +17,7 @@ Power BI command line tool
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. Install dependencies (including dev and docs extras):
+2. Install dependencies (including the dev, docs and tui extras):
    ```bash
    uv sync --all-extras
    ```
@@ -72,6 +72,44 @@ threaded scheduler with its error policy (`engine.py`) and the state it leaves i
 (`state.py`). The scan job itself is `src/pbi_cli/core/scan.py`, which `pbi workspaces scan
 batch` uses too. See `docs/sync.md`.
 
+Commands and the sync engine ask for an account by its kind (`Scope.ADMIN` or `Scope.USER`)
+and, for a run, a profile: `ClientPool` (`src/pbi_cli/cli_support.py`) keeps one client for
+each kind and profile. Which kinds are stored decides what a sync does without names
+(`SyncEngine.available_scopes()`, `select_targets(names, available)` in
+`src/pbi_cli/core/sync/targets.py`), and an operation whose answer depends on who asks
+(`Endpoint.per_identity`: `user.groups`, `user.apps`) is keyed in the lake by the object id of
+the token. An administrator account is optional. See `docs/auth.md`.
+
+Only the work lake, the lake of the cache folder, is ever written. A lake opened with
+`--lake` or `PBI_LAKE` is read-only (`LakeStore(readonly=True)` raises `ReadOnlyLake`), and
+so is a published one (`pbi lake publish`, `src/pbi_cli/core/publish.py`, marks it with a
+`publish.json`). See `docs/sharing.md`.
+
+`pbi tui` (`src/pbi_cli/cli_tui.py`) opens the terminal UI in `src/pbi_cli/tui`, which is
+built with [Textual](https://textual.textualize.io) and is an optional extra
+(`pip install "pbi-cli[tui]"`). What it shows is read by `src/pbi_cli/core/catalog.py`, a
+read model over the lake with no terminal in it; what it fetches goes through the sync
+engine. The `pbi_cli.tui` package imports nothing from Textual until it is started, so
+every other command works without the extra. See `docs/tui.md`.
+
+The details of one item (who has access, data sources, refresh history, ...) come from
+`src/pbi_cli/core/details.py`, which derives from the targets (`Target.item` and `Target.detail`)
+who can fetch what, and `SyncOptions.only` limits a sync to the items that are wanted; the
+Details tab and `f` of the Explorer use them through `src/pbi_cli/tui/fetching.py`.
+
+A plan file (`src/pbi_cli/core/planfile.py`) says what to keep, for which workspaces and through
+which account, as a YAML file with no token in it; it compiles to ordinary sync runs (one step for
+the tenant, then one for each set of workspaces, details and account), which
+`src/pbi_cli/core/planrun.py` plans and runs one after the other for `pbi sync plan|run --config`.
+`SyncOptions.workspace_ids` is what limits a step to its workspaces. `pbi tui --config` gives the
+Sync screen of a plan file (`src/pbi_cli/tui/planscreen.py`) and the `session` settings: the lake
+(`resolve_lake(plan_lake=...)`), the workspace to open and `lazy` (`Fetching.auto` chooses what the
+Explorer may fetch by itself). See `docs/plan-file.md`.
+
+The command palette (`:` or `Ctrl+P`) is fed by `src/pbi_cli/tui/commands.py`, which lists what
+can be done from the screen that is shown (give a new action a `Command` there, and it can be
+searched), and by the providers in `src/pbi_cli/tui/palette.py`.
+
 ### Running the tests
 
 ```bash
@@ -85,6 +123,15 @@ give it a token and a lake (see `tests/test_cli_lake_routing.py`). For the sync 
 the scans there is a fake Power BI service, `tests/fake_powerbi.py`, that behaves like the
 admin API (paging, scans, audit events, quotas) and can inject failures; `tests/sync_helpers.py`
 puts it, a lake and an engine on one fake clock.
+
+The fake service knows who asks (the `oid` of the token), so a world can have only a user
+(`World.only_user()`) or several accounts (`World.accounts(ana="oid-ana", ...)`).
+
+The tests of the terminal UI (`tests/test_tui_app.py`, `test_tui_explorer.py`,
+`test_tui_sync.py`, `test_tui_lakes.py` and `test_tui_accounts.py`) start the real app with
+Textual's test pilot on that fake service (`tests/tui_helpers.py`); `tests/conftest.py` leaves
+them out when Textual is not installed (`uv sync --extra tui`). The tests of what the UI is made of that need no terminal
+(`test_core_catalog.py`, `test_tui_core.py`, `test_cli_tui.py`) always run.
 
 ### The CLI surface snapshot
 
@@ -117,3 +164,7 @@ uv run python scripts/gen_cli_docs.py   # regenerate docs/references/cli.md
 uv run zensical serve                   # preview the docs locally
 uv run zensical build --clean           # build them into site/
 ```
+
+The pictures of `docs/tui.md` are made from the real app, on a made-up tenant. Run
+`uv run python scripts/gen_tui_screenshots.py` when the UI changes and commit the SVG files
+in `docs/images`.

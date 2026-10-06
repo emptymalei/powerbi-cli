@@ -5,6 +5,7 @@ tokens in the system keyring, so no test may run against the real ones: every te
 empty home and an in-memory keyring.
 """
 
+import importlib.util
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -16,6 +17,29 @@ from keyring.backend import KeyringBackend
 from keyring.errors import PasswordDeleteError
 
 from pbi_cli.config import PBIConfig
+
+# The tests of the terminal UI need Textual, an optional extra (uv sync --extra tui): without
+# it they are not collected.
+collect_ignore_glob = (
+    []
+    if importlib.util.find_spec("textual")
+    else [
+        "test_tui_accounts.py",
+        "test_tui_app.py",
+        "test_tui_commands.py",
+        "test_tui_details.py",
+        "test_tui_explorer.py",
+        "test_tui_lakes.py",
+        "test_tui_lazy.py",
+        "test_tui_plain.py",
+        "test_tui_planfile.py",
+        "test_tui_scan.py",
+        "test_tui_scope.py",
+        "test_tui_signin.py",
+        "test_tui_sync.py",
+        "tui_helpers.py",
+    ]
+)
 
 
 class MemoryKeyring(KeyringBackend):
@@ -62,6 +86,16 @@ def isolated_home(tmp_path_factory, monkeypatch) -> Path:
     return home
 
 
+@pytest.fixture(autouse=True)
+def quick_tui(monkeypatch):
+    """Let the TUI look at things often, so that the tests do not have to wait for it."""
+    if importlib.util.find_spec("textual") is None:
+        return
+    monkeypatch.setattr("pbi_cli.tui.syncscreen.REPLAN_AFTER", 0.05)
+    monkeypatch.setattr("pbi_cli.tui.syncscreen.TICK", 0.1)
+    monkeypatch.setattr("pbi_cli.tui.status.REFRESH_EVERY", 0.2)
+
+
 @pytest.fixture
 def cache_folder(isolated_home) -> Path:
     """A configured cache folder: the data lake of the commands lives in it."""
@@ -87,3 +121,16 @@ def signed_in(monkeypatch) -> str:
         "pbi_cli.cli.load_auth", lambda profile=None, group="user": dict(headers)
     )
     return token
+
+
+@pytest.fixture
+def local_s3(monkeypatch):
+    """``s3://`` URLs that live in a folder on disk (cloudpathlib's local stand-in), so that
+    remote lakes can be tested without a bucket or a network."""
+    from cloudpathlib.cloudpath import implementation_registry
+    from cloudpathlib.local import LocalS3Client, local_s3_implementation
+
+    monkeypatch.setitem(implementation_registry, "s3", local_s3_implementation)
+    LocalS3Client.reset_default_storage_dir()
+    yield
+    LocalS3Client.reset_default_storage_dir()

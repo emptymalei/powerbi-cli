@@ -85,7 +85,22 @@ def test_what_is_not_plain_says_why():
 def test_children_of():
     assert [t.name for t in children_of("reports")] == ["report-users"]
     assert [t.name for t in children_of("user-reports")] == ["user-pages"]
-    assert children_of("groups") == []
+    assert [t.name for t in children_of("groups")] == ["group-users"]
+    assert [t.name for t in children_of("datasets")] == [
+        "datasources",
+        "dataset-users",
+    ]
+    assert [t.name for t in children_of("dataflows")] == [
+        "dataflow-users",
+        "dataflow-datasources",
+    ]
+    assert [t.name for t in children_of("user-datasets")] == [
+        "user-dataset-users",
+        "user-dataset-datasources",
+        "user-dataset-refreshes",
+        "user-dataset-parameters",
+    ]
+    assert children_of("apps") == []
 
 
 def test_get_target_says_what_there_is():
@@ -155,3 +170,85 @@ def test_an_unknown_name_is_refused():
 
 def test_no_target_name_looks_like_another_spelling_of_a_path():
     assert all(re.fullmatch(r"[a-z]+(-[a-z]+)*", t.name) for t in TARGETS)
+
+
+# -- what the accounts that are stored can do ----------------------------------------
+
+SKELETON = [
+    "user-groups",
+    "user-apps",
+    "user-reports",
+    "user-datasets",
+    "user-dashboards",
+    "user-dataflows",
+]
+BOTH = {Scope.ADMIN, Scope.USER}
+ONLY_ADMIN = {Scope.ADMIN}
+ONLY_USER = {Scope.USER}
+
+
+def test_every_account_may_be_assumed_when_nothing_is_said_about_them():
+    assert select_targets().names == select_targets(available=None).names == PLAIN
+
+
+def test_the_plain_sync_is_the_administrators_lists_when_there_is_an_administrator():
+    assert select_targets(available=BOTH).names == PLAIN
+    assert select_targets(available=ONLY_ADMIN).names == PLAIN
+
+
+def test_the_plain_sync_of_a_user_is_what_a_user_can_see_workspace_by_workspace():
+    selection = select_targets(available=ONLY_USER)
+
+    assert selection.names == SKELETON
+    assert all(t.scope is Scope.USER for t in selection.targets)
+
+
+def test_without_any_account_there_is_no_plain_sync():
+    assert select_targets(available=set()).names == []
+
+
+def test_only_the_skeleton_of_a_user_is_plain_for_a_user():
+    assert [t.name for t in TARGETS if t.default_user] == SKELETON
+    assert not any(t.default and t.default_user for t in TARGETS)
+
+
+def test_a_target_that_needs_the_missing_account_is_refused_and_says_what_to_do():
+    with pytest.raises(PBIError) as refused:
+        select_targets(["scan"], available=ONLY_USER)
+
+    message = str(refused.value)
+    assert "'scan' needs an administrator account" in message
+    assert "`pbi auth -t <token> -g admin`" in message
+    assert "The accounts you have are: user." in message
+
+
+def test_a_user_target_without_a_user_account_is_refused():
+    with pytest.raises(PBIError) as refused:
+        select_targets(["user-pages"], available=ONLY_ADMIN)
+
+    assert "'user-pages' needs a user account" in str(refused.value)
+    assert "-g user" in str(refused.value)
+
+
+def test_with_no_account_the_message_does_not_list_any():
+    with pytest.raises(PBIError) as refused:
+        select_targets(["groups"], available=set())
+
+    assert "none is stored" in str(refused.value)
+    assert "accounts you have" not in str(refused.value)
+
+
+def test_all_is_what_the_accounts_can_run():
+    admin = select_targets([ALL], available=ONLY_ADMIN)
+    user = select_targets([ALL], available=ONLY_USER)
+
+    assert all(t.scope is Scope.ADMIN for t in admin.targets) and admin.names
+    assert user.names == [t.name for t in TARGETS if t.scope is Scope.USER]
+    assert select_targets([ALL], available=BOTH).names == [t.name for t in TARGETS]
+
+
+def test_a_fan_out_of_a_user_still_brings_its_parents_when_only_a_user_is_stored():
+    selection = select_targets(["user-pages"], available=ONLY_USER)
+
+    assert selection.names == ["user-groups", "user-reports", "user-pages"]
+    assert selection.implied == {"user-groups", "user-reports"}

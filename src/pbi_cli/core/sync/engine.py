@@ -36,15 +36,7 @@ from loguru import logger
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.registry import ENDPOINTS, Scope, get_endpoint
 from pbi_cli.core.store import LakeStore
-from pbi_cli.core.sync.plan import (
-    MODIFIED,
-    SCAN,
-    Plan,
-    Planner,
-    QuotaLine,
-    SyncOptions,
-    Unit,
-)
+from pbi_cli.core.sync.plan import Plan, Planner, QuotaLine, SyncOptions, Unit
 from pbi_cli.core.sync.runners import (
     CANCELLED,
     DEFERRED,
@@ -58,8 +50,15 @@ from pbi_cli.core.sync.runners import (
 from pbi_cli.core.sync.state import DEFERRED as MARK_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARK_FAILED
 from pbi_cli.core.sync.state import SyncState
-from pbi_cli.core.sync.targets import Selection, get_target, select_targets
-from pbi_cli.errors import ApiError, PBIError, RateLimitError, TokenExpiredError
+from pbi_cli.core.sync.targets import Selection, select_targets
+from pbi_cli.errors import (
+    ApiError,
+    AuthError,
+    PBIError,
+    RateLimitError,
+    Stopped,
+    TokenExpiredError,
+)
 
 COMPLETED = "completed"
 COMPLETED_WITH_FAILURES = "completed_with_failures"
@@ -74,10 +73,6 @@ _ORDER = {endpoint.id: n for n, endpoint in enumerate(ENDPOINTS)}
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
-
-
-class RunStopped(Exception):
-    """Raised inside a unit when the run is stopped while the unit waits."""
 
 
 @dataclass(frozen=True)
@@ -117,8 +112,12 @@ class RunReport:
     :param by_target: the same by target
     :param failures: the failed units with the reason
     :param deferred: the deferred units with the seconds until a request fits
+    :param cancelled: how many units were not done because the run was stopped
     :param notes: what else the reader should know
     :param message: the reason a run was stopped
+    :param group: for a run that stopped for an expired token: the kind of account it was
+    :param profile: and the profile, when it is known, so that the new token can be stored
+        under it
     """
 
     run_id: str
@@ -129,8 +128,11 @@ class RunReport:
     by_target: Dict[str, Counter] = field(default_factory=dict)
     failures: List[Tuple[str, str]] = field(default_factory=list)
     deferred: List[Tuple[str, Optional[float]]] = field(default_factory=list)
+    cancelled: int = 0
     notes: List[str] = field(default_factory=list)
     message: str = ""
+    group: Optional[str] = None
+    profile: Optional[str] = None
 
     @property
     def retry_after(self) -> Optional[float]:
@@ -139,13 +141,23 @@ class RunReport:
         return min(waits) if waits else None
 
 
+#: A kind of token and a profile (``None``: the active one): who a request is made as.
+Account = Tuple[Scope, Optional[str]]
+
+
+def _label(scope: Scope, client: PowerBIClient) -> str:
+    """How a plan calls an account: ``profile (kind)``."""
+    profile = client.profile_name()
+    return f"{profile} ({scope.value})" if profile else scope.value
+
+
 @dataclass
 class _Session:
     """Everything one plan or run works with."""
 
     options: SyncOptions
     selection: Selection
-    clients: Dict[Scope, PowerBIClient]
+    clients: Dict[Account, PowerBIClient]
     tenant: str
     state: SyncState
     planner: Planner
@@ -155,12 +167,18 @@ class _Session:
     forbidden_streak: Counter = field(default_factory=Counter)
     forbidden: Set[str] = field(default_factory=set)
 
+    def client(self, scope: Scope) -> PowerBIClient:
+        """The client of a kind of token, for the profile this run uses."""
+        return self.clients[(scope, self.options.profile_of(scope))]
+
 
 class SyncEngine:
     """Plans and runs syncs of one tenant into a lake.
 
-    :param client_for: returns the client that signs in for a kind of token; called when a
-        target of that kind is used, and may raise `PBIError` (no profile, no token)
+    :param client_for: returns the client that signs in for a kind of token, as the profile
+        it is given when it is given one (``client_for(scope)`` or ``client_for(scope,
+        profile)``); it may raise `PBIError` (no profile, no token), which means that there
+        is no account of that kind
     :param store: the lake
     :param clock: the current time (aware, UTC)
     :param sleep: waits for some seconds; by default a wait that a stop cuts short
@@ -169,7 +187,7 @@ class SyncEngine:
 
     def __init__(
         self,
-        client_for: Callable[[Scope], PowerBIClient],
+        client_for: Callable[..., PowerBIClient],
         store: LakeStore,
         *,
         clock: Callable[[], datetime] = _utcnow,
@@ -184,14 +202,87 @@ class SyncEngine:
 
     # -- setting up --------------------------------------------------------------------
 
-    def _session(self, options: SyncOptions) -> _Session:
-        selection = select_targets(options.targets)
-        clients = {
-            scope: self._client_for(scope)
+    def _client(self, scope: Scope, account: Optional[str] = None) -> PowerBIClient:
+        if account is None:
+            return self._client_for(scope)
+        return self._client_for(scope, account)
+
+    def has_account(self, scope: Scope, profile: Optional[str] = None) -> bool:
+        """Whether an account is stored: a token under the profile (default: the active one
+        of the kind). Nothing is sent: a token is only looked up, and read for its tenant.
+        """
+        try:
+            self._client(scope, profile).tenant_key()
+        except PBIError:  # no profile, or no token under it
+            return False
+        return True
+
+    def profile_of(self, scope: Scope, profile: Optional[str] = None) -> Optional[str]:
+        """The name of the profile an account is stored under: the one asked for, else the
+        active one of the kind; ``None`` when no account is stored."""
+        if not self.has_account(scope, profile):
+            return None
+        return self._client(scope, profile).profile_name()
+
+    def available_scopes(self, options: Optional[SyncOptions] = None) -> Set[Scope]:
+        """The kinds of account that are stored: those whose client knows its token.
+
+        Nothing is sent: a token is only looked up, and read for its tenant.
+
+        :param options: the profiles the sync is to use (default: the active ones)
+        """
+        return {
+            scope
+            for scope in Scope
+            if self.has_account(scope, options.profile_of(scope) if options else None)
+        }
+
+    def tenant(self, options: SyncOptions) -> str:
+        """The tenant whose lake a sync with these options works on.
+
+        :raises PBIError: when no account is stored, or the accounts belong to different
+            tenants
+        """
+        return self._session(options).tenant
+
+    def accounts(self, options: SyncOptions) -> List[str]:
+        """The accounts a sync with these options would use, each as ``profile (kind)``.
+
+        Nothing is sent. The answer is empty when no account is stored: a plan or a run
+        then says what to store.
+
+        :raises PBIError: for a target that needs an account that is not stored
+        """
+        available = self.available_scopes(options)
+        if not available:
+            return []
+        selection = select_targets(options.targets, available)
+        return [
+            _label(scope, self._client(scope, options.profile_of(scope)))
             for scope in sorted(
                 {t.scope for t in selection.targets}, key=lambda s: s.value
             )
-        }
+        ]
+
+    def _session(
+        self, options: SyncOptions, stop: Optional[threading.Event] = None
+    ) -> _Session:
+        available = self.available_scopes(options)
+        if not available:
+            raise AuthError(
+                "No account is stored. Store a token with `pbi auth -t <token> -g admin` "
+                "(an administrator's) or `pbi auth -t <token> -g user` (a user's)."
+            )
+        selection = select_targets(options.targets, available)
+        if not selection.targets:
+            raise PBIError(
+                "There is nothing to sync with the accounts that are stored."
+            )
+        accounts = sorted(
+            {(t.scope, options.profile_of(t.scope)) for t in selection.targets},
+            key=lambda a: (a[0].value, a[1] or ""),
+        )
+        clients = {account: self._client(*account) for account in accounts}
         tenants = {client.tenant_key() for client in clients.values()}
         if len(tenants) != 1:
             raise PBIError(
@@ -209,16 +300,17 @@ class SyncEngine:
             tenant=tenant,
             state=state,
             clock=self._clock,
+            identity=lambda scope, account: clients[(scope, account)].identity_key(),
         )
-        stop = threading.Event()
+        stop = threading.Event() if stop is None else stop
 
         def sleep(seconds: float) -> None:
             if stop.is_set():
-                raise RunStopped()
+                raise Stopped()
             if self._sleep is not None:
                 self._sleep(seconds)
             elif stop.wait(seconds):
-                raise RunStopped()
+                raise Stopped()
 
         context = Context(
             options=options,
@@ -226,7 +318,7 @@ class SyncEngine:
             tenant=tenant,
             state=state,
             planner=planner,
-            client_for=lambda scope: clients[scope],
+            client_for=lambda scope, account=None: clients[(scope, account)],
             clock=self._clock,
             sleep=sleep,
             monotonic=self._monotonic,
@@ -251,7 +343,7 @@ class SyncEngine:
         lines = []
         for endpoint_id in sorted(needed, key=lambda e: _ORDER.get(e, len(_ORDER))):
             endpoint = get_endpoint(endpoint_id)
-            client = session.clients[endpoint.scope]
+            client = session.client(endpoint.scope)
             hourly = None
             if endpoint.limit is not None:
                 hourly = next(
@@ -267,7 +359,14 @@ class SyncEngine:
                     hourly=hourly,
                 )
             )
-        return Plan(tenant=session.tenant, targets=targets, quota=lines)
+        return Plan(
+            tenant=session.tenant,
+            targets=targets,
+            quota=lines,
+            accounts=[
+                _label(scope, client) for (scope, _), client in session.clients.items()
+            ],
+        )
 
     # -- running -----------------------------------------------------------------------
 
@@ -275,13 +374,20 @@ class SyncEngine:
         self,
         options: SyncOptions,
         on_event: Optional[Callable[[Event], None]] = None,
+        stop: Optional[threading.Event] = None,
     ) -> RunReport:
         """Fetch what the targets need into the lake.
 
         :param options: what to sync, and how
         :param on_event: called (from the thread that runs) as stages begin and units end
+        :param stop: set it, from any thread, to end the run: units that are being fetched
+            finish, no other unit starts, and the report says ``interrupted``. What is
+            done is kept, so running again continues.
         """
-        session = self._session(options)
+        session = self._session(options, stop)
+        if self._sleep is None:  # real time: a stop also ends the waits for quota
+            for client in session.clients.values():
+                client.limiter.interrupt = session.stop
         started = self._clock()
         run_id = session.state.begin_run(session.selection.names, options.summary())
         report = RunReport(run_id=run_id, started_at=started)
@@ -295,12 +401,19 @@ class SyncEngine:
                 stage += 1
                 outcomes = self._run_stage(session, units, stage, report, on_event)
                 units = self._following(session, outcomes, created)
+            if report.cancelled:
+                report.status = INTERRUPTED
+                report.message = "stopped before everything was done"
         except TokenExpiredError as error:
             report.status, report.message = TOKEN_EXPIRED, str(error)
+            report.group, report.profile = error.group, error.profile
         except KeyboardInterrupt:
             report.status, report.message = INTERRUPTED, "interrupted by the user"
         finally:
-            session.stop.set()
+            if stop is None:  # the run's own: release whatever still waits on it
+                session.stop.set()
+            for client in session.clients.values():
+                client.limiter.interrupt = None
         self._finish(session, report, created, started)
         return report
 
@@ -344,6 +457,7 @@ class SyncEngine:
                         token_error = token_error or error
                         continue
                     if outcome.status == CANCELLED:
+                        report.cancelled += 1
                         continue
                     self._record(session, unit, outcome, report)
                     finished.append((unit, outcome))
@@ -366,6 +480,8 @@ class SyncEngine:
             pool.shutdown(wait=True, cancel_futures=True)
         if token_error is not None:
             raise token_error
+        # the units that were never started, because the run was stopped
+        report.cancelled += sum(1 for _ in pending)
         return finished
 
     def _execute(self, session: _Session, unit: Unit) -> Outcome:
@@ -380,7 +496,7 @@ class SyncEngine:
         except TokenExpiredError:
             session.stop.set()  # at once: a queued unit must not ask with a dead token
             raise
-        except RunStopped:
+        except Stopped:
             return Outcome(CANCELLED)
         except RateLimitError as error:
             return Outcome(
@@ -486,6 +602,8 @@ class SyncEngine:
                 COMPLETED_WITH_FAILURES if report.counts[FAILED] else COMPLETED
             )
 
+        report.notes.extend(session.planner.unplaced_notes().values())
+
         for target in session.selection.targets:
             if target.parent and not created.get(target.name):
                 parent = report.by_target.get(target.parent, Counter())
@@ -501,10 +619,12 @@ class SyncEngine:
 
         # Every workspace is scanned as of the start of this run when the units of the scan
         # target all succeeded (the list of workspaces, then every batch) and the run was
-        # not cut short: the next scan can then continue from here.
+        # not cut short: the next scan can then continue from here. A scan of chosen
+        # workspaces covers only those, so it moves nothing.
         scanned = report.by_target.get("scan")
         if (
             scanned
+            and not session.options.workspace_ids
             and report.status not in (TOKEN_EXPIRED, INTERRUPTED)
             and not scanned[FAILED]
             and not scanned[DEFERRED]

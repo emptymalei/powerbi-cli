@@ -33,16 +33,19 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi workspaces scan get/params/interval/type": "value must still be > 0, checked by a callback",
     "pbi workspaces scan get/params/timeout/type": "value must still be > 0, checked by a callback",
     # The data lake: commands that browse and tidy what the other commands fetched.
-    "pbi/command_order": "the root gains the lake group",
+    "pbi/command_order": "the root gains the lake, sync and tui commands",
     "pbi lake": "new: pbi lake",
     "pbi lake ls": "new: pbi lake ls",
     "pbi lake show": "new: pbi lake show",
     "pbi lake prune": "new: pbi lake prune",
+    "pbi lake publish": "new: pbi lake publish",
     # pbi sync: keeps the tenant in the data lake
     "pbi sync": "new: pbi sync",
     "pbi sync plan": "new: pbi sync plan",
     "pbi sync run": "new: pbi sync run",
     "pbi sync status": "new: pbi sync status",
+    # pbi tui: browse the data lake and sync it in a terminal UI
+    "pbi tui": "new: pbi tui",
     # Help texts only (no flag changed): they now describe the data lake.
     "pbi workspaces list/help": "says the answer is stored in the data lake and what --use-cache and --cache-only mean",
     "pbi users user-access/help": "same, and says that it reads every page and needs an admin",
