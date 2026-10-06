@@ -930,6 +930,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pbi_cli.session.is_work_lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_work_lake
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pbi_cli.session.lake_hint" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2160,6 +2171,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pbi_cli.session.is_work_lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        is_work_lake
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#pbi_cli.session.lake_hint" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2500,6 +2522,105 @@ the cache folder</p>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">CloudPath</span><span class="p">):</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>  <span class="c1"># "~/lake" means the home folder, not a folder "~"</span>
     <span class="k">return</span> <span class="n">path</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="pbi_cli.session.is_work_lake" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">is_work_lake</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.session.is_work_lake" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Whether a path is the work lake: the lake of the cache folder, or the cache folder
+itself (the lake is the <code>lake</code> folder in it, and may not be there before the first
+sync).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>a folder or a cloud URL (<code>as_path</code>), as the user gave it or as <code>lake_root</code>
+made it</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>config</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="pbi_cli.config.PBIConfig">PBIConfig</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the settings (default: the stored ones)</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/session.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_work_lake</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PBIConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a path is the work lake: the lake of the cache folder, or the cache folder</span>
+<span class="sd">    itself (the lake is the ``lake`` folder in it, and may not be there before the first</span>
+<span class="sd">    sync).</span>
+
+<span class="sd">    :param path: a folder or a cloud URL (`as_path`), as the user gave it or as `lake_root`</span>
+<span class="sd">        made it</span>
+<span class="sd">    :param config: the settings (default: the stored ones)</span>
+<span class="sd">    """</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">PBIConfig</span><span class="p">()</span>
+    <span class="n">work</span> <span class="o">=</span> <span class="n">lake_path</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">work</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="n">same_place</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">work</span><span class="p">)</span> <span class="ow">or</span> <span class="n">same_place</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">AnyPath</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">cache_folder</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2965,35 +3086,7 @@ which an explicit <code>--lake</code> and <code>PBI_LAKE</code> overrule</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/session.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">181</span>
 <span class="normal">182</span>
 <span class="normal">183</span>
 <span class="normal">184</span>
@@ -3015,7 +3108,35 @@ which an explicit <code>--lake</code> and <code>PBI_LAKE</code> overrule</p>
 <span class="normal">200</span>
 <span class="normal">201</span>
 <span class="normal">202</span>
-<span class="normal">203</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_lake</span><span class="p">(</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_lake</span><span class="p">(</span>
     <span class="n">location</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PBIConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">environ</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3054,12 +3175,12 @@ which an explicit <code>--lake</code> and <code>PBI_LAKE</code> overrule</p>
         <span class="n">found</span> <span class="o">=</span> <span class="n">_holds_a_lake</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># missing credentials or client library, bad URL, ...</span>
         <span class="k">raise</span> <span class="n">PBIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cannot read the lake at </span><span class="si">{</span><span class="n">wanted</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
-    <span class="k">if</span> <span class="n">work</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">same_place</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">work</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">OpenedLake</span><span class="p">(</span><span class="n">LakeStore</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">work</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">is_work_lake</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OpenedLake</span><span class="p">(</span><span class="n">LakeStore</span><span class="p">(</span><span class="n">work</span><span class="p">),</span> <span class="kc">True</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">PBIError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"There is no data lake at </span><span class="si">{</span><span class="n">wanted</span><span class="si">}</span><span class="s2">: nothing there looks like one. Check the "</span>
-            <span class="s2">"location (and, for a bucket, your credentials)."</span>
+            <span class="sa">f</span><span class="s2">"location (and, for a bucket, your credentials).</span><span class="si">{</span><span class="n">_WHERE_IT_CAME_FROM</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="n">reason</span> <span class="o">=</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">"The lake </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> was opened with </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">, which only reads. Only the work lake "</span>

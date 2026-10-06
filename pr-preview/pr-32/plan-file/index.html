@@ -2319,6 +2319,8 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <span class="nt">tenant</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span><span class="w"> </span><span class="c1"># days of audit events (1 to 28); only with `activity` above</span>
+<span class="w">  </span><span class="c1"># scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan</span>
+<span class="w">  </span><span class="c1">#                                     # only some, use `scan:` in an entry below)</span>
 
 <span class="c1"># What to keep for particular workspaces. A workspace is an `id`, or a `name` (a pattern:</span>
 <span class="c1"># `*` and `?` stand for any text and one character) that is looked up in the list of</span>
@@ -2337,6 +2339,7 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
 
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3f1c9a52-0000-0000-0000-000000000000</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Finance Controlling</span><span class="w"> </span><span class="c1"># with an id, a name is only a label for messages</span>
 <span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pages</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tiles</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># only a user's account reads these</span>
 <span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">svc-finance</span>
 
@@ -2374,6 +2377,12 @@ one (<code>pbi auth -t &lt;token&gt; -p svc-sales -g user</code>).</p>
 <p><code>user</code> lists the accounts that <code>via: auto</code> and <code>via: user</code> choose from, in the order of the
 file. A profile named in a <code>via:</code> of an entry is used for that entry whether or not it is
 listed.</p>
+<p>In <code>pbi tui --config</code> these are the accounts of the <strong>whole session</strong>, not only of <strong>Run
+plan</strong>: the <a href="../tui/#signing-in-again">header</a> shows them (each user account on its own, with
+how long its token lasts), and what <code>f</code> and <code>lazy: auto</code> fetch for one item goes through
+them too, by the first user account of the file whose own list of workspaces holds the
+item's workspace. Without this, a fetch would use the <em>active</em> profile of the kind, which
+may not be an account of the file.</p>
 <h3 id="tenant"><code>tenant</code><a class="headerlink" href="#tenant" title="Permanent link">¤</a></h3>
 <p>What to keep for the whole tenant.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">tenant</span><span class="p">:</span>
@@ -2398,11 +2407,11 @@ listed.</p>
 </tr>
 <tr>
 <td><code>scan</code></td>
-<td>What the scan of every workspace includes, with <a href="#the-scan-options">the scan options</a> below; <code>true</code> is a scan with none. Only with <code>scan</code> among the targets.</td>
+<td><strong>Scan every workspace of the tenant</strong>, with these options: <a href="#the-scan-options">the scan options</a> below, as a mapping or a list of names; <code>true</code> or <code>[]</code> is a scan with none. It asks for the scan, so <code>scan</code> need not be among the targets as well. (To scan only some workspaces, put <code>scan:</code> in an entry of <code>workspaces</code> instead.)</td>
 </tr>
 <tr>
 <td><code>full_scan</code>, <code>exclude_personal</code>, <code>exclude_inactive</code></td>
-<td>As the options of <code>pbi sync run</code> of the same names. Only with <code>scan</code> among the targets.</td>
+<td>As the options of <code>pbi sync run</code> of the same names. They need a scan: a <code>scan:</code> section here, or <code>scan</code> among the targets.</td>
 </tr>
 </tbody>
 </table>
@@ -2410,8 +2419,12 @@ listed.</p>
 user's account (<code>user-groups</code>, ...) runs <strong>once for each user profile</strong> of the file, each
 keeping its own answers in the lake.</p>
 <h3 id="the-scan-options">The scan options<a class="headerlink" href="#the-scan-options" title="Permanent link">¤</a></h3>
-<p>A <code>scan</code> takes these keys (those of the file of <a href="../scan/"><code>pbi workspaces scan batch</code></a>); each is
-<code>true</code> or <code>false</code>, and <code>false</code> is the default:</p>
+<p>A <code>scan</code> takes these options (those of the file of <a href="../scan/"><code>pbi workspaces scan batch</code></a>),
+as a mapping in which each is <code>true</code> or <code>false</code> (<code>false</code> is the default), or as a list of the
+names of those that are on; the two are the same:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">lineage</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> datasource_details</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+<span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">lineage</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">datasource_details</span><span class="p p-Indicator">]</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
@@ -2454,9 +2467,11 @@ keep for them: a scan, details, or both.</p>
 <span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pages</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tiles</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">svc-finance</span>
 </code></pre></div>
-<p><strong>Which workspaces.</strong> Exactly one of:</p>
+<p><strong>Which workspaces.</strong> An <code>id</code>, or a <code>name</code>:</p>
 <ul>
-<li><code>id</code>: one workspace, by its id. It is used as it is, even when the lake does not know it.</li>
+<li><code>id</code>: one workspace, by its id. It is used as it is, even when the lake does not know it.
+  A <code>name</code> may go with it, as in the file of <code>pbi workspaces scan batch</code>: it is then only
+  the label that messages call the workspace by, and is not looked up.</li>
 <li><code>name</code>: a pattern for names. <code>*</code> stands for any text and <code>?</code> for one character, case does
   not matter, and the whole name has to match (<code>Finance*</code>, not <code>Finance</code>). It is looked up
   in the <strong>list of workspaces in the lake</strong>, so the list has to be there: the steps for the
@@ -2559,7 +2574,7 @@ keep for them: a scan, details, or both.</p>
 <tbody>
 <tr>
 <td><code>auto</code> (the default)</td>
-<td>The administrator's, when it can read what is asked (it needs no permission on the item); else a user account whose own list of workspaces holds the workspace.</td>
+<td>The administrator's, when it can read what is asked (it needs no permission on the item); else a user account whose own list of workspaces holds the workspace. What no stored account can fetch is left out, with a note.</td>
 </tr>
 <tr>
 <td><code>admin</code></td>
@@ -2578,10 +2593,14 @@ keep for them: a scan, details, or both.</p>
 <p>Which user account lists a workspace comes from the lake: the list of workspaces that each
 user account keeps (<code>user-groups</code>). When an entry may need it, the plan starts with one
 request for each listed user account to fetch that list, so a file works from an empty lake.</p>
-<p>A detail that no account the entry may use can fetch, such as <code>pages</code> with <code>via: admin</code>
-(only a user's account has the operation), is an error that says so. A detail that only
-<em>some</em> kinds of item can give, such as <code>users</code> with <code>via: user</code> (a user cannot read the
-users of a report), is fetched for those that can, and the plan says which are left out.</p>
+<p>What an entry asks of an account that it names is checked: a detail that this kind of
+account cannot fetch at all, such as <code>pages</code> with <code>via: admin</code> (only a user's account has
+the operation), is an error that says so. With <code>via: auto</code>, which is <em>whichever account can</em>,
+a detail that no stored account can fetch (<code>pages</code> when no user account is stored) is left
+out with a note that says what to store, as long as the entry still does something (a scan,
+or another detail); an entry that would do nothing is an error. A detail that only <em>some</em>
+kinds of item can give, such as <code>users</code> with <code>via: user</code> (a user cannot read the users of a
+report), is fetched for those that can, and the plan says which are left out.</p>
 <h3 id="session"><code>session</code><a class="headerlink" href="#session" title="Permanent link">¤</a></h3>
 <p>Settings for <a href="#in-the-terminal-ui"><code>pbi tui --config</code></a> (a sync ignores them).</p>
 <div class="highlight"><pre><span></span><code><span class="nt">session</span><span class="p">:</span>
@@ -2599,7 +2618,7 @@ users of a report), is fetched for those that can, and the plan says which are l
 <tbody>
 <tr>
 <td><code>lake</code></td>
-<td>The lake to open: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake. Any lake but your work lake is <a href="../sharing/">opened read-only</a>.</td>
+<td>The lake that <code>pbi tui --config</code> opens: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake (the cache folder). Any lake but your work lake is <a href="../sharing/">opened read-only</a>, and has to exist: leave <code>lake</code> out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another.</td>
 </tr>
 <tr>
 <td><code>open</code></td>
@@ -2652,8 +2671,13 @@ Everything fits the quota now.
    the order of the file.</li>
 </ol>
 <p>So <strong>the plan you see before the first run is incomplete</strong>: the names of workspaces cannot be
-looked up before the lake has the list, and the plan says so. Plan again after a run, or just
-run: it works out the later steps when it gets there.</p>
+looked up before the lake has the list, and the plan says so. The same goes for which user
+account reads a workspace: until the lake holds the list of workspaces of each user account of
+the file, the plan says "which user account lists X is not known yet" and plans nothing that
+only a user can read for it. A run fetches those lists first and then knows; if it still says
+that no user account lists the workspace (the note then names the accounts), the account has no
+access to the workspace: give it access, or name another account with <code>via:</code>. Plan again after
+a run, or just run: it works out the later steps when it gets there.</p>
 <p>What a run does, and what it does not:</p>
 <ul>
 <li>It stops at the first step whose <strong>token expired</strong> (sign in again and run it again: every

@@ -1032,6 +1032,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pbi_cli.core.catalog.Catalog.accounts_with_a_list" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        accounts_with_a_list
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pbi_cli.core.catalog.Catalog.age" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1245,6 +1256,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbi_cli.core.catalog.Catalog.trouble" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        trouble
       </span>
     </span>
   </a>
@@ -2670,6 +2692,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pbi_cli.core.catalog.Catalog.accounts_with_a_list" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        accounts_with_a_list
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pbi_cli.core.catalog.Catalog.age" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2883,6 +2916,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbi_cli.core.catalog.Catalog.trouble" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        trouble
       </span>
     </span>
   </a>
@@ -3441,8 +3485,7 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">388</span>
-<span class="normal">389</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">389</span>
 <span class="normal">390</span>
 <span class="normal">391</span>
 <span class="normal">392</span>
@@ -3454,7 +3497,8 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
-<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">401</span>
+<span class="normal">402</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Access</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Somebody (or some group) with access to something.</span>
 
@@ -3581,10 +3625,7 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 555</span>
-<span class="normal"> 556</span>
-<span class="normal"> 557</span>
-<span class="normal"> 558</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 558</span>
 <span class="normal"> 559</span>
 <span class="normal"> 560</span>
 <span class="normal"> 561</span>
@@ -4395,7 +4436,49 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 <span class="normal">1366</span>
 <span class="normal">1367</span>
 <span class="normal">1368</span>
-<span class="normal">1369</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Catalog</span><span class="p">:</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span>
+<span class="normal">1383</span>
+<span class="normal">1384</span>
+<span class="normal">1385</span>
+<span class="normal">1386</span>
+<span class="normal">1387</span>
+<span class="normal">1388</span>
+<span class="normal">1389</span>
+<span class="normal">1390</span>
+<span class="normal">1391</span>
+<span class="normal">1392</span>
+<span class="normal">1393</span>
+<span class="normal">1394</span>
+<span class="normal">1395</span>
+<span class="normal">1396</span>
+<span class="normal">1397</span>
+<span class="normal">1398</span>
+<span class="normal">1399</span>
+<span class="normal">1400</span>
+<span class="normal">1401</span>
+<span class="normal">1402</span>
+<span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
+<span class="normal">1407</span>
+<span class="normal">1408</span>
+<span class="normal">1409</span>
+<span class="normal">1410</span>
+<span class="normal">1411</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Catalog</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Reads the lake the way a person browses it.</span>
 
 <span class="sd">    :param store: the lake</span>
@@ -4477,6 +4560,25 @@ thousands of workspaces is quick. It can be shared by threads.</p>
             <span class="n">exclude_inactive</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">coverage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"excludeInActiveWorkspaces"</span><span class="p">)),</span>
         <span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_troubles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""What the last syncs could not fetch: for each operation, the newest unit that failed</span>
+<span class="sd">        or was held back by a quota, as its status and the first line of the reason."""</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">STATE_NAME</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+        <span class="n">newest</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="p">(</span><span class="n">units</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">endpoint</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">_text</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"endpoint"</span><span class="p">)),</span> <span class="n">_text</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">))</span>
+            <span class="n">at</span> <span class="o">=</span> <span class="n">_parse</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">endpoint</span> <span class="ow">or</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">FAILED</span><span class="p">,</span> <span class="n">DEFERRED</span><span class="p">)</span> <span class="ow">or</span> <span class="n">at</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">endpoint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">newest</span> <span class="ow">or</span> <span class="n">at</span> <span class="o">&gt;</span> <span class="n">newest</span><span class="p">[</span><span class="n">endpoint</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="n">_text</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+                <span class="n">newest</span><span class="p">[</span><span class="n">endpoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">at</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">reason</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">reason</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">endpoint</span><span class="p">:</span> <span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">why</span><span class="p">)</span> <span class="k">for</span> <span class="n">endpoint</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">why</span><span class="p">)</span> <span class="ow">in</span> <span class="n">newest</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_State</span><span class="p">:</span>
         <span class="n">listings</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Listing</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">kind</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_listing</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span> <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="n">LIST_ENDPOINTS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -4498,10 +4600,13 @@ thousands of workspaces is quick. It can be shared by threads.</p>
                 <span class="p">)</span>
 
         <span class="c1"># the workspaces that accounts see, each by its own list: the union of them all</span>
+        <span class="n">accounts_listing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">ps</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">parameter_sets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">USER_WORKSPACES</span><span class="p">):</span>
             <span class="n">who</span> <span class="o">=</span> <span class="n">_text</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">latest</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"profile"</span><span class="p">))</span> <span class="ow">or</span> <span class="n">_text</span><span class="p">(</span>
                 <span class="n">ps</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">IDENTITY_PARAM</span><span class="p">)</span>
             <span class="p">)</span>
+            <span class="k">if</span> <span class="n">who</span><span class="p">:</span>
+                <span class="n">accounts_listing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">who</span><span class="p">)</span>  <span class="c1"># it has a list, even an empty one</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">rows</span> <span class="o">=</span> <span class="n">_dicts</span><span class="p">(</span><span class="n">rows_of</span><span class="p">(</span><span class="n">get_endpoint</span><span class="p">(</span><span class="n">USER_WORKSPACES</span><span class="p">),</span> <span class="n">ps</span><span class="o">.</span><span class="n">latest</span><span class="o">.</span><span class="n">load</span><span class="p">()))</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
@@ -4594,6 +4699,8 @@ thousands of workspaces is quick. It can be shared by threads.</p>
             <span class="n">baseline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_baseline</span><span class="p">(),</span>
             <span class="n">user_lists</span><span class="o">=</span><span class="n">user_lists</span><span class="p">,</span>
             <span class="n">user_apps</span><span class="o">=</span><span class="n">user_apps</span><span class="p">,</span>
+            <span class="n">accounts_listing</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">accounts_listing</span><span class="p">),</span>
+            <span class="n">troubles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_troubles</span><span class="p">(),</span>
         <span class="p">)</span>
 
     <span class="c1"># -- the lists of the tenant -------------------------------------------------------</span>
@@ -4661,6 +4768,21 @@ thousands of workspaces is quick. It can be shared by threads.</p>
         <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"app"</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">user_apps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">user_lists</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">trouble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""What the last sync that tried to fetch the list of a kind did not manage: ``failed``</span>
+<span class="sd">        or ``deferred`` (held back for a quota), with the reason. ``None`` when the state of</span>
+<span class="sd">        the sync says nothing about it (it was not asked for, or the run never got to it).</span>
+
+<span class="sd">        :param kind: ``report``, ``dataset``, ``dashboard``, ``dataflow``, ``app``, ...</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">troubles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">LIST_ENDPOINTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">accounts_with_a_list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The accounts (by the name of their profile) whose own list of workspaces the lake</span>
+<span class="sd">        holds, even an empty one: for the others, ``Workspace.visible_to`` knows nothing.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">accounts_listing</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">user_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Snapshot</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""The list that an account made of one kind of item in a workspace, if there is</span>
@@ -5251,6 +5373,38 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="pbi_cli.core.catalog.Catalog.accounts_with_a_list" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">accounts_with_a_list</span><span class="p">()</span></code>
+
+<a href="#pbi_cli.core.catalog.Catalog.accounts_with_a_list" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The accounts (by the name of their profile) whose own list of workspaces the lake
+holds, even an empty one: for the others, <code>Workspace.visible_to</code> knows nothing.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">858</span>
+<span class="normal">859</span>
+<span class="normal">860</span>
+<span class="normal">861</span>
+<span class="normal">862</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accounts_with_a_list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The accounts (by the name of their profile) whose own list of workspaces the lake</span>
+<span class="sd">    holds, even an empty one: for the others, ``Workspace.visible_to`` knows nothing.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">accounts_listing</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="pbi_cli.core.catalog.Catalog.age" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">age</span><span class="p">(</span><span class="n">when</span><span class="p">)</span></code>
 
@@ -5264,9 +5418,9 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">762</span>
-<span class="normal">763</span>
-<span class="normal">764</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">timedelta</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">789</span>
+<span class="normal">790</span>
+<span class="normal">791</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">timedelta</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""How long ago something was stored."""</span>
     <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">when</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">when</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5291,12 +5445,12 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">794</span>
-<span class="normal">795</span>
-<span class="normal">796</span>
-<span class="normal">797</span>
-<span class="normal">798</span>
-<span class="normal">799</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">all_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">821</span>
+<span class="normal">822</span>
+<span class="normal">823</span>
+<span class="normal">824</span>
+<span class="normal">825</span>
+<span class="normal">826</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">all_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Every item of a kind that the lists have, by name."""</span>
     <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
@@ -5324,13 +5478,13 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apps_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">832</span>
+<span class="normal">833</span>
+<span class="normal">834</span>
+<span class="normal">835</span>
+<span class="normal">836</span>
+<span class="normal">837</span>
+<span class="normal">838</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apps_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""How fresh the apps are: the tenant's list, else the newest list of an account."""</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing</span><span class="p">(</span><span class="s2">"app"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing_freshness</span><span class="p">(</span><span class="s2">"app"</span><span class="p">)</span>
@@ -5359,11 +5513,11 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">788</span>
-<span class="normal">789</span>
-<span class="normal">790</span>
-<span class="normal">791</span>
-<span class="normal">792</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">capacities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">815</span>
+<span class="normal">816</span>
+<span class="normal">817</span>
+<span class="normal">818</span>
+<span class="normal">819</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">capacities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The capacities of the tenant, by name."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing</span><span class="p">(</span><span class="s2">"capacity"</span><span class="p">)</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="n">found</span><span class="o">.</span><span class="n">rows</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="p">[]</span>
@@ -5390,12 +5544,12 @@ thousands of workspaces is quick. It can be shared by threads.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">827</span>
-<span class="normal">828</span>
-<span class="normal">829</span>
-<span class="normal">830</span>
-<span class="normal">831</span>
-<span class="normal">832</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">869</span>
+<span class="normal">870</span>
+<span class="normal">871</span>
+<span class="normal">872</span>
+<span class="normal">873</span>
+<span class="normal">874</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""How many items of each kind the lists have for a workspace."""</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="n">kind</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
@@ -5425,23 +5579,23 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1001</span>
-<span class="normal">1002</span>
-<span class="normal">1003</span>
-<span class="normal">1004</span>
-<span class="normal">1005</span>
-<span class="normal">1006</span>
-<span class="normal">1007</span>
-<span class="normal">1008</span>
-<span class="normal">1009</span>
-<span class="normal">1010</span>
-<span class="normal">1011</span>
-<span class="normal">1012</span>
-<span class="normal">1013</span>
-<span class="normal">1014</span>
-<span class="normal">1015</span>
-<span class="normal">1016</span>
-<span class="normal">1017</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Detail</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span>
+<span class="normal">1050</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span>
+<span class="normal">1054</span>
+<span class="normal">1055</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Detail</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The details of a workspace or an item (who has access to it, its data sources,</span>
 <span class="sd">    the pages of a report, ...), each with what the lake holds of it, and the targets</span>
 <span class="sd">    that can fetch it. See `pbi_cli.core.details`."""</span>
@@ -5480,9 +5634,9 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1351</span>
-<span class="normal">1352</span>
-<span class="normal">1353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_days</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">EventDay</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1393</span>
+<span class="normal">1394</span>
+<span class="normal">1395</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_days</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">EventDay</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The days of audit events in the lake, newest first."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">event_days</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">ACTIVITY_ENDPOINT</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5507,10 +5661,10 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">day</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1397</span>
+<span class="normal">1398</span>
+<span class="normal">1399</span>
+<span class="normal">1400</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">day</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The events of a day, newest first."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read_events</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">ACTIVITY_ENDPOINT</span><span class="p">,</span> <span class="n">day</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"CreationTime"</span><span class="p">)),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -5536,9 +5690,9 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">801</span>
-<span class="normal">802</span>
-<span class="normal">803</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_apps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">828</span>
+<span class="normal">829</span>
+<span class="normal">830</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_apps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Whether the lake holds a list of apps: the tenant's, or one that an account made."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing</span><span class="p">(</span><span class="s2">"app"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">user_apps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
@@ -5563,14 +5717,14 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1362</span>
-<span class="normal">1363</span>
-<span class="normal">1364</span>
-<span class="normal">1365</span>
-<span class="normal">1366</span>
-<span class="normal">1367</span>
-<span class="normal">1368</span>
-<span class="normal">1369</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">holdings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Holding</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
+<span class="normal">1407</span>
+<span class="normal">1408</span>
+<span class="normal">1409</span>
+<span class="normal">1410</span>
+<span class="normal">1411</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">holdings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Holding</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""For each target of a sync that has anything in the lake, what it holds."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">TARGETS</span><span class="p">:</span>
@@ -5631,22 +5785,22 @@ that can fetch it. See <code>pbi_cli.core.details</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">939</span>
-<span class="normal">940</span>
-<span class="normal">941</span>
-<span class="normal">942</span>
-<span class="normal">943</span>
-<span class="normal">944</span>
-<span class="normal">945</span>
-<span class="normal">946</span>
-<span class="normal">947</span>
-<span class="normal">948</span>
-<span class="normal">949</span>
-<span class="normal">950</span>
-<span class="normal">951</span>
-<span class="normal">952</span>
-<span class="normal">953</span>
-<span class="normal">954</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">item</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span>
+<span class="normal">987</span>
+<span class="normal">988</span>
+<span class="normal">989</span>
+<span class="normal">990</span>
+<span class="normal">991</span>
+<span class="normal">992</span>
+<span class="normal">993</span>
+<span class="normal">994</span>
+<span class="normal">995</span>
+<span class="normal">996</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">item</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""One item, with its scan, if the lake knows it.</span>
@@ -5685,31 +5839,31 @@ only the scan knows. Ordered by kind, then name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">913</span>
-<span class="normal">914</span>
-<span class="normal">915</span>
-<span class="normal">916</span>
-<span class="normal">917</span>
-<span class="normal">918</span>
-<span class="normal">919</span>
-<span class="normal">920</span>
-<span class="normal">921</span>
-<span class="normal">922</span>
-<span class="normal">923</span>
-<span class="normal">924</span>
-<span class="normal">925</span>
-<span class="normal">926</span>
-<span class="normal">927</span>
-<span class="normal">928</span>
-<span class="normal">929</span>
-<span class="normal">930</span>
-<span class="normal">931</span>
-<span class="normal">932</span>
-<span class="normal">933</span>
-<span class="normal">934</span>
-<span class="normal">935</span>
-<span class="normal">936</span>
-<span class="normal">937</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span>
+<span class="normal">960</span>
+<span class="normal">961</span>
+<span class="normal">962</span>
+<span class="normal">963</span>
+<span class="normal">964</span>
+<span class="normal">965</span>
+<span class="normal">966</span>
+<span class="normal">967</span>
+<span class="normal">968</span>
+<span class="normal">969</span>
+<span class="normal">970</span>
+<span class="normal">971</span>
+<span class="normal">972</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Everything in a workspace: what the lists have, with the scan over it, and what</span>
 <span class="sd">    only the scan knows. Ordered by kind, then name."""</span>
     <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_of</span><span class="p">(</span><span class="n">workspace_id</span><span class="p">)</span>
@@ -5760,42 +5914,42 @@ workspace may build on the item without the lake knowing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1267</span>
-<span class="normal">1268</span>
-<span class="normal">1269</span>
-<span class="normal">1270</span>
-<span class="normal">1271</span>
-<span class="normal">1272</span>
-<span class="normal">1273</span>
-<span class="normal">1274</span>
-<span class="normal">1275</span>
-<span class="normal">1276</span>
-<span class="normal">1277</span>
-<span class="normal">1278</span>
-<span class="normal">1279</span>
-<span class="normal">1280</span>
-<span class="normal">1281</span>
-<span class="normal">1282</span>
-<span class="normal">1283</span>
-<span class="normal">1284</span>
-<span class="normal">1285</span>
-<span class="normal">1286</span>
-<span class="normal">1287</span>
-<span class="normal">1288</span>
-<span class="normal">1289</span>
-<span class="normal">1290</span>
-<span class="normal">1291</span>
-<span class="normal">1292</span>
-<span class="normal">1293</span>
-<span class="normal">1294</span>
-<span class="normal">1295</span>
-<span class="normal">1296</span>
-<span class="normal">1297</span>
-<span class="normal">1298</span>
-<span class="normal">1299</span>
-<span class="normal">1300</span>
-<span class="normal">1301</span>
-<span class="normal">1302</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Lineage</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span>
+<span class="normal">1312</span>
+<span class="normal">1313</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span>
+<span class="normal">1322</span>
+<span class="normal">1323</span>
+<span class="normal">1324</span>
+<span class="normal">1325</span>
+<span class="normal">1326</span>
+<span class="normal">1327</span>
+<span class="normal">1328</span>
+<span class="normal">1329</span>
+<span class="normal">1330</span>
+<span class="normal">1331</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
+<span class="normal">1334</span>
+<span class="normal">1335</span>
+<span class="normal">1336</span>
+<span class="normal">1337</span>
+<span class="normal">1338</span>
+<span class="normal">1339</span>
+<span class="normal">1340</span>
+<span class="normal">1341</span>
+<span class="normal">1342</span>
+<span class="normal">1343</span>
+<span class="normal">1344</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Lineage</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What an item is built from, and what is built on it.</span>
 
 <span class="sd">    Upstream is followed across workspaces (the references name the workspace of what</span>
@@ -5854,14 +6008,14 @@ the list of the whole tenant, or the list an account made for that workspace.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Whether the lake holds a list that would show the items of a kind in a workspace:</span>
 <span class="sd">    the list of the whole tenant, or the list an account made for that workspace."""</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">listings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -5891,9 +6045,9 @@ the list of the whole tenant, or the list an account made for that workspace.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">758</span>
-<span class="normal">759</span>
-<span class="normal">760</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Listing</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">785</span>
+<span class="normal">786</span>
+<span class="normal">787</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Listing</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The stored list a kind of thing is made from: ``workspace``, ``report``, ..."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">listings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5918,12 +6072,12 @@ the list of the whole tenant, or the list an account made for that workspace.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">766</span>
-<span class="normal">767</span>
-<span class="normal">768</span>
-<span class="normal">769</span>
-<span class="normal">770</span>
-<span class="normal">771</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listing_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">793</span>
+<span class="normal">794</span>
+<span class="normal">795</span>
+<span class="normal">796</span>
+<span class="normal">797</span>
+<span class="normal">798</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listing_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""How fresh the list of a kind of thing is."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -5951,13 +6105,13 @@ the list of the whole tenant, or the list an account made for that workspace.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">580</span>
-<span class="normal">581</span>
-<span class="normal">582</span>
-<span class="normal">583</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">583</span>
 <span class="normal">584</span>
 <span class="normal">585</span>
-<span class="normal">586</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Read the lake again, for example after a sync."""</span>
     <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">()</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
@@ -5988,26 +6142,26 @@ found it unchanged, whichever is later.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">854</span>
-<span class="normal">855</span>
-<span class="normal">856</span>
-<span class="normal">857</span>
-<span class="normal">858</span>
-<span class="normal">859</span>
-<span class="normal">860</span>
-<span class="normal">861</span>
-<span class="normal">862</span>
-<span class="normal">863</span>
-<span class="normal">864</span>
-<span class="normal">865</span>
-<span class="normal">866</span>
-<span class="normal">867</span>
-<span class="normal">868</span>
-<span class="normal">869</span>
-<span class="normal">870</span>
-<span class="normal">871</span>
-<span class="normal">872</span>
-<span class="normal">873</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_as_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">896</span>
+<span class="normal">897</span>
+<span class="normal">898</span>
+<span class="normal">899</span>
+<span class="normal">900</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_as_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""How recent what the lake knows from scans about a workspace is.</span>
 
 <span class="sd">    That is when its newest scan was fetched, or when the complete scan began that</span>
@@ -6049,31 +6203,31 @@ found it unchanged, whichever is later.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">875</span>
-<span class="normal">876</span>
-<span class="normal">877</span>
-<span class="normal">878</span>
-<span class="normal">879</span>
-<span class="normal">880</span>
-<span class="normal">881</span>
-<span class="normal">882</span>
-<span class="normal">883</span>
-<span class="normal">884</span>
-<span class="normal">885</span>
-<span class="normal">886</span>
-<span class="normal">887</span>
-<span class="normal">888</span>
-<span class="normal">889</span>
-<span class="normal">890</span>
-<span class="normal">891</span>
-<span class="normal">892</span>
-<span class="normal">893</span>
-<span class="normal">894</span>
-<span class="normal">895</span>
-<span class="normal">896</span>
-<span class="normal">897</span>
-<span class="normal">898</span>
-<span class="normal">899</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ScanView</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ScanView</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""What the newest scan of a workspace says, if there is one."""</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">workspace_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_views</span><span class="p">:</span>
@@ -6120,30 +6274,30 @@ found it unchanged, whichever is later.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">956</span>
-<span class="normal">957</span>
-<span class="normal">958</span>
-<span class="normal">959</span>
-<span class="normal">960</span>
-<span class="normal">961</span>
-<span class="normal">962</span>
-<span class="normal">963</span>
-<span class="normal">964</span>
-<span class="normal">965</span>
-<span class="normal">966</span>
-<span class="normal">967</span>
-<span class="normal">968</span>
-<span class="normal">969</span>
-<span class="normal">970</span>
-<span class="normal">971</span>
-<span class="normal">972</span>
-<span class="normal">973</span>
-<span class="normal">974</span>
-<span class="normal">975</span>
-<span class="normal">976</span>
-<span class="normal">977</span>
-<span class="normal">978</span>
-<span class="normal">979</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Match</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 998</span>
+<span class="normal"> 999</span>
+<span class="normal">1000</span>
+<span class="normal">1001</span>
+<span class="normal">1002</span>
+<span class="normal">1003</span>
+<span class="normal">1004</span>
+<span class="normal">1005</span>
+<span class="normal">1006</span>
+<span class="normal">1007</span>
+<span class="normal">1008</span>
+<span class="normal">1009</span>
+<span class="normal">1010</span>
+<span class="normal">1011</span>
+<span class="normal">1012</span>
+<span class="normal">1013</span>
+<span class="normal">1014</span>
+<span class="normal">1015</span>
+<span class="normal">1016</span>
+<span class="normal">1017</span>
+<span class="normal">1018</span>
+<span class="normal">1019</span>
+<span class="normal">1020</span>
+<span class="normal">1021</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Match</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Workspaces and items whose name contains ``text`` (or whose id it is)."""</span>
     <span class="n">needle</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">needle</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
@@ -6176,6 +6330,76 @@ found it unchanged, whichever is later.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="pbi_cli.core.catalog.Catalog.trouble" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">trouble</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span></code>
+
+<a href="#pbi_cli.core.catalog.Catalog.trouble" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>What the last sync that tried to fetch the list of a kind did not manage: <code>failed</code>
+or <code>deferred</code> (held back for a quota), with the reason. <code>None</code> when the state of
+the sync says nothing about it (it was not asked for, or the run never got to it).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>kind</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>report</code>, <code>dataset</code>, <code>dashboard</code>, <code>dataflow</code>, <code>app</code>, ...</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span>
+<span class="normal">855</span>
+<span class="normal">856</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trouble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""What the last sync that tried to fetch the list of a kind did not manage: ``failed``</span>
+<span class="sd">    or ``deferred`` (held back for a quota), with the reason. ``None`` when the state of</span>
+<span class="sd">    the sync says nothing about it (it was not asked for, or the run never got to it).</span>
+
+<span class="sd">    :param kind: ``report``, ``dataset``, ``dashboard``, ``dataflow``, ``app``, ...</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">troubles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">LIST_ENDPOINTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="pbi_cli.core.catalog.Catalog.user_list" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">user_list</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">)</span></code>
 
@@ -6190,10 +6414,10 @@ one (what is shown of an item that only such a list has).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">user_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Snapshot</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">864</span>
+<span class="normal">865</span>
+<span class="normal">866</span>
+<span class="normal">867</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">user_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Snapshot</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The list that an account made of one kind of item in a workspace, if there is</span>
 <span class="sd">    one (what is shown of an item that only such a list has)."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s</span><span class="o">.</span><span class="n">user_lists</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">kind</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">))</span>
@@ -6219,54 +6443,54 @@ one (what is shown of an item that only such a list has).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1019</span>
-<span class="normal">1020</span>
-<span class="normal">1021</span>
-<span class="normal">1022</span>
-<span class="normal">1023</span>
-<span class="normal">1024</span>
-<span class="normal">1025</span>
-<span class="normal">1026</span>
-<span class="normal">1027</span>
-<span class="normal">1028</span>
-<span class="normal">1029</span>
-<span class="normal">1030</span>
-<span class="normal">1031</span>
-<span class="normal">1032</span>
-<span class="normal">1033</span>
-<span class="normal">1034</span>
-<span class="normal">1035</span>
-<span class="normal">1036</span>
-<span class="normal">1037</span>
-<span class="normal">1038</span>
-<span class="normal">1039</span>
-<span class="normal">1040</span>
-<span class="normal">1041</span>
-<span class="normal">1042</span>
-<span class="normal">1043</span>
-<span class="normal">1044</span>
-<span class="normal">1045</span>
-<span class="normal">1046</span>
-<span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
-<span class="normal">1050</span>
-<span class="normal">1051</span>
-<span class="normal">1052</span>
-<span class="normal">1053</span>
-<span class="normal">1054</span>
-<span class="normal">1055</span>
-<span class="normal">1056</span>
-<span class="normal">1057</span>
-<span class="normal">1058</span>
-<span class="normal">1059</span>
-<span class="normal">1060</span>
-<span class="normal">1061</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1061</span>
 <span class="normal">1062</span>
 <span class="normal">1063</span>
 <span class="normal">1064</span>
 <span class="normal">1065</span>
-<span class="normal">1066</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UsersView</span><span class="p">:</span>
+<span class="normal">1066</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UsersView</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Who has access to a workspace or an item, as far as the lake knows."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">Workspace</span><span class="p">)</span> <span class="ow">and</span> <span class="n">subject</span><span class="o">.</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"users"</span><span class="p">):</span>
         <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listing</span><span class="p">(</span><span class="s2">"workspace"</span><span class="p">)</span>
@@ -6383,24 +6607,24 @@ one (what is shown of an item that only such a list has).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1330</span>
-<span class="normal">1331</span>
-<span class="normal">1332</span>
-<span class="normal">1333</span>
-<span class="normal">1334</span>
-<span class="normal">1335</span>
-<span class="normal">1336</span>
-<span class="normal">1337</span>
-<span class="normal">1338</span>
-<span class="normal">1339</span>
-<span class="normal">1340</span>
-<span class="normal">1341</span>
-<span class="normal">1342</span>
-<span class="normal">1343</span>
-<span class="normal">1344</span>
-<span class="normal">1345</span>
-<span class="normal">1346</span>
-<span class="normal">1347</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Version</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span>
+<span class="normal">1383</span>
+<span class="normal">1384</span>
+<span class="normal">1385</span>
+<span class="normal">1386</span>
+<span class="normal">1387</span>
+<span class="normal">1388</span>
+<span class="normal">1389</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Version</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The stored answers that hold a kind of thing, newest first.</span>
 
 <span class="sd">    :param kind: ``workspace``, ``report``, ... (what the list is of)</span>
@@ -6441,15 +6665,15 @@ and its scan (when it has one).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">901</span>
-<span class="normal">902</span>
-<span class="normal">903</span>
-<span class="normal">904</span>
-<span class="normal">905</span>
-<span class="normal">906</span>
-<span class="normal">907</span>
-<span class="normal">908</span>
-<span class="normal">909</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">943</span>
+<span class="normal">944</span>
+<span class="normal">945</span>
+<span class="normal">946</span>
+<span class="normal">947</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_freshness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""How fresh what the lake knows about a workspace is: the least fresh of its lists</span>
 <span class="sd">    and its scan (when it has one)."""</span>
     <span class="n">levels</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">listing_freshness</span><span class="p">(</span><span class="s2">"workspace"</span><span class="p">)]</span>
@@ -6511,17 +6735,17 @@ and its scan (when it has one).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">773</span>
-<span class="normal">774</span>
-<span class="normal">775</span>
-<span class="normal">776</span>
-<span class="normal">777</span>
-<span class="normal">778</span>
-<span class="normal">779</span>
-<span class="normal">780</span>
-<span class="normal">781</span>
-<span class="normal">782</span>
-<span class="normal">783</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">personal</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">800</span>
+<span class="normal">801</span>
+<span class="normal">802</span>
+<span class="normal">803</span>
+<span class="normal">804</span>
+<span class="normal">805</span>
+<span class="normal">806</span>
+<span class="normal">807</span>
+<span class="normal">808</span>
+<span class="normal">809</span>
+<span class="normal">810</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">personal</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The workspaces, by name.</span>
 
 <span class="sd">    :param personal: ``True`` for the personal ones only, ``False`` to leave them out</span>
@@ -6574,8 +6798,7 @@ and its scan (when it has one).</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">185</span>
-<span class="normal">186</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">186</span>
 <span class="normal">187</span>
 <span class="normal">188</span>
 <span class="normal">189</span>
@@ -6584,7 +6807,8 @@ and its scan (when it has one).</p>
 <span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span>
-<span class="normal">195</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Freshness</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+<span class="normal">195</span>
+<span class="normal">196</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Freshness</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""How up to date something in the lake is."""</span>
 
     <span class="c1">#: younger than the time to live of its target</span>
@@ -6728,8 +6952,7 @@ and its scan (when it has one).</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">497</span>
-<span class="normal">498</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">498</span>
 <span class="normal">499</span>
 <span class="normal">500</span>
 <span class="normal">501</span>
@@ -6741,7 +6964,8 @@ and its scan (when it has one).</p>
 <span class="normal">507</span>
 <span class="normal">508</span>
 <span class="normal">509</span>
-<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">510</span>
+<span class="normal">511</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Holding</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What the lake holds for one operation.</span>
 
@@ -6920,8 +7144,7 @@ and its scan (when it has one).</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">276</span>
-<span class="normal">277</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span>
 <span class="normal">280</span>
@@ -6962,7 +7185,8 @@ and its scan (when it has one).</p>
 <span class="normal">315</span>
 <span class="normal">316</span>
 <span class="normal">317</span>
-<span class="normal">318</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="normal">318</span>
+<span class="normal">319</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Item</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A report, dataset, dashboard, dataflow or app.</span>
 
@@ -7221,8 +7445,7 @@ data sources, and so on, each with what that is built from in turn</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">440</span>
-<span class="normal">441</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">441</span>
 <span class="normal">442</span>
 <span class="normal">443</span>
 <span class="normal">444</span>
@@ -7233,7 +7456,8 @@ data sources, and so on, each with what that is built from in turn</p>
 <span class="normal">449</span>
 <span class="normal">450</span>
 <span class="normal">451</span>
-<span class="normal">452</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">452</span>
+<span class="normal">453</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Lineage</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What an item is built from and what is built on it.</span>
 
@@ -7416,8 +7640,7 @@ data sources, and so on, each with what that is built from in turn</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">420</span>
-<span class="normal">421</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">421</span>
 <span class="normal">422</span>
 <span class="normal">423</span>
 <span class="normal">424</span>
@@ -7433,7 +7656,8 @@ data sources, and so on, each with what that is built from in turn</p>
 <span class="normal">434</span>
 <span class="normal">435</span>
 <span class="normal">436</span>
-<span class="normal">437</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">437</span>
+<span class="normal">438</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LineageNode</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One step of the lineage of an item.</span>
 
@@ -7590,8 +7814,7 @@ only some of the rows</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
-<span class="normal">220</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">220</span>
 <span class="normal">221</span>
 <span class="normal">222</span>
 <span class="normal">223</span>
@@ -7608,7 +7831,8 @@ only some of the rows</p>
 <span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span>
-<span class="normal">237</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">237</span>
+<span class="normal">238</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Listing</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A stored list of the tenant (all workspaces, all reports, ...).</span>
 
@@ -7776,8 +8000,7 @@ only some of the rows</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">479</span>
-<span class="normal">480</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">480</span>
 <span class="normal">481</span>
 <span class="normal">482</span>
 <span class="normal">483</span>
@@ -7791,7 +8014,8 @@ only some of the rows</p>
 <span class="normal">491</span>
 <span class="normal">492</span>
 <span class="normal">493</span>
-<span class="normal">494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">494</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Match</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A workspace or item found by name.</span>
 
@@ -7918,8 +8142,7 @@ only some of the rows</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">324</span>
-<span class="normal">325</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">325</span>
 <span class="normal">326</span>
 <span class="normal">327</span>
 <span class="normal">328</span>
@@ -7931,7 +8154,8 @@ only some of the rows</p>
 <span class="normal">334</span>
 <span class="normal">335</span>
 <span class="normal">336</span>
-<span class="normal">337</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">337</span>
+<span class="normal">338</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ScanRef</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The newest stored scan that has a workspace.</span>
 
@@ -8081,8 +8305,7 @@ workspaces that did not change)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">340</span>
-<span class="normal">341</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">341</span>
 <span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
@@ -8126,7 +8349,8 @@ workspaces that did not change)</p>
 <span class="normal">382</span>
 <span class="normal">383</span>
 <span class="normal">384</span>
-<span class="normal">385</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ScanView</span><span class="p">:</span>
+<span class="normal">385</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ScanView</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a scan says about one workspace.</span>
 
 <span class="sd">    :param ref: the scan</span>
@@ -8204,9 +8428,9 @@ workspaces that did not change)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">376</span>
-<span class="normal">377</span>
-<span class="normal">378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The item of a kind with this id, if the workspace has it."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">kind</span><span class="p">,</span> <span class="n">item_id</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -8231,12 +8455,12 @@ workspaces that did not change)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">380</span>
-<span class="normal">381</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">381</span>
 <span class="normal">382</span>
 <span class="normal">383</span>
 <span class="normal">384</span>
-<span class="normal">385</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="normal">385</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The data source instance with this id, if the workspace uses it."""</span>
     <span class="k">return</span> <span class="nb">next</span><span class="p">(</span>
         <span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instances</span> <span class="k">if</span> <span class="n">_text</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"datasourceId"</span><span class="p">))</span> <span class="o">==</span> <span class="n">instance_id</span><span class="p">),</span>
@@ -8264,9 +8488,9 @@ workspaces that did not change)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The items of a kind in the workspace."""</span>
     <span class="k">return</span> <span class="n">_dicts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SCAN_KEYS</span><span class="p">[</span><span class="n">kind</span><span class="p">]))</span>
 </code></pre></div></td></tr></table></div>
@@ -8397,8 +8621,7 @@ workspaces that did not change)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">404</span>
-<span class="normal">405</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">405</span>
 <span class="normal">406</span>
 <span class="normal">407</span>
 <span class="normal">408</span>
@@ -8410,7 +8633,8 @@ workspaces that did not change)</p>
 <span class="normal">414</span>
 <span class="normal">415</span>
 <span class="normal">416</span>
-<span class="normal">417</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">417</span>
+<span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UsersView</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Who has access to something, and where the lake knows that from.</span>
 
@@ -8626,8 +8850,7 @@ workspaces that did not change)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">455</span>
-<span class="normal">456</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">456</span>
 <span class="normal">457</span>
 <span class="normal">458</span>
 <span class="normal">459</span>
@@ -8647,7 +8870,8 @@ workspaces that did not change)</p>
 <span class="normal">473</span>
 <span class="normal">474</span>
 <span class="normal">475</span>
-<span class="normal">476</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">476</span>
+<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Version</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One stored answer that holds something.</span>
 
@@ -8835,8 +9059,7 @@ their profile), as far as the lake knows</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">240</span>
-<span class="normal">241</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">241</span>
 <span class="normal">242</span>
 <span class="normal">243</span>
 <span class="normal">244</span>
@@ -8868,7 +9091,8 @@ their profile), as far as the lake knows</p>
 <span class="normal">270</span>
 <span class="normal">271</span>
 <span class="normal">272</span>
-<span class="normal">273</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="normal">273</span>
+<span class="normal">274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Workspace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A workspace.</span>
 
@@ -8965,8 +9189,7 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">513</span>
-<span class="normal">514</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">514</span>
 <span class="normal">515</span>
 <span class="normal">516</span>
 <span class="normal">517</span>
@@ -8976,7 +9199,8 @@ their profile), as far as the lake knows</p>
 <span class="normal">521</span>
 <span class="normal">522</span>
 <span class="normal">523</span>
-<span class="normal">524</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">holding</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">LakeStore</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Holding</span><span class="p">]:</span>
+<span class="normal">524</span>
+<span class="normal">525</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">holding</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">LakeStore</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Holding</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""How much of an operation the lake holds and how new it is; ``None`` if nothing."""</span>
     <span class="n">days</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">event_days</span><span class="p">(</span><span class="n">tenant</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">days</span><span class="p">:</span>
@@ -9010,9 +9234,9 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">id_of</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">id_of</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The id of a row of a list or of a scan."""</span>
     <span class="k">return</span> <span class="n">_text</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_ID_FIELD</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">)))</span>
 </code></pre></div></td></tr></table></div>
@@ -9037,13 +9261,13 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">198</span>
-<span class="normal">199</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">199</span>
 <span class="normal">200</span>
 <span class="normal">201</span>
 <span class="normal">202</span>
 <span class="normal">203</span>
-<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">judge</span><span class="p">(</span><span class="n">age</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">timedelta</span><span class="p">],</span> <span class="n">ttl</span><span class="p">:</span> <span class="n">timedelta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
+<span class="normal">204</span>
+<span class="normal">205</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">judge</span><span class="p">(</span><span class="n">age</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">timedelta</span><span class="p">],</span> <span class="n">ttl</span><span class="p">:</span> <span class="n">timedelta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Say how fresh something of this age is, given how long its target stays fresh."""</span>
     <span class="k">if</span> <span class="n">age</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Freshness</span><span class="o">.</span><span class="n">NONE</span>
@@ -9072,10 +9296,10 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">166</span>
-<span class="normal">167</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">167</span>
 <span class="normal">168</span>
-<span class="normal">169</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plural</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">169</span>
+<span class="normal">170</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plural</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The word for a kind of thing, for example ``Dashboards``."""</span>
     <span class="n">words</span> <span class="o">=</span> <span class="n">LABELS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">words</span><span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">plural</span> <span class="k">else</span> <span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">words</span> <span class="k">else</span> <span class="n">kind</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
@@ -9101,9 +9325,9 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">name_of</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">name_of</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The name of a row of a list or of a scan, or its id when it has none."""</span>
     <span class="k">return</span> <span class="n">_text</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_NAME_FIELD</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">)))</span> <span class="ow">or</span> <span class="n">id_of</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -9128,16 +9352,16 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1372</span>
-<span class="normal">1373</span>
-<span class="normal">1374</span>
-<span class="normal">1375</span>
-<span class="normal">1376</span>
-<span class="normal">1377</span>
-<span class="normal">1378</span>
-<span class="normal">1379</span>
-<span class="normal">1380</span>
-<span class="normal">1381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scalar_fields</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1414</span>
+<span class="normal">1415</span>
+<span class="normal">1416</span>
+<span class="normal">1417</span>
+<span class="normal">1418</span>
+<span class="normal">1419</span>
+<span class="normal">1420</span>
+<span class="normal">1421</span>
+<span class="normal">1422</span>
+<span class="normal">1423</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scalar_fields</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""The plain fields of a row (not the lists and objects in it), the usual ones first."""</span>
     <span class="n">plain</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">key</span><span class="p">:</span> <span class="n">value</span>
@@ -9169,10 +9393,10 @@ their profile), as far as the lake knows</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/catalog.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">210</span>
-<span class="normal">211</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">211</span>
 <span class="normal">212</span>
-<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">worst</span><span class="p">(</span><span class="n">levels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Freshness</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
+<span class="normal">213</span>
+<span class="normal">214</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">worst</span><span class="p">(</span><span class="n">levels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Freshness</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Freshness</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The least fresh of several; ``NONE`` for no levels at all."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">levels</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">level</span> <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">_WORST</span> <span class="k">if</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">found</span><span class="p">),</span> <span class="n">Freshness</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span>

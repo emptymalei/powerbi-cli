@@ -2786,10 +2786,7 @@ first because they fetch the list of workspaces.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">403</span>
 <span class="normal">404</span>
 <span class="normal">405</span>
 <span class="normal">406</span>
@@ -2810,7 +2807,10 @@ first because they fetch the list of workspaces.</p>
 <span class="normal">421</span>
 <span class="normal">422</span>
 <span class="normal">423</span>
-<span class="normal">424</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Accounting</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Which accounts a plan uses, once it is known which are stored.</span>
 
@@ -2889,10 +2889,10 @@ first because they fetch the list of workspaces.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The accounts in words, each as ``profile (kind)``: the administrator's first."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">admin</span><span class="si">}</span><span class="s2"> (admin)"</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin</span> <span class="k">else</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">found</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2"> (user)"</span> <span class="k">for</span> <span class="n">profile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="p">]</span>
@@ -2938,14 +2938,14 @@ first because they fetch the list of workspaces.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">445</span>
 <span class="normal">446</span>
 <span class="normal">447</span>
 <span class="normal">448</span>
-<span class="normal">449</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Accounts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Accounts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""What a plan asks of the sync engine about the stored accounts."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
@@ -3055,8 +3055,7 @@ active one)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">303</span>
-<span class="normal">304</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">304</span>
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span>
@@ -3065,7 +3064,8 @@ active one)</p>
 <span class="normal">310</span>
 <span class="normal">311</span>
 <span class="normal">312</span>
-<span class="normal">313</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">313</span>
+<span class="normal">314</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AccountsPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The accounts a plan uses, by the profile names of ``pbi auth``.</span>
 
@@ -3199,10 +3199,7 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">430</span>
 <span class="normal">431</span>
 <span class="normal">432</span>
 <span class="normal">433</span>
@@ -3211,7 +3208,10 @@ what is wrong with it in words</p>
 <span class="normal">436</span>
 <span class="normal">437</span>
 <span class="normal">438</span>
-<span class="normal">439</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Compiled</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The steps for the workspaces of a plan.</span>
 
@@ -3405,45 +3405,45 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1170</span>
-<span class="normal">1171</span>
-<span class="normal">1172</span>
-<span class="normal">1173</span>
-<span class="normal">1174</span>
-<span class="normal">1175</span>
-<span class="normal">1176</span>
-<span class="normal">1177</span>
-<span class="normal">1178</span>
-<span class="normal">1179</span>
-<span class="normal">1180</span>
-<span class="normal">1181</span>
-<span class="normal">1182</span>
-<span class="normal">1183</span>
-<span class="normal">1184</span>
-<span class="normal">1185</span>
-<span class="normal">1186</span>
-<span class="normal">1187</span>
-<span class="normal">1188</span>
-<span class="normal">1189</span>
-<span class="normal">1190</span>
-<span class="normal">1191</span>
-<span class="normal">1192</span>
-<span class="normal">1193</span>
-<span class="normal">1194</span>
-<span class="normal">1195</span>
-<span class="normal">1196</span>
-<span class="normal">1197</span>
-<span class="normal">1198</span>
-<span class="normal">1199</span>
-<span class="normal">1200</span>
-<span class="normal">1201</span>
-<span class="normal">1202</span>
-<span class="normal">1203</span>
-<span class="normal">1204</span>
-<span class="normal">1205</span>
-<span class="normal">1206</span>
-<span class="normal">1207</span>
-<span class="normal">1208</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span>
+<span class="normal">1252</span>
+<span class="normal">1253</span>
+<span class="normal">1254</span>
+<span class="normal">1255</span>
+<span class="normal">1256</span>
+<span class="normal">1257</span>
+<span class="normal">1258</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span>
+<span class="normal">1262</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Overrides</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a flag of the command line changes in every step of a plan.</span>
 
@@ -3514,24 +3514,24 @@ what is wrong with it in words</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1191</span>
-<span class="normal">1192</span>
-<span class="normal">1193</span>
-<span class="normal">1194</span>
-<span class="normal">1195</span>
-<span class="normal">1196</span>
-<span class="normal">1197</span>
-<span class="normal">1198</span>
-<span class="normal">1199</span>
-<span class="normal">1200</span>
-<span class="normal">1201</span>
-<span class="normal">1202</span>
-<span class="normal">1203</span>
-<span class="normal">1204</span>
-<span class="normal">1205</span>
-<span class="normal">1206</span>
-<span class="normal">1207</span>
-<span class="normal">1208</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOptions</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1262</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOptions</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The options of a step with the flags of the command line put over them."""</span>
     <span class="n">changes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">force</span><span class="p">:</span>
@@ -3730,10 +3730,7 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 515</span>
-<span class="normal"> 516</span>
-<span class="normal"> 517</span>
-<span class="normal"> 518</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 518</span>
 <span class="normal"> 519</span>
 <span class="normal"> 520</span>
 <span class="normal"> 521</span>
@@ -4379,7 +4376,78 @@ what is wrong with it in words</p>
 <span class="normal">1161</span>
 <span class="normal">1162</span>
 <span class="normal">1163</span>
-<span class="normal">1164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFile</span><span class="p">:</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span>
+<span class="normal">1192</span>
+<span class="normal">1193</span>
+<span class="normal">1194</span>
+<span class="normal">1195</span>
+<span class="normal">1196</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span>
+<span class="normal">1200</span>
+<span class="normal">1201</span>
+<span class="normal">1202</span>
+<span class="normal">1203</span>
+<span class="normal">1204</span>
+<span class="normal">1205</span>
+<span class="normal">1206</span>
+<span class="normal">1207</span>
+<span class="normal">1208</span>
+<span class="normal">1209</span>
+<span class="normal">1210</span>
+<span class="normal">1211</span>
+<span class="normal">1212</span>
+<span class="normal">1213</span>
+<span class="normal">1214</span>
+<span class="normal">1215</span>
+<span class="normal">1216</span>
+<span class="normal">1217</span>
+<span class="normal">1218</span>
+<span class="normal">1219</span>
+<span class="normal">1220</span>
+<span class="normal">1221</span>
+<span class="normal">1222</span>
+<span class="normal">1223</span>
+<span class="normal">1224</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFile</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A plan file, read and checked.</span>
 
 <span class="sd">    :param version: the version of the format</span>
@@ -4484,11 +4552,26 @@ what is wrong with it in words</p>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_flags</span><span class="p">(</span><span class="n">reader</span><span class="p">:</span> <span class="n">_Reader</span><span class="p">,</span> <span class="n">box</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""The options of a scan: a mapping of flags, or ``true`` for a scan with none."""</span>
+<span class="w">        </span><span class="sd">"""The options of a scan: a mapping of flags, a list of the names of those that are on,</span>
+<span class="sd">        or ``true`` for a scan with none; ``None`` for ``false`` (no scan)."""</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">where</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">ScanFlags</span><span class="p">()</span> <span class="k">if</span> <span class="n">value</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">on</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SCAN_KEYS</span><span class="p">:</span>
+                    <span class="n">close</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="n">SCAN_KEYS</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">hint</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" Did you mean '</span><span class="si">{</span><span class="n">close</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">'?"</span> <span class="k">if</span> <span class="n">close</span> <span class="k">else</span> <span class="s2">""</span>
+                    <span class="n">reader</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span>
+                        <span class="n">reader</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">where</span><span class="p">,</span> <span class="n">index</span><span class="p">),</span>
+                        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">' is not a scan option.</span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2"> The options are: "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">SCAN_KEYS</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
+                        <span class="n">_line</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="n">on</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="n">ScanFlags</span><span class="p">(</span><span class="o">**</span><span class="n">on</span><span class="p">)</span>
         <span class="n">inner</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">mapping</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">SCAN_KEYS</span><span class="p">,</span> <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">ScanFlags</span><span class="p">(</span>
             <span class="o">**</span><span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">inner</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">where</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SCAN_KEYS</span><span class="p">}</span>
@@ -4518,24 +4601,41 @@ what is wrong with it in words</p>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">TARGETS</span><span class="p">)</span><span class="si">}</span><span class="s2">; or '</span><span class="si">{</span><span class="n">DEFAULT</span><span class="si">}</span><span class="s2">' and '</span><span class="si">{</span><span class="n">ALL</span><span class="si">}</span><span class="s2">'."</span><span class="p">,</span>
                     <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targets"</span><span class="p">),</span> <span class="n">index</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"targets"</span><span class="p">),</span>
                 <span class="p">)</span>
-        <span class="n">chosen</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">select_targets</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">targets</span><span class="p">}</span>
+        <span class="n">scan</span> <span class="o">=</span> <span class="n">ScanFlags</span><span class="p">()</span>
+        <span class="n">asks_for_scan</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="s2">"scan"</span> <span class="ow">in</span> <span class="n">box</span><span class="p">:</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_flags</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="s2">"scan"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># `scan: false` is no scan</span>
+                <span class="n">scan</span><span class="p">,</span> <span class="n">asks_for_scan</span> <span class="o">=</span> <span class="n">found</span><span class="p">,</span> <span class="kc">True</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">needs</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">chosen</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">select_targets</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">targets</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">asks_for_scan</span> <span class="ow">and</span> <span class="s2">"scan"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">:</span>
+            <span class="c1"># a `scan:` asks for the scan, as it does in an entry of `workspaces`: it need not</span>
+            <span class="c1"># be named in the targets as well (without targets, the plain sync stays)</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="p">(</span><span class="n">targets</span> <span class="ow">or</span> <span class="p">(</span><span class="n">DEFAULT</span><span class="p">,))</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"scan"</span><span class="p">,)</span>
+            <span class="n">chosen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"scan"</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">needs</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">advice</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">box</span> <span class="ow">and</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">chosen</span><span class="p">:</span>
                 <span class="n">reader</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"tenant.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">"has no effect: '</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">' is not among tenant.targets"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"has no effect: '</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">' is not among tenant.targets. </span><span class="si">{</span><span class="n">advice</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                     <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span>
                 <span class="p">)</span>
 
-        <span class="n">needs</span><span class="p">(</span><span class="s2">"activity_days"</span><span class="p">,</span> <span class="s2">"activity"</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"scan"</span><span class="p">,</span> <span class="s2">"full_scan"</span><span class="p">,</span> <span class="s2">"exclude_personal"</span><span class="p">,</span> <span class="s2">"exclude_inactive"</span><span class="p">):</span>
-            <span class="n">needs</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"scan"</span><span class="p">)</span>
-
-        <span class="n">scan</span> <span class="o">=</span> <span class="n">ScanFlags</span><span class="p">()</span>
-        <span class="k">if</span> <span class="s2">"scan"</span> <span class="ow">in</span> <span class="n">box</span><span class="p">:</span>
-            <span class="n">found</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_flags</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="s2">"scan"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">)</span>
-            <span class="n">scan</span> <span class="o">=</span> <span class="n">found</span> <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ScanFlags</span><span class="p">()</span>
+        <span class="n">needs</span><span class="p">(</span>
+            <span class="s2">"activity_days"</span><span class="p">,</span>
+            <span class="s2">"activity"</span><span class="p">,</span>
+            <span class="s2">"Add `activity` to tenant.targets to keep the audit events (they hold "</span>
+            <span class="s2">"e-mail addresses and IP addresses), or remove this key."</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"full_scan"</span><span class="p">,</span> <span class="s2">"exclude_personal"</span><span class="p">,</span> <span class="s2">"exclude_inactive"</span><span class="p">):</span>
+            <span class="n">needs</span><span class="p">(</span>
+                <span class="n">key</span><span class="p">,</span>
+                <span class="s2">"scan"</span><span class="p">,</span>
+                <span class="s2">"Add a `scan:` section to tenant (or `scan` to tenant.targets) to scan "</span>
+                <span class="s2">"every workspace, or remove this key."</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">TenantPlan</span><span class="p">(</span>
             <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span>
             <span class="n">activity_days</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"activity_days"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MAX_DAYS</span><span class="p">),</span>
@@ -4565,11 +4665,11 @@ what is wrong with it in words</p>
             <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"workspaces[</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">]"</span>
             <span class="n">line</span> <span class="o">=</span> <span class="n">_line</span><span class="p">(</span><span class="n">listing</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
             <span class="n">box</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">mapping</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">_WORKSPACE_KEYS</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
-            <span class="k">if</span> <span class="p">(</span><span class="s2">"id"</span> <span class="ow">in</span> <span class="n">box</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"name"</span> <span class="ow">in</span> <span class="n">box</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">"id"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">box</span> <span class="ow">and</span> <span class="s2">"name"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">box</span><span class="p">:</span>
                 <span class="n">reader</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span>
                     <span class="n">path</span><span class="p">,</span>
-                    <span class="s2">"needs either `id:` (one workspace) or `name:` (a pattern), not both "</span>
-                    <span class="s2">"and not neither"</span><span class="p">,</span>
+                    <span class="s2">"needs `id:` (one workspace) or `name:` (a pattern for names); an "</span>
+                    <span class="s2">"`id:` may come with a `name:` that is only its label"</span><span class="p">,</span>
                     <span class="n">line</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">details</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">strings</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"details"</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
@@ -4775,8 +4875,11 @@ what is wrong with it in words</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">WorkspaceEntry</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Refuse an entry that can never be carried out, and say what in it can not be.</span>
 
-<span class="sd">        :return: notes about the details that some kinds of item cannot give</span>
-<span class="sd">        :raises PlanFileError: when the entry can fetch nothing it asks for</span>
+<span class="sd">        :return: notes about the details that some kinds of item cannot give, and (for</span>
+<span class="sd">            ``via: auto``, which means whichever account can) about those that no stored</span>
+<span class="sd">            account can</span>
+<span class="sd">        :raises PlanFileError: when the entry can fetch nothing it asks for, or asks an</span>
+<span class="sd">            account that is named for what it cannot give</span>
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">scan</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">accounting</span><span class="o">.</span><span class="n">admin</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PlanFileError</span><span class="p">(</span>
@@ -4785,6 +4888,7 @@ what is wrong with it in words</p>
                 <span class="s2">"`pbi auth -t &lt;token&gt; -g admin`."</span>
             <span class="p">)</span>
         <span class="n">notes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nobody</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># details that no account can fetch, and why</span>
         <span class="k">for</span> <span class="n">detail</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="p">:</span>
             <span class="n">by_kind</span> <span class="o">=</span> <span class="n">_providers</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span>
             <span class="n">served</span><span class="p">,</span> <span class="n">unserved</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
@@ -4801,14 +4905,25 @@ what is wrong with it in words</p>
                     <span class="n">ok</span> <span class="o">=</span> <span class="n">user</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">)</span> <span class="ow">or</span> <span class="n">entry</span><span class="o">.</span><span class="n">names_a_profile</span><span class="p">)</span>
                 <span class="p">(</span><span class="n">served</span> <span class="k">if</span> <span class="n">ok</span> <span class="k">else</span> <span class="n">unserved</span><span class="p">)</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">served</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">PlanFileError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">line</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">.details: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_cannot</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="p">,</span><span class="w"> </span><span class="n">accounting</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-                <span class="p">)</span>
+                <span class="n">nobody</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">detail</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cannot</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">detail</span><span class="p">,</span> <span class="n">accounting</span><span class="p">)))</span>
+                <span class="k">continue</span>
             <span class="k">if</span> <span class="n">unserved</span><span class="p">:</span>
                 <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: the </span><span class="si">{</span><span class="n">detail</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unserved</span><span class="p">))</span><span class="si">}</span><span class="s2"> are not "</span>
                     <span class="sa">f</span><span class="s2">"fetched: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_reason</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="p">,</span><span class="w"> </span><span class="n">accounting</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
+        <span class="k">if</span> <span class="n">nobody</span><span class="p">:</span>
+            <span class="c1"># An account that is named is a mistake of the file. `auto` is whichever account</span>
+            <span class="c1"># can, so what none can is left out, with the reason, as long as the entry still</span>
+            <span class="c1"># does something (a scan, or another detail).</span>
+            <span class="n">does_something</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">scan</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">nobody</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">via</span> <span class="o">!=</span> <span class="n">VIA_AUTO</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">does_something</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PlanFileError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">line</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">.details: </span><span class="si">{</span><span class="n">nobody</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2"> It is not fetched."</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">why</span> <span class="ow">in</span> <span class="n">nobody</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">notes</span>
 
     <span class="nd">@staticmethod</span>
@@ -4870,7 +4985,7 @@ what is wrong with it in words</p>
 <span class="sd">        are not personal)."""</span>
         <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
             <span class="n">known</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">workspaces</span> <span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">entry</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">known</span> <span class="ow">or</span> <span class="p">[</span><span class="n">_Listed</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="n">known</span> <span class="ow">or</span> <span class="p">[</span><span class="n">_Listed</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)]</span>
         <span class="n">pattern</span> <span class="o">=</span> <span class="n">_pattern</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">w</span>
@@ -4881,7 +4996,10 @@ what is wrong with it in words</p>
         <span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">workspace_steps</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">,</span>
+        <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">listed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Compiled</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""The steps for the workspaces of the plan.</span>
 
@@ -4889,6 +5007,9 @@ what is wrong with it in words</p>
 <span class="sd">        :param workspaces: the workspaces the lake knows (`pbi_cli.core.catalog.Workspace`):</span>
 <span class="sd">            names are looked up in them, and ``visible_to`` says which user account lists a</span>
 <span class="sd">            workspace</span>
+<span class="sd">        :param listed: the user accounts whose own list of workspaces the lake holds</span>
+<span class="sd">            (default: all of them), so that a workspace that nobody lists can be told from</span>
+<span class="sd">            one whose accounts have not been asked yet</span>
 <span class="sd">        :raises PlanFileError: for an entry that can never be carried out</span>
 <span class="sd">        """</span>
         <span class="n">compiled</span> <span class="o">=</span> <span class="n">Compiled</span><span class="p">()</span>
@@ -4933,12 +5054,25 @@ what is wrong with it in words</p>
                 <span class="n">shown</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">orphans</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span>
                     <span class="sa">f</span><span class="s2">" and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">orphans</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s2"> more"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">orphans</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="s2">""</span>
                 <span class="p">)</span>
-                <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: no user account of the plan lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> "</span>
-                    <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'none stored'</span><span class="si">}</span><span class="s2">), so what only a "</span>
-                    <span class="s2">"user can read is not fetched for it; name an account with via: "</span>
-                    <span class="s2">"&lt;profile&gt;"</span>
-                <span class="p">)</span>
+                <span class="n">unasked</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">p</span>
+                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">accounting</span><span class="o">.</span><span class="n">users</span>
+                    <span class="k">if</span> <span class="n">listed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">listed</span>
+                <span class="p">]</span>
+                <span class="k">if</span> <span class="n">unasked</span><span class="p">:</span>  <span class="c1"># not "nobody lists it": nobody has been asked yet</span>
+                    <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: which user account lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> is not known yet: "</span>
+                        <span class="sa">f</span><span class="s2">"the lake holds no list of workspaces for </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unasked</span><span class="p">)</span><span class="si">}</span><span class="s2">. A "</span>
+                        <span class="s2">"step of the plan fetches it, and a run works the rest out from it; "</span>
+                        <span class="s2">"until then what only a user can read is not planned for it"</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: no user account of the plan lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> "</span>
+                        <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">)</span><span class="si">}</span><span class="s2">), so what only a user can read is "</span>
+                        <span class="s2">"not fetched for it; give that account access to the workspace, or "</span>
+                        <span class="s2">"name another with via: &lt;profile&gt;"</span>
+                    <span class="p">)</span>
 
         <span class="n">compiled</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan_steps</span><span class="p">(</span><span class="n">scans</span><span class="p">,</span> <span class="n">accounting</span><span class="p">))</span>
         <span class="n">compiled</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detail_steps</span><span class="p">(</span><span class="n">needs</span><span class="p">,</span> <span class="n">accounting</span><span class="p">))</span>
@@ -4964,6 +5098,8 @@ what is wrong with it in words</p>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">names_a_profile</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">user</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">via</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">:</span>  <span class="c1"># no account to look at: the entry says so already</span>
+            <span class="k">return</span> <span class="kc">None</span>
         <span class="n">holder</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">accounting</span><span class="o">.</span><span class="n">users</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">workspace</span><span class="o">.</span><span class="n">visible_to</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">user</span><span class="p">,</span> <span class="n">holder</span>
 
@@ -5182,44 +5318,44 @@ absolute (<code>~</code> is the home folder, and a relative folder is relative t
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">794</span>
-<span class="normal">795</span>
-<span class="normal">796</span>
-<span class="normal">797</span>
-<span class="normal">798</span>
-<span class="normal">799</span>
-<span class="normal">800</span>
-<span class="normal">801</span>
-<span class="normal">802</span>
-<span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span>
-<span class="normal">826</span>
-<span class="normal">827</span>
-<span class="normal">828</span>
-<span class="normal">829</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">829</span>
 <span class="normal">830</span>
-<span class="normal">831</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accounting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Accounting</span><span class="p">:</span>
+<span class="normal">831</span>
+<span class="normal">832</span>
+<span class="normal">833</span>
+<span class="normal">834</span>
+<span class="normal">835</span>
+<span class="normal">836</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span>
+<span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span>
+<span class="normal">848</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span>
+<span class="normal">855</span>
+<span class="normal">856</span>
+<span class="normal">857</span>
+<span class="normal">858</span>
+<span class="normal">859</span>
+<span class="normal">860</span>
+<span class="normal">861</span>
+<span class="normal">862</span>
+<span class="normal">863</span>
+<span class="normal">864</span>
+<span class="normal">865</span>
+<span class="normal">866</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accounting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Accounting</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Which accounts the plan uses: the profiles it names, else the active ones.</span>
 
 <span class="sd">    :param accounts: tells which accounts are stored (the sync engine does)</span>
@@ -5305,30 +5441,30 @@ stored</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">883</span>
-<span class="normal">884</span>
-<span class="normal">885</span>
-<span class="normal">886</span>
-<span class="normal">887</span>
-<span class="normal">888</span>
-<span class="normal">889</span>
-<span class="normal">890</span>
-<span class="normal">891</span>
-<span class="normal">892</span>
-<span class="normal">893</span>
-<span class="normal">894</span>
-<span class="normal">895</span>
-<span class="normal">896</span>
-<span class="normal">897</span>
-<span class="normal">898</span>
-<span class="normal">899</span>
-<span class="normal">900</span>
-<span class="normal">901</span>
-<span class="normal">902</span>
-<span class="normal">903</span>
-<span class="normal">904</span>
-<span class="normal">905</span>
-<span class="normal">906</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">first_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">first_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The steps that need nothing from the lake: the tenant, and what tells which user</span>
 <span class="sd">    account lists which workspace (the list of workspaces of each user account, one</span>
 <span class="sd">    request each, when an entry may need it).</span>
@@ -5402,10 +5538,7 @@ say what a plan says; the message names the file, the line and the key</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">550</span>
-<span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">553</span>
 <span class="normal">554</span>
 <span class="normal">555</span>
 <span class="normal">556</span>
@@ -5416,7 +5549,10 @@ say what a plan says; the message names the file, the line and the key</p>
 <span class="normal">561</span>
 <span class="normal">562</span>
 <span class="normal">563</span>
-<span class="normal">564</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">"PlanFile"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Read and check a plan file.</span>
 
@@ -5527,10 +5663,7 @@ say what a plan says; the message names the file, the line and the key</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">569</span>
 <span class="normal">570</span>
 <span class="normal">571</span>
 <span class="normal">572</span>
@@ -5565,7 +5698,10 @@ say what a plan says; the message names the file, the line and the key</p>
 <span class="normal">601</span>
 <span class="normal">602</span>
 <span class="normal">603</span>
-<span class="normal">604</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"PlanFile"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Check the text of a plan file.</span>
 
@@ -5614,7 +5750,7 @@ say what a plan says; the message names the file, the line and the key</p>
 
 
 <h3 id="pbi_cli.core.planfile.PlanFile.workspace_steps" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">workspace_steps</span><span class="p">(</span><span class="n">accounting</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">workspace_steps</span><span class="p">(</span><span class="n">accounting</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">,</span> <span class="n">listed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#pbi_cli.core.planfile.PlanFile.workspace_steps" class="headerlink" title="Permanent link">¤</a></h3>
 
@@ -5674,6 +5810,24 @@ workspace</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>listed</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="typing.Collection">Collection</span>[<span title="str">str</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the user accounts whose own list of workspaces the lake holds
+(default: all of them), so that a workspace that nobody lists can be told from
+one whose accounts have not been asked yet</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -5703,57 +5857,7 @@ workspace</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1016</span>
-<span class="normal">1017</span>
-<span class="normal">1018</span>
-<span class="normal">1019</span>
-<span class="normal">1020</span>
-<span class="normal">1021</span>
-<span class="normal">1022</span>
-<span class="normal">1023</span>
-<span class="normal">1024</span>
-<span class="normal">1025</span>
-<span class="normal">1026</span>
-<span class="normal">1027</span>
-<span class="normal">1028</span>
-<span class="normal">1029</span>
-<span class="normal">1030</span>
-<span class="normal">1031</span>
-<span class="normal">1032</span>
-<span class="normal">1033</span>
-<span class="normal">1034</span>
-<span class="normal">1035</span>
-<span class="normal">1036</span>
-<span class="normal">1037</span>
-<span class="normal">1038</span>
-<span class="normal">1039</span>
-<span class="normal">1040</span>
-<span class="normal">1041</span>
-<span class="normal">1042</span>
-<span class="normal">1043</span>
-<span class="normal">1044</span>
-<span class="normal">1045</span>
-<span class="normal">1046</span>
-<span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
-<span class="normal">1050</span>
-<span class="normal">1051</span>
-<span class="normal">1052</span>
-<span class="normal">1053</span>
-<span class="normal">1054</span>
-<span class="normal">1055</span>
-<span class="normal">1056</span>
-<span class="normal">1057</span>
-<span class="normal">1058</span>
-<span class="normal">1059</span>
-<span class="normal">1060</span>
-<span class="normal">1061</span>
-<span class="normal">1062</span>
-<span class="normal">1063</span>
-<span class="normal">1064</span>
-<span class="normal">1065</span>
-<span class="normal">1066</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1066</span>
 <span class="normal">1067</span>
 <span class="normal">1068</span>
 <span class="normal">1069</span>
@@ -5765,8 +5869,80 @@ workspace</p>
 <span class="normal">1075</span>
 <span class="normal">1076</span>
 <span class="normal">1077</span>
-<span class="normal">1078</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_steps</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_steps</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">,</span>
+    <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+    <span class="n">listed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Compiled</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The steps for the workspaces of the plan.</span>
 
@@ -5774,6 +5950,9 @@ workspace</p>
 <span class="sd">    :param workspaces: the workspaces the lake knows (`pbi_cli.core.catalog.Workspace`):</span>
 <span class="sd">        names are looked up in them, and ``visible_to`` says which user account lists a</span>
 <span class="sd">        workspace</span>
+<span class="sd">    :param listed: the user accounts whose own list of workspaces the lake holds</span>
+<span class="sd">        (default: all of them), so that a workspace that nobody lists can be told from</span>
+<span class="sd">        one whose accounts have not been asked yet</span>
 <span class="sd">    :raises PlanFileError: for an entry that can never be carried out</span>
 <span class="sd">    """</span>
     <span class="n">compiled</span> <span class="o">=</span> <span class="n">Compiled</span><span class="p">()</span>
@@ -5818,12 +5997,25 @@ workspace</p>
             <span class="n">shown</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">orphans</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span>
                 <span class="sa">f</span><span class="s2">" and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">orphans</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="si">}</span><span class="s2"> more"</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">orphans</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="s2">""</span>
             <span class="p">)</span>
-            <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: no user account of the plan lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> "</span>
-                <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'none stored'</span><span class="si">}</span><span class="s2">), so what only a "</span>
-                <span class="s2">"user can read is not fetched for it; name an account with via: "</span>
-                <span class="s2">"&lt;profile&gt;"</span>
-            <span class="p">)</span>
+            <span class="n">unasked</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">p</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">accounting</span><span class="o">.</span><span class="n">users</span>
+                <span class="k">if</span> <span class="n">listed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">listed</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">unasked</span><span class="p">:</span>  <span class="c1"># not "nobody lists it": nobody has been asked yet</span>
+                <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: which user account lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> is not known yet: "</span>
+                    <span class="sa">f</span><span class="s2">"the lake holds no list of workspaces for </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unasked</span><span class="p">)</span><span class="si">}</span><span class="s2">. A "</span>
+                    <span class="s2">"step of the plan fetches it, and a run works the rest out from it; "</span>
+                    <span class="s2">"until then what only a user can read is not planned for it"</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">compiled</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">: no user account of the plan lists </span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">)</span><span class="si">}</span><span class="s2">), so what only a user can read is "</span>
+                    <span class="s2">"not fetched for it; give that account access to the workspace, or "</span>
+                    <span class="s2">"name another with via: &lt;profile&gt;"</span>
+                <span class="p">)</span>
 
     <span class="n">compiled</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_scan_steps</span><span class="p">(</span><span class="n">scans</span><span class="p">,</span> <span class="n">accounting</span><span class="p">))</span>
     <span class="n">compiled</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detail_steps</span><span class="p">(</span><span class="n">needs</span><span class="p">,</span> <span class="n">accounting</span><span class="p">))</span>
@@ -5870,8 +6062,8 @@ workspace</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
-<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFileError</span><span class="p">(</span><span class="n">PBIError</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">123</span>
+<span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFileError</span><span class="p">(</span><span class="n">PBIError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""A plan file that cannot be used. The message names the file, the line and the key."""</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -5974,10 +6166,7 @@ workspace</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">373</span>
-<span class="normal">374</span>
-<span class="normal">375</span>
-<span class="normal">376</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">376</span>
 <span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
@@ -5986,7 +6175,10 @@ workspace</p>
 <span class="normal">382</span>
 <span class="normal">383</span>
 <span class="normal">384</span>
-<span class="normal">385</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SessionPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Settings for a terminal UI session (``pbi tui --config``).</span>
 
@@ -6105,16 +6297,16 @@ workspace</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">391</span>
 <span class="normal">392</span>
 <span class="normal">393</span>
 <span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span>
-<span class="normal">397</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One ordinary run that a plan is made of.</span>
 
@@ -6299,8 +6491,7 @@ workspace</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">316</span>
-<span class="normal">317</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">317</span>
 <span class="normal">318</span>
 <span class="normal">319</span>
 <span class="normal">320</span>
@@ -6316,7 +6507,8 @@ workspace</p>
 <span class="normal">330</span>
 <span class="normal">331</span>
 <span class="normal">332</span>
-<span class="normal">333</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">333</span>
+<span class="normal">334</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What to keep for the whole tenant.</span>
 
@@ -6417,7 +6609,8 @@ workspace</p>
             <td>
               <div class="doc-md-description">
                 <p>a pattern for the names of workspaces (<code>*</code> is any text, <code>?</code> one
-character), looked up in the list of workspaces in the lake</p>
+character), looked up in the list of workspaces in the lake; with an <code>id</code> it is
+only the label of that workspace, as in the file of <code>pbi workspaces scan batch</code></p>
               </div>
             </td>
             <td>
@@ -6521,8 +6714,7 @@ character), looked up in the list of workspaces in the lake</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">336</span>
-<span class="normal">337</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">337</span>
 <span class="normal">338</span>
 <span class="normal">339</span>
 <span class="normal">340</span>
@@ -6555,13 +6747,17 @@ character), looked up in the list of workspaces in the lake</p>
 <span class="normal">367</span>
 <span class="normal">368</span>
 <span class="normal">369</span>
-<span class="normal">370</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceEntry</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What to keep for some workspaces.</span>
 
 <span class="sd">    :param id: the id of a workspace (or ``name``)</span>
 <span class="sd">    :param name: a pattern for the names of workspaces (``*`` is any text, ``?`` one</span>
-<span class="sd">        character), looked up in the list of workspaces in the lake</span>
+<span class="sd">        character), looked up in the list of workspaces in the lake; with an ``id`` it is</span>
+<span class="sd">        only the label of that workspace, as in the file of ``pbi workspaces scan batch``</span>
 <span class="sd">    :param scan: a metadata scan of them with these options (``None``: no scan)</span>
 <span class="sd">    :param details: details of every item in them (`pbi_cli.core.details.TITLES`)</span>
 <span class="sd">    :param via: whose account reads them: ``auto``, ``admin``, ``user`` or a profile name</span>
@@ -6579,8 +6775,9 @@ character), looked up in the list of workspaces in the lake</p>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""What the entry is called in a message."""</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+<span class="w">        </span><span class="sd">"""What the entry is called in a message: its name (the pattern, or the label of an</span>
+<span class="sd">        id), else its id."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">where</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -6619,7 +6816,8 @@ character), looked up in the list of workspaces in the lake</p>
 
     <div class="doc doc-contents ">
 
-        <p>What the entry is called in a message.</p>
+        <p>What the entry is called in a message: its name (the pattern, or the label of an
+id), else its id.</p>
 
     </div>
 
@@ -6675,10 +6873,10 @@ character), looked up in the list of workspaces in the lake</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span><span class="n">flags</span><span class="p">:</span> <span class="n">ScanFlags</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span><span class="n">flags</span><span class="p">:</span> <span class="n">ScanFlags</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The options of a scan in words (``lineage, datasource details``)."""</span>
     <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SCAN_KEYS</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span>
     <span class="k">return</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span> <span class="k">if</span> <span class="n">chosen</span> <span class="k">else</span> <span class="s2">"no options"</span>
@@ -6775,10 +6973,7 @@ another), or <code>None</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">500</span>
 <span class="normal">501</span>
 <span class="normal">502</span>
 <span class="normal">503</span>
@@ -6790,7 +6985,10 @@ another), or <code>None</code></p>
 <span class="normal">509</span>
 <span class="normal">510</span>
 <span class="normal">511</span>
-<span class="normal">512</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_workspace</span><span class="p">(</span><span class="n">wanted</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_workspace</span><span class="p">(</span><span class="n">wanted</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The workspace that ``session.open`` of a plan file means.</span>
 
 <span class="sd">    :param wanted: an id, or a name pattern (as in `WorkspaceEntry.name`)</span>

@@ -2503,6 +2503,9 @@ is a colon.</p>
 <h2 id="the-explorer">The Explorer<a class="headerlink" href="#the-explorer" title="Permanent link">¤</a></h2>
 <p>The Explorer has three parts: a tree of the tenant on the left, a table of what is in the
 selected node at the top right, and the details of the selected row below it.</p>
+<p>Names are shown exactly as Power BI has them. Many are tagged in square brackets
+(<code>[Confidential]Finance</code>, <code>[Experiment] Test</code>), and the brackets stay: nothing the UI shows
+is read as markup, in the tables, the titles, the dialogs and the notices alike.</p>
 <h3 id="the-tree">The tree<a class="headerlink" href="#the-tree" title="Permanent link">¤</a></h3>
 <table>
 <thead>
@@ -2583,10 +2586,18 @@ such a workspace counts as scanned <em>as of the start of the last complete scan
 same options): an unchanged workspace is not shown as old.</p>
 <p>A workspace shows what the lake holds of it, and nothing else. After <code>pbi sync run groups</code>,
 which fetches only the list of workspaces, every workspace is empty: the title of the table
-says that the lists of items are not in the lake, and the Info tab names each list that is
-missing (reports, datasets, dashboards, dataflows, apps). Press <code>s</code> and <strong>Run</strong> to fetch the
-plain targets, or <code>r</code> to scan that one workspace. A workspace that really holds nothing says
-so, and one that has the lists but was never scanned says to scan it.</p>
+says that the lists of items are not in the lake (or which of them, when only some are
+missing), and the Info tab names each list that is missing (reports, datasets, dashboards,
+dataflows, apps). Press <code>s</code> and <strong>Run</strong> to fetch the plain targets, or <code>r</code> to scan that one
+workspace. A workspace that really holds nothing says so, and one that has the lists but was
+never scanned says to scan it.</p>
+<p>When the last sync <em>tried</em> to fetch a missing list and did not manage, the title says that it
+did not bring it, and the Info tab says why, from the state of the sync: the list <strong>could not
+be fetched</strong> (with what Power BI answered: a <code>403</code> means that the token is not an
+administrator's), or it was <strong>held back by a quota</strong> (Power BI throttled the requests for
+longer than a sync waits; the tenant's quotas are shared with every other tool that uses the
+admin APIs, so run the sync again later). The <em>Contents</em> rows of the Info tab say the same
+for each list in a few words. The same facts are on the Lake tab of the Sync screen.</p>
 <h3 id="the-details">The details<a class="headerlink" href="#the-details" title="Permanent link">¤</a></h3>
 <p>Press a number, or click a tab, to switch the details of the selected row:</p>
 <p><img alt="The users of a report" src="../images/tui-users.svg" /></p>
@@ -2750,6 +2761,10 @@ failure and every unit that a quota held back, in the words of <code>pbi sync ru
 went, the units that failed or were held back, the last complete scan, and the quota left.
 A sync goes on while you look at the Explorer: the header shows it, and the Sync screen
 shows its log from the start when you open it again.</p>
+<p>A sync that ends with failures or held-back units says so in a notice that stays for fifteen
+seconds (the others vanish after five), and the notice names the first problem: <code>First
+failure: admin.reports: ...</code>, or <code>First held back: admin.reports, to be tried again in 12
+min</code>. The Run tab has all of them.</p>
 <h3 id="with-a-plan-file">With a plan file<a class="headerlink" href="#with-a-plan-file" title="Permanent link">¤</a></h3>
 <p><code>pbi tui --config pbi-plan.yaml</code> opens the UI with a <a href="../plan-file/">plan file</a>, which says
 what to keep, for which workspaces and through which account. The Sync screen then shows the
@@ -2789,7 +2804,12 @@ file instead of the targets and the options:</p>
 <h2 id="signing-in-again">Signing in again<a class="headerlink" href="#signing-in-again" title="Permanent link">¤</a></h2>
 <p>The header shows every account you are signed in as (the administrator and the user, as far
 as they are stored), and how long each token lasts: green, then yellow in the last ten
-minutes, then red when it has expired. Browsing does not need a token, but <code>pbi sync</code> does.</p>
+minutes, then red when it has expired. With a <a href="../plan-file/">plan file</a> these are the accounts
+that the file names (<code>accounts</code>), each user account on its own, and everything the session
+fetches goes through them: the plan, and also what <code>f</code> and <code>lazy: auto</code> fetch for one item,
+which uses the first user account of the file whose own list of workspaces holds the
+item's workspace (else the first one). A kind that the file does not name is the active
+profile of the kind. Browsing does not need a token, but <code>pbi sync</code> does.</p>
 <p>When a sync or a refresh finds that a token is missing or has expired, the UI asks for a
 new one at once, for the kind of account that is the problem (a sync of <code>user-...</code> targets
 asks for the user's token, not the administrator's). You can also press <code>a</code> at any time.</p>
@@ -2799,6 +2819,16 @@ or <code>user</code>, and the profile; the profile is the active one of the kind
 replaced (a new profile name stores a new account). The token is stored exactly as
 <a href="../auth/"><code>pbi auth</code></a> stores it, in the keyring. Then the sync that was interrupted starts
 again, and continues where it stopped.</p>
+<p>A token that has expired already, or expires within half a minute, is not stored: the
+dialog says when it expired and waits for another, because storing it would only make the
+next request ask again. (A token that says nothing about its expiry is stored: Power BI
+decides.) If the sync that goes on is stopped by <strong>the same account</strong> again, the dialog that
+opens says that <em>the token that was just stored was refused as well</em>, followed by the reason:
+that it had expired, or that Power BI answered <code>401 Unauthorized</code> (a token of another
+account or tenant, or one that was pasted damaged). A different account that has run out as
+well is asked for as itself, one dialog after the other, as many as there are accounts that
+expired; the header shows how long each lasts, so you can see beforehand which will. Each
+question and each token stored is a line in the log file <code>~/.pbi_cli/tui.log</code>.</p>
 <h2 id="accounts">Accounts<a class="headerlink" href="#accounts" title="Permanent link">¤</a></h2>
 <p>You need one account, of either kind (see <a href="../auth/#which-accounts-you-need">Authentication</a>).
 Press <code>p</code> for the <strong>Accounts</strong> dialog: the profiles stored with <code>pbi auth</code>, both groups, with

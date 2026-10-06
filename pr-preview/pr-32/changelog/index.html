@@ -2179,8 +2179,17 @@
   the key. It compiles to ordinary sync runs, one step for the tenant and one for each set of
   workspaces, details and account (<code>pbi_cli.core.planrun</code> plans and runs them one after the
   other, and reports them as one). A name in the file is a pattern looked up in the list of
-  workspaces in the lake; <code>via: auto</code> reads with the administrator's account when it can and
-  else with the user account whose own list of workspaces holds the workspace.</li>
+  workspaces in the lake (an <code>id</code> may come with a <code>name</code> that is only its label, as in the
+  file of <code>pbi workspaces scan batch</code>); <code>via: auto</code> reads with the administrator's account
+  when it can and else with the user account whose own list of workspaces holds the
+  workspace, and leaves out, with a note, what no stored account can fetch. <code>scan:</code> takes a
+  mapping or a list of the names of the options, and under <code>tenant</code> it asks for the scan of
+  every workspace. A plan made before the lake holds the list of workspaces of a user
+  account says that it is not known yet which account lists a workspace, instead of saying
+  that none does. <code>session.lake</code> that names the cache folder (or its <code>lake</code> folder) is the
+  work lake even before the first sync has made it, a lake that is not there says where its
+  location came from and what to leave out, and <code>pbi sync plan|run --config</code> says that a
+  <code>session.lake</code> that is not the work lake is only for <code>pbi tui --config</code>.</li>
 <li><strong><code>pbi tui --config FILE</code></strong> opens the <a href="../tui/#with-a-plan-file">terminal UI</a> with a plan file.
   The Sync screen shows the file and the plan of its steps (one table with the number of each
   step, what they cost together, the names that match nothing yet), <strong>Run plan</strong> goes through the
@@ -2326,6 +2335,24 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">¤</a></h3>
 <ul>
+<li>The <a href="../tui/">terminal UI</a> showed names as markup: a workspace called
+  <code>[Confidential]IT Management</code> was shown as <code>IT Management</code> (the bracket was read as a style
+  tag), <code>[Experiment] Test</code> lost its tag the same way, and a name such as <code>Sales [/Q4]</code>
+  ended the whole app with a <code>MarkupError</code> the moment it was selected. Names, titles,
+  tables, dialogs, notices and the details are now shown exactly as they are.</li>
+<li>The empty state of a workspace in the <a href="../tui/">terminal UI</a> says what the last sync did
+  about a list it lacks: that it could not be fetched (with the reason Power BI gave), or was
+  held back by a quota. It also names the lists that are missing when only some are, instead
+  of always saying "the lists of items". The notice at the end of a sync that had failures
+  or held units back names the first problem, and stays fifteen seconds.</li>
+<li>The sign-in dialog of the <a href="../tui/">terminal UI</a> no longer stores a token that has expired
+  already (it said nothing, and the next request asked again), and says when the token it
+  stored a moment ago is refused as well, so that a second dialog is not taken for the same
+  question. A token that is submitted twice (Enter, then a click before the dialog is gone) is
+  stored, and answered, once. With a <a href="../plan-file/">plan file</a> the header shows the accounts
+  of the file, and <code>f</code> and <code>lazy: auto</code> fetch through them: they used the <em>active</em> profile of
+  the kind, which could be an account the plan does not name, and was asked for a token the
+  plan never uses.</li>
 <li>The <a href="../tui/">terminal UI</a> no longer fails with an error about a widget that is gone, now and
   then, when it is quit while a sync is ending: what a worker hands over is dropped once the
   app is closing.</li>
@@ -2348,6 +2375,10 @@
 </ul>
 <h3 id="development">Development<a class="headerlink" href="#development" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi_cli.tui.plain</code> has the widgets that show a <code>str</code> as the text it is (<code>PlainStatic</code>,
+  <code>PlainLabel</code>, <code>PlainTable</code>); the screens use them instead of Textual's, which read a <code>str</code>
+  as markup, and <code>PBIApp.notify</code> never reads a notice as markup. Nothing in the UI is
+  written in markup: styled text is a <code>rich.text.Text</code>.</li>
 <li>The fake service in <code>tests/fake_powerbi.py</code> knows who asks: the account is the <code>oid</code> of the
   token, each account can see its own workspaces (<code>visible_to</code>), the admin operations can be
   made to refuse a token that is not an administrator's (<code>require_admin</code>), and it serves the

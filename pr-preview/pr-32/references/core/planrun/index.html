@@ -2546,7 +2546,10 @@ holds fresh.</p>
 <span class="normal">310</span>
 <span class="normal">311</span>
 <span class="normal">312</span>
-<span class="normal">313</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanRun</span><span class="p">:</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanRun</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A plan file, ready to be planned and run.</span>
 
 <span class="sd">    :param engine: the sync engine of the lake</span>
@@ -2588,13 +2591,13 @@ holds fresh.</p>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">accounting</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_workspaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Workspace</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""The workspaces the lake knows, as the accounts of the plan see the tenant."""</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_catalog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""What the lake holds, as the accounts of the plan see the tenant."""</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">SyncOptions</span><span class="p">(</span>
             <span class="n">admin_profile</span><span class="o">=</span><span class="n">accounting</span><span class="o">.</span><span class="n">admin</span><span class="p">,</span>
             <span class="n">user_profile</span><span class="o">=</span><span class="n">accounting</span><span class="o">.</span><span class="n">users</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">accounting</span><span class="o">.</span><span class="n">users</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">Catalog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">tenant</span><span class="p">(</span><span class="n">options</span><span class="p">))</span><span class="o">.</span><span class="n">workspaces</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Catalog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">tenant</span><span class="p">(</span><span class="n">options</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_first</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan_file</span><span class="o">.</span><span class="n">first_steps</span><span class="p">(</span><span class="n">accounting</span><span class="p">)</span>
@@ -2603,7 +2606,10 @@ holds fresh.</p>
         <span class="c1"># without workspaces there is nothing to look up: the lake need not be read</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan_file</span><span class="o">.</span><span class="n">workspaces</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Compiled</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan_file</span><span class="o">.</span><span class="n">workspace_steps</span><span class="p">(</span><span class="n">accounting</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_workspaces</span><span class="p">(</span><span class="n">accounting</span><span class="p">))</span>
+        <span class="n">catalog</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_catalog</span><span class="p">(</span><span class="n">accounting</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plan_file</span><span class="o">.</span><span class="n">workspace_steps</span><span class="p">(</span>
+            <span class="n">accounting</span><span class="p">,</span> <span class="n">catalog</span><span class="o">.</span><span class="n">workspaces</span><span class="p">(),</span> <span class="n">catalog</span><span class="o">.</span><span class="n">accounts_with_a_list</span><span class="p">()</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">],</span> <span class="n">Compiled</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""The steps as the lake is now: those for the tenant, and those for the workspaces</span>
@@ -2847,10 +2853,7 @@ can differ from this when the lake was out of date.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planrun.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">223</span>
-<span class="normal">224</span>
-<span class="normal">225</span>
-<span class="normal">226</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">226</span>
 <span class="normal">227</span>
 <span class="normal">228</span>
 <span class="normal">229</span>
@@ -2873,7 +2876,10 @@ can differ from this when the lake was out of date.</p>
 <span class="normal">246</span>
 <span class="normal">247</span>
 <span class="normal">248</span>
-<span class="normal">249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequencePlan</span><span class="p">:</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequencePlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What the plan would do. Only the lake is read, never the API.</span>
 
 <span class="sd">    The steps for the workspaces are worked out from the list of workspaces the lake</span>
@@ -3022,10 +3028,7 @@ stored, or a step cannot start</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planrun.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">256</span>
 <span class="normal">257</span>
 <span class="normal">258</span>
 <span class="normal">259</span>
@@ -3082,7 +3085,10 @@ stored, or a step cannot start</p>
 <span class="normal">310</span>
 <span class="normal">311</span>
 <span class="normal">312</span>
-<span class="normal">313</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">on_event</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Event</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">on_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Step</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3189,14 +3195,14 @@ stored, or a step cannot start</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planrun.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">212</span>
-<span class="normal">213</span>
-<span class="normal">214</span>
-<span class="normal">215</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">215</span>
 <span class="normal">216</span>
 <span class="normal">217</span>
 <span class="normal">218</span>
-<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">],</span> <span class="n">Compiled</span><span class="p">]:</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">],</span> <span class="n">Compiled</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The steps as the lake is now: those for the tenant, and those for the workspaces</span>
 <span class="sd">    (which a run works out again once the first have run).</span>
 
