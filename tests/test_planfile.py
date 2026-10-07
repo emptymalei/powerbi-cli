@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from pbi_cli.core.catalog import Workspace
+from pbi_cli.core.details import TITLES
 from pbi_cli.core.planfile import (
     Accounting,
     Overrides,
@@ -399,10 +400,10 @@ def test_the_scan_flags_are_described_in_words():
             "version: 1\nworkspaces:\n  - {id: a, details: [users, page]}\n",
             "pbi-plan.yaml:3: workspaces[0].details[1]: 'page' is not a detail. "
             "Did you mean 'pages'? The details are: users, datasources, pages, "
-            "refreshes, parameters, tiles.",
+            "refreshes, parameters, tiles; or 'all' for every one.",
         ),
         (
-            "version: 1\nworkspaces:\n  - {id: a, details: users}\n",
+            "version: 1\nworkspaces:\n  - {id: a, details: 3}\n",
             "pbi-plan.yaml:3: workspaces[0].details: must be a list",
         ),
         (
@@ -890,6 +891,7 @@ def test_the_users_of_every_kind_of_item_are_fetched_by_the_administrator():
 
     (step,) = compiled.steps
     assert names(step) == [
+        "app-users",
         "dashboard-users",
         "dataflow-users",
         "dataset-users",
@@ -899,8 +901,8 @@ def test_the_users_of_every_kind_of_item_are_fetched_by_the_administrator():
     assert step.options.workspace_ids == ("ws-sales",)
     assert step.options.admin_profile == "adm" and step.options.user_profile is None
     assert step.title == (
-        "dashboard-users, dataflow-users, dataset-users, group-users, report-users "
-        "for 1 workspace (adm)"
+        "app-users, dashboard-users, dataflow-users, dataset-users, group-users, "
+        "report-users for 1 workspace (adm)"
     )
 
 
@@ -992,9 +994,9 @@ def test_a_user_account_can_be_asked_for_even_where_an_administrator_could_read(
     assert names(step) == ["user-dataset-users", "user-group-users"]
     assert step.options.user_profile == "ana" and step.options.admin_profile is None
     assert compiled.notes == [
-        "workspaces[0] (Finance E*): the users of dashboard, dataflow, report are not "
-        "fetched: they need an administrator's account (a user's API has no operation "
-        "for them)"
+        "workspaces[0] (Finance E*): the users of app, dashboard, dataflow, report are "
+        "not fetched: they need an administrator's account (a user's API has no "
+        "operation for them)"
     ]
 
 
@@ -1006,7 +1008,8 @@ def test_without_an_administrator_a_user_gives_what_a_user_can():
     (step,) = compiled.steps
     assert names(step) == ["user-dataset-users", "user-group-users"]
     assert (
-        "the users of dashboard, dataflow, report are not fetched" in compiled.notes[0]
+        "the users of app, dashboard, dataflow, report are not fetched"
+        in compiled.notes[0]
     )
 
 
@@ -1018,6 +1021,7 @@ def test_auto_goes_to_the_administrator_for_what_the_administrator_can_read():
     (step,) = compiled.steps
     assert step.options.admin_profile == "adm" and step.options.user_profile is None
     assert names(step) == [
+        "app-users",
         "dashboard-users",
         "dataflow-datasources",
         "dataflow-users",
@@ -1063,7 +1067,7 @@ def test_workspaces_that_need_the_same_are_fetched_in_one_step_and_others_apart(
     assert [
         (len(s.options.targets), s.options.workspace_ids) for s in compiled.steps
     ] == [
-        (5, ("ws-eu", "ws-us")),
+        (6, ("ws-eu", "ws-us")),
         (2, ("ws-sales",)),
     ]
 
@@ -1336,7 +1340,8 @@ def test_an_empty_list_is_a_scan_with_no_options():
             "version: 1\ntenant:\n  scan:\n    - lineage\n    - dataset_expression\n",
             "pbi-plan.yaml:5: tenant.scan[1]: 'dataset_expression' is not a scan option. "
             "Did you mean 'dataset_expressions'? The options are: lineage, "
-            "datasource_details, dataset_schema, dataset_expressions, get_artifact_users.",
+            "datasource_details, dataset_schema, dataset_expressions, get_artifact_users; "
+            "or 'all' for every one.",
         ),
         (
             "version: 1\nworkspaces:\n  - id: a\n    scan: [lineage, nope]\n",
@@ -1352,6 +1357,75 @@ def test_a_name_that_is_not_an_option_of_a_scan_says_which_and_what_was_meant(
     text, expected
 ):
     assert expected in refused(text)
+
+
+def test_every_option_of_a_scan_can_be_asked_for_with_all():
+    plan = read(
+        "version: 1\ntenant: {scan: all}\nworkspaces:\n"
+        "  - {id: a, scan: all}\n  - {id: b, scan: [all]}\n"
+        "  - {id: c, scan: [lineage, all]}\n  - {id: d, scan: lineage}\n"
+    )
+
+    everything = ScanFlags.everything()
+    assert plan.tenant.scan == everything
+    assert [w.scan for w in plan.workspaces] == [
+        everything,
+        everything,
+        everything,
+        ScanFlags(lineage=True),  # a single name is the list of that name
+    ]
+
+
+def test_every_detail_can_be_asked_for_with_all():
+    plan = read(
+        "version: 1\nworkspaces:\n  - {id: a, details: all}\n"
+        "  - {id: b, details: [all]}\n  - {id: c, details: [users, all]}\n"
+        "  - {id: d, details: users}\n"
+    )
+
+    every = tuple(TITLES)
+    assert [w.details for w in plan.workspaces] == [every, every, every, ("users",)]
+
+
+def test_the_scan_that_the_file_asks_for_a_workspace_is_what_the_entries_and_the_tenant_ask():
+    plan = read(
+        "version: 1\nworkspaces:\n"
+        "  - {name: 'Finance*', scan: [lineage]}\n"
+        "  - {id: ws-eu, scan: [dataset_schema]}\n"
+        "  - {id: ws-us, details: [users]}\n"
+    )
+    eu = workspace("Finance EU", "ws-eu")
+    us = workspace("Finance US", "ws-us")
+    sales = workspace("Sales", "ws-sales")
+    private = workspace("Finance Private", "ws-private", kind="PersonalGroup")
+
+    assert plan.scan_for(eu) == ScanFlags(lineage=True, dataset_schema=True)
+    assert plan.scan_for(us) == ScanFlags(
+        lineage=True
+    )  # its own entry asks for no scan
+    assert plan.scan_for(sales) is None
+    assert plan.scan_for(private) is None  # a pattern names no personal workspace
+
+
+def test_a_scan_of_every_workspace_is_asked_of_each_one_and_put_with_the_entries():
+    plan = read(
+        "version: 1\ntenant: {scan: [get_artifact_users]}\nworkspaces:\n"
+        "  - {id: ws-eu, scan: [lineage]}\n"
+    )
+
+    assert plan.scan_for(workspace("Sales", "ws-sales")) == ScanFlags(
+        get_artifact_users=True
+    )
+    assert plan.scan_for(workspace("Finance EU", "ws-eu")) == ScanFlags(
+        lineage=True, get_artifact_users=True
+    )
+    assert (
+        read("version: 1\ntenant: {targets: [groups]}\n").scan_for(
+            workspace("Sales", "ws-sales")
+        )
+        is None
+    )
+    assert read("version: 1\n").scan_for(workspace("Sales", "ws-sales")) is None
 
 
 @pytest.mark.parametrize(

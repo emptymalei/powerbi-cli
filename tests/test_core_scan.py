@@ -81,6 +81,36 @@ def test_flags_are_named_as_the_api_names_them():
     assert ScanFlags().describe() == "none"
 
 
+def test_every_option_can_be_asked_for_at_once():
+    everything = ScanFlags.everything()
+
+    assert all(getattr(everything, name) for name in ScanFlags.names())
+    assert ScanFlags.names() == (
+        "lineage",
+        "datasource_details",
+        "dataset_schema",
+        "dataset_expressions",
+        "get_artifact_users",
+    )
+    assert everything.describe() == (
+        "lineage, datasourceDetails, datasetSchema, datasetExpressions, getArtifactUsers"
+    )
+
+
+def test_flags_are_put_together_and_compared():
+    lineage = ScanFlags(lineage=True)
+    schema = ScanFlags(dataset_schema=True, lineage=True)
+
+    assert lineage.union(schema) == schema
+    assert lineage.union(ScanFlags(get_artifact_users=True)) == ScanFlags(
+        lineage=True, get_artifact_users=True
+    )
+    assert ScanFlags().union(ScanFlags()) == ScanFlags()
+    assert lineage.lacks(schema) == ("dataset_schema",)
+    assert schema.lacks(lineage) == ()
+    assert ScanFlags().lacks(ScanFlags.everything()) == ScanFlags.names()
+
+
 def test_flags_survive_a_round_trip():
     flags = ScanFlags(datasource_details=True, get_artifact_users=True)
 

@@ -39,7 +39,7 @@ def catalog_of(world: World) -> Catalog:
         ("dashboard", ["users", "tiles"]),
         ("dataflow", ["users", "datasources"]),
         ("workspace", ["users"]),
-        ("app", []),
+        ("app", ["users"]),
         ("capacity", []),
     ],
 )

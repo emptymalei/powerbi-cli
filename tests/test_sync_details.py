@@ -33,6 +33,7 @@ def stored_ids(world, endpoint, placeholder):
         ("dataset-users", "admin.datasets.users", "datasetId", 4),
         ("dashboard-users", "admin.dashboards.users", "dashboardId", 1),
         ("dataflow-users", "admin.dataflows.users", "dataflowId", 1),
+        ("app-users", "admin.apps.users", "appId", 3),
         ("dataflow-datasources", "admin.dataflows.datasources", "dataflowId", 1),
         ("datasources", "admin.datasets.datasources", "datasetId", 4),
         ("group-users", "admin.groups.users", "groupId", 12),

@@ -9,6 +9,7 @@ from typing import AbstractSet, Callable, List, Optional, Tuple
 
 from pbi_cli.core.details import Detail, Provider, choose, fetch_options, has_margin
 from pbi_cli.core.registry import Endpoint, Scope
+from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import SyncOptions
 
 #: What a session does about a detail that the lake does not hold (``session.lazy`` of a plan
@@ -31,6 +32,8 @@ class Fetching:
     :param user_profile: the same for the user account
     :param planned: whether the session has a plan file, which is where what to keep is said
         (so that what is missing can be told as a line to add to it)
+    :param wanted_scan: the options of the scan that the plan file asks for the workspace of
+        the item, when it asks for one
     """
 
     available: Optional[AbstractSet[Scope]] = None
@@ -39,6 +42,7 @@ class Fetching:
     admin_profile: Optional[str] = None
     user_profile: Optional[str] = None
     planned: bool = False
+    wanted_scan: Optional[ScanFlags] = None
 
     def provider(self, detail: Detail) -> Optional[Provider]:
         """The provider that would fetch a detail now, if a stored account can."""

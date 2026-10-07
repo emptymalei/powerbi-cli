@@ -51,11 +51,14 @@ nav = [
       ] },
       { "tui" = [
         { "backend" = "references/tui/backend.md" },
+        { "clipboard" = "references/tui/clipboard.md" },
+        { "exporting" = "references/tui/exporting.md" },
         { "plain" = "references/tui/plain.md" },
         { "render" = "references/tui/render.md" },
         { "run" = "references/tui/run.md" },
         { "scanview" = "references/tui/scanview.md" },
         { "summary" = "references/tui/summary.md" },
+        { "tabexport" = "references/tui/tabexport.md" },
       ] },
       { "powerbi" = [
         { "index" = "references/powerbi/index.md" },

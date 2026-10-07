@@ -8,6 +8,7 @@ that a newer selection replaces.
 
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import Any, Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, cast
 
 from rich.console import Group
@@ -32,14 +33,16 @@ from textual.widgets.tree import TreeNode
 from textual.worker import get_current_worker
 
 from pbi_cli.core.catalog import Catalog, Item, Workspace, label
+from pbi_cli.core.planfile import describe_scan
 from pbi_cli.core.registry import Scope
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import Plan, SyncOptions
-from pbi_cli.tui import render
-from pbi_cli.tui.modals import ConfirmModal
+from pbi_cli.tui import exporting, render, tabexport
+from pbi_cli.tui.exporting import Exportable
+from pbi_cli.tui.modals import COPIED, SAVED, ConfirmModal, Exported, ExportModal
 from pbi_cli.tui.plain import PlainStatic, PlainTable
 from pbi_cli.tui.render import Entry, Subject
-from pbi_cli.tui.status import StatusBar
+from pbi_cli.tui.status import NOTICE_LONG, StatusBar
 
 #: Seconds to stay on an item before ``lazy: auto`` fetches its harmless details.
 AUTO_AFTER = 1.5
@@ -130,6 +133,8 @@ class ExplorerScreen(Screen):
         Binding("6", "tab('details')", "Details", show=False),
         Binding("7", "tab('scan')", "Scan", show=False),
         Binding("f", "fetch_details", "Fetch details"),
+        Binding("x", "export", "Export"),
+        Binding("y", "copy", "Copy", show=False),
         Binding("w", "app.toggle_scope", "Plan or all workspaces", show=False),
     ]
 
@@ -542,7 +547,9 @@ class ExplorerScreen(Screen):
         if catalog is None:
             return
         try:
-            detail = render.detail(catalog, name, subject, self.pbi.fetching())
+            detail = render.detail(
+                catalog, name, subject, self.pbi.fetching(workspace_of(subject))
+            )
         except Exception as error:  # a broken lake file must not end the UI
             detail = render.Detail(
                 body=Text(f"Could not read this: {error}", style="red")
@@ -592,6 +599,106 @@ class ExplorerScreen(Screen):
             return None
         names = render.join_names([d.title.lower() for d, _ in wanted])
         return (f"Fetch the {names} of {subject.name}", fetching.options(wanted))
+
+    # -- taking what is shown out of the terminal ----------------------------------------------
+
+    def _active_tab(self) -> str:
+        active = self.query_one("#detail", TabbedContent).active
+        return next(name for name, pane in TAB_IDS.items() if pane == active)
+
+    def _title_of_the_table(self) -> str:
+        """What the table above the tabs lists, for the name of an export."""
+        ref = self._ref
+        if ref.kind == "workspace":
+            catalog = self.catalog
+            found = catalog.workspace(ref.id) if catalog else None
+            return f"Items of {found.name if found else ref.id}"
+        if ref.kind == "day":
+            return f"Audit events of {ref.id}"
+        return {
+            "root": "Lake overview",
+            "workspaces": "Workspaces",
+            "personal": "Personal workspaces",
+            "apps": "Apps",
+            "capacities": "Capacities",
+            "activity": "Audit event days",
+        }.get(ref.kind, "Table")
+
+    def action_export(self) -> None:
+        """Save what is shown (the tab, or the table above it) as a file, or copy it."""
+        self._start_export(copy=False)
+
+    def action_copy(self) -> None:
+        """Put what the tab shows (else the table) on the clipboard, for a spreadsheet."""
+        self._start_export(copy=True)
+
+    def _start_export(self, copy: bool) -> None:
+        rows = render.filter_entries(self._entries, self._table_filter)
+        self._gather_exports(
+            copy,
+            self._active_tab(),
+            self._subject,
+            COLUMNS.get(self._ref.kind, ()),
+            rows,
+            self._title_of_the_table(),
+        )
+
+    @work(thread=True, exclusive=True, group="export")
+    def _gather_exports(
+        self,
+        copy: bool,
+        tab: str,
+        subject: Optional[Subject],
+        columns: Sequence[str],
+        rows: Sequence[Entry],
+        title: str,
+    ) -> None:
+        """Work out, in a worker (it reads the lake), what can leave the screen."""
+        catalog = self.catalog
+        found: List[Tuple[str, Exportable]] = []
+        if catalog is not None:
+            try:
+                fetching = self.pbi.fetching(workspace_of(subject))
+                shown = tabexport.exportable(catalog, tab, subject, fetching)
+            except Exception as error:  # a broken lake file must not end the UI
+                self.app.call_from_thread(
+                    self.notify, f"Could not read this: {error}", severity="error"
+                )
+                return
+            if shown is not None:
+                found.append((f"The {tab.capitalize()} tab", shown))
+        listed = tabexport.entries(title, columns, rows)
+        if listed is not None:
+            found.append(("The table", listed))
+        self.app.call_from_thread(self._offer_exports, copy, found)
+
+    def _offer_exports(self, copy: bool, found: List[Tuple[str, Exportable]]) -> None:
+        if not found:
+            self.notify(
+                "There is nothing to export here: the tab and the table show no rows "
+                "(or only what the lake does not hold).",
+                severity="warning",
+            )
+            return
+        if copy:
+            item = found[0][1]
+            self.pbi.copy_text(exporting.clipboard_text(item), item.describe())
+            return
+        folder = self.pbi.export_folder or str(Path.cwd())
+        self.app.push_screen(ExportModal(found, folder), self._exported)
+
+    def _exported(self, done: Optional[Exported]) -> None:
+        if done is None:
+            return
+        if done.action == COPIED:
+            self.pbi.copy_text(
+                exporting.to_text(done.item, done.fmt), done.item.describe()
+            )
+        elif done.action == SAVED and done.path is not None:
+            self.pbi.export_folder = str(done.path.parent)
+            self.notify(
+                f"Saved {done.item.describe()} to {done.path}", timeout=NOTICE_LONG
+            )
 
     # -- fetching by itself (``session.lazy: auto`` of a plan file) -------------------------
 
@@ -795,8 +902,6 @@ class ExplorerScreen(Screen):
         if workspace_id is not None:
             catalog = self.catalog
             workspace = catalog.workspace(workspace_id) if catalog else None
-            view = catalog.scan_of(workspace_id) if catalog else None
-            flags = view.flags if view else ScanFlags(lineage=True)
             name = workspace.name if workspace else workspace_id
             return (
                 f"Scan {name}",
@@ -804,7 +909,7 @@ class ExplorerScreen(Screen):
                     targets=("scan",),
                     workspace_ids=(workspace_id,),
                     force=True,
-                    scan_flags=flags,
+                    scan_flags=self._scan_options(workspace_id),
                 ),
             )
         kind = self._ref.kind
@@ -831,6 +936,24 @@ class ExplorerScreen(Screen):
         if kind == "activity":
             return ("Fetch the audit events", SyncOptions(targets=("activity",)))
         return None
+
+    def _scan_options(self, workspace_id: str) -> ScanFlags:
+        """The options of the scan that ``r`` makes of a workspace: what the plan file asks
+        for it, together with what its last scan had (a refresh never brings less than the
+        scan it replaces); every option when the plan file says nothing of it, because the
+        scan costs the same whatever it includes."""
+        catalog = self.catalog
+        workspace = catalog.workspace(workspace_id) if catalog else None
+        plan = self.pbi.backend.plan
+        wanted = (
+            plan.scan_for(workspace)
+            if plan is not None and workspace is not None
+            else None
+        )
+        if wanted is None:
+            return ScanFlags.everything()
+        view = catalog.scan_of(workspace_id) if catalog else None
+        return wanted.union(view.flags) if view else wanted
 
     def action_refresh(self) -> None:
         if self.pbi.refuse_when_view_only():
@@ -862,7 +985,10 @@ class ExplorerScreen(Screen):
         self.app.call_from_thread(self._confirm, title, options, plan)
 
     def _confirm(self, title: str, options: SyncOptions, plan: Plan) -> None:
-        lines = [Text(title, style="bold"), Text()]
+        lines = [Text(title, style="bold")]
+        if options.targets == ("scan",):
+            lines.append(Text(f"with {describe_scan(options.scan_flags)}"))
+        lines.append(Text())
         for name, _, _, _, todo, requests in render.plan_rows(plan):
             lines.append(Text(f"{name}: {todo} to do, {requests} request(s)"))
         lines.append(Text())

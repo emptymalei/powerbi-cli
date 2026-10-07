@@ -59,6 +59,15 @@ workspaces:
 # ---------------------------------------------------------------------------
 
 
+def test_the_users_of_a_workspace_are_those_of_its_apps_as_well(world):
+    report = run_of(world, TENANT_AND_USERS).run()
+
+    assert report.status == COMPLETED and report.counts[FAILED] == 0
+    # App 2 is published from Workspace 2: the other apps are not asked about
+    assert stored(world, "admin.apps.users", "appId") == ["app-0002"]
+    assert world.fake.count(r"^/admin/apps$") == 1  # the list the users need
+
+
 def test_the_steps_for_the_tenant_run_first_and_the_workspaces_are_looked_up_after(
     world,
 ):
@@ -72,8 +81,8 @@ def test_the_steps_for_the_tenant_run_first_and_the_workspaces_are_looked_up_aft
         (1, "the tenant (admin-nlm)"),
         (
             2,
-            "dashboard-users, dataflow-users, dataset-users, group-users, report-users "
-            "for 1 workspace (admin-nlm)",
+            "app-users, dashboard-users, dataflow-users, dataset-users, group-users, "
+            "report-users for 1 workspace (admin-nlm)",
         ),
     ]
     # the name was found in the list that the first step fetched, and only its items
@@ -281,17 +290,18 @@ def test_the_plan_has_one_plan_for_each_step_and_one_quota_for_all(world):
 
     assert [s.title for s, _ in plan.steps] == [
         "the tenant (admin-nlm)",
-        "dashboard-users, dataflow-users, dataset-users, group-users, report-users "
-        "for 1 workspace (admin-nlm)",
+        "app-users, dashboard-users, dataflow-users, dataset-users, group-users, "
+        "report-users for 1 workspace (admin-nlm)",
     ]
     assert plan.accounts == ["admin-nlm (admin)"]
     assert plan.unmatched == []
-    assert (
-        plan.requests == 3
-    )  # the users of the workspace, of a report and of a dataset
+    # the users of the workspace, of a report and of a dataset, and the list of apps that
+    # the users of the apps of the workspace need (the lake does not hold it yet)
+    assert plan.requests == 4
     by_endpoint = {line.endpoint: line.requests for line in plan.quota}
     assert by_endpoint["admin.reports.users"] == 1
     assert by_endpoint["admin.groups.users"] == 1
+    assert by_endpoint["admin.apps"] == 1
 
 
 def test_the_plan_before_the_first_sync_says_the_names_are_not_known_yet(world):

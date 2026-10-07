@@ -457,13 +457,23 @@ def test_refresh_of_a_workspace_scans_it_after_asking(synced):
 
     assert asked == "ConfirmModal"
     assert "Scan Workspace 2" in text and "scan: 1 to do, 5 request(s)" in text
+    assert (
+        "with lineage, datasource details, dataset schema, dataset expressions, "
+        "get artifact users"
+    ) in text  # every option: the plan file does not say otherwise
     assert "admin.scan.start: 1 request(s) of the quota (500/h, 16 concurrent)" in text
     assert "Everything fits the quota now." in text
     assert state is not None and state.label == "Scan Workspace 2"
     assert state.report.counts["done"] == 1
     (call,) = synced.fake.calls_to("getInfo", "POST")
     assert call.body["workspaces"] == ["ws-0002"]
-    assert call.query["lineage"] == "true" and call.query["getArtifactUsers"] == "true"
+    assert call.query == {
+        "lineage": "true",
+        "datasourceDetails": "true",
+        "datasetSchema": "true",
+        "datasetExpressions": "true",
+        "getArtifactUsers": "true",
+    }
 
 
 def test_a_refresh_inside_a_workspace_scans_it_whatever_row_is_selected(synced):

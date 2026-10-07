@@ -633,6 +633,18 @@ def main() -> None:
 
         asyncio.run(shoot(world, "tui-scan.svg", scan_tab))
 
+        async def export(app: PBIApp, pilot: Any) -> None:
+            await pick(app, pilot, "ws-0001", "report:rep-0001")
+            await pilot.press("2")
+            await settle(app, pilot)
+            app.export_folder = (
+                "/home/ann/pbi-exports"  # not the folder of this machine
+            )
+            await pilot.press("x")
+            await settle(app, pilot)
+
+        asyncio.run(shoot(world, "tui-export.svg", export))
+
 
 if __name__ == "__main__":
     main()

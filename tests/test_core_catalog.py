@@ -330,6 +330,27 @@ def test_the_workspaces_of_one_stored_scan_share_its_batch(world):
     assert catalog.scan_batch("nope") == ""
 
 
+def test_the_users_of_an_app_come_from_what_was_fetched_for_it(world):
+    world.run("groups", "apps")
+    catalog = catalog_of(world)
+
+    missing = catalog.users(catalog.item("app", "app-0001"))
+
+    assert missing.rows == []
+    assert "pbi sync run app-users" in missing.missing
+    assert "get-artifact-users" not in missing.missing  # a scan does not list them
+
+    world.run("app-users")
+    catalog.reload()
+    found = catalog.users(catalog.item("app", "app-0001"))
+
+    assert [(a.name, a.email, a.role) for a in found.rows] == [
+        ("Ann", "ann-app-0001@example.com", "Owner"),
+        ("Bob", "bob-app-0001@example.com", "Read"),
+    ]
+    assert found.source == "admin.apps.users" and found.missing == ""
+
+
 def test_loaded_scans_are_kept_and_the_cache_is_bounded(world):
     world.run("scan")
     catalog = catalog_of(world)

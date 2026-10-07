@@ -95,11 +95,19 @@ def test_with_a_plan_file_it_says_which_line_to_add(catalog):
 
     text = plain(found.body)
     assert "Give its entry in the plan file a `scan:`" in text
-    assert "dataset_expressions" in text and "press r to scan it now" in text
+    assert (
+        "`scan: all` asks for every option" in text and "press r to scan it now" in text
+    )
+
+
+SETTINGS = (
+    "Power BI returns the schema and the expressions only when the tenant settings "
+    "for detailed metadata are on."
+)
 
 
 @pytest.mark.parametrize(
-    "flags, missing",
+    "flags, missing, again, settings",
     [
         (
             ScanFlags(lineage=True),
@@ -108,18 +116,26 @@ def test_with_a_plan_file_it_says_which_line_to_add(catalog):
                 "without the dataset expressions",
                 "without the datasource details",
             ],
+            "dataset schema, dataset expressions and datasource details",
+            True,
         ),
         (
             ScanFlags(dataset_schema=True, datasource_details=True),
             ["without the dataset expressions"],
+            "dataset expressions",
+            True,
         ),
         (
             ScanFlags(dataset_schema=True, dataset_expressions=True),
             ["without the datasource details"],
+            "datasource details",
+            False,  # the details of the data sources need no tenant setting
         ),
     ],
 )
-def test_what_a_scan_lacks_because_of_its_options_is_said(world, flags, missing):
+def test_what_a_scan_lacks_because_of_its_options_is_said(
+    world, flags, missing, again, settings
+):
     world.clock.advance(minutes=5)
     world.run("scan", scan_flags=flags, workspace_ids=("ws-0001",), force=True)
     catalog = catalog_of(world)
@@ -128,8 +144,243 @@ def test_what_a_scan_lacks_because_of_its_options_is_said(world, flags, missing)
 
     for words in missing:
         assert words in text
-    assert "the tenant setting for detailed metadata has to be on" in text
-    assert "Scan again with those options (the Sync screen has them as options)" in text
+    assert (SETTINGS in text) is settings
+    assert (
+        f"Scan again with {again}: press r on the workspace (it scans with every "
+        "option), or use the Sync screen"
+    ) in text
+
+
+def asking(wanted):
+    return Fetching(planned=True, wanted_scan=wanted)
+
+
+def squeezed(text):
+    """A text with its line breaks and runs of blanks made one blank (long lines wrap)."""
+    return " ".join(text.split())
+
+
+def test_what_the_plan_asks_for_and_the_scan_lacks_is_said_as_out_of_date(world):
+    world.clock.advance(minutes=5)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags(lineage=True),
+        workspace_ids=("ws-0001",),
+        force=True,
+    )
+    catalog = catalog_of(world)
+
+    text = squeezed(
+        scan(catalog, catalog.workspace("ws-0001"), asking(ScanFlags.everything()))
+    )
+
+    assert (
+        "The plan file asks for datasource details, dataset schema, dataset expressions "
+        "and get artifact users for this workspace, but its newest scan was made without "
+        "them: run the plan again (the Sync screen, Run), or press r to scan the "
+        "workspace now with the options of the plan."
+    ) in text
+    assert "Scan again with" not in text  # the plan has them: there is no line to add
+
+
+def test_what_the_plan_does_not_ask_for_is_still_told_as_a_line_to_add(world):
+    world.clock.advance(minutes=5)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags(lineage=True),
+        workspace_ids=("ws-0001",),
+        force=True,
+    )
+    catalog = catalog_of(world)
+    wanted = ScanFlags(lineage=True, dataset_schema=True)
+
+    text = squeezed(scan(catalog, catalog.workspace("ws-0001"), asking(wanted)))
+
+    assert "The plan file asks for dataset schema for this workspace" in text
+    assert (
+        "Scan again with dataset expressions and datasource details: in the plan file "
+        "`scan: [dataset_expressions, datasource_details]` (or `scan: all`) on its entry"
+    ) in text
+
+
+def test_a_plan_that_asks_for_no_scan_says_nothing_is_out_of_date(world):
+    world.clock.advance(minutes=5)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags(lineage=True),
+        workspace_ids=("ws-0001",),
+        force=True,
+    )
+    catalog = catalog_of(world)
+
+    text = scan(catalog, catalog.workspace("ws-0001"), PLANNED)
+
+    assert "The plan file asks for" not in text
+
+
+def test_a_scan_that_has_what_the_plan_asks_for_is_not_out_of_date(catalog):
+    text = scan(catalog, catalog.workspace("ws-0001"), asking(ScanFlags.everything()))
+
+    assert "The plan file asks for" not in text and "without" not in text
+
+
+FAILED_SCAN = (
+    "The last scan that a sync tried failed: admin.scan.start: invalid request (400): "
+    "injected [Error400]"
+)
+
+
+def a_world_whose_last_scan_failed(world):
+    world.clock.advance(minutes=5)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags(lineage=True),
+        workspace_ids=("ws-0001",),
+        force=True,
+    )
+    world.fake.fail("POST", r"^/admin/workspaces/getInfo$", 400)
+    world.clock.advance(minutes=5)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags.everything(),
+        workspace_ids=("ws-0001",),
+        force=True,
+    )
+    return catalog_of(world)
+
+
+def test_a_scan_that_failed_says_why_next_to_what_the_plan_asks_for(world):
+    catalog = a_world_whose_last_scan_failed(world)
+
+    text = squeezed(
+        scan(catalog, catalog.workspace("ws-0001"), asking(ScanFlags.everything()))
+    )
+
+    assert FAILED_SCAN in text
+    assert catalog.scan_trouble() == (
+        "failed",
+        "admin.scan.start: invalid request (400): injected [Error400]",
+    )
+
+
+def test_the_failure_of_a_scan_is_only_told_when_the_plan_asks_for_what_the_scan_lacks(
+    world,
+):
+    catalog = a_world_whose_last_scan_failed(world)
+
+    wanted_what_it_has = scan(
+        catalog, catalog.workspace("ws-0001"), asking(ScanFlags(lineage=True))
+    )
+    no_plan = scan(catalog, catalog.workspace("ws-0001"))
+
+    assert "The last scan" not in wanted_what_it_has and "The last scan" not in no_plan
+
+
+def test_a_workspace_without_a_scan_says_why_the_last_try_failed(world):
+    world.fake.fail("POST", r"^/admin/workspaces/getInfo$", 400)
+    world.run(
+        "scan",
+        scan_flags=ScanFlags.everything(),
+        workspace_ids=("ws-0005",),
+        force=True,
+    )
+    catalog = catalog_of(world)
+
+    found = render.detail(catalog, "scan", catalog.workspace("ws-0005"), PLANNED)
+
+    assert plain(found.body).endswith(FAILED_SCAN)
+    assert "`scan: all` asks for every option" in plain(found.body)
+
+
+def test_a_scan_that_waits_for_a_quota_says_so_and_a_scan_that_went_well_says_nothing(
+    catalog, monkeypatch
+):
+    assert render.scan_failure(catalog) == ""
+    monkeypatch.setattr(
+        catalog, "scan_trouble", lambda: ("deferred", "waiting 2 minutes")
+    )
+    assert render.scan_failure(catalog) == (
+        "The last scan that a sync tried was held back by a quota (run the sync again "
+        "later): waiting 2 minutes"
+    )
+    monkeypatch.setattr(catalog, "scan_trouble", lambda: ("deferred", ""))
+    assert render.scan_failure(catalog).endswith("(run the sync again later).")
+    monkeypatch.setattr(catalog, "scan_trouble", lambda: ("failed", ""))
+    assert render.scan_failure(catalog) == "The last scan that a sync tried failed."
+
+
+def test_the_failure_of_a_scan_is_told_for_several_workspaces_too(world):
+    catalog = a_world_whose_last_scan_failed(world)
+    asked = scanview.Asked(failed=FAILED_SCAN)
+
+    text = squeezed(
+        plain(scanview.set_body(catalog, ["ws-0001", "ws-0005"], asked=asked))
+    )
+    nothing = squeezed(plain(scanview.set_body(catalog, ["ws-0005"], asked=asked)))
+
+    assert FAILED_SCAN in text and FAILED_SCAN in nothing
+
+
+def test_a_scan_that_was_asked_for_the_schema_and_brought_no_tables_says_what_to_check():
+    model = workspace_model(
+        {"id": "w", "name": "W", "datasets": [{"id": "d", "name": "D"}]},
+        [],
+        NOW,
+        ScanFlags(dataset_schema=True),
+    )
+
+    text = squeezed(plain(scanview.workspace_body(_empty_catalog(), model)))
+
+    assert (
+        "The scan asked for the dataset schema, but none of its datasets has tables. "
+        "Power BI leaves them out when the tenant setting 'Enhance admin APIs responses "
+        "with detailed metadata' is off, and for a dataset that has not been refreshed "
+        "or published since it was turned on."
+    ) in text
+
+
+def test_a_scan_that_was_asked_for_the_expressions_and_brought_none_says_what_to_check():
+    flags = ScanFlags(dataset_schema=True, dataset_expressions=True)
+    model = workspace_model(
+        {
+            "id": "w",
+            "name": "W",
+            "datasets": [{"id": "d", "name": "D", "tables": [{"name": "T"}]}],
+        },
+        [],
+        NOW,
+        flags,
+    )
+    dataset = model.datasets[0]
+
+    workspace = squeezed(plain(scanview.workspace_body(_empty_catalog(), model)))
+    own = squeezed(plain(scanview.dataset_body(_empty_catalog(), dataset, "W", model)))
+
+    for text in (workspace, own):
+        assert (
+            "The scan asked for the dataset expressions, but none of its tables has one. "
+            "Power BI leaves them out when the tenant setting 'Enhance admin APIs "
+            "responses with DAX and mashup expressions' is off"
+        ) in text
+        assert "none of its datasets has tables" not in text
+
+
+def test_nothing_is_said_of_what_the_scan_was_not_asked_for_or_did_bring():
+    bare = DatasetModel("d", "D")
+    with_tables = DatasetModel(
+        "d", "D", tables=[Table("T", expression="let S = 1 in S")]
+    )
+    no_expression = DatasetModel("d", "D", tables=[Table("T")])
+    schema = ScanFlags(dataset_schema=True)
+    both = ScanFlags(dataset_schema=True, dataset_expressions=True)
+
+    assert scanview.returned_nothing(schema, []) == []  # nothing to bring
+    assert scanview.returned_nothing(ScanFlags(), [bare]) == []  # not asked for
+    assert scanview.returned_nothing(schema, [bare, with_tables]) == []  # some came
+    assert scanview.returned_nothing(both, [with_tables]) == []
+    assert scanview.returned_nothing(ScanFlags(dataset_expressions=True), [bare]) == []
+    assert scanview.returned_nothing(both, [no_expression]) != []
+    assert scanview.returned_nothing(schema, [bare]) != []
 
 
 def test_a_scan_that_has_everything_lacks_nothing(catalog):
@@ -145,7 +396,10 @@ def test_the_note_about_missing_options_names_the_line_of_the_plan_file(world):
 
     text = scan(catalog, catalog.workspace("ws-0001"), PLANNED)
 
-    assert "`scan: [dataset_schema, dataset_expressions, datasource_details]`" in text
+    assert (
+        "`scan: [dataset_schema, dataset_expressions, datasource_details]` "
+        "(or `scan: all`) on its entry"
+    ) in text
 
 
 def test_a_scan_of_a_workspace_without_datasets_says_nothing_is_missing(world):

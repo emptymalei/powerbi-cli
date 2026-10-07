@@ -304,6 +304,7 @@ locally and rely on the `429` answer of the API.
 | `admin.datasets.users` | [Users of a dataset](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/datasets-get-dataset-users-as-admin) | admin | 200/h | snapshot |
 | `admin.dashboards.users` | [Users of a dashboard](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dashboards-get-dashboard-users-as-admin) | admin | 200/h | snapshot |
 | `admin.dataflows.users` | [Users of a dataflow](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-users-as-admin) | admin | 200/h | snapshot |
+| `admin.apps.users` | [Users of an app](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/apps-get-app-users-as-admin) | admin | 200/h | snapshot |
 | `admin.dataflows.datasources` | [Data sources of a dataflow](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/dataflows-get-dataflow-datasources-as-admin) | admin | – | snapshot |
 | `admin.refreshables` | [How the datasets of the tenant refresh (a summary of each)](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/get-refreshables) | admin | 200/h | snapshot |
 | `admin.workspaces.modified` | [IDs of the workspaces modified since a time](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-get-modified-workspaces) | admin | 30/h | snapshot |

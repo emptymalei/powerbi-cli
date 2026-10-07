@@ -606,7 +606,7 @@ def test_a_plain_sync_says_which_targets_it_leaves_out(ready):
     assert (
         "Not included (name them to include them, see --help): scan, report-users, "
         "datasources, group-users, dataset-users, dashboard-users, dataflow-users, "
-        "dataflow-datasources, refreshables, activity, user-groups, user-apps, "
+        "app-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, "
         "user-reports, user-datasets, user-dashboards, user-dataflows, "
         "user-group-users, user-pages, user-dataset-users, user-dataset-datasources, "
         "user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, "

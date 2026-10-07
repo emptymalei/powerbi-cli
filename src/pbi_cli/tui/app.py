@@ -28,6 +28,7 @@ from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.core.timefmt import format_age
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
+from pbi_cli.tui import clipboard
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
 from pbi_cli.tui.fetching import Fetching
@@ -42,15 +43,12 @@ from pbi_cli.tui.modals import (
 from pbi_cli.tui.palette import CommandsProvider, GotoProvider
 from pbi_cli.tui.planscreen import PlanSyncScreen
 from pbi_cli.tui.run import RunState
-from pbi_cli.tui.status import StatusBar
+from pbi_cli.tui.status import NOTICE_LONG, StatusBar
 from pbi_cli.tui.styles import CSS, THEME
 from pbi_cli.tui.syncscreen import SyncScreen
 
 #: Seconds between two looks at the token (the countdown in the header).
 IDENTITY_EVERY = 30
-
-#: Seconds that a notice with something to read in it stays on the screen.
-NOTICE_LONG = 15
 
 
 def first_trouble(report: RunReport) -> str:
@@ -128,6 +126,9 @@ class PBIApp(App[None]):
         self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
         self._signed_in_as: Optional[Tuple[str, Optional[str]]] = None
         self._sink: Optional[int] = None
+        #: where the Export dialog suggests to put a file: the folder of the last one, or the
+        #: folder `pbi tui` was started in
+        self.export_folder = ""
         #: whether the Explorer shows every workspace (else only those the plan file names)
         self.show_all_workspaces = (
             backend.plan is None or backend.plan.session.workspaces == SHOW_ALL
@@ -615,13 +616,44 @@ class PBIApp(App[None]):
             self.catalog.workspace(workspace) if self.catalog and workspace else None
         )
         admin, user = self.backend.profiles_for(found.visible_to if found else ())
+        plan = self.backend.plan
         return Fetching(
             self.backend.available_scopes() or None,
             self.backend.readonly,
             self.lazy,
             admin,
             user,
-            self.backend.plan is not None,
+            plan is not None,
+            plan.scan_for(found) if plan is not None and found is not None else None,
+        )
+
+    def copy_text(self, text: str, what: str) -> None:
+        """Put text on the clipboard, and say so.
+
+        The terminal is asked to set its clipboard (it also keeps the text for pasting into an
+        input of the app), and the tool of the system is run in a worker, because a terminal
+        may ignore the request.
+
+        :param what: what the text is, for the notice (``Users of report Sales (12 rows)``)
+        """
+        self.copy_to_clipboard(text)
+        self._copy_with_the_system(text, what)
+
+    @work(thread=True, group="clipboard")
+    def _copy_with_the_system(self, text: str, what: str) -> None:
+        try:
+            tool = clipboard.system_copy(text)
+        except Exception:  # whatever goes wrong, the terminal was asked as well
+            tool = ""
+        self.call_from_thread(
+            self.notify,
+            (
+                f"Copied {what} to the clipboard."
+                if tool
+                else f"Sent {what} to the clipboard of the terminal. If it did not arrive "
+                "(a terminal has to allow it), save it to a file instead: press x."
+            ),
+            timeout=NOTICE_LONG if not tool else None,
         )
 
     def workspace_scope(

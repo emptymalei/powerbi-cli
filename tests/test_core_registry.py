@@ -33,6 +33,7 @@ DOCUMENTED_LIMITS = {
     "admin.datasets.users": "200/h",
     "admin.dashboards.users": "200/h",
     "admin.dataflows.users": "200/h",
+    "admin.apps.users": "200/h",
     "admin.dataflows.datasources": None,  # the page states no quota
     "admin.refreshables": "200/h",
     "admin.workspaces.modified": "30/h",

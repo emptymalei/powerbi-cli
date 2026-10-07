@@ -19,9 +19,20 @@ can pick the scan up again after a crash or an expired token instead of starting
 
 import hashlib
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 from pbi_cli.core.client import PowerBIClient, body_hash
 from pbi_cli.core.ratelimit import DEFAULT_MAX_WAIT, MaxWait
@@ -82,6 +93,33 @@ class ScanFlags:
     def canonical(self) -> Dict[str, str]:
         """The flags as they identify a scan in the lake: ``"true"`` or ``"false"``."""
         return {name: str(value).lower() for name, value in self.query().items()}
+
+    @classmethod
+    def everything(cls) -> "ScanFlags":
+        """A scan with every option on."""
+        return cls(**{name: True for name in cls.names()})
+
+    @classmethod
+    def names(cls) -> Tuple[str, ...]:
+        """The names of the options, in the order they are listed."""
+        return tuple(field.name for field in fields(cls))
+
+    def union(self, other: "ScanFlags") -> "ScanFlags":
+        """The options that either of the two has on."""
+        return ScanFlags(
+            **{
+                name: getattr(self, name) or getattr(other, name)
+                for name in self.names()
+            }
+        )
+
+    def lacks(self, wanted: "ScanFlags") -> Tuple[str, ...]:
+        """The options that ``wanted`` has on and this one has not."""
+        return tuple(
+            name
+            for name in self.names()
+            if getattr(wanted, name) and not getattr(self, name)
+        )
 
     def describe(self) -> str:
         """The flags that are on, in words (``none`` for a plain scan)."""

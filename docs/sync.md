@@ -47,6 +47,7 @@ every target.
 | `dataset-users` | The users of every dataset | `admin.datasets.users` | admin | no: the people who can use each dataset, with their e-mail addresses |
 | `dashboard-users` | The users of every dashboard | `admin.dashboards.users` | admin | no: the people who can open each dashboard, with their e-mail addresses |
 | `dataflow-users` | The users of every dataflow | `admin.dataflows.users` | admin | no: the people who can use each dataflow, with their e-mail addresses |
+| `app-users` | The users of every app | `admin.apps.users` | admin | no: the people who can open each app, with their e-mail addresses |
 | `dataflow-datasources` | The data sources of every dataflow | `admin.dataflows.datasources` | admin | no: connection details of the data sources: servers, databases, paths |
 | `refreshables` | How each dataset refreshes: a summary of its last week | `admin.refreshables` | admin | no: who owns each dataset (e-mail addresses) and when it refreshes |
 | `activity` | Audit activity events, one log per UTC day | `admin.activityevents` | admin | no: what each person did and when: e-mail addresses, IP addresses, devices |
@@ -89,6 +90,22 @@ from pbi_cli.core.sync.plan import SyncOptions
 
 SyncOptions(targets=("dataset-users",), only={"datasetId": ["<dataset id>"]})
 ```
+
+## Apps
+
+An app is what a workspace publishes to its readers. This is what the lake can keep of them:
+
+- **The apps of the tenant** (name, who published it, the workspace it comes from, when it was
+  updated): the `apps` target, which is in the plain sync. With only a user account, `user-apps`
+  keeps the apps that account installed, apart for each account.
+- **Who can open each app**: `app-users`, one request for every app (the quota is 200 an hour). Name
+  it with the others, `pbi sync run default app-users`, or in a [plan file](plan-file.md)
+  (`tenant: {targets: [default, app-users]}`); `details: [users]` on an entry of `workspaces`
+  fetches it for the apps published from those workspaces only. The [terminal UI](tui.md) shows
+  the people on the Users tab of an app, and `f` fetches them for one app.
+- **What is in an app** (its reports and dashboards) is not kept: Power BI answers that only to the
+  account that installed the app, and has no administrator operation for it. `pbi apps augment`
+  reads it app by app, with the token you are signed in with, into a file.
 
 ## Which accounts a sync uses
 

@@ -5,9 +5,11 @@ from sync_helpers import World
 from textual.widgets import Input, TabbedContent, Tree
 from tui_helpers import backend_of, plain, run_ui
 
+from pbi_cli.core.planfile import PlanFile
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.tui import render
 from pbi_cli.tui.commands import commands_for
+from pbi_cli.tui.modals import ConfirmModal
 
 EVERYTHING = ScanFlags(
     lineage=True,
@@ -29,6 +31,27 @@ def world(tmp_path):
 
 def scan_text(ui):
     return plain(ui.explorer.query_one("#scan").content)
+
+
+def planned(world, tmp_path, text):
+    """A backend with a plan file (and a lake whose newest scan of Workspace 1 is poor)."""
+    path = tmp_path / "pbi-plan.yaml"
+    path.write_text(text, encoding="utf-8")
+    return backend_of(
+        world, plan=PlanFile.load(path), reload_plan=lambda: PlanFile.load(path)
+    )
+
+
+def make_the_scan_poor(world, flags=ScanFlags(lineage=True)):
+    world.clock.advance(minutes=5)
+    world.run("scan", scan_flags=flags, workspace_ids=("ws-0001",), force=True)
+
+
+def question(ui):
+    """What the dialog that asks whether to scan says."""
+    screen = ui.app.screen
+    assert isinstance(screen, ConfirmModal)
+    return plain(screen.query_one("#dialog-body Static").content)
 
 
 def active_tab(ui):
@@ -99,6 +122,111 @@ def test_a_workspace_that_was_not_scanned_says_how_to_get_a_scan(world):
     text = run_ui(backend_of(world), scenario)
 
     assert text.startswith("No scan of Workspace 5 is in the lake. Press r to scan it")
+
+
+def test_the_scan_tab_says_what_the_plan_asks_for_and_the_scan_lacks(world, tmp_path):
+    make_the_scan_poor(world)
+
+    async def scenario(ui):
+        await ui.select("workspace", "ws-0001")
+        await ui.press("7")
+        return scan_text(ui)
+
+    text = run_ui(
+        planned(
+            world, tmp_path, "version: 1\nworkspaces:\n  - {id: ws-0001, scan: all}\n"
+        ),
+        scenario,
+    )
+
+    assert (
+        "The plan file asks for datasource details, dataset schema, dataset expressions "
+        "and get artifact users for this workspace, but its newest scan was made "
+        "without them"
+    ) in " ".join(
+        text.split()
+    )  # the sentence wraps
+
+
+def test_a_scan_that_has_what_the_plan_asks_for_is_not_out_of_date_in_the_tab(
+    world, tmp_path
+):
+    async def scenario(ui):
+        await ui.select("workspace", "ws-0001")
+        await ui.press("7")
+        return scan_text(ui)
+
+    text = run_ui(
+        planned(
+            world, tmp_path, "version: 1\nworkspaces:\n  - {id: ws-0001, scan: all}\n"
+        ),
+        scenario,
+    )
+
+    assert "The plan file asks for" not in text and "without" not in text
+
+
+def test_r_scans_a_workspace_with_what_the_plan_asks_for_and_its_last_scan_had(
+    world, tmp_path
+):
+    make_the_scan_poor(world, ScanFlags(lineage=True, get_artifact_users=True))
+    world.clock.advance(hours=5)
+    world.fake.reset_calls()
+
+    async def scenario(ui):
+        await ui.select("workspace", "ws-0001")
+        await ui.press("r")
+        text = question(ui)
+        await ui.press("enter")
+        await ui.finish_sync()
+        return text
+
+    text = run_ui(
+        planned(
+            world,
+            tmp_path,
+            "version: 1\nworkspaces:\n  - {id: ws-0001, scan: [dataset_schema]}\n",
+        ),
+        scenario,
+    )
+
+    assert "with lineage, dataset schema, get artifact users" in text
+    (call,) = world.fake.calls_to("getInfo", "POST")
+    assert call.query == {
+        "lineage": "true",
+        "datasourceDetails": "false",
+        "datasetSchema": "true",
+        "datasetExpressions": "false",
+        "getArtifactUsers": "true",
+    }
+
+
+def test_r_scans_a_workspace_the_plan_does_not_name_with_every_option(world, tmp_path):
+    make_the_scan_poor(world)
+    world.clock.advance(hours=5)
+    world.fake.reset_calls()
+
+    async def scenario(ui):
+        await ui.press("w")  # every workspace, not only the one that the plan names
+        await ui.select("workspace", "ws-0001")
+        await ui.press("r")
+        text = question(ui)
+        await ui.press("enter")
+        await ui.finish_sync()
+        return text
+
+    text = run_ui(
+        planned(
+            world,
+            tmp_path,
+            "version: 1\nworkspaces:\n  - {id: ws-0002, scan: [lineage]}\n",
+        ),
+        scenario,
+    )
+
+    assert "with lineage, datasource details, dataset schema" in text
+    (call,) = world.fake.calls_to("getInfo", "POST")
+    assert set(call.query.values()) == {"true"}
 
 
 def test_the_palette_offers_the_scan_tab(world):

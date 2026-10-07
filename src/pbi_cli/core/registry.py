@@ -381,6 +381,14 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
         parent="admin.dataflows",
         parent_field="objectId",
     ),
+    _admin_list(
+        "admin.apps.users",
+        "Users of an app",
+        "/admin/apps/{appId}/users",
+        "apps-get-app-users-as-admin",
+        RateLimit(windows=((200, HOUR),)),
+        parent="admin.apps",
+    ),
     Endpoint(
         id="admin.dataflows.datasources",
         title="Data sources of a dataflow",

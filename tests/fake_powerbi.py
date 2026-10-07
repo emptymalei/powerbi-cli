@@ -206,6 +206,11 @@ class FakePowerBI(BaseAdapter):
             ),
             (
                 "GET",
+                re.compile(r"^/admin/apps/(?P<id>[^/]+)/users$"),
+                self._admin_users("apps", "id", "appUserAccessRight"),
+            ),
+            (
+                "GET",
                 re.compile(r"^/admin/dataflows/(?P<id>[^/]+)/datasources$"),
                 self._sources_of("dataflows", "objectId", admin=True),
             ),

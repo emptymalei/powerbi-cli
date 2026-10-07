@@ -21,6 +21,9 @@ REFRESH_EVERY = 0.5
 #: What the right end of the line says about the command palette (it can be clicked).
 HINT = ": commands"
 
+#: Seconds that a notice with something to read in it (a path, a reason) stays on the screen.
+NOTICE_LONG = 15
+
 
 class StatusBar(Horizontal):
     """Tenant, profile, lake and token on the left; the running sync on the right."""

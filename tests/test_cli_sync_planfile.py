@@ -112,8 +112,8 @@ def test_a_plan_after_a_run_has_every_step_and_nothing_left_to_fetch(
     assert result.exit_code == 0, result.output
     assert "Step 1: the tenant (adm)" in result.output
     assert (
-        "Step 2: dashboard-users, dataflow-users, dataset-users, group-users, "
-        "report-users for 1 workspace (adm)" in result.output
+        "Step 2: app-users, dashboard-users, dataflow-users, dataset-users, "
+        "group-users, report-users for 1 workspace (adm)" in result.output
     )
     assert "dataset-users copies the people who can use each dataset" in result.output
     assert "Nothing to fetch: the lake holds everything fresh." in result.output
@@ -168,7 +168,7 @@ def test_an_id_may_come_with_a_name_that_is_only_its_label(accounts, tmp_path):
 
     assert result.exit_code == 0, result.output
     assert "no workspace is called" not in result.output  # the id is used, not the name
-    assert "Step 1: dashboard-users" in result.output
+    assert "Step 1: app-users, dashboard-users" in result.output
 
 
 def test_a_plan_without_steps_says_so(accounts, tmp_path):
@@ -238,8 +238,9 @@ def test_a_run_goes_step_after_step_and_keeps_what_it_fetched(
     assert ids("admin.groups.users", "groupId") == ["ws-0002"]
     assert ids("admin.reports.users", "reportId") == ["rep-0002"]
     assert ids("admin.datasets.users", "datasetId") == ["ds-0002"]
-    # only what the file says: not the plain sync of target names as well
-    assert not accounts.calls_to(r"^/admin/apps$")
+    # only what the file says: not the plain sync of target names as well (the list of
+    # apps is there once, because the users of the apps of the workspace need its rows)
+    assert len(accounts.calls_to(r"^/admin/apps$")) == 1
     assert not accounts.calls_to(r"^/admin/capacities$")
 
 

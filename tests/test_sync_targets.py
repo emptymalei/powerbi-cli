@@ -100,7 +100,7 @@ def test_children_of():
         "user-dataset-refreshes",
         "user-dataset-parameters",
     ]
-    assert children_of("apps") == []
+    assert [t.name for t in children_of("apps")] == ["app-users"]
 
 
 def test_get_target_says_what_there_is():

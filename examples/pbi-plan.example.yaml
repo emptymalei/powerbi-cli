@@ -25,7 +25,8 @@ accounts:
 # those of `pbi sync plan --help`; without `targets` it is the plain sync. A target of a
 # user's account runs once for each of the user profiles above.
 tenant:
-  targets: [default, activity]
+  targets: [default, activity] # add `app-users` for the people who can open each app (a request for
+  #                              # every app: 200 an hour)
   activity_days: 7 # days of audit events (1 to 28); only with `activity` above
   # scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan
   #                                     # only some, use `scan:` in an entry below)
@@ -37,9 +38,11 @@ tenant:
 workspaces:
   - name: "Finance*"
     # A metadata scan of these workspaces, with these options (those of
-    # `pbi workspaces scan batch`). A scan is always the administrator's.
+    # `pbi workspaces scan batch`; `scan: all` asks for every one, including the schema
+    # and the queries of the datasets). A scan is always the administrator's.
     scan: { lineage: true, datasource_details: true, get_artifact_users: true }
-    # Details of every item in them: users, datasources, pages, refreshes, parameters, tiles.
+    # Details of every item in them (and of their apps): users, datasources, pages, refreshes,
+    # parameters, tiles; `details: all` asks for every one.
     details: [users, datasources, refreshes]
     # Whose account reads them: `auto` (the administrator's when it can, else a user whose
     # own list of workspaces holds it), `admin`, `user` (never the administrator's), or the

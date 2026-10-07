@@ -633,8 +633,10 @@ def provenance(
     return rows
 
 
-def set_info(catalog: Catalog, subject: WorkspaceSet) -> RenderableType:
-    """The Info tab of several workspaces: what the lake holds of them together."""
+def set_info_rows(
+    catalog: Catalog, subject: WorkspaceSet
+) -> List[Tuple[str, Union[str, Text]]]:
+    """The fields of the Info tab of several workspaces: what the lake holds of them together."""
     ids = subject.ids[:MAX_SET]
     state = catalog.sync_state()
     people = scanned = 0
@@ -663,6 +665,12 @@ def set_info(catalog: Catalog, subject: WorkspaceSet) -> RenderableType:
         ),
     ]
     rows += [(label(k, True), str(counts[k])) for k in KINDS if k in counts]
+    return rows
+
+
+def set_info(catalog: Catalog, subject: WorkspaceSet) -> RenderableType:
+    """The Info tab of several workspaces: what the lake holds of them together."""
+    rows = set_info_rows(catalog, subject)
     parts: List[RenderableType] = [
         _title(subject.title, f"{len(subject.ids)} workspaces"),
         Text(),
@@ -683,6 +691,33 @@ def set_info(catalog: Catalog, subject: WorkspaceSet) -> RenderableType:
             )
         )
     return Group(*parts)
+
+
+def event_day_rows(catalog: Catalog, day: EventDay) -> List[Tuple[str, str]]:
+    """The fields of the Info tab of a day of audit events."""
+    return [
+        ("Events", str(day.rows)),
+        (
+            "State",
+            (
+                "complete: nothing more will be added"
+                if day.sealed
+                else "open: more events may arrive"
+            ),
+        ),
+        ("Updated", ago(catalog, day.updated_at)),
+        ("Folder", str(day.directory)),
+    ]
+
+
+def dot_words(cell: Union[str, Text]) -> Optional[str]:
+    """What a freshness dot says in words, for a cell that is one (else ``None``)."""
+    if not isinstance(cell, Text):
+        return None
+    for level, (symbol, style) in _DOTS.items():
+        if cell.plain == symbol and str(cell.style) == style:
+            return meaning(level)
+    return None
 
 
 def info(catalog: Catalog, subject: Subject) -> RenderableType:
@@ -721,21 +756,7 @@ def info(catalog: Catalog, subject: Subject) -> RenderableType:
         return Group(
             _title(subject.day.isoformat(), "audit events"),
             Text(),
-            _grid(
-                [
-                    ("Events", str(subject.rows)),
-                    (
-                        "State",
-                        (
-                            "complete: nothing more will be added"
-                            if subject.sealed
-                            else "open: more events may arrive"
-                        ),
-                    ),
-                    ("Updated", ago(catalog, subject.updated_at)),
-                    ("Folder", str(subject.directory)),
-                ]
-            ),
+            _grid(event_day_rows(catalog, subject)),
         )
     parts: List[RenderableType] = [
         _title(
@@ -1015,19 +1036,35 @@ def set_users(catalog: Catalog, subject: WorkspaceSet, fetching: Fetching) -> De
     return Detail(note=note, columns=USER_SET_COLUMNS, rows=rows)
 
 
+def scan_failure(catalog: Catalog) -> str:
+    """What became of the last scan that a sync tried, when it did not succeed: a sentence,
+    or nothing."""
+    trouble = catalog.scan_trouble()
+    if trouble is None:
+        return ""
+    status, why = trouble
+    what = (
+        "was held back by a quota (run the sync again later)"
+        if _held_back(status)
+        else "failed"
+    )
+    return f"The last scan that a sync tried {what}" + (f": {why}" if why else ".")
+
+
 def scan_detail(
     catalog: Catalog, subject: Optional[Subject], fetching: Fetching
 ) -> Detail:
     """The Scan tab: what the newest scan says about a workspace, an item, or several
     workspaces, and where each table reads its data from."""
     planned = fetching.planned
+    asked = scanview.Asked(fetching.wanted_scan, scan_failure(catalog))
     if isinstance(subject, Workspace):
         model = catalog.scan_model(subject.id)
         if model is None:
-            return _hint(scanview.workspace_hint(subject, planned))
-        return Detail(body=scanview.workspace_body(catalog, model, planned))
+            return _hint(scanview.workspace_hint(subject, planned, asked))
+        return Detail(body=scanview.workspace_body(catalog, model, planned, asked))
     if isinstance(subject, Item):
-        body = scanview.item_body(catalog, subject, planned)
+        body = scanview.item_body(catalog, subject, planned, asked)
         if body is not None:
             return Detail(body=body)
         workspace = catalog.workspace(subject.workspace_id or "")
@@ -1036,11 +1073,11 @@ def scan_detail(
                 f"The newest scan of {workspace.name if workspace else 'its workspace'} "
                 f"does not hold this {label(subject.kind).lower()}."
             )
-        return _hint(scanview.workspace_hint(workspace, planned))
+        return _hint(scanview.workspace_hint(workspace, planned, asked))
     if isinstance(subject, WorkspaceSet):
         return Detail(
             body=scanview.set_body(
-                catalog, subject.ids[:MAX_SET], planned, len(subject.ids)
+                catalog, subject.ids[:MAX_SET], planned, len(subject.ids), asked
             )
         )
     return _hint("Select a workspace or an item to see what its scan says.")

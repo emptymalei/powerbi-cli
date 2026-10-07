@@ -628,22 +628,28 @@ class PlanFile:
 
     @staticmethod
     def _flags(reader: _Reader, box: Mapping[str, Any], key: str, path: str) -> Any:
-        """The options of a scan: a mapping of flags, a list of the names of those that are on,
-        or ``true`` for a scan with none; ``None`` for ``false`` (no scan)."""
+        """The options of a scan: a mapping of flags, a list of the names of those that are on
+        (``all`` is every one), a single name, or ``true`` for a scan with none; ``None`` for
+        ``false`` (no scan)."""
         value = box[key]
         where = reader.join(path, key)
         if isinstance(value, bool):
             return ScanFlags() if value else None
+        if isinstance(value, str):  # `scan: all`, `scan: lineage`
+            value = [value]
         if isinstance(value, list):
             on: Dict[str, bool] = {}
             for index, item in enumerate(value):
+                if isinstance(item, str) and item.strip() == ALL:
+                    on.update({name: True for name in SCAN_KEYS})
+                    continue
                 if not isinstance(item, str) or item.strip() not in SCAN_KEYS:
                     close = difflib.get_close_matches(str(item), SCAN_KEYS, n=1)
                     hint = f" Did you mean '{close[0]}'?" if close else ""
                     reader.fail(
                         reader.join(where, index),
                         f"'{item}' is not a scan option.{hint} The options are: "
-                        f"{', '.join(SCAN_KEYS)}.",
+                        f"{', '.join(SCAN_KEYS)}; or '{ALL}' for every one.",
                         _line(value, index) or _line(box, key),
                     )
                 on[item.strip()] = True
@@ -748,17 +754,24 @@ class PlanFile:
                     "`id:` may come with a `name:` that is only its label",
                     line,
                 )
-            details = reader.strings(box, "details", path)
+            asked = box.get("details")
+            details = (
+                (asked.strip(),)  # `details: all`, `details: users`
+                if isinstance(asked, str)
+                else reader.strings(box, "details", path)
+            )
             for number, name in enumerate(details):
-                if name not in TITLES:
+                if name not in TITLES and name != ALL:
                     close = difflib.get_close_matches(name, list(TITLES), n=1)
                     hint = f" Did you mean '{close[0]}'?" if close else ""
                     reader.fail(
                         f"{path}.details[{number}]",
                         f"'{name}' is not a detail.{hint} The details are: "
-                        f"{', '.join(TITLES)}.",
-                        _line(box.get("details"), number) or _line(box, "details"),
+                        f"{', '.join(TITLES)}; or '{ALL}' for every one.",
+                        _line(asked, number) or _line(box, "details"),
                     )
+            if ALL in details:
+                details = tuple(TITLES)
             scan = None
             if "scan" in box:
                 scan = cls._flags(reader, box, "scan", path)
@@ -1078,6 +1091,26 @@ class PlanFile:
             and getattr(w, "active", True)
             and not getattr(w, "personal", False)
         ]
+
+    def scan_for(self, workspace: Any) -> Optional[ScanFlags]:
+        """The options of the scan that the file asks for a workspace: those of every entry
+        that names it, and of the tenant's scan of every workspace, put together.
+
+        :param workspace: the workspace (`pbi_cli.core.catalog.Workspace`)
+        :return: the options, or ``None`` when the file asks for no scan of it
+        """
+        found: Optional[ScanFlags] = None
+        tenant = self.tenant
+        if tenant is not None and any(
+            t.name == "scan" for t in select_targets(tenant.targets).targets
+        ):
+            found = tenant.scan
+        for entry in self.workspaces:
+            if entry.scan is None:
+                continue
+            if any(w.id == workspace.id for w in self._match(entry, [workspace])):
+                found = entry.scan if found is None else found.union(entry.scan)
+        return found
 
     def named_workspaces(self, workspaces: Sequence[Any]) -> List[str]:
         """The ids of the workspaces that the file names: by id (as it is, whether or not the

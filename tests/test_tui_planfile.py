@@ -209,8 +209,8 @@ def test_run_goes_through_the_steps_and_the_screen_shows_each(world, tmp_path):
     )  # the log is shown at once
     assert "Step 1: the tenant (admin-nlm)" in log
     assert (
-        "Step 2: dashboard-users, dataflow-users, dataset-users, group-users, "
-        "report-users for 1 workspace (admin-nlm)" in log
+        "Step 2: app-users, dashboard-users, dataflow-users, dataset-users, "
+        "group-users, report-users for 1 workspace (admin-nlm)" in log
     )
     assert log.index("Step 1:") < log.index("Step 2:")
     assert "Plan pbi-plan.yaml: finished" in line

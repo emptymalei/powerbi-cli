@@ -80,7 +80,7 @@ What to keep for the whole tenant.
 
 ```yaml
 tenant:
-  targets: [default, activity]
+  targets: [default, activity, app-users]
   activity_days: 7
 ```
 
@@ -88,12 +88,16 @@ tenant:
 | --- | --- |
 | `targets` | The targets of [`pbi sync`](sync.md#what-can-be-synced). Without it, or with only `tenant:`, it is the plain sync: the lists of the tenant when there is an administrator account, else what a user can see. |
 | `activity_days` | Days of audit events, today included, 1 to 28 (default 28). Only with `activity` among the targets. |
-| `scan` | **Scan every workspace of the tenant**, with these options: [the scan options](#the-scan-options) below, as a mapping or a list of names; `true` or `[]` is a scan with none. It asks for the scan, so `scan` need not be among the targets as well. (To scan only some workspaces, put `scan:` in an entry of `workspaces` instead.) |
+| `scan` | **Scan every workspace of the tenant**, with these options: [the scan options](#the-scan-options) below, as a mapping, a list of names or `all`; `true` or `[]` is a scan with none. It asks for the scan, so `scan` need not be among the targets as well. (To scan only some workspaces, put `scan:` in an entry of `workspaces` instead.) |
 | `full_scan`, `exclude_personal`, `exclude_inactive` | As the options of `pbi sync run` of the same names. They need a scan: a `scan:` section here, or `scan` among the targets. |
 
 The administrator's targets run once, with the administrator's account. A target of a
 user's account (`user-groups`, ...) runs **once for each user profile** of the file, each
 keeping its own answers in the lake.
+
+The plain sync keeps the list of apps; `app-users` (in the example above) also keeps **who can
+open each app**, a request for every app. See [Apps](sync.md#apps) for what the lake can and
+cannot keep of an app.
 
 ### The scan options
 
@@ -104,14 +108,21 @@ names of those that are on; the two are the same:
 ```yaml
 scan: {lineage: true, datasource_details: true}
 scan: [lineage, datasource_details]
+scan: all                      # every option below
 ```
+
+**`all`** asks for every option, which is what you want when you want to know everything: the users of
+the items, the schema of the datasets and the queries that load them, and the connection details of
+the data sources. It costs the same requests as a scan with one option (a scan is one request to start,
+a few to wait for it and one to read it, for up to 100 workspaces); the result is only bigger. `all`
+may be in a list (`[all]`), and a single name works as a list of that name (`scan: lineage`).
 
 | Key | What the scan includes |
 | --- | --- |
 | `lineage` | Upstream dataflows, tiles and data source ids |
 | `datasource_details` | Connection details of the data sources: servers, databases, paths |
-| `dataset_schema` | Tables, columns and measures (needs the tenant setting for detailed metadata) |
-| `dataset_expressions` | DAX and Power Query expressions (needs the same setting) |
+| `dataset_schema` | Tables, columns and measures (needs the tenant setting *Enhance admin APIs responses with detailed metadata*; a dataset that was not refreshed or published since it was turned on has none) |
+| `dataset_expressions` | DAX and Power Query expressions (needs *... with DAX and mashup expressions* as well) |
 | `get_artifact_users` | The users of reports, dashboards and other items |
 
 ### `workspaces`
@@ -145,8 +156,10 @@ workspaces:
 
 - `scan`: a metadata scan of these workspaces, with the options above (`true` for none). A
   scan is always read with the administrator's account, whatever `via` says.
-- `details`: details of every item in the workspaces (and of the workspace itself), from the
-  list below. It costs a request per item, so name only what you need.
+- `details`: details of every item in the workspaces (and of the workspace itself, and of the apps
+  published from it), from the list below. It costs a request per item, so name only what you need;
+  **`details: all`** (or `[all]`) names every one, and a single name works as a list of that name
+  (`details: users`).
 
 | Detail | For | Fetched by an administrator | Fetched by a user |
 | --- | --- | --- | --- |
@@ -155,6 +168,7 @@ workspaces:
 | `users` | dataset | `dataset-users` | `user-dataset-users` (needs Reshare permission) |
 | `users` | dashboard | `dashboard-users` | not possible |
 | `users` | dataflow | `dataflow-users` | not possible |
+| `users` | app | `app-users` (the apps published from the workspace) | not possible |
 | `datasources` | dataset | `datasources` | `user-dataset-datasources` (needs Write permission) |
 | `datasources` | dataflow | `dataflow-datasources` | `user-dataflow-datasources` |
 | `pages` | report | not possible | `user-pages` |

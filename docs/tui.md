@@ -85,7 +85,7 @@ is read as markup, in the tables, the titles, the dialogs and the notices alike.
 | **Workspaces** | the workspaces; open one to see what is in it. With a [plan file](#only-the-workspaces-of-the-plan-file) only the ones it names (`1 of 4,321`), until you press `w` | `groups` |
 | **Personal workspaces** | the same for personal workspaces (they are many, so they are apart) | `groups` |
 | a workspace | its reports, datasets, dashboards, dataflows and apps | the lists, with the newest scan over them |
-| **Apps** | the apps of the tenant (with only a user account: the apps of that account) | `apps`, or `user-apps` |
+| **Apps** | the apps of the tenant (with only a user account: the apps of that account); an app has a Users tab once `app-users` has fetched who can open it | `apps`, or `user-apps`; `app-users` |
 | **Capacities** | the capacities of the tenant | `capacities` |
 | **Activity** | the days of audit events in the lake; open a day to see its events, newest first | `activity` |
 
@@ -176,8 +176,26 @@ does it for the workspaces it names):
 What the tab can show depends on the options of the scan: without `dataset_schema` there are no tables,
 without `dataset_expressions` there are no queries (so no sources to read), without `datasource_details`
 no servers or paths of the data sources. The tab says which is missing and how to scan again with it
-(`scan: [dataset_schema, dataset_expressions, datasource_details]` on the entry of the plan file). The
-tenant setting for detailed metadata has to be on.
+(`scan: [dataset_schema, dataset_expressions, datasource_details]` on the entry of the plan file, or
+just **`scan: all`**, which asks for every option). The tenant settings for detailed metadata have to
+be on.
+
+When the tab says that a scan lacks something, it also says **why that is so**:
+
+- **The plan file asks for it, and the scan is older.** *"The plan file asks for dataset schema and
+  dataset expressions for this workspace, but its newest scan was made without them."* Run the plan
+  again (the Sync screen, **Run**), or press `r`: `r` scans the workspace with the options that the
+  file asks for it, together with those its last scan had (a refresh never brings less than the scan
+  it replaces), or with **every option** when the file says nothing about the workspace. The dialog
+  names the options (*with lineage, datasource details, ...*), and it costs the same requests
+  whatever they are.
+- **The last scan that a sync tried failed.** The tab says so, with what Power BI answered, next to
+  what the plan asks for (and for a workspace that has no scan at all).
+- **It was asked for and did not come.** *"The scan asked for the dataset schema, but none of its
+  datasets has tables."* Power BI leaves the tables out, without saying so, when the tenant settings
+  *Enhance admin APIs responses with detailed metadata* (and, for the queries, *... with DAX and
+  mashup expressions*) are off, and for a dataset that has not been refreshed or published since they
+  were turned on: refresh the dataset (or publish it again), then scan the workspace again.
 
 **The sources are read from the queries.** The expression of a table is Power Query (M); the tab finds the
 connectors that it calls and what it gives them: `Sql.Database("srv", "db")` is the server and database,
@@ -240,6 +258,45 @@ The **Lineage** tab follows what the scan of the workspace says (it needs a scan
   item's **own** workspace. Another workspace may build on the item without the lake
   knowing; the tab says so.
 
+### Copying and saving what you see
+
+![The Export dialog: the Users tab of a report, as CSV](images/tui-export.svg)
+
+What a tab shows can leave the terminal. **`y`** puts it on the clipboard as tab-separated text, which
+pastes into the cells of a spreadsheet (or into a mail). **`x`** opens a dialog to **save** it as a file
+or **copy** it, in the format you choose. Both are in the [command palette](#the-command-palette)
+(*Export what is shown…*, *Copy what is shown*), and both work on a lake that is only looked at.
+
+- **What.** The tab that is shown, or the table above it (after the filter, with the freshness dots
+  written as words). `y` copies the tab, or the table when the tab has nothing to give (a hint, or
+  the people that the lake does not hold).
+- **Format.** CSV (written with a byte order mark, which is what Excel needs to read accents right),
+  an Excel workbook (a header row you can filter, every cell a text), JSON (a list of objects, one for
+  each row), a Markdown table, or tab-separated text. The JSON tab gives the JSON the lake holds, and
+  only that.
+- **File.** Suggested in the folder `pbi tui` was started in, as `Users of report Sales.csv` (a name
+  that no file has yet; the next dialog suggests the folder of the last file). A name that exists is
+  replaced only when you press **Save** a second time. **Copy** puts the text of the chosen format on
+  the clipboard (a workbook is copied as tab-separated text).
+
+| Tab | What it gives |
+| --- | --- |
+| Info | the fields and their values |
+| Users | name, e-mail or id, access, type; for several workspaces also the workspace and its id. For a workspace, a report, a dataset, a dashboard, a dataflow or an app |
+| Lineage | for each step: direction (*built from*, *built on it*), level, kind, name, workspace, note, id |
+| JSON | the JSON of the lake |
+| Versions, Details | the rows the tab shows |
+| Scan | one row for each place that each table reads its data from: workspace, dataset, table, loaded by (M or DAX), source, server, database, file or address, item, the native query and the tables it reads, the names that could not be followed, and **the whole expression** |
+
+The clipboard is the one of the system, put there with the tool the platform has (`pbcopy` on macOS,
+`Set-Clipboard` of PowerShell on Windows, `wl-copy`, `xclip` or `xsel` on Linux), and the terminal is
+asked to set its clipboard as well. When no tool worked, the notice says that the text was only sent
+to the terminal, and that a terminal has to allow that; a file always works.
+
+A cell that a spreadsheet would take for a formula (it starts with `=`, `+`, `-` or `@`) is written
+as text: with a `'` in front of it in CSV and tab-separated text, as a text cell in a workbook. What the
+tables show as `-` (nothing) is an empty cell in the export.
+
 ### Finding things
 
 - `/` filters what has the focus: the workspaces of the tree, or the rows of the table. All
@@ -263,7 +320,7 @@ requested and how that compares with the quota:
 
 | Selected | What `r` fetches |
 | --- | --- |
-| a workspace (its node, whatever row of it is selected), or a workspace picked in the list of workspaces | a scan of that one workspace, with the options of its last scan (lineage when it was never scanned): about five requests of the scan quota |
+| a workspace (its node, whatever row of it is selected), or a workspace picked in the list of workspaces | a scan of that one workspace: with the options that the plan file asks for it together with those of its last scan, or with every option when the file says nothing (the dialog names them): about five requests of the scan quota, whatever the options |
 | the Lake, Workspaces or Personal workspaces | the lists of the tenant: workspaces, apps, capacities, reports, datasets, dashboards and dataflows |
 | Apps, Capacities | that list |
 | Activity | the audit events (a complete day is never fetched again) |
@@ -486,6 +543,8 @@ your work lake is ever written by a sync; open it again with `o` to fetch.
 | `1` to `7` | Explorer | Info, Users, Lineage, JSON, Versions, Details, Scan |
 | `w` | Explorer, with a plan file | list only the workspaces of the plan file, or every workspace |
 | `f` | Explorer | fetch the details of the selected item that the lake lacks (the users, on the Users tab) |
+| `x` | Explorer | export what is shown: save the tab or the table as a file (CSV, Excel, JSON, Markdown, TSV), or copy it |
+| `y` | Explorer | copy what the tab shows (else the table) to the clipboard, to paste into a spreadsheet |
 | `r` | Sync | run the sync (the plan, with a plan file) |
 | `x` | Sync | stop the sync |
 | `l` | Sync, with a plan file | read the plan file again |

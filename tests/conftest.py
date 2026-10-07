@@ -29,6 +29,7 @@ collect_ignore_glob = (
         "test_tui_commands.py",
         "test_tui_details.py",
         "test_tui_explorer.py",
+        "test_tui_export.py",
         "test_tui_lakes.py",
         "test_tui_lazy.py",
         "test_tui_plain.py",
@@ -84,6 +85,19 @@ def isolated_home(tmp_path_factory, monkeypatch) -> Path:
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     return home
+
+
+@pytest.fixture(autouse=True)
+def clipboard_of_the_test(monkeypatch):
+    """Nothing a test does may touch the clipboard of the person who runs the tests: what the
+    app would hand to the tool of the system is kept in the list this gives."""
+    from pbi_cli.tui import clipboard
+
+    copied: list = []
+    monkeypatch.setattr(
+        clipboard, "system_copy", lambda text: copied.append(text) or "the test"
+    )
+    return copied
 
 
 @pytest.fixture(autouse=True)

@@ -5,6 +5,7 @@ from sync_helpers import World
 from textual.widgets import TabbedContent
 from tui_helpers import backend_of, plain, run_ui
 
+from pbi_cli.core.catalog import Item
 from pbi_cli.core.store import LakeStore
 from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import ConfirmModal
@@ -112,11 +113,53 @@ def test_every_kind_of_item_has_its_own_details(world, kind, item, names):
 
 
 def test_what_has_no_details_says_so(world):
+    # every kind of item has some now; one that the lake may come to hold has none
+    stranger = Item("datamart", "dm-1", "Datamart 1", "ws-0001", {})
+
     async def scenario(ui):
-        await pick(ui, "app", "app-0001", "6")
+        await pick(ui, "dataset", "ds-0001", "6")
+        ui.explorer._show_subject(stranger)
+        await ui.settle()
         return ui.static("#details-note")
 
-    assert "nothing more to fetch for this app" in run_ui(backend_of(world), scenario)
+    assert "nothing more to fetch for this datamart" in run_ui(
+        backend_of(world), scenario
+    )
+
+
+def test_an_app_has_its_users_as_a_detail(world):
+    async def scenario(ui):
+        await pick(ui, "app", "app-0001", "6")
+        return ui.rows("#details"), ui.static("#details-note")
+
+    rows, note = run_ui(backend_of(world), scenario)
+
+    assert [r[:2] for r in rows] == [["Users", "missing"]]
+    assert rows[0][3] == "press f: 1 request, an administrator account"
+    assert "Press f to fetch the users" in note
+
+
+def test_f_fetches_the_users_of_an_app_and_the_users_tab_lists_them(world):
+    world.fake.reset_calls()
+
+    async def scenario(ui):
+        await pick(ui, "app", "app-0001", "2")
+        before = ui.static("#users-note")
+        await ui.press("f")
+        text = asked(ui)
+        await ui.press("enter")
+        await ui.finish_sync()
+        await ui.settle()
+        return before, text, ui.rows("#users"), ui.static("#users-note")
+
+    before, text, rows, note = run_ui(backend_of(world), scenario)
+
+    assert "The lake does not hold the users of this app." in before
+    assert "pbi sync run app-users" in before and "get-artifact-users" not in before
+    assert "Fetch the users of App 1" in text
+    assert [(r[0], r[2]) for r in rows] == [("Ann", "Owner"), ("Bob", "Read")]
+    assert "from admin.apps.users" in note
+    assert calls(world, r"/admin/apps/[^/]+/users$") == ["/admin/apps/app-0001/users"]
 
 
 def test_what_is_not_a_workspace_or_an_item_says_so(world):
@@ -441,14 +484,19 @@ def test_a_refresh_selects_the_same_row_again_when_the_lake_has_been_read(world)
 
 
 def test_f_on_what_has_no_details_says_so(world):
+    stranger = Item("datamart", "dm-1", "Datamart 1", "ws-0001", {})
+
     async def scenario(ui):
-        await pick(ui, "app", "app-0001")
+        await pick(ui, "dataset", "ds-0001")
+        ui.explorer._show_subject(stranger)
+        await ui.settle()
         await ui.press("f")
+        await ui.settle()
         return [n.message for n in ui.app._notifications]
 
     notes = run_ui(backend_of(world), scenario)
 
-    assert any("nothing more to fetch for this app" in n for n in notes)
+    assert any("nothing more to fetch for this datamart" in n for n in notes)
 
 
 def test_the_palette_offers_no_fetch_on_a_lake_that_is_only_looked_at(world):

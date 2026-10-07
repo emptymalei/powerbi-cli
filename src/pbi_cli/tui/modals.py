@@ -1,6 +1,8 @@
-"""The dialogs of the TUI: sign in, accounts, confirm, choose, open a lake."""
+"""The dialogs of the TUI: sign in, accounts, confirm, choose, open a lake, export."""
 
+from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, TypeVar
 
 from rich.console import RenderableType
@@ -24,7 +26,9 @@ from textual.widgets.option_list import Option
 
 from pbi_cli.core.auth import EXPIRY_LEEWAY
 from pbi_cli.core.jwt import token_info
+from pbi_cli.tui import exporting
 from pbi_cli.tui.backend import AccountInfo, Backend
+from pbi_cli.tui.exporting import Exportable
 from pbi_cli.tui.plain import PlainLabel, PlainStatic, PlainTable
 
 GROUPS = ("admin", "user")
@@ -397,6 +401,208 @@ class AccountsModal(Dialog[Optional[Tuple[str, str, str]]]):
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
         self.dismiss(None)
+
+
+#: What the Export dialog did: wrote a file, or asked for the text to be copied.
+SAVED = "saved"
+COPIED = "copied"
+
+#: The formats, in a word each (the dialog is not wide enough for more).
+FORMAT_WORDS = {
+    exporting.CSV: "CSV",
+    exporting.XLSX: "Excel",
+    exporting.JSON: "JSON",
+    exporting.MARKDOWN: "Markdown",
+    exporting.TSV: "TSV",
+}
+
+#: What to know about a format, shown under the formats.
+FORMAT_NOTES = {
+    exporting.CSV: "Opens in Excel (letters such as accents are kept).",
+    exporting.XLSX: "An Excel workbook with a header row you can filter.",
+    exporting.JSON: "A list of objects, one for each row.",
+    exporting.MARKDOWN: "A table to paste into a document or an issue.",
+    exporting.TSV: "Tab-separated text: pastes into the cells of a spreadsheet.",
+}
+
+
+@dataclass(frozen=True)
+class Exported:
+    """What the Export dialog decided.
+
+    :param action: `SAVED` (the file was written) or `COPIED` (the text is to go on the
+        clipboard)
+    :param item: what is exported
+    :param fmt: in which format
+    :param path: the file that was written
+    """
+
+    action: str
+    item: Exportable
+    fmt: str
+    path: Optional[Path] = None
+
+
+class ExportModal(Dialog[Optional[Exported]]):
+    """Choose what to take out of the screen, in which format, and where to put it.
+
+    :param choices: what can be exported, each with where it is on the screen (``The Users
+        tab``, ``The table``); the first is chosen at first
+    :param folder: where a file is suggested to go
+    """
+
+    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    def __init__(self, choices: Sequence[Tuple[str, Exportable]], folder: str) -> None:
+        super().__init__()
+        self._choices = list(choices)
+        self._folder = folder
+        self._chosen = 0
+        self._format = self._choices[0][1].formats[0]
+        self._suggested = ""
+        self._edited = False
+        self._replace: Optional[Path] = (
+            None  # an existing file that the person was told of
+        )
+        self._done = False
+
+    @property
+    def item(self) -> Exportable:
+        return self._choices[self._chosen][1]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield PlainLabel("Export what is shown", id="dialog-title")
+            if len(self._choices) > 1:
+                yield PlainLabel("What")
+                with RadioSet(id="what"):
+                    for index, (where, item) in enumerate(self._choices):
+                        yield RadioButton(
+                            f"{where}: {item.describe()}",
+                            value=index == 0,
+                            name=str(index),
+                        )
+            else:
+                where, item = self._choices[0]
+                yield PlainStatic(f"{where}: {item.describe()}", id="what-one")
+            yield PlainLabel("Format")
+            with Vertical(id="format-box"):
+                yield self._format_buttons()
+            yield PlainStatic(FORMAT_NOTES[self._format], id="format-note")
+            yield PlainLabel("File")
+            yield Input(id="path")
+            yield PlainStatic("", id="error")
+            with Horizontal(id="buttons"):
+                yield Button("Save", variant="primary", id="save", compact=True)
+                yield Button("Copy", id="copy", compact=True)
+                yield Button("Cancel", id="cancel", compact=True)
+
+    def on_mount(self) -> None:
+        self._suggest()
+        self.query_one("#path", Input).focus()
+
+    # -- what is offered -----------------------------------------------------------------
+
+    def _format_buttons(self) -> RadioSet:
+        """The formats that the chosen export can have, to pick from. A set is made anew for
+        each export: a button that a handler of this very set presses is not heard by the set
+        (Textual keeps such changes from the handler that they cause), so it would stay
+        pressed beside the new one."""
+        formats = self.item.formats
+        if self._format not in formats:
+            self._format = formats[0]
+        return RadioSet(
+            *[
+                RadioButton(FORMAT_WORDS[fmt], value=fmt == self._format, name=fmt)
+                for fmt in formats
+            ],
+            id="format",
+        )
+
+    def _suggest(self) -> None:
+        """Suggest a file that does not exist yet, in the folder; a name the person typed is
+        kept, with the extension of the format."""
+        field = self.query_one("#path", Input)
+        extension = exporting.EXTENSIONS[self._format]
+        if self._edited and field.value:
+            known = set(exporting.EXTENSIONS.values())
+            path = Path(field.value)
+            if path.suffix.lower() in known and path.suffix.lower() != extension:
+                field.value = str(path.with_suffix(extension))
+            return
+        self._suggested = str(
+            exporting.free_path(
+                self._folder, exporting.file_name(self.item, self._format)
+            )
+        )
+        field.value = self._suggested
+
+    @on(RadioSet.Changed, "#what")
+    async def _what_changed(self, event: RadioSet.Changed) -> None:
+        self._chosen = int(event.pressed.name or 0)
+        box = self.query_one("#format-box", Vertical)
+        await box.remove_children()
+        await box.mount(self._format_buttons())
+        self.query_one("#format-note", Static).update(FORMAT_NOTES[self._format])
+        self._suggest()
+
+    @on(RadioSet.Changed, "#format")
+    def _format_changed(self, event: RadioSet.Changed) -> None:
+        picked = event.pressed.name or self._format
+        if picked not in self.item.formats or picked == self._format:
+            return
+        self._format = picked
+        self.query_one("#format-note", Static).update(FORMAT_NOTES[picked])
+        self._suggest()
+
+    @on(Input.Changed, "#path")
+    def _path_changed(self, event: Input.Changed) -> None:
+        self._edited = event.value != self._suggested
+        self.query_one("#error", Static).update("")
+
+    # -- what is done --------------------------------------------------------------------
+
+    def _say(self, text: str) -> None:
+        self.query_one("#error", Static).update(text)
+
+    def _finish(self, result: Optional[Exported]) -> None:
+        if not self._done:  # a dialog may be answered twice (Enter, then the button)
+            self._done = True
+            self.dismiss(result)
+
+    @on(Input.Submitted, "#path")
+    @on(Button.Pressed, "#save")
+    def _save(self) -> None:
+        typed = self.query_one("#path", Input).value.strip().strip('"')
+        if not typed:
+            self._say("Give the file a name.")
+            return
+        path = Path(typed).expanduser()
+        if path.is_dir():
+            self._say("That is a folder: add the name of the file to it.")
+            return
+        if path.exists() and self._replace != path:
+            self._replace = path
+            self._say(
+                "That file exists already: press Save again to replace it, or choose "
+                "another name."
+            )
+            return
+        try:
+            written = exporting.write(self.item, self._format, path)
+        except (OSError, ValueError) as error:
+            self._say(f"Could not write the file: {error}")
+            return
+        self._finish(Exported(SAVED, self.item, self._format, written))
+
+    @on(Button.Pressed, "#copy")
+    def _copy(self) -> None:
+        fmt = self._format if self._format != exporting.XLSX else exporting.TSV
+        self._finish(Exported(COPIED, self.item, fmt))
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self._finish(None)
 
 
 def format_left(seconds: float) -> str:

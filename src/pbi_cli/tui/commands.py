@@ -108,6 +108,30 @@ def _explorer(screen: Any, view_only: bool) -> List[Command]:
                 screen.action_clear_filter,
             )
         )
+    found.append(
+        Command(
+            "Export what is shown…",
+            _help(
+                "Save the tab, or the table above it, as a file (CSV, Excel, JSON, ...), "
+                "or copy it",
+                "x",
+            ),
+            screen.action_export,
+            "save file csv excel xlsx json download users",
+        )
+    )
+    found.append(
+        Command(
+            "Copy what is shown",
+            _help(
+                "Put the tab (or else the table) on the clipboard, to paste into a "
+                "spreadsheet",
+                "y",
+            ),
+            screen.action_copy,
+            "clipboard yank paste excel users",
+        )
+    )
     plan = screen.pbi.backend.plan
     if plan is not None and plan.workspaces:
         everyone = screen.pbi.show_all_workspaces

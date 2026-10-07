@@ -62,6 +62,31 @@
 
 ### Added
 
+- **Copy and save what the [terminal UI](tui.md#copying-and-saving-what-you-see) shows.** `y` puts
+  the tab (or the table) on the clipboard as tab-separated text, which pastes into a spreadsheet;
+  `x` opens a dialog that saves it as a file (CSV for Excel, an Excel workbook, JSON, a Markdown table,
+  tab-separated text) or copies it, and both are in the palette. The users of a report, a
+  workspace, a dataset, an app or several workspaces; the places each table of a scan reads from,
+  with the whole expression; the lineage, the versions, the details, the JSON and the table above
+  the tabs (after its filter) all export. The clipboard of the system is set with the tool of the
+  platform (`pbcopy`, PowerShell's `Set-Clipboard`, `wl-copy`, `xclip`, `xsel`) and the terminal is asked as
+  well; a cell that a spreadsheet would run as a formula is written as text (`pbi_cli.tui.exporting`,
+  `pbi_cli.tui.clipboard`, `pbi_cli.tui.tabexport`).
+- **The users of an app**: the `app-users` target (`admin.apps.users`, 200 requests an hour), which
+  keeps who can open each app. `pbi sync run default app-users`, or `tenant: {targets: [default,
+  app-users]}` in a plan file; `details: [users]` on an entry of `workspaces` fetches it for the apps
+  published from those workspaces; the Users tab of an app shows it, and `f` fetches it for one app.
+- **`scan: all` and `details: all`** in a plan file ask for every scan option and every detail
+  (a single name, `scan: lineage`, works as a list of that name). A scan costs the same requests
+  whatever it includes.
+- The Scan tab says **why a scan lacks something**: that the plan file asks for options that the
+  newest scan was made without (so it is older than the file), what became of the last scan that a
+  sync tried when it failed, and that Power BI left the tables or the queries out although they were
+  asked for (the tenant settings for detailed metadata, or a dataset that was not refreshed or
+  published since they were turned on). `r` on a workspace now scans it with the options that the plan
+  file asks for it and those of its last scan, or with every option when nothing says otherwise; it
+  used to repeat the options of the last scan, which stayed at the lineage only after a first
+  scan from the UI. The dialog says which options.
 - The [terminal UI](tui.md) has a **Scan** tab (key `7`) that shows what the newest scan says: for a
   workspace, how much is in it and **where its data comes from**; for a dataset, each table with its
   columns, measures and what loads it, the places the tables read from, the native queries, the

@@ -878,6 +878,13 @@ class Catalog:
         """
         return self._s.troubles.get(LIST_ENDPOINTS.get(kind, ""))
 
+    def scan_trouble(self) -> Optional[Tuple[str, str]]:
+        """What the last sync that scanned did not manage: ``failed`` or ``deferred`` (held
+        back for a quota), with the reason; ``None`` when the state of the sync says nothing
+        about a scan that failed (none was tried, or every one has been done since).
+        """
+        return self._s.troubles.get(RESULT_ENDPOINT)
+
     def accounts_with_a_list(self) -> FrozenSet[str]:
         """The accounts (by the name of their profile) whose own list of workspaces the lake
         holds, even an empty one: for the others, ``Workspace.visible_to`` knows nothing.
@@ -1175,6 +1182,11 @@ class Catalog:
             ways = f"{targets}, {ways}" if targets else ways
             return UsersView(
                 missing=f"The lake does not hold the users of this workspace. Fetch them with {ways}."
+            )
+        if subject.kind == "app":  # a scan does not list the people of an app
+            ways = targets or "`pbi sync run app-users`"
+            return UsersView(
+                missing=f"The lake does not hold the users of this app. Fetch them with {ways}."
             )
         ways = "a scan with `--get-artifact-users`"
         ways = f"{targets}, or {ways}" if targets else ways

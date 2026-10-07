@@ -227,4 +227,13 @@ AccountsModal #dialog {
     height: auto;
     max-height: 12;
 }
+ExportModal #what, ExportModal #format, ExportModal #format-box {
+    height: auto;
+}
+ExportModal #format {
+    layout: horizontal;
+}
+ExportModal #format-note {
+    color: $text-muted;
+}
 """
