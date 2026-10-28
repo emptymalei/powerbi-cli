@@ -1118,6 +1118,10 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi config set-verify-certificates</code> and <code>pbi config get-verify-certificates</code> choose how API
+  requests verify TLS certificates: <code>true</code> (the default), <code>false</code> (prints a warning), or the path
+  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
+  longer skip the verification unconditionally.</li>
 <li>Shell completion: <code>pbi --install-completion</code> and <code>pbi --show-completion</code>.</li>
 <li>Descriptions for the arguments of <code>pbi workspaces scan</code>, <code>pbi profile</code> and
   <code>pbi config</code> in <code>--help</code>.</li>
