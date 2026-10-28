@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import yaml
 from loguru import logger
@@ -104,6 +104,7 @@ class PBIConfig:
             "default_output_folder": None,
             "cache_folder": None,
             "cache_enabled": True,
+            "verify_certificates": True,
         }
 
     @property
@@ -312,6 +313,28 @@ class PBIConfig:
         :param value: True to enable caching, False to disable
         """
         self.set("cache_enabled", bool(value))
+
+    @property
+    def verify_certificates(self) -> Union[bool, str]:
+        """Get how TLS certificates are verified.
+
+        :return: True to verify against the system CA bundle, False to skip
+            verification, or the path to a CA bundle file
+        """
+        value = self.get("verify_certificates", True)
+        if isinstance(value, str):
+            return value
+        return bool(value)
+
+    @verify_certificates.setter
+    def verify_certificates(self, value: Union[bool, str]):
+        """Set how TLS certificates are verified.
+
+        :param value: True, False, or the path to a CA bundle file
+        """
+        if isinstance(value, str):
+            value = str(Path(value).expanduser().absolute())
+        self.set("verify_certificates", value)
 
     @property
     def config_dir(self) -> Path:
