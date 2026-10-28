@@ -561,8 +561,10 @@
       "enable-cache",
       "get-cache-folder",
       "get-output-folder",
+      "get-verify-certificates",
       "set-cache-folder",
       "set-output-folder",
+      "set-verify-certificates",
       "show"
     ],
     "deprecated": false,
@@ -597,6 +599,13 @@
   "pbi config get-output-folder": {
     "deprecated": false,
     "help": "Get the currently configured default output folder\n\n```\npbi config get-output-folder\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": []
+  },
+  "pbi config get-verify-certificates": {
+    "deprecated": false,
+    "help": "Show how API requests verify TLS certificates\n\n```\npbi config get-verify-certificates\n```",
     "hidden": false,
     "kind": "command",
     "params": []
@@ -657,6 +666,30 @@
           "readable": true,
           "resolve_path": false,
           "writable": false
+        }
+      }
+    ]
+  },
+  "pbi config set-verify-certificates": {
+    "deprecated": false,
+    "help": "Set how API requests verify TLS certificates\n\nVALUE is `true` (verify against the system CA bundle, the default),\n`false` (do not verify), or the path to a CA bundle file, for example\nwhen a corporate proxy re-signs TLS traffic.\n\n```\npbi config set-verify-certificates true\npbi config set-verify-certificates ~/certs/corporate-ca.pem\npbi config set-verify-certificates false\n```",
+    "hidden": false,
+    "kind": "command",
+    "params": [
+      {
+        "default": null,
+        "kind": "argument",
+        "metavar": "VALUE",
+        "multiple": false,
+        "name": "value",
+        "nargs": 1,
+        "opts": [
+          "value"
+        ],
+        "required": true,
+        "secondary_opts": [],
+        "type": {
+          "name": "text"
         }
       }
     ]

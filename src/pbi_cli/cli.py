@@ -72,6 +72,14 @@ def _get_auth_config_file() -> Path:
     return _get_config_dir() / "auth.json"
 
 
+def _verify_certificates():
+    """How API requests verify TLS certificates, from the config.
+
+    :return: True, False, or the path to a CA bundle file
+    """
+    return PBIConfig().verify_certificates
+
+
 def _handle_cache_load(
     cache_key: str, use_cache: bool, cache_only: bool, pbi_config: PBIConfig
 ) -> Optional[Dict[str, Any]]:
@@ -1032,6 +1040,66 @@ def disable_cache():
     typer.secho("✓ Cache disabled", fg="yellow")
 
 
+@command(config_app, "set-verify-certificates")
+def set_verify_certificates(
+    value: Annotated[
+        str,
+        typer.Argument(
+            metavar="VALUE",
+            help="true, false, or the path to a CA bundle file",
+        ),
+    ],
+):
+    """Set how API requests verify TLS certificates
+
+    VALUE is `true` (verify against the system CA bundle, the default),
+    `false` (do not verify), or the path to a CA bundle file, for example
+    when a corporate proxy re-signs TLS traffic.
+
+    ```
+    pbi config set-verify-certificates true
+    pbi config set-verify-certificates ~/certs/corporate-ca.pem
+    pbi config set-verify-certificates false
+    ```
+    """
+    lowered = value.strip().lower()
+    setting: Union[bool, str]
+    if lowered == "true":
+        setting = True
+    elif lowered == "false":
+        setting = False
+    else:
+        path = Path(value).expanduser()
+        if not path.is_file():
+            raise PBIError(
+                f"'{value}' is not true, false or an existing CA bundle file"
+            )
+        setting = str(path)
+
+    pbi_config = PBIConfig()
+    pbi_config.verify_certificates = setting
+    if setting is False:
+        typer.secho(
+            "! Certificate verification disabled: API traffic can be intercepted",
+            fg="yellow",
+        )
+    else:
+        typer.secho(
+            f"✓ Verify certificates: {pbi_config.verify_certificates}", fg="green"
+        )
+
+
+@command(config_app, "get-verify-certificates")
+def get_verify_certificates():
+    """Show how API requests verify TLS certificates
+
+    ```
+    pbi config get-verify-certificates
+    ```
+    """
+    typer.echo(f"Verify certificates: {PBIConfig().verify_certificates}")
+
+
 @cache_app.callback(invoke_without_command=True)
 def cache_group(ctx: typer.Context):
     """Manage cached API call results"""
@@ -1174,7 +1242,9 @@ def export_report(
     ] = None,
 ):
     """export report based on id"""
-    dr = DataRetriever(session_query_configs={"headers": load_auth(), "verify": False})
+    dr = DataRetriever(
+        session_query_configs={"headers": load_auth(), "verify": _verify_certificates()}
+    )
 
     uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
 
@@ -1280,7 +1350,9 @@ def workspaces_list(
 
     # Fetch from API if not using cache
     if result is None:
-        workspaces = Workspaces(auth=load_auth(group="admin"), verify=False)
+        workspaces = Workspaces(
+            auth=load_auth(group="admin"), verify=_verify_certificates()
+        )
         typer.echo(f"Retrieving workspaces for: {top=}, {expand=}, {odata_filter=}")
         result = workspaces(top=top, expand=expand, filter=odata_filter)
 
@@ -1351,7 +1423,7 @@ def format_convert(
     ```
     """
     format = format.value
-    workspaces = Workspaces(auth={}, verify=False)
+    workspaces = Workspaces(auth={}, verify=_verify_certificates())
 
     typer.echo(f"Converting to {format=}: {source=} -> {target}")
 
@@ -1444,7 +1516,7 @@ def report_users(
     typer.secho("getting report user details requires admin token")
 
     pbi_workspaces = powerbi_workspace.Workspaces(
-        auth=load_auth(group="admin"), verify=False, cache_file=source
+        auth=load_auth(group="admin"), verify=_verify_certificates(), cache_file=source
     )
 
     report_users = pbi_workspaces.report_users(
@@ -1577,7 +1649,11 @@ def user_access(
 
     # Fetch from API if not using cache
     if result is None:
-        user = User(auth=load_auth(group="admin"), user_id=user_id, verify=False)
+        user = User(
+            auth=load_auth(group="admin"),
+            user_id=user_id,
+            verify=_verify_certificates(),
+        )
         result = user()
 
         # Save to cache
@@ -1677,9 +1753,13 @@ def apps_list(
     if result is None:
         typer.echo(f"Listing Apps as {role}")
         if role == "user":
-            user = powerbi_app.Apps(auth=load_auth(group="user"), verify=False)
+            user = powerbi_app.Apps(
+                auth=load_auth(group="user"), verify=_verify_certificates()
+            )
         else:  # admin
-            user = powerbi_admin.Apps(auth=load_auth(group="admin"), verify=False)
+            user = powerbi_admin.Apps(
+                auth=load_auth(group="admin"), verify=_verify_certificates()
+            )
         result = user()
 
         # Save to cache
@@ -1733,7 +1813,9 @@ def app_info(
     file_type = file_type.value
     typer.echo(f"Investigating {app_id}")
 
-    a_app = powerbi_app.App(auth=load_auth(), verify=False, app_id=app_id)
+    a_app = powerbi_app.App(
+        auth=load_auth(), verify=_verify_certificates(), app_id=app_id
+    )
     app_data = a_app()
 
     if target is None:
@@ -1775,7 +1857,9 @@ def augment(
             typer.secho(f"creating folder {target}", fg="blue")
             target.mkdir(parents=True, exist_ok=True)
 
-    pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
+    pbi_apps = powerbi_app.Apps(
+        auth=load_auth(), verify=_verify_certificates(), cache_file=source
+    )
 
     apps_data = []
     for a in pbi_apps.apps:
@@ -1827,7 +1911,9 @@ def reports_users(
             typer.secho(f"creating folder {target}", fg="blue")
             target.mkdir(parents=True, exist_ok=True)
 
-    pbi_apps = powerbi_app.Apps(auth=load_auth(), verify=False, cache_file=source)
+    pbi_apps = powerbi_app.Apps(
+        auth=load_auth(), verify=_verify_certificates(), cache_file=source
+    )
 
     apps_data = []
     for a in pbi_apps.apps:
@@ -1845,7 +1931,7 @@ def reports_users(
             try:
                 logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
                 r_data = powerbi_admin_report.ReportUsers(
-                    auth=load_auth(), report_id=report_id, verify=False
+                    auth=load_auth(), report_id=report_id, verify=_verify_certificates()
                 ).users
                 r_data = {**r_data, **r}
                 report_data.append(r_data)
@@ -1884,7 +1970,10 @@ def reports_export(
     """Export report as file"""
 
     pbi_report = powerbi_report.Report(
-        auth=load_auth(), verify=False, report_id=report_id, group_id=group_id
+        auth=load_auth(),
+        verify=_verify_certificates(),
+        report_id=report_id,
+        group_id=group_id,
     )
 
     result = pbi_report.export()
@@ -1924,7 +2013,7 @@ def reports_list_group(
     either prints the result to the console or saves it to a JSON file.
     """
     group_reports = powerbi_report.GroupReports(
-        auth=load_auth(), verify=False, group_id=group_id
+        auth=load_auth(), verify=_verify_certificates(), group_id=group_id
     )
     result = group_reports.reports
 
@@ -1972,12 +2061,15 @@ def reports_pages(
     """
     if report_id is not None:
         pbi_report = powerbi_report.Report(
-            auth=load_auth(), verify=False, report_id=report_id, group_id=group_id
+            auth=load_auth(),
+            verify=_verify_certificates(),
+            report_id=report_id,
+            group_id=group_id,
         )
         result = pbi_report.pages
     else:
         group_reports = powerbi_report.GroupReports(
-            auth=load_auth(), verify=False, group_id=group_id
+            auth=load_auth(), verify=_verify_certificates(), group_id=group_id
         )
         result = group_reports.all_pages()
 
@@ -2155,7 +2247,7 @@ def scan_initiate(
 
     """
     workspace_info = powerbi_admin.WorkspaceInfo(
-        auth=load_auth(group="admin"), verify=False
+        auth=load_auth(group="admin"), verify=_verify_certificates()
     )
     result = workspace_info.initiate_scan(
         workspace_ids=[*workspace_ids],
@@ -2203,7 +2295,7 @@ def scan_result(
 
     """
     workspace_info = powerbi_admin.WorkspaceInfo(
-        auth=load_auth(group="admin"), verify=False
+        auth=load_auth(group="admin"), verify=_verify_certificates()
     )
     result = workspace_info.get_scan_result(scan_id=scan_id)
 
@@ -2242,7 +2334,7 @@ def scan_status(
 
     """
     workspace_info = powerbi_admin.WorkspaceInfo(
-        auth=load_auth(group="admin"), verify=False
+        auth=load_auth(group="admin"), verify=_verify_certificates()
     )
     try:
         result = workspace_info.get_scan_status(scan_id=scan_id)
@@ -2331,7 +2423,7 @@ def scan_get(
         )
 
     workspace_info = powerbi_admin.WorkspaceInfo(
-        auth=load_auth(group="admin"), verify=False
+        auth=load_auth(group="admin"), verify=_verify_certificates()
     )
 
     result = _run_scan(
@@ -2486,7 +2578,7 @@ def scan_batch(
         typer.echo(f"\n=== Workspace {label} ===")
         try:
             workspace_info = powerbi_admin.WorkspaceInfo(
-                auth=load_auth(group="admin"), verify=False
+                auth=load_auth(group="admin"), verify=_verify_certificates()
             )
             result = _run_scan(
                 workspace_info,

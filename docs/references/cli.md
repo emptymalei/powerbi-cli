@@ -234,8 +234,10 @@ $ pbi config [OPTIONS] COMMAND [ARGS]...
 * `enable-cache`: Enable caching of API call results
 * `get-cache-folder`: Get the currently configured cache folder
 * `get-output-folder`: Get the currently configured default...
+* `get-verify-certificates`: Show how API requests verify TLS certificates
 * `set-cache-folder`: Set the cache folder for storing API call...
 * `set-output-folder`: Set the default parent folder for all...
+* `set-verify-certificates`: Set how API requests verify TLS certificates
 * `show`: Show all configuration settings
 
 ### `pbi config disable-cache`
@@ -310,6 +312,24 @@ $ pbi config get-output-folder [OPTIONS]
 
 * `--help`: Show this message and exit.
 
+### `pbi config get-verify-certificates`
+
+Show how API requests verify TLS certificates
+
+```
+pbi config get-verify-certificates
+```
+
+**Usage**:
+
+```console
+$ pbi config get-verify-certificates [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
 ### `pbi config set-cache-folder`
 
 Set the cache folder for storing API call results
@@ -369,6 +389,34 @@ $ pbi config set-output-folder [OPTIONS] {FOLDER_PATH}
 **Arguments**:
 
 * `FOLDER_PATH`: Folder that holds the output of commands  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `pbi config set-verify-certificates`
+
+Set how API requests verify TLS certificates
+
+VALUE is `true` (verify against the system CA bundle, the default),
+`false` (do not verify), or the path to a CA bundle file, for example
+when a corporate proxy re-signs TLS traffic.
+
+```
+pbi config set-verify-certificates true
+pbi config set-verify-certificates ~/certs/corporate-ca.pem
+pbi config set-verify-certificates false
+```
+
+**Usage**:
+
+```console
+$ pbi config set-verify-certificates [OPTIONS] {VALUE}
+```
+
+**Arguments**:
+
+* `VALUE`: true, false, or the path to a CA bundle file  [required]
 
 **Options**:
 

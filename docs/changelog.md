@@ -24,6 +24,10 @@
 
 ### Added
 
+- `pbi config set-verify-certificates` and `pbi config get-verify-certificates` choose how API
+  requests verify TLS certificates: `true` (the default), `false` (prints a warning), or the path
+  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
+  longer skip the verification unconditionally.
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
 - Descriptions for the arguments of `pbi workspaces scan`, `pbi profile` and
   `pbi config` in `--help`.
