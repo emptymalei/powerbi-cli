@@ -334,6 +334,30 @@
 - `pbi apps augment` and `pbi reports users` with `--file-type excel` and a target that
   has a file extension now report a usage error. They used to crash with a `TypeError`.
 
+#### Sync and plan files
+
+- An incremental scan skipped a workspace that changed again within 24 hours of its last
+  scan, and moved the starting point of the next scan past the change. The batches of an
+  incremental scan are now always scanned, and the next scan continues from the start of
+  the oldest scan a run relied on (one it found fresh or continued) when that is earlier
+  than the start of the run. See [Sync](sync.md#scans).
+- A day of audit events whose read was interrupted could be sealed without its later
+  events: the continued read kept its old window. A day is now sealed only once a finished
+  read covered it to its end, and is read whole first when it was not; the manifest says
+  how far the reads cover (`window_end`, `covered_until`). Reading a day no longer reads all
+  its stored events again for each page.
+- A scan that an earlier run started is continued even when a workspace was added or
+  removed since, which used to shift the batches and start it over.
+- A [plan file](plan-file.md) that scans a workspace through two entries (or an entry and
+  the tenant) scans it once with the options of all of them, as the TUI says, instead of
+  once per entry. A `via:` that is no stored profile and looks like a misspelt `auto`,
+  `admin` or `user` says which was meant.
+- The sync state forgets failed and deferred units that no run touched for 30 days, and
+  those of days of events older than the API keeps; once 1,000 were kept, new failures were
+  no longer recorded. Runs that begin within the same second (the steps of a plan file) get
+  their own ids (`20261001T080000Z-2`). A run stopped by an expired token counts the units
+  it left undone.
+
 ### Development
 
 - `pbi_cli.tui.plain` has the widgets that show a `str` as the text it is (`PlainStatic`,
