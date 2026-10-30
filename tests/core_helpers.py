@@ -73,6 +73,8 @@ class FakeAdapter(BaseAdapter):
     def __init__(self) -> None:
         super().__init__()
         self.requests: List[requests.PreparedRequest] = []
+        #: how each request was told to verify TLS (``True``, ``False`` or a CA bundle)
+        self.verifies: List[Any] = []
         self._routes: List[
             Tuple[str, Union[str, Pattern[str]], List[Responder], List[int]]
         ] = []
@@ -97,6 +99,7 @@ class FakeAdapter(BaseAdapter):
 
     def send(self, request, **kwargs):  # type: ignore[no-untyped-def]
         self.requests.append(request)
+        self.verifies.append(kwargs.get("verify"))
         url = str(request.url)
         for method, pattern, responses, counter in self._routes:
             if method != request.method:

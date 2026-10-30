@@ -243,6 +243,10 @@
   says `interrupted` and how many units were not started), `SyncOptions.workspace_ids`
   scans only the chosen workspaces without moving the point the next incremental scan
   continues from, and a stop also cuts short a wait for quota.
+- `pbi config set-verify-certificates` and `pbi config get-verify-certificates` choose how API
+  requests verify TLS certificates: `true` (the default), `false` (prints a warning), or the path
+  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
+  longer skip the verification unconditionally.
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
 - `pbi sync plan`, `pbi sync run` and `pbi sync status` keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
