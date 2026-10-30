@@ -11,6 +11,8 @@ from typing import Any, Iterable, List
 
 from rich.text import Text
 from textual.command import DiscoveryHit, Hit, Hits, Provider
+from textual.content import Content
+from textual.fuzzy import Matcher
 
 from pbi_cli.core.catalog import label
 from pbi_cli.tui.commands import Command, commands_for
@@ -22,6 +24,21 @@ _LOCATION = re.compile(r"^(\w+://|[/~]|\.\.?[/\\]|[A-Za-z]:[/\\])")
 def _markup_safe(text: str) -> str:
     """Text for the help line of a hit, which Textual reads as markup: a ``[`` is a letter."""
     return text.replace("[", "\\[")
+
+
+def highlight(matcher: Matcher, candidate: str) -> Content:
+    """A candidate with the letters that the query matched highlighted, as `Matcher.highlight`
+    does, but read as the text it is: that one reads it as markup, so a name like
+    ``Finance [/EU]`` or ``[Confidential]Finance`` lost its brackets and its highlights.
+    """
+    content = Content(candidate)
+    score, offsets = matcher.fuzzy_search.match(matcher.query, candidate)
+    if not score:
+        return content
+    for offset in offsets:
+        if not candidate[offset].isspace():
+            content = content.stylize(matcher.match_style, offset, offset + 1)
+    return content
 
 
 def looks_like_a_location(text: str) -> bool:
@@ -72,7 +89,7 @@ class CommandsProvider(Provider):
             by_keywords = 0.5 if query.strip().lower() in keywords else 0.0
             score = max(by_title, by_keywords)
             if score > 0:
-                shown = matcher.highlight(title) if by_title else Text(title)
+                shown = highlight(matcher, title) if by_title else Text(title)
                 yield Hit(score, shown, run, text=title, help=_markup_safe(help_text))
         app: Any = self.app
         if app.backend.open_lake is not None and looks_like_a_location(query):
@@ -110,7 +127,7 @@ class GotoProvider(Provider):
             shown = f"{label(found.kind)}: {found.name}{where}"
             yield Hit(
                 matcher.match(shown) or 0.3,
-                matcher.highlight(shown) if matcher.match(shown) else Text(shown),
+                highlight(matcher, shown) if matcher.match(shown) else Text(shown),
                 partial(app.goto, found),
                 text=shown,
                 help=found.id,

@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 from sync_helpers import World
 from textual.command import CommandInput, CommandList, CommandPalette
+from textual.fuzzy import Matcher
 from textual.widgets import Input, SelectionList, TabbedContent
 from tui_helpers import backend_of, run_ui
 
@@ -17,7 +18,7 @@ from pbi_cli.errors import AuthError
 from pbi_cli.tui.backend import AccountInfo
 from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import WORK_LAKE, AccountsModal
-from pbi_cli.tui.palette import CommandsProvider, looks_like_a_location
+from pbi_cli.tui.palette import CommandsProvider, highlight, looks_like_a_location
 
 
 @pytest.fixture
@@ -710,3 +711,18 @@ def test_the_names_of_the_work_lake_constant_stands_for_the_work_lake(world):
     run_ui(backend, scenario)
 
     assert opened == ["/work/lake"]
+
+
+@pytest.mark.parametrize(
+    "query, name, lit",
+    [
+        ("eu", "Finance [/EU]", "EU"),
+        ("fin", "[Confidential]Finance", "Fin"),
+        ("sal", "[DEV] Sales", "Sal"),
+    ],
+)
+def test_a_hit_with_brackets_is_shown_as_it_is_with_what_matched_lit(query, name, lit):
+    shown = highlight(Matcher(query), name)
+
+    assert shown.plain == name
+    assert "".join(name[span.start : span.end] for span in shown.spans) == lit
