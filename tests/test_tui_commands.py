@@ -244,25 +244,40 @@ def test_a_sync_that_runs_can_be_stopped_from_anywhere(world, monkeypatch):
         await ui.click("#run")
         await ui.until(entered.is_set)
         while_shown = titles(ui)  # the Sync screen, with the sync running
+        sync_helps = (
+            command(ui, "Stop the sync").help,
+            command(ui, "Reload the lake").help,
+        )
         await ui.press("escape")  # back to the Explorer: the sync goes on
         running = titles(ui)
+        helps = (
+            command(ui, "Stop the sync").help,
+            command(ui, "Reload the lake").help,
+        )
         command(ui, "Stop the sync").run()
         await ui.settle()
         stopping = ui.app.run_state.stopping
         asked_to_stop = titles(ui)
         release.set()
         await ui.finish_sync()
-        return before, while_shown, running, stopping, asked_to_stop, titles(ui)
+        return (
+            (before, while_shown, running, stopping, asked_to_stop, titles(ui)),
+            sync_helps,
+            helps,
+        )
 
-    before, while_shown, running, stopping, asked_to_stop, after = run_ui(
-        backend_of(world), scenario
-    )
+    states, sync_helps, explorer_helps = run_ui(backend_of(world), scenario)
+    before, while_shown, running, stopping, asked_to_stop, after = states
 
     assert "Run the sync" in before and "Stop the sync" not in before
     assert "Run the sync" not in while_shown and "Stop the sync" in while_shown
     assert "Stop the sync" in running
     assert stopping is True and "Stop the sync" not in asked_to_stop
     assert "Stop the sync" not in after
+    # x stops the sync on the Sync screen only (on the Explorer it exports), and l reads
+    # the lake again on the Explorer only
+    assert sync_helps[0].endswith("key x") and "key" not in sync_helps[1]
+    assert "key" not in explorer_helps[0] and explorer_helps[1].endswith("key l")
 
 
 def test_a_lake_that_is_only_looked_at_offers_nothing_that_needs_an_account(world):
