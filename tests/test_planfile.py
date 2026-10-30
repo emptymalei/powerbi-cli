@@ -612,6 +612,16 @@ def test_a_profile_that_has_no_token_is_said_with_the_command_that_stores_one():
         error.value
     )
     assert "pbi-plan.yaml:4:" in str(error.value)
+    assert "Did you mean" not in str(error.value)
+
+
+def test_a_via_that_is_no_profile_and_looks_like_a_misspelt_word_says_which():
+    with pytest.raises(PlanFileError) as error:
+        read(
+            "version: 1\nworkspaces:\n  - {id: b, details: [pages], via: admn}\n"
+        ).accounting(Stored())
+    assert "no token is stored under the profile 'admn'" in str(error.value)
+    assert "Did you mean 'admin'?" in str(error.value)
 
 
 # ---------------------------------------------------------------------------

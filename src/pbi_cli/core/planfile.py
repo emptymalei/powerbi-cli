@@ -887,9 +887,17 @@ class PlanFile:
             if entry.names_a_profile and not accounts.has_account(
                 Scope.USER, entry.via
             ):
+                # not a profile: perhaps a word of `via` that is misspelt (`admn`)
+                close = difflib.get_close_matches(entry.via, _VIA_WORDS, n=1)
+                hint = (
+                    f" Did you mean '{close[0]}'? via is auto, admin, user or the name "
+                    "of a profile."
+                    if close
+                    else ""
+                )
                 raise PlanFileError(
                     f"{self.name}:{entry.line}: {entry.where}.via: no token is stored under "
-                    f"the profile '{entry.via}'. Store one with "
+                    f"the profile '{entry.via}'.{hint} Store one with "
                     f"`pbi auth -t <token> -p {entry.via} -g user`."
                 )
         return Accounting(admin=admin, users=tuple(users))
