@@ -524,6 +524,23 @@ def test_a_dialog_that_is_answered_twice_acts_once(
     assert len(clipboard_of_the_test) == 1
 
 
+def test_names_with_brackets_are_offered_as_they_are(world, tmp_path):
+    first = Exportable("Items of [Confidential]Sales", ("a",), (("1",),))
+    second = Exportable("Users of Finance [/EU]", ("a",), (("1",),))
+
+    async def scenario(ui):
+        ui.app.push_screen(
+            ExportModal([("The table", first), ("The tab", second)], str(tmp_path))
+        )
+        await ui.settle()
+        return [str(b.label) for b in dialog(ui).query_one("#what").query(RadioButton)]
+
+    assert run_ui(backend_of(world), scenario) == [
+        "The table: Items of [Confidential]Sales (1 row)",
+        "The tab: Users of Finance [/EU] (1 row)",
+    ]
+
+
 def test_the_format_becomes_one_that_the_other_export_can_have(world, tmp_path):
     table = Exportable("A table", ("a",), (("1",),))
     data = Exportable("Some data", data={"x": 1})

@@ -503,7 +503,7 @@ class ExportModal(Dialog[Optional[Exported]]):
                 with RadioSet(id="what"):
                     for index, (where, item) in enumerate(self._choices):
                         yield RadioButton(
-                            f"{where}: {item.describe()}",
+                            Text(f"{where}: {item.describe()}"),
                             value=index == 0,
                             name=str(index),
                         )
