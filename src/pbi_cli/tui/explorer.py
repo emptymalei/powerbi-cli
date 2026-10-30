@@ -47,6 +47,10 @@ from pbi_cli.tui.status import NOTICE_LONG, StatusBar
 #: Seconds to stay on an item before ``lazy: auto`` fetches its harmless details.
 AUTO_AFTER = 1.5
 
+#: Seconds the tree filter waits for the next key before it builds the tree again (a lake
+#: can have thousands of workspaces: the tree is not built anew for every letter).
+FILTER_DELAY = 0.2
+
 
 def workspace_of(subject: Any) -> Optional[str]:
     """The id of the workspace a workspace or an item is in (``None`` for anything else)."""
@@ -120,6 +124,9 @@ class Loaded:
 class ExplorerScreen(Screen):
     """Browse the tenant: the tree, the table and the detail pane."""
 
+    #: how long the tree filter waits for the next key (none: it filters at each key)
+    filter_delay = FILTER_DELAY
+
     BINDINGS = [
         Binding("/", "filter", "Filter"),
         Binding("r", "refresh", "Refresh"),
@@ -153,6 +160,14 @@ class ExplorerScreen(Screen):
         self._tree_nodes: Dict[NodeRef, TreeNode] = {}
         self._auto_timer: Optional[Timer] = None
         self._auto_tried: Set[Tuple[str, str, str]] = set()
+        self._filter_timer: Optional[Timer] = None
+        #: the days of audit events of the catalog they were read from: the tree is built
+        #: again at each change of its filter, and need not read them again each time
+        self._days: Optional[Tuple[Catalog, List[Any]]] = None
+        #: what the table shows was loaded from: the catalog, the node, and the workspaces
+        #: shown (a node that is highlighted again, the tree having been built anew, is
+        #: not read and drawn again)
+        self._loaded_key: Optional[Tuple[Any, ...]] = None
 
     # -- layout --------------------------------------------------------------------------
 
@@ -315,7 +330,7 @@ class ExplorerScreen(Screen):
                 ),
                 data=ref,
             )
-        days = catalog.event_days()
+        days = self._event_days(catalog)
         if days:
             ref = NodeRef("activity")
             self._tree_nodes[ref] = tree.root.add(
@@ -333,6 +348,12 @@ class ExplorerScreen(Screen):
             return
         target = self._tree_nodes.get(kept) or tree.root
         self._select(target)
+
+    def _event_days(self, catalog: Catalog) -> List[Any]:
+        """The days of audit events of the catalog, read once for each catalog."""
+        if self._days is None or self._days[0] is not catalog:
+            self._days = (catalog, catalog.event_days())
+        return self._days[1]
 
     def _select(self, node: TreeNode) -> None:
         """Move the cursor to a node, opening the branches above it."""
@@ -356,21 +377,34 @@ class ExplorerScreen(Screen):
 
     # -- loading a node ------------------------------------------------------------------
 
-    @work(thread=True, exclusive=True, group="node")
     def _load_node(self, ref: NodeRef) -> None:
-        worker = get_current_worker()
+        """Show what a node holds in the table, unless the table shows it already."""
         catalog = self.catalog
         if catalog is None:
             return
-        loaded = self._compute_node(
-            catalog,
-            ref,
-            self.pbi.lake_label,
-            self.pbi.backend.store.tenants() if ref.kind == "root" else (),
-            self.pbi.workspace_scope(catalog),
-        )
+        scope = self.pbi.workspace_scope(catalog)
+        key = (catalog, ref, scope, self.pbi.lake_label)
+        if key == self._loaded_key and self._pending is None:
+            return  # the same node of the same lake, highlighted again
+        self._read_node(ref, key)
+
+    @work(thread=True, exclusive=True, group="node")
+    def _read_node(self, ref: NodeRef, key: Tuple[Any, ...]) -> None:
+        worker = get_current_worker()
+        catalog, _, scope, lake = key
+        try:
+            loaded = self._compute_node(
+                catalog,
+                ref,
+                lake,
+                self.pbi.backend.store.tenants() if ref.kind == "root" else (),
+                scope,
+            )
+        except Exception as error:  # a broken lake file must not end the UI
+            loaded = Loaded(ref, f"Could not read this: {error}", [])
+            key = None  # try again when it is highlighted again
         if not worker.is_cancelled:
-            self.app.call_from_thread(self._show_node, loaded)
+            self.app.call_from_thread(self._show_node, loaded, key)
 
     @staticmethod
     def _compute_node(
@@ -438,7 +472,8 @@ class ExplorerScreen(Screen):
             )
         return Loaded(ref, "", [])
 
-    def _show_node(self, loaded: Loaded) -> None:
+    def _show_node(self, loaded: Loaded, key: Optional[Tuple[Any, ...]] = None) -> None:
+        self._loaded_key = key
         self._ref = (
             NodeRef("activity", loaded.ref.id)
             if loaded.ref.kind == "day"
@@ -830,7 +865,23 @@ class ExplorerScreen(Screen):
 
     @on(Input.Changed, "#tree-filter")
     def _tree_filter_changed(self, event: Input.Changed) -> None:
+        if event.value == self._tree_filter:
+            return  # applied already (going somewhere clears the filter itself)
         self._tree_filter = event.value
+        self._stop_filter_timer()
+        if self.filter_delay > 0 and event.value:
+            self._filter_timer = self.set_timer(self.filter_delay, self._filter_settled)
+        else:  # a filter that is cleared shows everything at once
+            self.rebuild_tree()
+
+    def _stop_filter_timer(self) -> None:
+        if self._filter_timer is not None:
+            self._filter_timer.stop()
+            self._filter_timer = None
+
+    def _filter_settled(self) -> None:
+        """No key was typed in the tree filter for a moment: build the tree for it."""
+        self._filter_timer = None
         self.rebuild_tree()
 
     @on(Input.Changed, "#table-filter")
@@ -846,6 +897,7 @@ class ExplorerScreen(Screen):
 
     def goto(self, kind: str, item_id: str, workspace_id: Optional[str]) -> None:
         """Select a workspace, or an item in its workspace (for the command palette)."""
+        self._stop_filter_timer()
         for box_id in ("#tree-filter", "#table-filter"):
             self.query_one(box_id, Input).value = ""
         if self._tree_filter or self._table_filter:
