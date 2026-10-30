@@ -152,7 +152,14 @@ class SyncState:
         """
         with self._lock:
             started = self._clock()
-            run_id = f"{started:%Y%m%dT%H%M%SZ}"
+            # to the second, as people read it; the steps of a plan file can start within
+            # one second, so a run that would share its id gets a number
+            run_id = base = f"{started:%Y%m%dT%H%M%SZ}"
+            taken = {run.get("id") for run in self.runs}
+            number = 1
+            while run_id in taken:
+                number += 1
+                run_id = f"{base}-{number}"
             for run in self.runs:
                 if run.get("status") == "running":
                     run["status"] = "interrupted"

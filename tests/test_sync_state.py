@@ -127,6 +127,19 @@ def test_only_the_latest_runs_are_kept(store, clock):
     assert state.runs[0]["targets"] == ["t5"]
 
 
+def test_runs_that_begin_within_one_second_get_their_own_ids(store, clock):
+    state = make(store, clock)
+
+    ids = []
+    for _ in range(3):  # the steps of a plan file
+        ids.append(state.begin_run(["groups"], {}))
+        state.end_run("completed", {})
+
+    assert ids == ["20261001T080000Z", "20261001T080000Z-2", "20261001T080000Z-3"]
+    clock.now += timedelta(seconds=1)
+    assert state.begin_run(["groups"], {}) == "20261001T080001Z"
+
+
 def test_ending_without_a_run_does_nothing(store, clock):
     make(store, clock).end_run("completed", {})
 
