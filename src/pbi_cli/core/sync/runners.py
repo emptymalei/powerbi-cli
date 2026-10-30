@@ -154,7 +154,14 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
     Every page is stored before the next one is asked for, with the link to the next page,
     so that an interrupted read continues where it stopped. Events are told apart by
     their ``Id``, so reading a day again adds only what is new. A day is sealed, and never
-    read again, once it is over and the events that arrive late have had time to arrive.
+    read again, once it is over, the events that arrive late have had time to arrive, and a
+    read that went to its last page covered the day to its end.
+
+    An interrupted read is continued with the window it was started with, which may end
+    before the day did. The day's manifest says how far each read covers (``window_end``,
+    and ``covered_until`` once a read went to its last page); when the continued read
+    covered less than the day and the day is due to be sealed, the day is read once more
+    whole before it is (only the events not stored yet are added).
     """
     assert unit.day is not None
     options, store = ctx.options, ctx.store
@@ -167,14 +174,24 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
     now = ctx.clock()
     start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
     day_end = start + timedelta(days=1)
+    last_moment = day_end - timedelta(milliseconds=1)
     # today is not over: ask for what has happened so far, and come back for the rest
-    end = min(day_end - timedelta(milliseconds=1), now)
+    end = min(last_moment, now)
     params = {"startDateTime": _quoted(start), "endDateTime": _quoted(end)}
     request = {"method": endpoint.method, "path": endpoint.path, "params": params}
     client = ctx.client_for(unit.scope, unit.account)
     profile = client.profile_name()
+    # the ids of the stored events, kept between pages rather than read for each page
+    known = store.event_ids(ctx.tenant, endpoint.id, day)
+    covered = stored.covered_until if stored else None
 
-    def read(start_at: Optional[str]) -> Tuple[int, int]:
+    def read(start_at: Optional[str], window: Optional[datetime]) -> Tuple[int, int]:
+        """Read to the last page, from a link to continue at or from the first page.
+
+        :param window: where the window of the read ends (``None``: not known, for a read
+            started by an older version)
+        """
+        nonlocal covered
         added = pages = 0
         for page in client.iter_pages(
             endpoint.id, params, url=start_at, max_wait=options.max_wait
@@ -183,6 +200,12 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
             body = page.data if isinstance(page.data, dict) else {}
             last = body.get("lastResultSet") is True
             following = None if last else body.get("continuationUri")
+            extra: Dict[str, Any] = {}
+            if window is not None:
+                extra["window_end"] = window.isoformat()
+                if not following and (covered is None or window > covered):
+                    covered = window  # the read is over: it covers its whole window
+                    extra["covered_until"] = window.isoformat()
             added += store.append_events(
                 ctx.tenant,
                 endpoint.id,
@@ -192,14 +215,20 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
                 profile=profile,
                 request=request,
                 at=now,
+                known=known,
+                extra=extra,
             )
             if last:
                 break
         return added, pages
 
     resume = stored.cursor if stored and not options.force else None
+    resumed_window: Optional[datetime] = None
+    if resume and stored is not None:
+        stamp = stored.manifest.get("window_end")
+        resumed_window = datetime.fromisoformat(stamp) if stamp else None
     try:
-        added, pages = read(resume)
+        added, pages = read(resume, resumed_window if resume else end)
     except ApiError as error:
         if resume is None or error.status not in STALE_CURSOR:
             raise
@@ -215,10 +244,16 @@ def run_events_day(ctx: Context, unit: Unit) -> Outcome:
             profile=profile,
             request=request,
             at=now,
+            known=known,
         )
-        added, pages = read(None)
+        added, pages = read(None, end)
 
-    complete = now >= day_end + options.seal_grace
+    due = now >= day_end + options.seal_grace
+    if due and (covered is None or covered < last_moment):
+        # the read that was continued stopped short of the end of the day: read it whole
+        more, more_pages = read(None, end)
+        added, pages = added + more, pages + more_pages
+    complete = due and covered is not None and covered >= last_moment
     if complete:
         store.seal_day(ctx.tenant, endpoint.id, day, at=now)
     return Outcome(
