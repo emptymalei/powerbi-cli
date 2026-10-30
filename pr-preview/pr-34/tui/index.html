@@ -1,0 +1,3550 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for pbi_cli - a command line interface for Power BI.">
+      
+      
+      
+        <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/tui/">
+      
+      
+        <link rel="prev" href="../plan-file/">
+      
+      
+        <link rel="next" href="../cache/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.67">
+    
+    
+      
+        <title>Terminal UI - pbi_cli Documentation</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/classic/main.cfc7948b.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/classic/palette.bf1c5cd6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#terminal-ui" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="pbi_cli Documentation" class="md-header__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pbi_cli Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Terminal UI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="red"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../auth/" class="md-tabs__link">
+          
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../references/" class="md-tabs__link">
+          
+  
+  References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="pbi_cli Documentation" class="md-nav__button md-logo" aria-label="pbi_cli Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    pbi_cli Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/emptymalei/powerbi-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    emptymalei/powerbi-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Workspace Scans
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sharing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sharing a lake
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Sync
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plan-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+        <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Terminal UI
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Terminal UI
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-and-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Install and start
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-command-palette" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The command palette
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Explorer
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Explorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The tree
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The details
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#several-workspaces-at-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Several workspaces at once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-scan-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Scan tab
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details-one-item-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Details, one item at a time
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copying-and-saving-what-you-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Copying and saving what you see
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Finding things
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-lake-again-and-fetching-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reading the lake again, and fetching again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-sync-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Sync screen
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Sync screen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-a-plan-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        With a plan file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#only-the-workspaces-of-the-plan-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only the workspaces of the plan file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-in-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing in again
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Accounts
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#only-a-user-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only a user account
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-lakes-and-view-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Other lakes, and view only
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Keys
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        For developers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Cache (legacy)
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  References
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  References
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  pbi_cli
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  pbi_cli
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  cli
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  errors
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  session
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  core
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  core
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  catalog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  details
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/fsutil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  fsutil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planfile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planfile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/planrun/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  planrun
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powershell
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/publish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  publish
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/ratelimit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ratelimit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  registry
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/scanmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanmodel
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sources
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  sync
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_17">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  sync
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  engine
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/runners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  runners
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  state
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/sync/targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  targets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/timefmt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  timefmt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tui
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  tui
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backend
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/clipboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  clipboard
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/exporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  exporting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/plain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  plain
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/render/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  render
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  run
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/scanview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  scanview
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/summary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/tabexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tabexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powerbi
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  powerbi
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  index
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  admin
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  app
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  base
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  io
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/powerbi/report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-and-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Install and start
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-command-palette" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The command palette
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Explorer
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Explorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The tree
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The details
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#several-workspaces-at-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Several workspaces at once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-scan-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Scan tab
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details-one-item-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Details, one item at a time
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copying-and-saving-what-you-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Copying and saving what you see
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Finding things
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-lake-again-and-fetching-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reading the lake again, and fetching again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-sync-screen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Sync screen
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Sync screen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-a-plan-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        With a plan file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#only-the-workspaces-of-the-plan-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only the workspaces of the plan file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signing-in-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Signing in again
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Accounts
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#only-a-user-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Only a user account
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-lakes-and-view-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Other lakes, and view only
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Keys
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        For developers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="terminal-ui">Terminal UI<a class="headerlink" href="#terminal-ui" title="Permanent link">¤</a></h1>
+<p><code>pbi tui</code> opens a terminal UI for what the <a href="../lake/">data lake</a> holds. You browse the
+workspaces of your tenant, what is in each of them, who can open it, what it is built from
+and what is built on it, and how fresh each part is. A second screen plans, runs and stops
+a <a href="../sync/">sync</a>. You do not have to remember a key: press <code>:</code> and search for what you want
+to do (see <a href="#the-command-palette">The command palette</a>).</p>
+<p><img alt="The Explorer: the workspaces of a tenant, the items of Finance, and its details" src="../images/tui-explorer.svg" /></p>
+<p>The UI only reads. Browsing reads the lake on your disk (or in S3), so it works without a
+token and without a network. The only requests it ever sends to Power BI are those of
+<code>pbi sync</code>, which read, and scan, and nothing else.</p>
+<h2 id="install-and-start">Install and start<a class="headerlink" href="#install-and-start" title="Permanent link">¤</a></h2>
+<p>The UI needs <a href="https://textual.textualize.io">Textual</a>, which is an optional extra:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"pbi-cli[tui]"</span><span class="w">          </span><span class="c1"># or, in the repository: uv sync --extra tui</span>
+</code></pre></div>
+<p>It browses the data lake, so set the cache folder once (the lake is its <code>lake</code> folder) and
+fill the lake with a <a href="../sync/">sync</a>, from the command line or from the UI itself:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>config<span class="w"> </span>set-cache-folder<span class="w"> </span>~/PowerBI/cache
+pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w"> </span>default<span class="w"> </span>scan<span class="w"> </span>--lineage<span class="w"> </span>--get-artifact-users<span class="w">   </span><span class="c1"># or press s in the UI</span>
+pbi<span class="w"> </span>tui
+</code></pre></div>
+<p>A bare <code>pbi</code> in a terminal opens the UI too, when Textual is installed and a cache folder is
+set; anywhere else it greets as before. <code>pbi tui --tenant &lt;id&gt;</code> browses another tenant of
+the lake than the one of your token, and <code>pbi tui --config pbi-plan.yaml</code> opens it with a
+<a href="../plan-file/">plan file</a> (see <a href="#with-a-plan-file">With a plan file</a>). The log of the UI
+goes to <code>~/.pbi_cli/tui.log</code> (it would write over the screen otherwise).</p>
+<h2 id="the-command-palette">The command palette<a class="headerlink" href="#the-command-palette" title="Permanent link">¤</a></h2>
+<p>Press <code>:</code> (as in Vim) or <code>Ctrl+P</code> (as in VS Code and Obsidian) anywhere, or click
+<code>: commands</code> at the right end of the header. A search bar opens over the screen with every
+action of the UI under it, each with a line that says what it does and the key that does the
+same. Type a few letters, <code>Enter</code> runs the highlighted one, <code>Esc</code> closes the bar.</p>
+<p><img alt="The palette, as it opens on the Explorer: every action, with its key" src="../images/tui-palette.svg" /></p>
+<p>It narrows as you type, and finds a command by other words for it (<code>login</code> finds <em>Sign in</em>,
+<code>cancel</code> finds <em>Stop the sync</em>):</p>
+<p><img alt="Typing sy: what has to do with a sync" src="../images/tui-palette-search.svg" /></p>
+<p>What it lists is what can be done <em>now</em>, so nothing in it is a dead end:</p>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Commands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the Explorer</td>
+<td>fetch again what is selected (it says what: <code>Scan Finance</code>, <code>Fetch the lists of the tenant</code>, <code>Fetch what you can see</code>, ...), fetch the details the selected item lacks (<code>Fetch the users and data sources of Finance model</code>), filter, clear the filter, show a tab</td>
+</tr>
+<tr>
+<td>the Sync screen</td>
+<td>run the sync, show a tab</td>
+</tr>
+<tr>
+<td>while a sync runs</td>
+<td>stop the sync, from any screen</td>
+</tr>
+<tr>
+<td>everywhere</td>
+<td>open the Explorer or the Sync screen, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (<code>Make svc-finance the active user account</code>), store a new token for a profile, open another lake, the work lake, or one you opened lately</td>
+</tr>
+<tr>
+<td>Textual</td>
+<td>its own commands: the theme, the key list, a screenshot, quit</td>
+</tr>
+</tbody>
+</table>
+<p>On a lake that is only looked at (<a href="#other-lakes-and-view-only">view only</a>) there is nothing
+to sign in to and nothing to fetch, so those commands are not listed. Two things work by what
+you type rather than by a list: a <strong>name</strong> (a workspace, report, dataset, dashboard or
+dataflow) jumps to it, and a <strong>place</strong> (<code>s3://bucket/lake</code>, <code>/shared/lake</code>, <code>~/lake</code>) offers
+<em>Open lake ...</em>, which opens it view only.</p>
+<p><code>:</code> is an ordinary key, so in a box that you are typing in (a filter, a token, a location) it
+is a colon.</p>
+<h2 id="the-explorer">The Explorer<a class="headerlink" href="#the-explorer" title="Permanent link">¤</a></h2>
+<p>The Explorer has three parts: a tree of the tenant on the left, a table of what is in the
+selected node at the top right, and the details of the selected row below it.</p>
+<p>Names are shown exactly as Power BI has them. Many are tagged in square brackets
+(<code>[Confidential]Finance</code>, <code>[Experiment] Test</code>), and the brackets stay: nothing the UI shows
+is read as markup, in the tables, the titles, the dialogs and the notices alike.</p>
+<h3 id="the-tree">The tree<a class="headerlink" href="#the-tree" title="Permanent link">¤</a></h3>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>What the table lists</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lake</strong> (the top)</td>
+<td>each list the lake holds, how many rows it has and how fresh it is</td>
+<td>the lists of <code>pbi sync</code></td>
+</tr>
+<tr>
+<td><strong>Workspaces</strong></td>
+<td>the workspaces; open one to see what is in it. With a <a href="#only-the-workspaces-of-the-plan-file">plan file</a> only the ones it names (<code>1 of 4,321</code>), until you press <code>w</code></td>
+<td><code>groups</code></td>
+</tr>
+<tr>
+<td><strong>Personal workspaces</strong></td>
+<td>the same for personal workspaces (they are many, so they are apart)</td>
+<td><code>groups</code></td>
+</tr>
+<tr>
+<td>a workspace</td>
+<td>its reports, datasets, dashboards, dataflows and apps</td>
+<td>the lists, with the newest scan over them</td>
+</tr>
+<tr>
+<td><strong>Apps</strong></td>
+<td>the apps of the tenant (with only a user account: the apps of that account); an app has a Users tab once <code>app-users</code> has fetched who can open it</td>
+<td><code>apps</code>, or <code>user-apps</code>; <code>app-users</code></td>
+</tr>
+<tr>
+<td><strong>Capacities</strong></td>
+<td>the capacities of the tenant</td>
+<td><code>capacities</code></td>
+</tr>
+<tr>
+<td><strong>Activity</strong></td>
+<td>the days of audit events in the lake; open a day to see its events, newest first</td>
+<td><code>activity</code></td>
+</tr>
+</tbody>
+</table>
+<p>The dot before a workspace says how fresh what the lake knows about it is. It is the least
+fresh of the list of workspaces and the scan of the workspace:</p>
+<table>
+<thead>
+<tr>
+<th>Dot</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>green</td>
+<td>fresh: younger than the time to live of its target (a day, for the lists and the scans)</td>
+</tr>
+<tr>
+<td>yellow</td>
+<td>older than that, but less than a week</td>
+</tr>
+<tr>
+<td>red</td>
+<td>a week old or more</td>
+</tr>
+<tr>
+<td>empty grey circle</td>
+<td>not in the lake</td>
+</tr>
+</tbody>
+</table>
+<p>An <a href="../sync/#scans">incremental scan</a> does not fetch a workspace that did not change, so
+such a workspace counts as scanned <em>as of the start of the last complete scan</em> (with the
+same options): an unchanged workspace is not shown as old.</p>
+<p>A workspace shows what the lake holds of it, and nothing else. After <code>pbi sync run groups</code>,
+which fetches only the list of workspaces, every workspace is empty: the title of the table
+says that the lists of items are not in the lake (or which of them, when only some are
+missing), and the Info tab names each list that is missing (reports, datasets, dashboards,
+dataflows, apps). Press <code>s</code> and <strong>Run</strong> to fetch the plain targets, or <code>r</code> to scan that one
+workspace. A workspace that really holds nothing says so, and one that has the lists but was
+never scanned says to scan it.</p>
+<p>When the last sync <em>tried</em> to fetch a missing list and did not manage, the title says that it
+did not bring it, and the Info tab says why, from the state of the sync: the list <strong>could not
+be fetched</strong> (with what Power BI answered: a <code>403</code> means that the token is not an
+administrator's), or it was <strong>held back by a quota</strong> (Power BI throttled the requests for
+longer than a sync waits; the tenant's quotas are shared with every other tool that uses the
+admin APIs, so run the sync again later). The <em>Contents</em> rows of the Info tab say the same
+for each list in a few words. The same facts are on the Lake tab of the Sync screen.</p>
+<h3 id="the-details">The details<a class="headerlink" href="#the-details" title="Permanent link">¤</a></h3>
+<p>Press a number, or click a tab, to switch the details of the selected row:</p>
+<p><img alt="The users of a report" src="../images/tui-users.svg" /></p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Tab</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1</code></td>
+<td>Info</td>
+<td>the plain fields of the row, where they come from, and how old they are; for a workspace also which accounts see it (<em>Visible to</em>, when the lake holds the lists of a user account)</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Users</td>
+<td>who has access: from what was fetched for the item (<code>report-users</code>, <code>dataset-users</code>, ...), from the list of workspaces fetched with <code>-e users</code>, or from the scan with <code>--get-artifact-users</code>. When the lake does not hold them, the tab says what to fetch, and <code>f</code> fetches them</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td>Lineage</td>
+<td>what the item is built from and what is built on it (below)</td>
+</tr>
+<tr>
+<td><code>4</code></td>
+<td>JSON</td>
+<td>the stored answer, as it came from the API, and the folder of the lake it is in</td>
+</tr>
+<tr>
+<td><code>5</code></td>
+<td>Versions</td>
+<td>every stored answer that holds this, newest first: when, which operation, how many rows, how big, by which profile</td>
+</tr>
+<tr>
+<td><code>6</code></td>
+<td>Details</td>
+<td>what more there is to know of the item, and what the lake lacks of it: <a href="#details-one-item-at-a-time">fetched one item at a time</a></td>
+</tr>
+<tr>
+<td><code>7</code></td>
+<td>Scan</td>
+<td>what the newest scan says about it: <a href="#the-scan-tab">its tables, measures and where the data comes from</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="several-workspaces-at-once">Several workspaces at once<a class="headerlink" href="#several-workspaces-at-once" title="Permanent link">¤</a></h3>
+<p>Select the <strong>Workspaces</strong> node (or <strong>Personal workspaces</strong>) and leave the table alone: the Info, Users
+and Scan tabs then cover <strong>every workspace the table lists</strong>, not one. The Users tab lists everybody
+with access to any of them, one line for each person and workspace, ordered by person (so that the
+workspaces of one person are together), and says for how many workspaces the lake holds the people
+and which it does not hold them for (<em>"6 entries: 4 people with access to 3 of 5 workspaces"</em>; a
+person who is in several workspaces is counted once). The Info tab counts the workspaces, how many were
+scanned, how many have their people in the lake (counted for up to 200 workspaces: above that, narrow the
+table) and the items they hold. The Scan tab sums the scans (below). <strong>Narrow the table with <code>/</code></strong>
+and the tabs follow: type part of a name, and they cover only the workspaces that match. Pick a row
+(move into the table) and the tabs are about that one workspace again. Up to 500 workspaces are
+combined; the tabs say when the list is longer.</p>
+<p>Everything in these tabs is read from the lake, so it can be shared with it: publish the lake
+(see <a href="../sharing/">Sharing a lake</a>) and the people who open it see the same tabs. What is not in the
+lake yet is fetched by the <a href="../plan-file/">plan file</a>: <code>details: [users]</code> for the people of each
+workspace, and a <code>scan:</code> for what is inside it.</p>
+<h3 id="the-scan-tab">The Scan tab<a class="headerlink" href="#the-scan-tab" title="Permanent link">¤</a></h3>
+<p><img alt="The Scan tab of a dataset: its tables, where each reads from, and its measures" src="../images/tui-scan.svg" /></p>
+<p>A scan is the only operation that looks <strong>inside</strong> a workspace. Press <code>7</code> for what the newest scan of
+the selected workspace or item says (with <code>r</code> on a workspace you scan it, and the plan file's <code>scan:</code>
+does it for the workspaces it names):</p>
+<ul>
+<li><strong>A workspace</strong>: how many reports, datasets, dashboards, dataflows, tables and measures it has; <strong>where
+  the data comes from</strong> (every server and database, file, SharePoint site or URL that the queries of
+  its tables read, with how many datasets and tables read each); the data sources the scan lists; and
+  a line for each dataset.</li>
+<li><strong>A dataset</strong>: each table with its columns, its measures, what loads it (M or DAX) and <strong>where it reads
+  from</strong>; the places the tables read from; the <strong>native queries</strong> (the SQL that is sent to a database, and
+  the tables it reads); the parameters and shared queries; the measures with their DAX.</li>
+<li><strong>A report</strong>: the dataset it is built on, as above. <strong>A dashboard</strong>: its tiles. <strong>A dataflow</strong>: the data
+  sources it reads, when the scan lists them.</li>
+<li><strong>Several workspaces</strong> (the list): the same, summed, and a line for each scanned workspace.</li>
+</ul>
+<p>What the tab can show depends on the options of the scan: without <code>dataset_schema</code> there are no tables,
+without <code>dataset_expressions</code> there are no queries (so no sources to read), without <code>datasource_details</code>
+no servers or paths of the data sources. The tab says which is missing and how to scan again with it
+(<code>scan: [dataset_schema, dataset_expressions, datasource_details]</code> on the entry of the plan file, or
+just <strong><code>scan: all</code></strong>, which asks for every option). The tenant settings for detailed metadata have to
+be on.</p>
+<p>When the tab says that a scan lacks something, it also says <strong>why that is so</strong>:</p>
+<ul>
+<li><strong>The plan file asks for it, and the scan is older.</strong> <em>"The plan file asks for dataset schema and
+  dataset expressions for this workspace, but its newest scan was made without them."</em> Run the plan
+  again (the Sync screen, <strong>Run</strong>), or press <code>r</code>: <code>r</code> scans the workspace with the options that the
+  file asks for it, together with those its last scan had (a refresh never brings less than the scan
+  it replaces), or with <strong>every option</strong> when the file says nothing about the workspace. The dialog
+  names the options (<em>with lineage, datasource details, ...</em>), and it costs the same requests
+  whatever they are.</li>
+<li><strong>The last scan that a sync tried failed.</strong> The tab says so, with what Power BI answered, next to
+  what the plan asks for (and for a workspace that has no scan at all).</li>
+<li><strong>It was asked for and did not come.</strong> <em>"The scan asked for the dataset schema, but none of its
+  datasets has tables."</em> Power BI leaves the tables out, without saying so, when the tenant settings
+  <em>Enhance admin APIs responses with detailed metadata</em> (and, for the queries, <em>... with DAX and
+  mashup expressions</em>) are off, and for a dataset that has not been refreshed or published since they
+  were turned on: refresh the dataset (or publish it again), then scan the workspace again.</li>
+</ul>
+<p><strong>The sources are read from the queries.</strong> The expression of a table is Power Query (M); the tab finds the
+connectors that it calls and what it gives them: <code>Sql.Database("srv", "db")</code> is the server and database,
+<code>Source{[Schema="dbo",Item="Sales"]}[Data]</code> the table, <code>Excel.Workbook(File.Contents("C:\x.xlsx"))</code> the
+file (and the sheet that is taken from it), <code>SharePoint.Files("https://...")</code> the site, <code>Web.Contents</code> the
+address. A name that stands for a text (a parameter of the dataset, or an earlier step of the query) is
+followed; text joined with <code>&amp;</code> is put together, and a part that cannot be followed is shown as <code>{Name}</code>
+and listed as <em>not known</em>. A native query (<code>[Query="select ..."]</code>, or <code>Value.NativeQuery</code>) is shown on
+one line (the line breaks and tabs that M writes as <code>#(lf)</code>, <code>#(cr,lf)</code> and <code>#(tab)</code> are blanks), and
+the tables after its <code>FROM</code> and <code>JOIN</code>. It is not an M parser: a connector it does not know is not a
+source (the table says so, and the JSON tab has the whole expression), and a calculated table (DAX)
+reads from nothing. The databases it knows are SQL Server, Azure Synapse, Oracle, PostgreSQL, MySQL, Teradata, SAP
+HANA, Snowflake, Databricks, BigQuery, Redshift, Analysis Services and Azure Data Explorer; the files and
+services Excel, CSV, JSON, XML, PDF, Parquet, folders, SharePoint, OData, ODBC and OLE DB, web addresses and
+Azure storage, Dataverse, Salesforce and Fabric lakehouses (<code>pbi_cli.core.sources</code> has the list).</p>
+<h3 id="details-one-item-at-a-time">Details, one item at a time<a class="headerlink" href="#details-one-item-at-a-time" title="Permanent link">¤</a></h3>
+<p>The lists of a sync are cheap (one request for every report of the tenant), but who has
+access to each report, or each dataset's data sources, costs <strong>one request per item</strong>, and
+the administrator's quota for it is 200 an hour. So a sync does not keep them unless you name
+them (<code>pbi sync run dataset-users</code>), and the UI fetches them for the one item you look at:</p>
+<p><img alt="The details of a dataset: what the lake holds, what it lacks, and how to get it" src="../images/tui-details.svg" /></p>
+<p>The <strong>Details</strong> tab (<code>6</code>) lists what an item can have (a report: users, pages; a dataset:
+users, data sources, refreshes, parameters; a dashboard: users, tiles; a dataflow: users,
+data sources; a workspace: users), what the lake holds of each (how many rows, from which
+operation, how old) and what to do about what it lacks. Press <code>f</code> to fetch the missing ones:
+the dialog shows what will be requested, for this item and no other, and how that compares with
+the quota, and <strong>Fetch</strong> runs it. The same row is selected again afterwards, now with the
+details filled in. On the Users tab <code>f</code> fetches only the users.</p>
+<ul>
+<li><strong>Which account.</strong> An administrator's account is used when there is one (it needs no
+  permission on the item), else a user's. What only one kind can read is said: the refresh
+  history, the parameters and the tiles of a dashboard need a user account; who has access to a
+  report or a dashboard needs an administrator's.</li>
+<li><strong>When a user is refused.</strong> A user can read the users of a dataset only with Reshare
+  permission on it, and its data sources and refresh history only with Write permission. When
+  the answer is <code>403</code> the tab says <strong>refused</strong> and names the permission, and another account may
+  do better (<code>p</code>).</li>
+<li><strong>Cost.</strong> Fetching a detail for one item may also read a list it depends on, when the lake
+  holds no fresh one (the dialog says so): the datasets of the tenant for a dataset, the
+  workspaces and datasets of the user for a user account.</li>
+<li><strong>A lake that is only looked at</strong> fetches nothing: the tab says <em>view only</em>.</li>
+</ul>
+<p>The command palette offers the same, as the name of what it would fetch (<code>Fetch the users and
+data sources of Finance model</code>).</p>
+<p>The <strong>Lineage</strong> tab follows what the scan of the workspace says (it needs a scan with
+<code>--lineage</code>, and says so when the scan was made without):</p>
+<p><img alt="The lineage of a dataset: its dataflow and data source, and the reports and dashboard built on it" src="../images/tui-lineage.svg" /></p>
+<ul>
+<li><em>Built from</em>: a report's dataset; a dataset's upstream dataflows, datasets and data
+  sources; a dashboard's reports and datasets (its tiles). It is followed across
+  workspaces, as far as the scans in the lake reach.</li>
+<li><em>Built on it</em>: the reports of a dataset, from the lists of the whole tenant, and
+  everything else (datasets on a dataflow, dashboards on a report) from the scan of the
+  item's <strong>own</strong> workspace. Another workspace may build on the item without the lake
+  knowing; the tab says so.</li>
+</ul>
+<h3 id="copying-and-saving-what-you-see">Copying and saving what you see<a class="headerlink" href="#copying-and-saving-what-you-see" title="Permanent link">¤</a></h3>
+<p><img alt="The Export dialog: the Users tab of a report, as CSV" src="../images/tui-export.svg" /></p>
+<p>What a tab shows can leave the terminal. <strong><code>y</code></strong> puts it on the clipboard as tab-separated text, which
+pastes into the cells of a spreadsheet (or into a mail). <strong><code>x</code></strong> opens a dialog to <strong>save</strong> it as a file
+or <strong>copy</strong> it, in the format you choose. Both are in the <a href="#the-command-palette">command palette</a>
+(<em>Export what is shown…</em>, <em>Copy what is shown</em>), and both work on a lake that is only looked at.</p>
+<ul>
+<li><strong>What.</strong> The tab that is shown, or the table above it (after the filter, with the freshness dots
+  written as words). <code>y</code> copies the tab, or the table when the tab has nothing to give (a hint, or
+  the people that the lake does not hold).</li>
+<li><strong>Format.</strong> CSV (written with a byte order mark, which is what Excel needs to read accents right),
+  an Excel workbook (a header row you can filter, every cell a text), JSON (a list of objects, one for
+  each row), a Markdown table, or tab-separated text. The JSON tab gives the JSON the lake holds, and
+  only that.</li>
+<li><strong>File.</strong> Suggested in the folder <code>pbi tui</code> was started in, as <code>Users of report Sales.csv</code> (a name
+  that no file has yet; the next dialog suggests the folder of the last file). A name that exists is
+  replaced only when you press <strong>Save</strong> a second time. <strong>Copy</strong> puts the text of the chosen format on
+  the clipboard (a workbook is copied as tab-separated text).</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>What it gives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Info</td>
+<td>the fields and their values</td>
+</tr>
+<tr>
+<td>Users</td>
+<td>name, e-mail or id, access, type; for several workspaces also the workspace and its id. For a workspace, a report, a dataset, a dashboard, a dataflow or an app</td>
+</tr>
+<tr>
+<td>Lineage</td>
+<td>for each step: direction (<em>built from</em>, <em>built on it</em>), level, kind, name, workspace, note, id</td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>the JSON of the lake</td>
+</tr>
+<tr>
+<td>Versions, Details</td>
+<td>the rows the tab shows</td>
+</tr>
+<tr>
+<td>Scan</td>
+<td>one row for each place that each table reads its data from: workspace, dataset, table, loaded by (M or DAX), source, server, database, file or address, item, the native query and the tables it reads, the names that could not be followed, and <strong>the whole expression</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The clipboard is the one of the system, put there with the tool the platform has (<code>pbcopy</code> on macOS,
+<code>Set-Clipboard</code> of PowerShell on Windows, <code>wl-copy</code>, <code>xclip</code> or <code>xsel</code> on Linux), and the terminal is
+asked to set its clipboard as well. When no tool worked, the notice says that the text was only sent
+to the terminal, and that a terminal has to allow that; a file always works.</p>
+<p>A cell that a spreadsheet would take for a formula (it starts with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>) is written
+as text: with a <code>'</code> in front of it in CSV and tab-separated text, as a text cell in a workbook. What the
+tables show as <code>-</code> (nothing) is an empty cell in the export.</p>
+<h3 id="finding-things">Finding things<a class="headerlink" href="#finding-things" title="Permanent link">¤</a></h3>
+<ul>
+<li><code>/</code> filters what has the focus: the workspaces of the tree, or the rows of the table. All
+  the words you type must be in the row (case does not matter), so <code>report</code> also finds the
+  reports of a workspace. <code>Esc</code> clears the filter. A table shows at most 2,000 rows and the
+  tree 5,000 workspaces; the filter narrows them.</li>
+<li><code>:</code> or <code>Ctrl+P</code> opens the <a href="#the-command-palette">command palette</a>. Type a name to jump to
+  a workspace, report, dataset, dashboard or dataflow, wherever it is, or the name of a
+  command to run it.</li>
+<li><code>Tab</code> and <code>Shift+Tab</code> move between the tree, the table and the tabs; the arrow keys and
+  <code>Enter</code> move and open nodes, and the mouse works.</li>
+</ul>
+<h3 id="reading-the-lake-again-and-fetching-again">Reading the lake again, and fetching again<a class="headerlink" href="#reading-the-lake-again-and-fetching-again" title="Permanent link">¤</a></h3>
+<p>The UI reads the lake when it starts and again after every sync it runs. If something else
+syncs while it is open, for example a nightly <code>pbi sync run</code>, press <code>l</code> to read the lake
+again.</p>
+<p><code>r</code> fetches again what you have selected, after asking. The dialog shows what will be
+requested and how that compares with the quota:</p>
+<table>
+<thead>
+<tr>
+<th>Selected</th>
+<th>What <code>r</code> fetches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a workspace (its node, whatever row of it is selected), or a workspace picked in the list of workspaces</td>
+<td>a scan of that one workspace: with the options that the plan file asks for it together with those of its last scan, or with every option when the file says nothing (the dialog names them): about five requests of the scan quota, whatever the options</td>
+</tr>
+<tr>
+<td>the Lake, Workspaces or Personal workspaces</td>
+<td>the lists of the tenant: workspaces, apps, capacities, reports, datasets, dashboards and dataflows</td>
+</tr>
+<tr>
+<td>Apps, Capacities</td>
+<td>that list</td>
+</tr>
+<tr>
+<td>Activity</td>
+<td>the audit events (a complete day is never fetched again)</td>
+</tr>
+</tbody>
+</table>
+<p>It is the same engine as <code>pbi sync run</code>, so the same rules hold: the quotas are kept,
+a request waits for a short quota, and what the quota holds back is fetched next time.</p>
+<p>With <strong>only a user account</strong> an administrator's scan or tenant list is not possible, so
+<code>r</code> on a workspace, the Lake or Workspaces fetches <em>what you can see</em> instead (the
+workspaces of the account, their reports, datasets, dashboards and dataflows, and its
+apps), <code>r</code> on Apps fetches the apps of the account, and <code>r</code> on Capacities or Activity says
+that only an administrator account can fetch them. See <a href="#accounts">Accounts</a>.</p>
+<h2 id="the-sync-screen">The Sync screen<a class="headerlink" href="#the-sync-screen" title="Permanent link">¤</a></h2>
+<p>Press <code>s</code> to plan and run a sync, and <code>Esc</code> (or <code>e</code>) to go back to the Explorer.</p>
+<p><img alt="The Sync screen: the targets, the options, and the plan with its cost against the quotas" src="../images/tui-sync.svg" /></p>
+<ul>
+<li><strong>Targets</strong> (left): the same targets as <a href="../sync/#what-can-be-synced"><code>pbi sync</code></a>. The
+  plain ones are chosen at first; the ones marked ⚠ copy personal data or queries, and a
+  note under the list says what each one copies. Nothing is fetched until you run. A target
+  whose account is not stored is dimmed and cannot be chosen, and the note says which account
+  it needs (see <a href="#accounts">Accounts</a>).</li>
+<li><strong>Options</strong>: fetch again what is fresh (<code>--force</code>), scan every workspace, the options of
+  the scan, the days of audit events and how many requests go at once.</li>
+<li><strong>Plan</strong> (right): what the sync would do and what it costs, worked out from what the lake
+  holds, with the requests it needs against the quota that is left. It is the plan of
+  <code>pbi sync plan</code>, updated as you change the targets and the options. Where something does
+  not fit the quota now, it says what is held back.</li>
+<li><strong>Run sync</strong> starts it, and <strong>Stop</strong> ends it. A sync that is stopped finishes the requests
+  in flight and starts nothing new, and a request that waits for quota gives up at once.
+  What is done is kept: run the sync again and it continues, because what the lake holds
+  fresh is not fetched twice. Only one sync runs at a time.</li>
+</ul>
+<p><img alt="A finished sync: its log, its progress and its summary" src="../images/tui-run.svg" /></p>
+<p>The <strong>Run</strong> tab logs every unit of a small stage and the progress of a big one, with every
+failure and every unit that a quota held back, in the words of <code>pbi sync run</code>. The
+<strong>Lake</strong> tab is <code>pbi sync status</code>: what the lake holds for each target, how the last sync
+went, the units that failed or were held back, the last complete scan, and the quota left.
+A sync goes on while you look at the Explorer: the header shows it, and the Sync screen
+shows its log from the start when you open it again.</p>
+<p>A sync that ends with failures or held-back units says so in a notice that stays for fifteen
+seconds (the others vanish after five), and the notice names the first problem: <code>First
+failure: admin.reports: ...</code>, or <code>First held back: admin.reports, to be tried again in 12
+min</code>. The Run tab has all of them.</p>
+<h3 id="with-a-plan-file">With a plan file<a class="headerlink" href="#with-a-plan-file" title="Permanent link">¤</a></h3>
+<p><code>pbi tui --config pbi-plan.yaml</code> opens the UI with a <a href="../plan-file/">plan file</a>, which says
+what to keep, for which workspaces and through which account. The Sync screen then shows the
+file instead of the targets and the options:</p>
+<p><img alt="The Sync screen of a plan file: the file on the left, the numbered steps and their cost on the right" src="../images/tui-planfile.svg" /></p>
+<ul>
+<li><strong>The file</strong> (left): the accounts, the tenant, each entry for the workspaces and the
+  settings of the session. <code>l</code> reads the file again (a file that is wrong is said in a message
+  and the one in use stays), and the plan follows.</li>
+<li><strong>The plan</strong> (right) is the one of <code>pbi sync plan --config</code>: one table for all the steps,
+  with the number of the step, the requests that all of them need against the quota of each
+  operation, and under it the steps in words, the names that match no workspace yet, and the
+  notes of the steps. The steps for the workspaces are worked out after the tenant's: before
+  the lake has the list of workspaces, the plan says which names it cannot look up yet.</li>
+<li><strong>Run plan</strong> goes through the steps one after the other, and the <strong>Run</strong> tab logs <code>Step 1:
+  ...</code>, <code>Step 2: ...</code> and the stages of each. <strong>Stop</strong> ends it between units. A token that
+  expires stops it, the dialog asks for the token of <strong>the account that expired</strong> (the kind and
+  the profile, which the plan can use several of) and the plan goes on from the step it was in.</li>
+</ul>
+<p>The <code>session</code> section of the file sets four things:</p>
+<ul>
+<li><code>lake</code>: the lake to open. <code>--lake</code> and <code>PBI_LAKE</code> come first, then the file, then your work
+  lake. Any lake but your work lake is <a href="#other-lakes-and-view-only">opened read-only</a>, and
+  there the plan is not run. <strong>A local folder that holds no lake is not an error</strong>: your work
+  lake is opened instead, and a notice says so, with the command that would make that folder your
+  work lake (<code>pbi config set-cache-folder &lt;folder&gt;</code>; a sync writes to the work lake only, so this
+  is how a sync fills the lake the file names). A bucket that holds no lake is an error.</li>
+<li><code>open</code>: a workspace to select at the start, by id or by a pattern for its name (the first
+  match). It is selected once, not again when the lake is read again.</li>
+<li><code>workspaces</code>: which workspaces the Explorer lists at the start: <code>plan</code> (the default: only the ones
+  the file names, when it names any) or <code>all</code>. See
+  <a href="#only-the-workspaces-of-the-plan-file">Only the workspaces of the plan file</a>.</li>
+<li><code>lazy</code>: what the Explorer does about a <a href="#details-one-item-at-a-time">detail</a> the lake lacks.
+  <code>ask</code>, the default, does nothing until you press <code>f</code>. <code>off</code> offers nothing: the Details tab says so
+  and <code>f</code> says that fetching on demand is switched off. <code>auto</code> fetches <strong>by itself</strong> the details of
+  the item you stay on for a moment (one and a half seconds), and only the harmless ones: those whose
+  way of fetching copies no personal data, queries or connection details (the pages of a report, the
+  tiles of a dashboard, the refresh history of a dataset by a user's account), by an account that is
+  stored, not one that refused them the last time, while more than half of the smallest allowance
+  of the operation is left. It does not start while a sync runs, never writes into a lake that is
+  only looked at, and tries a detail once per session. A message says what it fetches.</li>
+</ul>
+<h3 id="only-the-workspaces-of-the-plan-file">Only the workspaces of the plan file<a class="headerlink" href="#only-the-workspaces-of-the-plan-file" title="Permanent link">¤</a></h3>
+<p>A plan file that names workspaces (<code>workspaces:</code>) is a statement of which ones you care about, so the
+Explorer shows <strong>only those</strong>: the tree and the table list the workspaces the file names, by id or by
+a name pattern that matches the lake's list, and say how many that is of how many
+(<code>Workspaces  1 of 4,321</code>). Press <strong><code>w</code></strong> to list every workspace of the lake, and <code>w</code> again to go
+back to the file's; the palette has the same two commands (<em>Show every workspace</em>, <em>Show only the
+workspaces of the plan file</em>). The file can start the session either way with <code>session.workspaces</code>.</p>
+<ul>
+<li>The choice is about the lists. The Lake overview, the apps, the capacities and the audit events are
+  the lake's, and the Lake tab of the Sync screen too.</li>
+<li>The palette's search finds only the workspaces of the file (and their items) while only those are
+  listed. Going to a workspace that is not one of them, with the search or with <code>session.open</code>, lists
+  every workspace and says so.</li>
+<li>A personal workspace is listed only when the file names it by id.</li>
+<li>A name pattern is looked up in the list of workspaces in the lake: until the list is there, or when
+  nothing in it matches, the count is <code>0 of N</code> and the title says so.</li>
+<li>Without a plan file, or with one that names no workspace, every workspace is listed and <code>w</code> says so.</li>
+</ul>
+<h2 id="signing-in-again">Signing in again<a class="headerlink" href="#signing-in-again" title="Permanent link">¤</a></h2>
+<p>The header shows every account you are signed in as (the administrator and the user, as far
+as they are stored), and how long each token lasts: green, then yellow in the last ten
+minutes, then red when it has expired. With a <a href="../plan-file/">plan file</a> these are the accounts
+that the file names (<code>accounts</code>), each user account on its own, and everything the session
+fetches goes through them: the plan, and also what <code>f</code> and <code>lazy: auto</code> fetch for one item,
+which uses the first user account of the file whose own list of workspaces holds the
+item's workspace (else the first one). A kind that the file does not name is the active
+profile of the kind. Browsing does not need a token, but <code>pbi sync</code> does.</p>
+<p>When a sync or a refresh finds that a token is missing or has expired, the UI asks for a
+new one at once, for the kind of account that is the problem (a sync of <code>user-...</code> targets
+asks for the user's token, not the administrator's). You can also press <code>a</code> at any time.</p>
+<p><img alt="The dialog that asks for a fresh token" src="../images/tui-signin.svg" /></p>
+<p>Paste the token (the field is masked) and press <code>Enter</code>. Choose the kind of token, <code>admin</code>
+or <code>user</code>, and the profile; the profile is the active one of the kind, so its token is
+replaced (a new profile name stores a new account). The token is stored exactly as
+<a href="../auth/"><code>pbi auth</code></a> stores it, in the keyring. Then the sync that was interrupted starts
+again, and continues where it stopped.</p>
+<p>A token that has expired already, or expires within half a minute, is not stored: the
+dialog says when it expired and waits for another, because storing it would only make the
+next request ask again. (A token that says nothing about its expiry is stored: Power BI
+decides.) If the sync that goes on is stopped by <strong>the same account</strong> again, the dialog that
+opens says that <em>the token that was just stored was refused as well</em>, followed by the reason:
+that it had expired, or that Power BI answered <code>401 Unauthorized</code> (a token of another
+account or tenant, or one that was pasted damaged). A different account that has run out as
+well is asked for as itself, one dialog after the other, as many as there are accounts that
+expired; the header shows how long each lasts, so you can see beforehand which will. Each
+question and each token stored is a line in the log file <code>~/.pbi_cli/tui.log</code>.</p>
+<h2 id="accounts">Accounts<a class="headerlink" href="#accounts" title="Permanent link">¤</a></h2>
+<p>You need one account, of either kind (see <a href="../auth/#which-accounts-you-need">Authentication</a>).
+Press <code>p</code> for the <strong>Accounts</strong> dialog: the profiles stored with <code>pbi auth</code>, both groups, with
+who each token is for (read from the token), its tenant, whether it is the active profile of
+its group and how long it lasts.</p>
+<p><img alt="The Accounts dialog: an administrator and two service accounts, one of them expired" src="../images/tui-accounts.svg" /></p>
+<p><code>Enter</code> (or <strong>Make active</strong>) makes the highlighted profile the active one of its group, the
+same as <code>pbi profile switch</code>, and the sync uses it from then on. <code>n</code> (or <strong>New token</strong>)
+opens the sign-in dialog for that profile, which is how an expired token is replaced. A
+profile that has no token stored says so.</p>
+<h3 id="only-a-user-account">Only a user account<a class="headerlink" href="#only-a-user-account" title="Permanent link">¤</a></h3>
+<p>Without an administrator account the UI works with what a user can see:</p>
+<ul>
+<li>The Sync screen dims the administrator's targets, says why under the list, and chooses
+  the plain targets of a user: the workspaces of the account and their reports, datasets,
+  dashboards and dataflows, and the account's apps (<code>user-groups</code>, <code>user-apps</code>,
+  <code>user-reports</code>, <code>user-datasets</code>, <code>user-dashboards</code>, <code>user-dataflows</code>). Press <strong>Run sync</strong>
+  and the Explorer shows them like the tenant's lists, for the workspaces that account is a
+  member of.</li>
+<li><code>r</code> in the Explorer fetches what you can see (see above).</li>
+<li>What needs an administrator (the scan, the users of reports, data sources, audit events,
+  capacities) is not offered, and says so.</li>
+</ul>
+<p><img alt="The Sync screen of someone with only a service account: the administrator's targets are dimmed" src="../images/tui-useronly.svg" /></p>
+<p>With both accounts the administrator's lists and scans give the tenant, and the user's lists
+add the workspaces that only that account can open, and say who sees what in <em>Visible to</em>.
+Where both have an item, the administrator's wins.</p>
+<h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">¤</a></h2>
+<p>A lake keeps each tenant apart. The UI shows the tenant of your token; with no token it
+shows the only tenant in the lake, or asks which one when there are several. Press <code>t</code> to
+choose another tenant.</p>
+<h2 id="other-lakes-and-view-only">Other lakes, and view only<a class="headerlink" href="#other-lakes-and-view-only" title="Permanent link">¤</a></h2>
+<p>The UI shows the lake of your cache folder, your <em>work lake</em>, unless you say otherwise.
+<code>pbi tui --lake &lt;folder or s3://bucket/folder&gt;</code> opens another lake, such as one that a
+colleague <a href="../sharing/">published</a>, and so does <code>o</code> inside the UI: the dialog lists your work
+lake and the lakes you opened lately, or you type a place. If the lake cannot be read, a
+message says why and the lake that was open stays open.</p>
+<p>A lake opened this way is <strong>read-only</strong>, and the header says <strong>view only</strong> (and, for a
+published lake, who published it and when). Nothing can be fetched into it and no account is
+needed: the UI does not look up a token, signing in and <code>r</code> say that the lake is only looked
+at, and <strong>Run</strong> on the Sync screen is off. Everything that only reads works as before: the
+tree, the tables, the tabs, the filters, <code>Ctrl+P</code> and the Lake tab of the Sync screen. Only
+your work lake is ever written by a sync; open it again with <code>o</code> to fetch.</p>
+<p><img alt="The Explorer on a published lake in S3: view only, published by someone else" src="../images/tui-viewonly.svg" /></p>
+<h2 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">¤</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Where</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>q</code></td>
+<td>everywhere</td>
+<td>quit</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>Explorer</td>
+<td>open the Sync screen</td>
+</tr>
+<tr>
+<td><code>Esc</code>, <code>e</code></td>
+<td>Sync</td>
+<td>back to the Explorer</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>everywhere</td>
+<td>sign in: store a fresh token</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td>everywhere</td>
+<td>the accounts: make a stored profile active, or store a new token for it</td>
+</tr>
+<tr>
+<td><code>t</code></td>
+<td>everywhere</td>
+<td>choose the tenant</td>
+</tr>
+<tr>
+<td><code>o</code></td>
+<td>everywhere</td>
+<td>open another lake (view only), or the work lake again</td>
+</tr>
+<tr>
+<td><code>:</code>, <code>Ctrl+P</code></td>
+<td>everywhere</td>
+<td>the command palette: search every action and run it, or jump to a workspace or an item by name</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Explorer</td>
+<td>filter the tree or the table, whichever has the focus</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Explorer</td>
+<td>clear the filter</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Explorer</td>
+<td>fetch again what is selected</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td>Explorer</td>
+<td>read the lake again</td>
+</tr>
+<tr>
+<td><code>1</code> to <code>7</code></td>
+<td>Explorer</td>
+<td>Info, Users, Lineage, JSON, Versions, Details, Scan</td>
+</tr>
+<tr>
+<td><code>w</code></td>
+<td>Explorer, with a plan file</td>
+<td>list only the workspaces of the plan file, or every workspace</td>
+</tr>
+<tr>
+<td><code>f</code></td>
+<td>Explorer</td>
+<td>fetch the details of the selected item that the lake lacks (the users, on the Users tab)</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>Explorer</td>
+<td>export what is shown: save the tab or the table as a file (CSV, Excel, JSON, Markdown, TSV), or copy it</td>
+</tr>
+<tr>
+<td><code>y</code></td>
+<td>Explorer</td>
+<td>copy what the tab shows (else the table) to the clipboard, to paste into a spreadsheet</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Sync</td>
+<td>run the sync (the plan, with a plan file)</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>Sync</td>
+<td>stop the sync</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td>Sync, with a plan file</td>
+<td>read the plan file again</td>
+</tr>
+<tr>
+<td><code>1</code> to <code>3</code></td>
+<td>Sync</td>
+<td>Plan, Run, Lake</td>
+</tr>
+</tbody>
+</table>
+<h2 id="limits">Limits<a class="headerlink" href="#limits" title="Permanent link">¤</a></h2>
+<ul>
+<li>It shows what the lake holds. A workspace that was never scanned has its name, its
+  type and the counts of the lists; each tab says what to sync to get the rest.</li>
+<li>A table shows at most 2,000 rows, the tree 5,000 workspaces and the JSON tab 1,500 lines.
+  A filter narrows the tree and the table; the full answer is in the folder of the lake
+  that the JSON tab names.</li>
+<li>The lake can be in S3, as for every command, but the UI has only been tried on a local
+  folder and on a stand-in for S3 on disk. Reading a lake lists every scan that is stored,
+  which takes a while over the network when there are thousands. See
+  <a href="../sharing/">Sharing a lake</a>.</li>
+<li>The Scan tab reads sources out of the queries by pattern: it knows the connectors listed in
+  <code>pbi_cli.core.sources</code>, follows names that stand for a text, and does not run anything. A query that
+  builds its source in a way it cannot follow shows what it could read and says what it could not.</li>
+<li>The tabs that combine workspaces look at 500 at a time (narrow the table with <code>/</code>).</li>
+<li>It does not watch the lake: <code>l</code> reads it again.</li>
+</ul>
+<h2 id="for-developers">For developers<a class="headerlink" href="#for-developers" title="Permanent link">¤</a></h2>
+<p>The UI is <code>pbi_cli.tui</code> (Textual); everything it shows comes from
+<code>pbi_cli.core.catalog</code>, a read model over the lake that has no terminal in it and can be
+used from a script:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pbi_cli.core.catalog</span><span class="w"> </span><span class="kn">import</span> <span class="n">Catalog</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pbi_cli.core.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">LakeStore</span>
+
+<span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="n">LakeStore</span><span class="p">(</span><span class="s2">"~/PowerBI/cache/lake"</span><span class="p">),</span> <span class="n">tenant</span><span class="o">=</span><span class="s2">"0b6e7f5a-3c1d-4f7e-9a52-7d3c1e8b2f40"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">catalog</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="s2">"&lt;workspace id&gt;"</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">catalog</span><span class="o">.</span><span class="n">users</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
+<span class="n">lineage</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">lineage</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="s2">"dataset"</span><span class="p">,</span> <span class="s2">"&lt;dataset id&gt;"</span><span class="p">))</span>
+</code></pre></div>
+<p>The tests drive the real app with Textual's test pilot against the fake Power BI service of
+the tests (<code>tests/test_tui_*.py</code>). The pictures on this page are made from the real app by
+<code>uv run python scripts/gen_tui_screenshots.py</code>, on a made-up tenant.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.tabs"],"redirect":null,"search":"../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.67a597eb.min.js"></script>
+      
+    
+  </body>
+</html>
