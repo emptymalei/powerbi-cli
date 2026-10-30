@@ -126,6 +126,10 @@ class PBIApp(App[None]):
         self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
         self._signed_in_as: Optional[Tuple[str, Optional[str]]] = None
         self._sink: Optional[int] = None
+        #: how many reads of the lake, and openings of a lake, were asked for: what a worker
+        #: brings back is shown only when it is the last one asked for
+        self._catalog_asked = 0
+        self._lake_asked = 0
         #: where the Export dialog suggests to put a file: the folder of the last one, or the
         #: folder `pbi tui` was started in
         self.export_folder = ""
@@ -374,21 +378,49 @@ class PBIApp(App[None]):
 
     def reload_catalog(self, announce: bool = False) -> None:
         """Read the lake again, in the background, and rebuild what shows it."""
+        self._catalog_asked += 1
         if self.tenant is not None:
-            self._read_catalog(self.tenant, announce)
+            self._read_catalog(
+                self._catalog_asked, self.backend.store, self.tenant, announce
+            )
+
+    def _catalog_wanted(self, asked: int, store: Any, tenant: str) -> bool:
+        """Whether a read of the lake is still what is shown: no newer read was asked for,
+        and the lake and the tenant are the ones it read (a slow read of the lake that was
+        open before must not replace the one opened since)."""
+        return (
+            asked == self._catalog_asked
+            and store is self.backend.store
+            and tenant == self.tenant
+        )
 
     @work(thread=True, exclusive=True, group="catalog")
-    def _read_catalog(self, tenant: str, announce: bool) -> None:
+    def _read_catalog(
+        self, asked: int, store: Any, tenant: str, announce: bool
+    ) -> None:
         try:
-            catalog = Catalog(self.backend.store, tenant, clock=self.backend.clock)
+            catalog = Catalog(store, tenant, clock=self.backend.clock)
         except Exception as error:  # an unreadable lake must not end the UI
-            self.call_from_thread(
-                self.notify, f"Cannot read the lake: {error}", severity="error"
-            )
+            self.call_from_thread(self._catalog_failed, asked, store, tenant, error)
             return
-        self.call_from_thread(self._catalog_ready, catalog, announce)
+        self.call_from_thread(
+            self._catalog_ready, catalog, announce, (asked, store, tenant)
+        )
 
-    def _catalog_ready(self, catalog: Catalog, announce: bool) -> None:
+    def _catalog_failed(
+        self, asked: int, store: Any, tenant: str, error: Exception
+    ) -> None:
+        if self._catalog_wanted(asked, store, tenant):
+            self.notify(f"Cannot read the lake: {error}", severity="error")
+
+    def _catalog_ready(
+        self,
+        catalog: Catalog,
+        announce: bool,
+        read: Optional[Tuple[int, Any, str]] = None,
+    ) -> None:
+        if read is not None and not self._catalog_wanted(*read):
+            return  # the lake, the tenant or the read asked for has changed since
         self.catalog = catalog
         explorer = self.get_screen("explorer")
         if isinstance(explorer, ExplorerScreen) and explorer.is_mounted:
@@ -471,24 +503,30 @@ class PBIApp(App[None]):
     def switch_lake(self, location: Optional[str]) -> None:
         """Open a lake, in the background, and show it."""
         if location:
-            self._open_lake(location)
+            self._lake_asked += 1
+            self._open_lake(self._lake_asked, location)
 
     @work(thread=True, exclusive=True, group="open-lake")
-    def _open_lake(self, location: str) -> None:
+    def _open_lake(self, asked: int, location: str) -> None:
         opener = self.backend.open_lake
         assert opener is not None
         try:
             store = opener(location)
         except Exception as error:  # a bucket that cannot be read must not end the UI
-            self.call_from_thread(
-                self.notify, f"Cannot open {location}: {error}", severity="error"
-            )
+            self.call_from_thread(self._lake_failed, asked, location, error)
             return
-        self.call_from_thread(self._lake_opened, store)
+        self.call_from_thread(self._lake_opened, store, asked)
 
-    def _lake_opened(self, store: Any) -> None:
+    def _lake_failed(self, asked: int, location: str, error: Exception) -> None:
+        if asked == self._lake_asked:  # else another lake was asked for since
+            self.notify(f"Cannot open {location}: {error}", severity="error")
+
+    def _lake_opened(self, store: Any, asked: Optional[int] = None) -> None:
+        if asked is not None and asked != self._lake_asked:
+            return  # a slow lake that another one, asked for later, replaces
         self.backend.store = store
         self.lake_label = lake_label(store.root)
+        self._catalog_asked += 1  # what is being read of the lake before is not shown
         self.catalog = None
         self.identity = self.backend.identity()
         self.tenant = self._pick_tenant()
