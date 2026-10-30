@@ -282,3 +282,83 @@ def test_list_cache_command_does_not_list_the_lake(cache_folder):
 
     assert "workspaces (1 version(s))" in result.output
     assert "lake" not in result.output
+
+
+@pytest.mark.parametrize("key", ["lake/", "./lake", "LAKE", "Lake", "lake/x"])
+def test_clear_cache_command_refuses_any_spelling_of_the_lake(cache_folder, key):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    lake = _make_lake(cache_folder)
+
+    result = CliRunner().invoke(app, ["cache", "clear", "-k", key, "--yes"])
+
+    assert result.exit_code == 1
+    assert "Error:" in result.output
+    assert (lake / "tenant=t" / "endpoint=admin_groups" / "keep.json").exists()
+
+
+@pytest.mark.parametrize("key", ["../sibling", "..", ".", "a/b", "a\\b", ""])
+def test_clear_cache_command_refuses_a_key_that_is_not_one_folder(cache_folder, key):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    cache_folder.mkdir(parents=True, exist_ok=True)
+    sibling = cache_folder.parent / "sibling"
+    sibling.mkdir()
+    (sibling / "precious.txt").write_text("x")
+
+    result = CliRunner().invoke(app, ["cache", "clear", "-k", key, "--yes"])
+
+    assert result.exit_code == 1
+    assert "is not a cache key" in result.output
+    assert (sibling / "precious.txt").exists()
+    assert cache_folder.exists()
+
+
+def test_clear_cache_command_refuses_a_version_outside_the_key(cache_folder):
+    from typer.testing import CliRunner
+
+    from pbi_cli.cli import app
+
+    manager = CacheManager(cache_folder=str(cache_folder))
+    manager.save("workspaces", {"value": []})
+
+    result = CliRunner().invoke(
+        app, ["cache", "clear", "-k", "workspaces", "-v", "../apps", "--yes"]
+    )
+
+    assert result.exit_code == 1
+    assert "is not a version" in result.output
+    assert manager.list_keys() == ["workspaces"]
+
+
+@pytest.mark.parametrize("key", ["lake/", "./lake", "LAKE", "../sibling", "a/.."])
+def test_the_manager_does_not_clear_outside_the_cache_or_the_lake(temp_cache_dir, key):
+    cache = temp_cache_dir / "cache"
+    manager = CacheManager(cache_folder=str(cache))
+    manager.save("workspaces", {"value": []})
+    lake = _make_lake(cache)
+    sibling = temp_cache_dir / "sibling"
+    sibling.mkdir()
+
+    manager.clear(cache_key=key)
+
+    assert lake.exists()
+    assert sibling.exists()
+    assert manager.list_keys() == ["workspaces"]
+
+
+def test_the_manager_does_not_follow_a_link_out_of_the_cache(temp_cache_dir):
+    cache = temp_cache_dir / "cache"
+    cache.mkdir()
+    outside = temp_cache_dir / "outside"
+    outside.mkdir()
+    (outside / "precious.txt").write_text("x")
+    (cache / "link").symlink_to(outside, target_is_directory=True)
+
+    CacheManager(cache_folder=str(cache)).clear(cache_key="link")
+
+    assert (outside / "precious.txt").exists()

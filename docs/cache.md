@@ -42,8 +42,11 @@ pbi cache clear
 ```
 
 `pbi cache clear` never touches the data lake, which is the `lake` folder in the same cache
-folder: clearing the whole cache keeps it, and `lake` is refused as a cache key. To delete
-old versions from the lake use [`pbi lake prune`](lake.md#look-into-the-lake-pbi-lake).
+folder: clearing the whole cache keeps it, and `lake` is refused as a cache key (in any
+spelling, such as `LAKE` or `lake/`). A cache key, and a version, must be the name of one
+folder: names with slashes, `.` or `..` are refused, so nothing outside the cache folder is
+deleted. To delete old versions from the lake use
+[`pbi lake prune`](lake.md#look-into-the-lake-pbi-lake).
 
 ## The layout of the older cache
 
