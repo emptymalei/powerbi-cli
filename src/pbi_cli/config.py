@@ -1,11 +1,15 @@
 """Configuration management for pbi-cli using YAML."""
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import yaml
 from loguru import logger
+
+from pbi_cli.core.fsutil import replace_file
+from pbi_cli.errors import PBIError
 
 # Public API
 __all__ = [
@@ -65,30 +69,69 @@ class PBIConfig:
         if not self._config_dir.exists():
             self._config_dir.mkdir(parents=True, exist_ok=True)
 
-    def _load(self) -> dict:
-        """Load configuration from YAML file.
+    def _read_file(self) -> Optional[dict]:
+        """The settings in the config file, as written there.
 
-        Returns default config if file doesn't exist.
+        :return: the settings; ``None`` when there is no file or it is empty
+        :raises ValueError: when the file cannot be read as YAML settings
         """
         if not self._config_file.exists():
-            return self._get_default_config()
-
+            return None
         try:
             with open(self._config_file, "r", encoding="utf-8") as fp:
                 config = yaml.safe_load(fp)
-                # Only return default if config is None (empty file) or not a dict
-                if config is None or not isinstance(config, dict):
-                    return self._get_default_config()
-                return config
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
+            raise ValueError(str(e)) from None
+        if config is None:
+            return None
+        if not isinstance(config, dict):
+            raise ValueError("it does not hold settings (a mapping of names to values)")
+        return config
+
+    def _load(self) -> dict:
+        """Load configuration from YAML file.
+
+        Returns default config if file doesn't exist, or (with a warning) if it cannot be
+        read; such a file is then never overwritten (see `_save`).
+        """
+        try:
+            config = self._read_file()
+        except ValueError as e:
             logger.warning(f"Could not load config from {self._config_file}: {e}")
             return self._get_default_config()
+        return config if config is not None else self._get_default_config()
 
     def _save(self, config: dict):
-        """Save configuration to YAML file."""
+        """Save configuration to YAML file.
+
+        The settings are written to a temporary file in the same folder, which then replaces
+        the config file, so the file is never seen half written.
+
+        :raises PBIError: when the config file exists but cannot be read: saving would
+            replace the profiles and settings in it with the defaults
+        """
+        try:
+            self._read_file()
+        except ValueError as e:
+            raise PBIError(
+                f"The config file {self._config_file} cannot be read ({e}), so it was "
+                "not changed: saving would replace the profiles and settings in it. Fix "
+                "the file (or move it away to start over) and try again."
+            ) from None
         self._ensure_config_dir()
-        with open(self._config_file, "w", encoding="utf-8") as fp:
-            yaml.dump(config, fp, default_flow_style=False, sort_keys=False)
+        temporary = self._config_file.with_name(
+            f".{self._config_file.name}.{os.getpid()}.tmp"
+        )
+        try:
+            with open(temporary, "w", encoding="utf-8") as fp:
+                yaml.dump(config, fp, default_flow_style=False, sort_keys=False)
+            if self._config_file.exists():
+                # keep who may read it (it names the profiles)
+                os.chmod(temporary, self._config_file.stat().st_mode & 0o777)
+            replace_file(temporary, self._config_file)
+        except BaseException:
+            temporary.unlink(missing_ok=True)
+            raise
         self._data = None  # Invalidate cache
 
     @staticmethod
