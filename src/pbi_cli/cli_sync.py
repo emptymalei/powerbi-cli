@@ -6,9 +6,11 @@ run stopped and never fetches twice what is still fresh; ``status`` shows how th
 went and what the lake holds (it reads the lake only, so it needs no token).
 """
 
+import re
+import shlex
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import AbstractSet, Annotated, List, Optional, Sequence, Tuple
+from typing import AbstractSet, Annotated, List, Optional, Sequence
 
 import typer
 
@@ -321,6 +323,52 @@ _IN_THE_FILE = {
 def _given(ctx: typer.Context, name: str) -> bool:
     """Whether an option was typed on the command line (and not just left at its default)."""
     return getattr(ctx.get_parameter_source(name), "name", "") == "COMMANDLINE"
+
+
+#: Words that a shell (POSIX or PowerShell) takes as they are, without quotes.
+_PLAIN_WORD = re.compile(r"^[A-Za-z0-9_@%+=:,./-]+$")
+
+
+def _quote(word: str) -> str:
+    """Quote a word of a command so that it can be pasted into a shell.
+
+    Double quotes are used, as both POSIX shells and PowerShell read them, so a path with
+    spaces works in both; a word with a character that is special inside double quotes in
+    one of them (``"``, ``$``, a backtick, ``\\`` at the end) gets single quotes instead.
+
+    :param word: one argument
+    """
+    if _PLAIN_WORD.match(word):
+        return word
+    if not re.search(r'["$`]|\\$', word):
+        return f'"{word}"'
+    return shlex.quote(word)
+
+
+def _again(ctx: typer.Context) -> str:
+    """The command that continues a run: the one that was typed, with every option given.
+
+    :param ctx: the context of ``pbi sync run``
+    """
+    words = ["pbi", "sync", "run"]
+    for param in ctx.command.params:
+        name = param.name
+        if name is None or not _given(ctx, name):
+            continue
+        value = ctx.params.get(name)
+        if param.param_type_name == "argument":
+            words += [str(v) for v in value or ()]
+            continue
+        flag = next((o for o in param.opts if o.startswith("--")), param.opts[0])
+        if getattr(param, "is_flag", False):
+            if value:
+                words.append(flag)
+            elif param.secondary_opts:
+                words.append(param.secondary_opts[0])
+        elif value is not None:
+            for item in value if param.multiple else [value]:
+                words += [flag, str(item)]
+    return " ".join(_quote(word) for word in words)
 
 
 def _refuse_with_a_plan_file(ctx: typer.Context, targets: Optional[List[str]]) -> None:
@@ -718,7 +766,7 @@ def sync_run(
     """
     if config is not None:
         _refuse_with_a_plan_file(ctx, targets)
-        report, again = _plan_file_run(
+        report = _plan_file_run(
             config,
             _overrides(
                 ctx,
@@ -731,7 +779,7 @@ def sync_run(
                 wait=wait,
             ),
         )
-        _finish_run(report, again)
+        _finish_run(report, _again(ctx))
         return
     options = _options(
         targets,
@@ -763,15 +811,13 @@ def sync_run(
             engine.accounts(options),
         )
         report = engine.run(options, on_event=_Progress())
-    _finish_run(
-        report, "pbi sync run" + "".join(f" {name}" for name in options.targets)
-    )
+    _finish_run(report, _again(ctx))
 
 
-def _plan_file_run(config: Path, overrides: Overrides) -> Tuple[RunReport, str]:
+def _plan_file_run(config: Path, overrides: Overrides) -> RunReport:
     """``pbi sync run --config``: the steps of the plan file, one after the other.
 
-    :return: how it went, and the command that continues it
+    :return: how it went
     """
     store = _lake()
     plan_file = PlanFile.load(config)
@@ -787,8 +833,7 @@ def _plan_file_run(config: Path, overrides: Overrides) -> Tuple[RunReport, str]:
         def announce(number: int, step: Step) -> None:
             typer.secho(f"\nStep {number}: {step.title}", bold=True)
 
-        report = run.run(on_event=_Progress(), on_step=announce)
-    return report, f"pbi sync run --config {config}"
+        return run.run(on_event=_Progress(), on_step=announce)
 
 
 def _finish_run(report: RunReport, again: str) -> None:

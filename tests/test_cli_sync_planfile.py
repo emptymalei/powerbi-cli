@@ -664,3 +664,17 @@ def test_the_help_tells_about_the_plan_file():
         result = sync(command, "--help")
         assert "--config" in result.output and "-c" in result.output
         assert "plan file" in result.output.lower()
+
+
+def test_the_command_to_continue_quotes_a_plan_file_with_spaces(accounts, tmp_path):
+    folder = tmp_path / "my plans"
+    folder.mkdir()
+    path = write(folder, TENANT_AND_USERS)
+    accounts.expire_token_after(2)
+
+    result = sync("run", "--config", path, "--days", "7", "--force")
+
+    assert result.exit_code == 1
+    assert f'run `pbi sync run --force --days 7 --config "{path}"` again' in (
+        result.output
+    )
