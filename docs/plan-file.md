@@ -257,7 +257,9 @@ The steps, in order:
    fetches its list of workspaces (one request each; skipped when it is fresh).
 3. **The workspaces**, worked out *after* the steps above from the list of workspaces they
    left in the lake: first the scans (one step for each set of scan options, with all the
-   workspaces that want it), then the details: one step for each account and set of targets,
+   workspaces that want it; a workspace that several entries scan, or that the tenant's
+   scan covers as well, is scanned once, with the options of all of them put together),
+   then the details: one step for each account and set of targets,
    for the workspaces that need exactly that, the administrator's first and then each user in
    the order of the file.
 

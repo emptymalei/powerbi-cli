@@ -315,7 +315,13 @@ which is all the API keeps), oldest day first because those are the ones about t
 - Events are told apart by their `Id`, so reading a day again adds only what is new.
 - Today is not over: its window ends at the time of the run, and the day is read again by
   the next runs (when it is older than `--max-age`, 1 hour by default).
-- Events arrive late, so a day is *sealed*, and never read again, a day after it ended.
+- Events arrive late, so a day is *sealed*, and never read again, a day after it ended, and
+  only once a read that went to its last page covered the day to its end. A read that is
+  continued keeps the window it started with (for today, up to the time it started), so
+  when such a read covered less than the day, the day is read once more, whole, before it
+  is sealed; only the events not stored yet are added. The manifest of a day says how far
+  the reads cover: `window_end` for the read under way, `covered_until` for the latest one
+  that finished.
 
 The logs are in the lake as `endpoint=admin_activityevents/dt=<day>/part-NNNN.jsonl` (see
 [Data lake](lake.md)), and `pbi lake show admin.activityevents --day 2026-09-28` prints one.
@@ -347,9 +353,18 @@ continued from when they had the same options and covered the same workspaces
 scan with lineage would have found. The API only tells what changed in the last 30 days,
 so a longer gap means a full scan too. `--full-scan` (and `--force`) scan everything.
 
+The workspaces of an incremental scan changed after the last scan, so a stored scan of them
+is never taken as fresh, however young it is: they are always scanned again. A full scan
+(`--full-scan`) skips the batches scanned in the last 24 hours. The next scan then continues
+from the start of this run, or from the start of the oldest scan the run relied on (a batch
+it skipped as fresh, or a scan it continued from an earlier run) when that is earlier: what
+changed after that scan began may be missing from it.
+
 **Scans that do not finish.** A scan that was started and not collected, because the
-token expired or the run was stopped, is remembered in the state. The next run continues
-it; the API keeps a result for 24 hours. A scan that takes longer than `--scan-timeout`
+token expired or the run was stopped, is remembered in the state, with its workspaces. The
+next run continues it, as the same batch even when the list of workspaces changed in
+between (the other workspaces are cut in batches after it); the API keeps a result for 24
+hours. A scan that takes longer than `--scan-timeout`
 (10 minutes) is reported as failed, but it may still finish, so the next run looks at it
 again before starting another. A scan that failed is started again.
 

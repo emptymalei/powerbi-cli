@@ -177,6 +177,14 @@ class EventDay:
         return self.manifest.get("cursor")
 
     @property
+    def covered_until(self) -> Optional[datetime]:
+        """The end of the window of the latest read of the day that went to its last page:
+        the events up to then are stored (aware, UTC); ``None`` if no read is known to have
+        finished (a day stored by an older version, or a read that is not over)."""
+        stamp = self.manifest.get("covered_until")
+        return _utc(datetime.fromisoformat(stamp)) if stamp else None
+
+    @property
     def updated_at(self) -> Optional[datetime]:
         """When events were last added to the day, or it was sealed (aware, UTC)."""
         stamp = self.manifest.get("updated_at")
@@ -758,6 +766,16 @@ class LakeStore:
                 if line.strip():
                     yield json.loads(line)
 
+    def event_ids(
+        self, tenant: str, endpoint_id: str, day: date, id_field: str = "Id"
+    ) -> set:
+        """The ids of the stored events of a day (events without one are left out)."""
+        return {
+            event[id_field]
+            for event in self.read_events(tenant, endpoint_id, day)
+            if id_field in event
+        }
+
     def append_events(
         self,
         tenant: str,
@@ -771,6 +789,8 @@ class LakeStore:
         profile: Optional[str] = None,
         request: Optional[Mapping[str, Any]] = None,
         at: Optional[datetime] = None,
+        known: Optional[set] = None,
+        extra: Optional[Mapping[str, Any]] = None,
     ) -> int:
         """Add events to a day, skipping the ones that are already stored.
 
@@ -787,6 +807,10 @@ class LakeStore:
         :param profile: name of the profile used (not the token)
         :param request: what was asked: never headers
         :param at: when the events were received (default: now)
+        :param known: the ids of the events stored for the day, which the caller keeps
+            between the pages of one read (see `event_ids`) so that they are not read again
+            for each page; the ids of the new events are added to it. ``None``: read them
+        :param extra: more fields for the day's manifest
         :return: the number of events that were new
         :raises StoreError: if the day is already sealed
         """
@@ -798,11 +822,8 @@ class LakeStore:
                     f"{endpoint_id} on {day} is sealed: no more events can be added"
                 )
 
-            known = {
-                event[id_field]
-                for event in self.read_events(tenant, endpoint_id, day)
-                if id_field in event
-            }
+            if known is None:
+                known = self.event_ids(tenant, endpoint_id, day, id_field)
             fresh: List[Mapping[str, Any]] = []
             for event in events:
                 key = event.get(id_field)
@@ -838,6 +859,7 @@ class LakeStore:
                 manifest["rows"] = manifest["rows"] + len(fresh)
             if cursor is not None:
                 manifest["cursor"] = cursor or None
+            manifest.update(extra or {})
             manifest["sealed"] = bool(sealed)
             manifest["profile"] = profile
             manifest["updated_at"] = _utc(at or datetime.now(timezone.utc)).isoformat()

@@ -7,9 +7,11 @@ import pytest
 
 from pbi_cli.core.scan import RESULT_KEPT, ScanFlags, ScanJob
 from pbi_cli.core.store import LakeStore
+from pbi_cli.core.sync.plan import MAX_DAYS
 from pbi_cli.core.sync.state import (
     DEFERRED,
     FAILED,
+    MARK_MAX_AGE,
     MAX_MARKED,
     MAX_RUNS,
     STATE_NAME,
@@ -123,6 +125,19 @@ def test_only_the_latest_runs_are_kept(store, clock):
     assert len(state.runs) == MAX_RUNS
     assert state.runs[-1]["targets"] == [f"t{MAX_RUNS + 4}"]
     assert state.runs[0]["targets"] == ["t5"]
+
+
+def test_runs_that_begin_within_one_second_get_their_own_ids(store, clock):
+    state = make(store, clock)
+
+    ids = []
+    for _ in range(3):  # the steps of a plan file
+        ids.append(state.begin_run(["groups"], {}))
+        state.end_run("completed", {})
+
+    assert ids == ["20261001T080000Z", "20261001T080000Z-2", "20261001T080000Z-3"]
+    clock.now += timedelta(seconds=1)
+    assert state.begin_run(["groups"], {}) == "20261001T080001Z"
 
 
 def test_ending_without_a_run_does_nothing(store, clock):
@@ -359,3 +374,41 @@ def test_only_so_many_units_are_remembered_one_by_one(store, clock):
     assert state.units["k0"]["status"] == FAILED and state.dropped == 7
     state.begin_run(["x"], {})
     assert state.dropped == 0  # the next run judges the units afresh
+
+
+def test_marks_that_no_run_touched_for_a_while_are_forgotten(store, clock):
+    state = make(store, clock)
+    for n in range(MAX_MARKED):
+        state.mark(f"k{n}", FAILED, target="t", endpoint="e")
+    clock.now += MARK_MAX_AGE - timedelta(days=1)
+    state.mark("k0", FAILED, target="t", endpoint="e")  # failed again since
+    clock.now += timedelta(days=2)
+
+    # the state is full of marks no run has touched for longer than MARK_MAX_AGE: a new
+    # failure takes their place instead of being dropped
+    state.mark("new", FAILED, target="t", endpoint="e")
+
+    assert set(state.units) == {"k0", "new"} and state.dropped == 0
+
+
+def test_marks_of_days_the_api_no_longer_keeps_are_forgotten_when_a_run_begins(
+    store, clock
+):
+    state = make(store, clock)
+    today = clock.now.date()
+    for back in (0, MAX_DAYS - 1, MAX_DAYS + 1):
+        state.mark(
+            f"admin.activityevents@{today - timedelta(days=back)}",
+            DEFERRED,
+            target="activity",
+            endpoint="admin.activityevents",
+        )
+    state.mark("admin.scan@0123456789ab", FAILED, target="scan", endpoint="e")
+
+    state.begin_run(["activity"], {})
+
+    assert sorted(state.units) == [
+        f"admin.activityevents@{today - timedelta(days=MAX_DAYS - 1)}",
+        f"admin.activityevents@{today}",
+        "admin.scan@0123456789ab",
+    ]
