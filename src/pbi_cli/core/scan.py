@@ -348,6 +348,8 @@ def split_scan_result(result: Mapping[str, Any]) -> Dict[str, Dict[str, Any]]:
 
     pieces: Dict[str, Dict[str, Any]] = {}
     for workspace in result.get("workspaces") or []:
+        if not isinstance(workspace, dict) or not workspace.get("id"):
+            continue  # nothing to keep it under
         used: Set[str] = set()
         _used_instance_ids(workspace, used)
         pieces[str(workspace.get("id"))] = {
