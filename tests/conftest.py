@@ -108,6 +108,8 @@ def quick_tui(monkeypatch):
     monkeypatch.setattr("pbi_cli.tui.syncscreen.REPLAN_AFTER", 0.05)
     monkeypatch.setattr("pbi_cli.tui.syncscreen.TICK", 0.1)
     monkeypatch.setattr("pbi_cli.tui.status.REFRESH_EVERY", 0.2)
+    # the tree filter at each key: a test types, then looks at once
+    monkeypatch.setattr("pbi_cli.tui.explorer.ExplorerScreen.filter_delay", 0)
 
 
 @pytest.fixture

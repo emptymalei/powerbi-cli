@@ -220,6 +220,18 @@ def test_a_column_of_a_workbook_is_no_wider_than_sixty(tmp_path):
     assert sheet.column_dimensions["B"].width == 3  # the cell and two blanks
 
 
+def test_a_control_character_that_a_workbook_cannot_hold_is_left_out(tmp_path):
+    item = Exportable("Sales\x0b", ("Na\x0bme",), (("Ann\x0b\x01",),))
+
+    sheet = load_workbook(exporting.write(item, "xlsx", tmp_path / "w.xlsx")).active
+
+    assert (sheet.title, sheet["A1"].value, sheet["A2"].value) == (
+        "Sales",
+        "Name",
+        "Ann",
+    )
+
+
 def test_an_empty_table_is_a_workbook_with_only_a_header(tmp_path):
     empty = Exportable("Nobody", ("Name",), ())
 

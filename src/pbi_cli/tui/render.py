@@ -469,8 +469,9 @@ def _grid(rows: Iterable[Tuple[str, Union[str, Text]]]) -> Table:
     grid.add_column(style="grey62", no_wrap=True)
     grid.add_column(overflow="fold")
     for key, value in rows:
-        # a str is read as markup by the table: a name like "[DEV] Sales" must stay as it is
-        grid.add_row(key, Text(value) if isinstance(value, str) else value)
+        # a str is read as markup by the table: a name like "[DEV] Sales" must stay as it
+        # is, and so must a key of the JSON the lake holds
+        grid.add_row(Text(key), Text(value) if isinstance(value, str) else value)
     return grid
 
 

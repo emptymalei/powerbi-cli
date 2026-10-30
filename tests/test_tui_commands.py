@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 from sync_helpers import World
 from textual.command import CommandInput, CommandList, CommandPalette
+from textual.fuzzy import Matcher
 from textual.widgets import Input, SelectionList, TabbedContent
 from tui_helpers import backend_of, run_ui
 
@@ -17,7 +18,7 @@ from pbi_cli.errors import AuthError
 from pbi_cli.tui.backend import AccountInfo
 from pbi_cli.tui.commands import commands_for
 from pbi_cli.tui.modals import WORK_LAKE, AccountsModal
-from pbi_cli.tui.palette import CommandsProvider, looks_like_a_location
+from pbi_cli.tui.palette import CommandsProvider, highlight, looks_like_a_location
 
 
 @pytest.fixture
@@ -244,25 +245,40 @@ def test_a_sync_that_runs_can_be_stopped_from_anywhere(world, monkeypatch):
         await ui.click("#run")
         await ui.until(entered.is_set)
         while_shown = titles(ui)  # the Sync screen, with the sync running
+        sync_helps = (
+            command(ui, "Stop the sync").help,
+            command(ui, "Reload the lake").help,
+        )
         await ui.press("escape")  # back to the Explorer: the sync goes on
         running = titles(ui)
+        helps = (
+            command(ui, "Stop the sync").help,
+            command(ui, "Reload the lake").help,
+        )
         command(ui, "Stop the sync").run()
         await ui.settle()
         stopping = ui.app.run_state.stopping
         asked_to_stop = titles(ui)
         release.set()
         await ui.finish_sync()
-        return before, while_shown, running, stopping, asked_to_stop, titles(ui)
+        return (
+            (before, while_shown, running, stopping, asked_to_stop, titles(ui)),
+            sync_helps,
+            helps,
+        )
 
-    before, while_shown, running, stopping, asked_to_stop, after = run_ui(
-        backend_of(world), scenario
-    )
+    states, sync_helps, explorer_helps = run_ui(backend_of(world), scenario)
+    before, while_shown, running, stopping, asked_to_stop, after = states
 
     assert "Run the sync" in before and "Stop the sync" not in before
     assert "Run the sync" not in while_shown and "Stop the sync" in while_shown
     assert "Stop the sync" in running
     assert stopping is True and "Stop the sync" not in asked_to_stop
     assert "Stop the sync" not in after
+    # x stops the sync on the Sync screen only (on the Explorer it exports), and l reads
+    # the lake again on the Explorer only
+    assert sync_helps[0].endswith("key x") and "key" not in sync_helps[1]
+    assert "key" not in explorer_helps[0] and explorer_helps[1].endswith("key l")
 
 
 def test_a_lake_that_is_only_looked_at_offers_nothing_that_needs_an_account(world):
@@ -541,6 +557,33 @@ def test_the_colon_opens_the_palette_and_a_command_that_is_chosen_runs(world):
     assert run_ui(backend_of(world, accounts=lambda: []), scenario) == "AccountsModal"
 
 
+def test_the_palette_works_out_what_can_be_fetched_once_and_not_at_each_key(
+    world, monkeypatch
+):
+    asked = []
+
+    async def scenario(ui):
+        explorer = ui.explorer
+        for name in ("refresh_choice", "fetch_choice"):
+            real = getattr(explorer, name)
+            monkeypatch.setattr(
+                explorer,
+                name,
+                lambda real=real, name=name: asked.append(name) or real(),
+            )
+        palette = await open_palette(ui)
+        await ui.until(lambda: "Accounts…" in listed(palette))
+        await ui.type("account")
+        await ui.until(lambda: listed(palette)[:1] == ["Accounts…"])
+        first = sorted(asked)
+        await ui.press("escape")
+        await open_palette(ui)
+        await ui.until(lambda: len(asked) > 2)
+        return first
+
+    assert run_ui(backend_of(world), scenario) == ["fetch_choice", "refresh_choice"]
+
+
 def test_ctrl_p_opens_it_too(world):
     async def scenario(ui):
         palette = await open_palette(ui, "ctrl+p")
@@ -695,3 +738,18 @@ def test_the_names_of_the_work_lake_constant_stands_for_the_work_lake(world):
     run_ui(backend, scenario)
 
     assert opened == ["/work/lake"]
+
+
+@pytest.mark.parametrize(
+    "query, name, lit",
+    [
+        ("eu", "Finance [/EU]", "EU"),
+        ("fin", "[Confidential]Finance", "Fin"),
+        ("sal", "[DEV] Sales", "Sal"),
+    ],
+)
+def test_a_hit_with_brackets_is_shown_as_it_is_with_what_matched_lit(query, name, lit):
+    shown = highlight(Matcher(query), name)
+
+    assert shown.plain == name
+    assert "".join(name[span.start : span.end] for span in shown.spans) == lit
