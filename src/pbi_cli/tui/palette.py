@@ -7,7 +7,7 @@ name, see `pbi_cli.tui.commands`) and `GotoProvider` (workspaces and items, by n
 
 import re
 from functools import partial
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Optional
 
 from rich.text import Text
 from textual.command import DiscoveryHit, Hit, Hits, Provider
@@ -49,8 +49,15 @@ def looks_like_a_location(text: str) -> bool:
 class CommandsProvider(Provider):
     """Every action of the UI, by name: what is offered is what can be done now."""
 
+    _found: Optional[List[Command]] = None
+
     def _commands(self) -> List[Command]:
-        return commands_for(self.app, self.screen)
+        """The commands, worked out once for each opening of the palette: some of them say
+        what they would fetch, which reads the lake and the accounts, and the palette asks
+        at every key that is typed (a provider lives as long as the palette is open)."""
+        if self._found is None:
+            self._found = commands_for(self.app, self.screen)
+        return self._found
 
     def _system(self) -> Iterable[Any]:
         """The commands of Textual itself (theme, keys, screenshot, quit)."""

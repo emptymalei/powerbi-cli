@@ -557,6 +557,33 @@ def test_the_colon_opens_the_palette_and_a_command_that_is_chosen_runs(world):
     assert run_ui(backend_of(world, accounts=lambda: []), scenario) == "AccountsModal"
 
 
+def test_the_palette_works_out_what_can_be_fetched_once_and_not_at_each_key(
+    world, monkeypatch
+):
+    asked = []
+
+    async def scenario(ui):
+        explorer = ui.explorer
+        for name in ("refresh_choice", "fetch_choice"):
+            real = getattr(explorer, name)
+            monkeypatch.setattr(
+                explorer,
+                name,
+                lambda real=real, name=name: asked.append(name) or real(),
+            )
+        palette = await open_palette(ui)
+        await ui.until(lambda: "Accounts…" in listed(palette))
+        await ui.type("account")
+        await ui.until(lambda: listed(palette)[:1] == ["Accounts…"])
+        first = sorted(asked)
+        await ui.press("escape")
+        await open_palette(ui)
+        await ui.until(lambda: len(asked) > 2)
+        return first
+
+    assert run_ui(backend_of(world), scenario) == ["fetch_choice", "refresh_choice"]
+
+
 def test_ctrl_p_opens_it_too(world):
     async def scenario(ui):
         palette = await open_palette(ui, "ctrl+p")
