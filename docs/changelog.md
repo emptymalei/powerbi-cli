@@ -286,6 +286,34 @@
 
 ### Fixed
 
+- **Tokens are kept per group and profile** (`admin:default`, `user:default`). The `default`
+  profile of the user group and the one of the admin group shared one token, so admin commands
+  sent the user token, and deleting one profile deleted the other's token. Tokens stored the old
+  way are still read and moved; see [Where tokens are kept](auth.md#where-tokens-are-kept).
+  Deleting a token removes it from the keyring and from the credentials file; the file is
+  created readable by its owner only and replaced in one step, and a damaged one is reported
+  with its path instead of a traceback.
+- A config file that cannot be read is no longer replaced by the defaults (which wiped the
+  profiles) on the next save: the command stops and names the file. It is now written to a
+  temporary file and moved into place, so it is never seen half written.
+- `pbi cache clear -k` only deletes one folder directly in the cache folder: `lake/`, `./lake`
+  or `LAKE` no longer delete the data lake, and `../sibling` no longer deletes a folder outside
+  the cache.
+- The commands on the older API wrappers (`pbi reports export`, `pbi reports users`,
+  `pbi apps app`, `pbi apps augment`, `pbi workspaces scan initiate|result|get`) report a failed
+  request as `Error: ...` with the status, reason and the API's error, not with a traceback.
+  `pbi export` no longer saves an error answer as the report. `pbi workspaces scan get` waits
+  for a result that is not there yet when the status already says it succeeded.
+- `pbi reports users` asks for the users of a report with the admin token (it used the user
+  token), and goes on after a report that fails, listing the ones that did.
+- `pbi users user-access` prints one row per item (it printed one cell with everything), and
+  `pbi workspaces report-users` prints one row per report with its users (it fell back to
+  JSON). `pbi workspaces list -ft excel` and `pbi workspaces format-convert` work when there
+  are no workspaces.
+- JSON files are read and written as UTF-8 whatever the locale of the system is.
+- The command that `pbi sync run` gives to continue an expired or interrupted run keeps every
+  option that was given (`--lineage`, `--days`, the profiles, ...) and quotes a `--config` path
+  with spaces.
 - `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake
   (`pbi config set-cache-folder`). `pbi sync plan|run --config` says the same. A bucket that holds no
