@@ -20,6 +20,20 @@ leading `Bearer` and warns). Then store it:
 pbi auth --bearer-token <your_bearer_token>
 ```
 
+### Three ways to hand pbi the token
+
+- **A window pops out** (PowerShell): `pbi auth --login -p adm -g admin`. It runs `Login-PowerBI`,
+  the sign-in window of the Power BI PowerShell module (it uses that module's own client id), and
+  stores the token for the profile (`-p`) and the group (`-g`, `admin` or `user`). Install the module
+  once: `Install-Module MicrosoftPowerBIMgmt -Scope CurrentUser`. In the terminal UI the sign-in
+  dialog has the same as a **Sign in with PowerShell** button.
+- **Pipe it in**: `Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin` reads the token
+  from standard input (`Bearer` is removed).
+- **Paste it**: `pbi auth -t <token>`, as above.
+
+Which user the token is for is whoever signs in: log in as the administrator for `-g admin`, as the
+service account for `-g user`. The token lasts about an hour either way.
+
 ## Profiles and groups
 
 A token is stored under a *profile* name, and a profile belongs to a *group*:

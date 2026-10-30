@@ -62,6 +62,13 @@
 
 ### Added
 
+- **Sign in with PowerShell.** `pbi auth --login -p NAME -g admin|user` runs `Login-PowerBI` (the sign-in
+  window of the Power BI PowerShell module and its own client id) and stores the token for that profile and
+  group; the sign-in dialog of the terminal UI has a **Sign in with PowerShell** button that does the same.
+  `pbi auth -t -` (or a token piped in) reads the token from standard input, for example
+  `Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin`. Pasting a token with `-t` still works.
+  The token still lasts about an hour (PowerShell does not hand out a refresh token). Needs
+  `Install-Module MicrosoftPowerBIMgmt -Scope CurrentUser`.
 - **Copy and save what the [terminal UI](tui.md#copying-and-saving-what-you-see) shows.** `y` puts
   the tab (or the table) on the clipboard as tab-separated text, which pastes into a spreadsheet;
   `x` opens a dialog that saves it as a file (CSV for Excel, an Excel workbook, JSON, a Markdown table,

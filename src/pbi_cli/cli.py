@@ -52,6 +52,7 @@ from pbi_cli.config import (
 )
 from pbi_cli.core.auth import Credentials, credentials_from_headers
 from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
+from pbi_cli.core.powershell import powershell_token
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.scan import (
     MAX_WORKSPACES,
@@ -702,8 +703,20 @@ def store_token(
 @command(app, "auth")
 def auth(
     bearer_token: Annotated[
-        str, typer.Option("--bearer-token", "-t", help="Bearer token")
-    ],
+        Optional[str],
+        typer.Option(
+            "--bearer-token",
+            "-t",
+            help="Bearer token; '-' (or a token piped in) reads it from standard input",
+        ),
+    ] = None,
+    login: Annotated[
+        bool,
+        typer.Option(
+            "--login",
+            help="Sign in with PowerShell (Login-PowerBI opens a window) instead",
+        ),
+    ] = False,
     profile: Annotated[
         str,
         typer.Option("--profile", "-p", help="Profile name for this credential set"),
@@ -736,10 +749,32 @@ def auth(
     pbi auth -t <your_bearer_token> -p user-nlm -g user
     ```
 
+    or read from standard input, or get one by signing in with PowerShell (needs the
+    `MicrosoftPowerBIMgmt` module):
+
+    ```
+    Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin
+    pbi auth --login -p adm -g admin
+    ```
+
     :param bearer_token: Bearer token to authenticate with Power BI API
+    :param login: Sign in with PowerShell to get the token
     :param profile: Profile name to associate with this credential
     :param group: Optional group ('user' or 'admin') to store the profile in
     """
+    if login:
+        if bearer_token is not None:
+            raise PBIError("Use either --login or --bearer-token, not both.")
+        typer.echo("Signing in with PowerShell: finish the sign-in window ...")
+        bearer_token = powershell_token()
+    elif bearer_token is None or bearer_token == "-":
+        if bearer_token is None and sys.stdin.isatty():
+            raise PBIError(
+                "Give a token with --bearer-token, pipe it in, or use --login."
+            )
+        bearer_token = sys.stdin.read().strip()
+        if not bearer_token:
+            raise PBIError("No token was given on standard input.")
 
     group_name = group.value if group is not None else None
     stored = store_token(bearer_token, profile, group_name)

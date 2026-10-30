@@ -7,7 +7,7 @@ from typing import List, Optional, Sequence, Tuple, TypeVar
 
 from rich.console import RenderableType
 from rich.text import Text
-from textual import on
+from textual import on, work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -26,6 +26,7 @@ from textual.widgets.option_list import Option
 
 from pbi_cli.core.auth import EXPIRY_LEEWAY
 from pbi_cli.core.jwt import token_info
+from pbi_cli.core.powershell import powershell_token
 from pbi_cli.tui import exporting
 from pbi_cli.tui.backend import AccountInfo, Backend
 from pbi_cli.tui.exporting import Exportable
@@ -108,10 +109,34 @@ class SignInModal(Dialog[Optional[str]]):
             yield PlainStatic("", id="error")
             with Horizontal(id="buttons"):
                 yield Button("Sign in", variant="primary", id="ok", compact=True)
+                yield Button("Sign in with PowerShell", id="login", compact=True)
                 yield Button("Cancel", id="cancel", compact=True)
 
     def on_mount(self) -> None:
         self.query_one("#token", Input).focus()
+
+    @on(Button.Pressed, "#login")
+    def _login(self) -> None:
+        self.query_one("#error", Static).update(
+            "Finish the sign-in window that PowerShell opens ..."
+        )
+        self._powershell_login()
+
+    @work(thread=True, exclusive=True, group="login")
+    def _powershell_login(self) -> None:
+        try:
+            token = powershell_token()
+        except Exception as problem:  # PBIError: no module, window closed, ...
+            self.app.call_from_thread(self._login_failed, str(problem))
+            return
+        self.app.call_from_thread(self._login_done, token)
+
+    def _login_failed(self, why: str) -> None:
+        self.query_one("#error", Static).update(why)
+
+    def _login_done(self, token: str) -> None:
+        self.query_one("#token", Input).value = token
+        self._sign_in()
 
     def _selected_group(self) -> str:
         pressed = self.query_one("#group", RadioSet).pressed_button

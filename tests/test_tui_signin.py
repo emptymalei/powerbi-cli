@@ -601,3 +601,43 @@ def test_the_workspace_of_a_subject_is_known_for_a_workspace_and_an_item(world):
     assert workspace_of(catalog.item("report", "rep-0001")) == "ws-0001"
     assert workspace_of(None) is None
     assert workspace_of("something else") is None
+
+
+def test_the_powershell_button_signs_in_and_stores_the_token(world, monkeypatch):
+    from pbi_cli.tui import modals
+
+    stored = []
+    fresh = token(world, 1, "oid-adm")
+    monkeypatch.setattr(modals, "powershell_token", lambda: fresh)
+    backend = backend_of(world, sign_in=lambda t, p, g: stored.append((t, p, g)))
+
+    async def scenario(ui):
+        ui.app.push_screen(SignInModal(backend, group="admin", profile="adm"))
+        await ui.settle()
+        await ui.click("#login")
+        await ui.settle()
+        return type(ui.app.screen).__name__
+
+    assert run_ui(backend, scenario) == "ExplorerScreen"
+    assert stored == [(fresh, "adm", "admin")]
+
+
+def test_a_failed_powershell_login_is_said_in_the_dialog(world, monkeypatch):
+    from pbi_cli.errors import PBIError
+    from pbi_cli.tui import modals
+
+    def broken():
+        raise PBIError("The PowerShell sign-in gave no token. Install-Module x")
+
+    monkeypatch.setattr(modals, "powershell_token", broken)
+    backend = backend_of(world)
+
+    async def scenario(ui):
+        ui.app.push_screen(SignInModal(backend, group="admin"))
+        await ui.settle()
+        await ui.click("#login")
+        await ui.settle()
+        return ui.static("#error"), type(ui.app.screen).__name__
+
+    said, screen = run_ui(backend, scenario)
+    assert "gave no token" in said and screen == "SignInModal"
