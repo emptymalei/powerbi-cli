@@ -60,6 +60,18 @@ def safe_name(value: str) -> str:
     return _UNSAFE.sub("_", value) or "_"
 
 
+def plain_name(value: Any) -> str:
+    """A file name that a manifest gives, refused unless it names a file of the same
+    folder (a crafted lake must not make a reader open files elsewhere).
+
+    :raises ValueError: for a name with a folder in it, ``.``, ``..`` or nothing
+    """
+    name = str(value)
+    if not name or name in (".", "..") or any(c in name for c in "/\\:"):
+        raise ValueError(f"{name!r} is not the name of a file of the lake")
+    return name
+
+
 def params_hash(params: Mapping[str, str]) -> str:
     """A short, stable identifier of a set of canonical request parameters."""
     canonical = json.dumps(
@@ -117,7 +129,7 @@ class Snapshot:
 
     def load(self) -> Any:
         """Read the stored response."""
-        path = self.directory / self.manifest.get("data_file", DATA)
+        path = self.directory / plain_name(self.manifest.get("data_file", DATA))
         return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -294,8 +306,9 @@ class LakeStore:
             if not path.exists():
                 return None
             return PublishInfo.from_json(json.loads(path.read_text(encoding="utf-8")))
-        except (OSError, ValueError):
-            # something is there that cannot be read: it still protects the lake
+        except Exception:  # noqa: BLE001 - a cloud store raises its own errors
+            # something is there that cannot be read (or the bucket cannot be asked):
+            # it still protects the lake
             return PublishInfo.from_json(None)
 
     @property
@@ -359,6 +372,20 @@ class LakeStore:
         atomically, readable by the owner only. Copying a lake (`pbi_cli.core.publish`) uses
         it."""
         self._write_bytes(path, payload)
+
+    def remove_endpoint(self, tenant: str, endpoint_folder: str) -> bool:
+        """Delete everything stored for an endpoint of a tenant (a publish that now leaves
+        a category out uses it).
+
+        :param endpoint_folder: the ``endpoint=`` folder value
+        :return: whether there was something to delete
+        """
+        self._check_writable()
+        directory = self._tenant_dir(tenant) / f"endpoint={safe_name(endpoint_folder)}"
+        if not directory.exists():
+            return False
+        self._rmtree(directory)
+        return True
 
     def write_marker(self, info: PublishInfo) -> None:
         """Mark the lake as published (only the store of the publisher may)."""
@@ -547,6 +574,13 @@ class LakeStore:
         """The tenants that have data, as folder values."""
         return [self._value(d, "tenant=") for d in self._children(self.root, "tenant=")]
 
+    def endpoint_folders(self, tenant: str) -> List[str]:
+        """The ``endpoint=`` folder values of a tenant, whatever they hold."""
+        return [
+            self._value(d, "endpoint=")
+            for d in self._children(self._tenant_dir(tenant), "endpoint=")
+        ]
+
     def endpoints(self, tenant: str) -> List[str]:
         """The endpoints that have data in a tenant (registry ids where known)."""
         names = []
@@ -641,6 +675,13 @@ class LakeStore:
                         if (d / MANIFEST).exists()
                     ]
                     for directory in complete[keep:]:
+                        # the manifest first: a version without one is no longer
+                        # complete, so a data file left behind is never read as one
+                        try:
+                            (directory / MANIFEST).unlink()
+                        except OSError as error:
+                            logger.warning(f"Could not delete {directory}: {error}")
+                            continue
                         self._rmtree(directory)
                         removed += 1
                     for day_dir in self._children(params_dir, "dt="):
@@ -712,7 +753,7 @@ class LakeStore:
         if stored is None:
             return
         for part in stored.manifest.get("parts", []):
-            text = (stored.directory / part).read_text(encoding="utf-8")
+            text = (stored.directory / plain_name(part)).read_text(encoding="utf-8")
             for line in text.splitlines():
                 if line.strip():
                     yield json.loads(line)

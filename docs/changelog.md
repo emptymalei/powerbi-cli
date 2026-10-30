@@ -286,6 +286,21 @@
 
 ### Fixed
 
+- When Power BI throttles a request (HTTP 429), every request of the tenant to that
+  operation waits, not only the one that was throttled; a stopped sync no longer waits for
+  the throttle to end; and the request that is tried again carries the token of that moment
+  (one renewed during the wait, or a clear "expired" message).
+- A server error that stays after the retries says its HTTP status.
+- Publishing with `--exclude` a category that an earlier publish copied deletes it from the
+  published lake; a day of events that grows while `pbi lake publish` runs is copied with
+  exactly the parts its manifest lists.
+- An id of `.` or `..` (or an empty one) is refused instead of reaching another operation of
+  the API; a manifest can no longer name a file outside its own folder.
+- `pbi lake prune` deletes the manifest of a version first, so a version it cannot delete
+  completely (a file in use on Windows) stays readable; an S3 lake whose bucket cannot be
+  asked counts as protected instead of failing.
+- Two programs saving the quota counters at once no longer trip over each other's file.
+
 - `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake
   (`pbi config set-cache-folder`). `pbi sync plan|run --config` says the same. A bucket that holds no
