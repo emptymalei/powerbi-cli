@@ -1599,6 +1599,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/clipboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  clipboard
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/exporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  exporting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/plain/" class="md-nav__link">
         
   
@@ -1715,6 +1769,33 @@
     
   
   summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/tabexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tabexport
 
     
   </span>
@@ -2281,6 +2362,31 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><strong>Copy and save what the <a href="../tui/#copying-and-saving-what-you-see">terminal UI</a> shows.</strong> <code>y</code> puts
+  the tab (or the table) on the clipboard as tab-separated text, which pastes into a spreadsheet;
+  <code>x</code> opens a dialog that saves it as a file (CSV for Excel, an Excel workbook, JSON, a Markdown table,
+  tab-separated text) or copies it, and both are in the palette. The users of a report, a
+  workspace, a dataset, an app or several workspaces; the places each table of a scan reads from,
+  with the whole expression; the lineage, the versions, the details, the JSON and the table above
+  the tabs (after its filter) all export. The clipboard of the system is set with the tool of the
+  platform (<code>pbcopy</code>, PowerShell's <code>Set-Clipboard</code>, <code>wl-copy</code>, <code>xclip</code>, <code>xsel</code>) and the terminal is asked as
+  well; a cell that a spreadsheet would run as a formula is written as text (<code>pbi_cli.tui.exporting</code>,
+  <code>pbi_cli.tui.clipboard</code>, <code>pbi_cli.tui.tabexport</code>).</li>
+<li><strong>The users of an app</strong>: the <code>app-users</code> target (<code>admin.apps.users</code>, 200 requests an hour), which
+  keeps who can open each app. <code>pbi sync run default app-users</code>, or <code>tenant: {targets: [default,
+  app-users]}</code> in a plan file; <code>details: [users]</code> on an entry of <code>workspaces</code> fetches it for the apps
+  published from those workspaces; the Users tab of an app shows it, and <code>f</code> fetches it for one app.</li>
+<li><strong><code>scan: all</code> and <code>details: all</code></strong> in a plan file ask for every scan option and every detail
+  (a single name, <code>scan: lineage</code>, works as a list of that name). A scan costs the same requests
+  whatever it includes.</li>
+<li>The Scan tab says <strong>why a scan lacks something</strong>: that the plan file asks for options that the
+  newest scan was made without (so it is older than the file), what became of the last scan that a
+  sync tried when it failed, and that Power BI left the tables or the queries out although they were
+  asked for (the tenant settings for detailed metadata, or a dataset that was not refreshed or
+  published since they were turned on). <code>r</code> on a workspace now scans it with the options that the plan
+  file asks for it and those of its last scan, or with every option when nothing says otherwise; it
+  used to repeat the options of the last scan, which stayed at the lineage only after a first
+  scan from the UI. The dialog says which options.</li>
 <li>The <a href="../tui/">terminal UI</a> has a <strong>Scan</strong> tab (key <code>7</code>) that shows what the newest scan says: for a
   workspace, how much is in it and <strong>where its data comes from</strong>; for a dataset, each table with its
   columns, measures and what loads it, the places the tables read from, the native queries, the
@@ -2437,6 +2543,10 @@
   says <code>interrupted</code> and how many units were not started), <code>SyncOptions.workspace_ids</code>
   scans only the chosen workspaces without moving the point the next incremental scan
   continues from, and a stop also cuts short a wait for quota.</li>
+<li><code>pbi config set-verify-certificates</code> and <code>pbi config get-verify-certificates</code> choose how API
+  requests verify TLS certificates: <code>true</code> (the default), <code>false</code> (prints a warning), or the path
+  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
+  longer skip the verification unconditionally.</li>
 <li>Shell completion: <code>pbi --install-completion</code> and <code>pbi --show-completion</code>.</li>
 <li><code>pbi sync plan</code>, <code>pbi sync run</code> and <code>pbi sync status</code> keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and

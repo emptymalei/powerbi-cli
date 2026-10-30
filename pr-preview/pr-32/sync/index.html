@@ -609,6 +609,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#apps" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Apps
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#which-accounts-a-sync-uses" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1848,6 +1859,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/clipboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  clipboard
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/exporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  exporting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/plain/" class="md-nav__link">
         
   
@@ -1964,6 +2029,33 @@
     
   
   summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/tabexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tabexport
 
     
   </span>
@@ -2312,6 +2404,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#apps" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Apps
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#which-accounts-a-sync-uses" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2625,6 +2728,13 @@ every target.</p>
 <td>no: the people who can use each dataflow, with their e-mail addresses</td>
 </tr>
 <tr>
+<td><code>app-users</code></td>
+<td>The users of every app</td>
+<td><code>admin.apps.users</code></td>
+<td>admin</td>
+<td>no: the people who can open each app, with their e-mail addresses</td>
+</tr>
+<tr>
 <td><code>dataflow-datasources</code></td>
 <td>The data sources of every dataflow</td>
 <td><code>admin.dataflows.datasources</code></td>
@@ -2764,6 +2874,21 @@ that fan out over rows skip the rows that are not wanted. From Python:</p>
 
 <span class="n">SyncOptions</span><span class="p">(</span><span class="n">targets</span><span class="o">=</span><span class="p">(</span><span class="s2">"dataset-users"</span><span class="p">,),</span> <span class="n">only</span><span class="o">=</span><span class="p">{</span><span class="s2">"datasetId"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"&lt;dataset id&gt;"</span><span class="p">]})</span>
 </code></pre></div>
+<h2 id="apps">Apps<a class="headerlink" href="#apps" title="Permanent link">¤</a></h2>
+<p>An app is what a workspace publishes to its readers. This is what the lake can keep of them:</p>
+<ul>
+<li><strong>The apps of the tenant</strong> (name, who published it, the workspace it comes from, when it was
+  updated): the <code>apps</code> target, which is in the plain sync. With only a user account, <code>user-apps</code>
+  keeps the apps that account installed, apart for each account.</li>
+<li><strong>Who can open each app</strong>: <code>app-users</code>, one request for every app (the quota is 200 an hour). Name
+  it with the others, <code>pbi sync run default app-users</code>, or in a <a href="../plan-file/">plan file</a>
+  (<code>tenant: {targets: [default, app-users]}</code>); <code>details: [users]</code> on an entry of <code>workspaces</code>
+  fetches it for the apps published from those workspaces only. The <a href="../tui/">terminal UI</a> shows
+  the people on the Users tab of an app, and <code>f</code> fetches them for one app.</li>
+<li><strong>What is in an app</strong> (its reports and dashboards) is not kept: Power BI answers that only to the
+  account that installed the app, and has no administrator operation for it. <code>pbi apps augment</code>
+  reads it app by app, with the token you are signed in with, into a file.</li>
+</ul>
 <h2 id="which-accounts-a-sync-uses">Which accounts a sync uses<a class="headerlink" href="#which-accounts-a-sync-uses" title="Permanent link">¤</a></h2>
 <p>A sync uses the accounts you have stored (<code>pbi profile list</code>): the active profile of the
 group <code>admin</code> for the administrator's targets, and the active profile of the group <code>user</code>

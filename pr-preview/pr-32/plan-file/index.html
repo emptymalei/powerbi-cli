@@ -1793,6 +1793,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/tui/clipboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  clipboard
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/exporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  exporting
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/tui/plain/" class="md-nav__link">
         
   
@@ -1909,6 +1963,33 @@
     
   
   summary
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/tui/tabexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  tabexport
 
     
   </span>
@@ -2425,7 +2506,8 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <span class="c1"># those of `pbi sync plan --help`; without `targets` it is the plain sync. A target of a</span>
 <span class="c1"># user's account runs once for each of the user profiles above.</span>
 <span class="nt">tenant</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># add `app-users` for the people who can open each app (a request for</span>
+<span class="w">  </span><span class="c1">#                              # every app: 200 an hour)</span>
 <span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span><span class="w"> </span><span class="c1"># days of audit events (1 to 28); only with `activity` above</span>
 <span class="w">  </span><span class="c1"># scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan</span>
 <span class="w">  </span><span class="c1">#                                     # only some, use `scan:` in an entry below)</span>
@@ -2437,9 +2519,11 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <span class="nt">workspaces</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Finance*"</span>
 <span class="w">    </span><span class="c1"># A metadata scan of these workspaces, with these options (those of</span>
-<span class="w">    </span><span class="c1"># `pbi workspaces scan batch`). A scan is always the administrator's.</span>
+<span class="w">    </span><span class="c1"># `pbi workspaces scan batch`; `scan: all` asks for every one, including the schema</span>
+<span class="w">    </span><span class="c1"># and the queries of the datasets). A scan is always the administrator's.</span>
 <span class="w">    </span><span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> lineage</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> datasource_details</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> get_artifact_users</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="c1"># Details of every item in them: users, datasources, pages, refreshes, parameters, tiles.</span>
+<span class="w">    </span><span class="c1"># Details of every item in them (and of their apps): users, datasources, pages, refreshes,</span>
+<span class="w">    </span><span class="c1"># parameters, tiles; `details: all` asks for every one.</span>
 <span class="w">    </span><span class="nt">details</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">users</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">datasources</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">refreshes</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="c1"># Whose account reads them: `auto` (the administrator's when it can, else a user whose</span>
 <span class="w">    </span><span class="c1"># own list of workspaces holds it), `admin`, `user` (never the administrator's), or the</span>
@@ -2496,7 +2580,7 @@ may not be an account of the file.</p>
 <h3 id="tenant"><code>tenant</code><a class="headerlink" href="#tenant" title="Permanent link">¤</a></h3>
 <p>What to keep for the whole tenant.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">tenant</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">app-users</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span>
 </code></pre></div>
 <table>
@@ -2517,7 +2601,7 @@ may not be an account of the file.</p>
 </tr>
 <tr>
 <td><code>scan</code></td>
-<td><strong>Scan every workspace of the tenant</strong>, with these options: <a href="#the-scan-options">the scan options</a> below, as a mapping or a list of names; <code>true</code> or <code>[]</code> is a scan with none. It asks for the scan, so <code>scan</code> need not be among the targets as well. (To scan only some workspaces, put <code>scan:</code> in an entry of <code>workspaces</code> instead.)</td>
+<td><strong>Scan every workspace of the tenant</strong>, with these options: <a href="#the-scan-options">the scan options</a> below, as a mapping, a list of names or <code>all</code>; <code>true</code> or <code>[]</code> is a scan with none. It asks for the scan, so <code>scan</code> need not be among the targets as well. (To scan only some workspaces, put <code>scan:</code> in an entry of <code>workspaces</code> instead.)</td>
 </tr>
 <tr>
 <td><code>full_scan</code>, <code>exclude_personal</code>, <code>exclude_inactive</code></td>
@@ -2528,13 +2612,22 @@ may not be an account of the file.</p>
 <p>The administrator's targets run once, with the administrator's account. A target of a
 user's account (<code>user-groups</code>, ...) runs <strong>once for each user profile</strong> of the file, each
 keeping its own answers in the lake.</p>
+<p>The plain sync keeps the list of apps; <code>app-users</code> (in the example above) also keeps <strong>who can
+open each app</strong>, a request for every app. See <a href="../sync/#apps">Apps</a> for what the lake can and
+cannot keep of an app.</p>
 <h3 id="the-scan-options">The scan options<a class="headerlink" href="#the-scan-options" title="Permanent link">¤</a></h3>
 <p>A <code>scan</code> takes these options (those of the file of <a href="../scan/"><code>pbi workspaces scan batch</code></a>),
 as a mapping in which each is <code>true</code> or <code>false</code> (<code>false</code> is the default), or as a list of the
 names of those that are on; the two are the same:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">lineage</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> datasource_details</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
 <span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">lineage</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">datasource_details</span><span class="p p-Indicator">]</span>
+<span class="nt">scan</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span><span class="w">                      </span><span class="c1"># every option below</span>
 </code></pre></div>
+<p><strong><code>all</code></strong> asks for every option, which is what you want when you want to know everything: the users of
+the items, the schema of the datasets and the queries that load them, and the connection details of
+the data sources. It costs the same requests as a scan with one option (a scan is one request to start,
+a few to wait for it and one to read it, for up to 100 workspaces); the result is only bigger. <code>all</code>
+may be in a list (<code>[all]</code>), and a single name works as a list of that name (<code>scan: lineage</code>).</p>
 <table>
 <thead>
 <tr>
@@ -2553,11 +2646,11 @@ names of those that are on; the two are the same:</p>
 </tr>
 <tr>
 <td><code>dataset_schema</code></td>
-<td>Tables, columns and measures (needs the tenant setting for detailed metadata)</td>
+<td>Tables, columns and measures (needs the tenant setting <em>Enhance admin APIs responses with detailed metadata</em>; a dataset that was not refreshed or published since it was turned on has none)</td>
 </tr>
 <tr>
 <td><code>dataset_expressions</code></td>
-<td>DAX and Power Query expressions (needs the same setting)</td>
+<td>DAX and Power Query expressions (needs <em>... with DAX and mashup expressions</em> as well)</td>
 </tr>
 <tr>
 <td><code>get_artifact_users</code></td>
@@ -2592,8 +2685,10 @@ keep for them: a scan, details, or both.</p>
 <ul>
 <li><code>scan</code>: a metadata scan of these workspaces, with the options above (<code>true</code> for none). A
   scan is always read with the administrator's account, whatever <code>via</code> says.</li>
-<li><code>details</code>: details of every item in the workspaces (and of the workspace itself), from the
-  list below. It costs a request per item, so name only what you need.</li>
+<li><code>details</code>: details of every item in the workspaces (and of the workspace itself, and of the apps
+  published from it), from the list below. It costs a request per item, so name only what you need;
+  <strong><code>details: all</code></strong> (or <code>[all]</code>) names every one, and a single name works as a list of that name
+  (<code>details: users</code>).</li>
 </ul>
 <table>
 <thead>
@@ -2633,6 +2728,12 @@ keep for them: a scan, details, or both.</p>
 <td><code>users</code></td>
 <td>dataflow</td>
 <td><code>dataflow-users</code></td>
+<td>not possible</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>app</td>
+<td><code>app-users</code> (the apps published from the workspace)</td>
 <td>not possible</td>
 </tr>
 <tr>
