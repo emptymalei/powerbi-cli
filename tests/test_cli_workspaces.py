@@ -1,10 +1,9 @@
 """Tests for workspaces CLI commands."""
 
-import click
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from pbi_cli.cli import pbi
+from pbi_cli.cli import app
 
 
 def test_workspaces_list_expand_option_not_shadowing_builtin():
@@ -20,7 +19,7 @@ def test_workspaces_list_expand_option_not_shadowing_builtin():
     # Invoke with --expand options - if list(expand) still calls the Click Command,
     # the command would fail with "Got unexpected extra arguments"
     result = runner.invoke(
-        pbi,
+        app,
         [
             "workspaces",
             "list",
@@ -39,7 +38,7 @@ def test_workspaces_list_expand_option_not_shadowing_builtin():
 def test_workspaces_list_default_expand_values():
     """Test that the workspaces list command uses all expand values by default."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["workspaces", "list", "--help"])
+    result = runner.invoke(app, ["workspaces", "list", "--help"])
     # Should show all valid expand choices in help
     assert "users" in result.output
     assert "reports" in result.output
@@ -55,6 +54,6 @@ def test_pbi_version_command():
     from importlib.metadata import version as _version
 
     runner = CliRunner()
-    result = runner.invoke(pbi, ["version"])
+    result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
     assert _version("pbi_cli") in result.output

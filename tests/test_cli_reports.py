@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from pbi_cli.cli import pbi
+from pbi_cli.cli import app
 from pbi_cli.powerbi.report import GroupReports
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ from pbi_cli.powerbi.report import GroupReports
 def test_reports_group_help():
     """Test that the reports group is accessible and shows expected subcommands."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["reports", "--help"])
+    result = runner.invoke(app, ["reports", "--help"])
     assert result.exit_code == 0
     assert "list" in result.output
     assert "pages" in result.output
@@ -30,7 +30,7 @@ def test_reports_group_help():
 def test_reports_list_help():
     """Test that reports list shows required options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["reports", "list", "--help"])
+    result = runner.invoke(app, ["reports", "list", "--help"])
     assert result.exit_code == 0
     assert "--group-id" in result.output or "-g" in result.output
 
@@ -38,7 +38,7 @@ def test_reports_list_help():
 def test_reports_pages_help():
     """Test that reports pages shows required and optional options."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["reports", "pages", "--help"])
+    result = runner.invoke(app, ["reports", "pages", "--help"])
     assert result.exit_code == 0
     assert "--group-id" in result.output or "-g" in result.output
     assert "--report-id" in result.output or "-r" in result.output
@@ -52,14 +52,14 @@ def test_reports_pages_help():
 def test_reports_list_requires_group_id():
     """Test that reports list fails when group-id is missing."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["reports", "list"])
+    result = runner.invoke(app, ["reports", "list"])
     assert result.exit_code != 0
 
 
 def test_reports_pages_requires_group_id():
     """Test that reports pages fails when group-id is missing."""
     runner = CliRunner()
-    result = runner.invoke(pbi, ["reports", "pages"])
+    result = runner.invoke(app, ["reports", "pages"])
     assert result.exit_code != 0
 
 
@@ -78,7 +78,7 @@ def test_reports_pages_succeeds_without_report_id():
             "pbi_cli.powerbi.report.GroupReports.all_pages",
             return_value=fake_all_pages,
         ):
-            result = runner.invoke(pbi, ["reports", "pages", "-g", "group-1"])
+            result = runner.invoke(app, ["reports", "pages", "-g", "group-1"])
     assert result.exit_code == 0
 
 
@@ -102,7 +102,7 @@ def test_reports_list_prints_to_console():
             "pbi_cli.powerbi.report.GroupReports.reports",
             new_callable=lambda: property(lambda self: fake_response),
         ):
-            result = runner.invoke(pbi, ["reports", "list", "-g", "group-1"])
+            result = runner.invoke(app, ["reports", "list", "-g", "group-1"])
 
     assert result.exit_code == 0
     output = json.loads(result.output)
@@ -123,7 +123,7 @@ def test_reports_list_saves_to_file(tmp_path):
             new_callable=lambda: property(lambda self: fake_response),
         ):
             result = runner.invoke(
-                pbi,
+                app,
                 ["reports", "list", "-g", "group-1", "-t", str(target_file)],
             )
 
@@ -156,7 +156,7 @@ def test_reports_pages_with_report_id_prints_to_console():
             new_callable=lambda: property(lambda self: fake_response),
         ):
             result = runner.invoke(
-                pbi,
+                app,
                 ["reports", "pages", "-g", "group-1", "-r", "report-1"],
             )
 
@@ -179,7 +179,7 @@ def test_reports_pages_with_report_id_saves_to_file(tmp_path):
             new_callable=lambda: property(lambda self: fake_response),
         ):
             result = runner.invoke(
-                pbi,
+                app,
                 [
                     "reports",
                     "pages",
@@ -225,7 +225,7 @@ def test_reports_pages_without_report_id_prints_to_console():
             "pbi_cli.powerbi.report.GroupReports.all_pages",
             return_value=fake_all_pages,
         ):
-            result = runner.invoke(pbi, ["reports", "pages", "-g", "group-1"])
+            result = runner.invoke(app, ["reports", "pages", "-g", "group-1"])
 
     assert result.exit_code == 0
     output = json.loads(result.output)
@@ -252,7 +252,7 @@ def test_reports_pages_without_report_id_saves_to_file(tmp_path):
             return_value=fake_all_pages,
         ):
             result = runner.invoke(
-                pbi,
+                app,
                 ["reports", "pages", "-g", "group-1", "-t", str(target_file)],
             )
 

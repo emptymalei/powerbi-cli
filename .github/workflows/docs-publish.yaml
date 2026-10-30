@@ -36,8 +36,10 @@ jobs:
       - name: Install Packages
         run: uv sync --extra docs --extra dev
       - run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Check the generated CLI reference is up to date
+        run: uv run python scripts/gen_cli_docs.py --check
       - name: Build Docs
-        run: uv run mkdocs build
+        run: uv run zensical build --clean
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.6.1
         with:
