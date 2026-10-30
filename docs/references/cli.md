@@ -18,11 +18,14 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 
 * `apps`: Power BI Apps Command Group
 * `auth`: Store authentication bearer token securely
-* `cache`: Manage cached API call results
+* `cache`: Manage the legacy cache (the data lake is...
 * `config`: Manage pbi-cli configuration settings
 * `export`: export report based on id
+* `lake`: Browse the data lake of fetched API results
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
+* `sync`: Keep what Power BI knows about the tenant...
+* `tui`: Browse the data lake, and sync it, in a...
 * `users`: Command group for Power BI users
 * `version`: Show the current version of the pbi CLI tool.
 * `workspaces`: Command group for Power BI workspaces
@@ -85,6 +88,11 @@ $ pbi apps augment [OPTIONS]
 
 List Power BI Apps and save them to files or print to console
 
+With --role admin all apps of the tenant are listed (this requires an admin account),
+with --role user the apps the signed-in user has installed. The answer is stored in
+the data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache
+reuses the stored answer and --cache-only never calls the API.
+
 **Usage**:
 
 ```console
@@ -141,7 +149,11 @@ $ pbi auth [OPTIONS]
 
 ## `pbi cache`
 
-Manage cached API call results
+Manage the legacy cache (the data lake is under pbi lake)
+
+Commands now keep what they fetch in the data lake: browse it with `pbi lake`.
+This group only works with the older cache, one folder per key, and never touches
+the data lake.
 
 **Usage**:
 
@@ -161,6 +173,9 @@ $ pbi cache [OPTIONS] COMMAND [ARGS]...
 ### `pbi cache clear`
 
 Clear cached data
+
+Clears the legacy cache only: the data lake is always kept. To delete old versions
+from the lake use `pbi lake prune`.
 
 ```
 # Clear all cache
@@ -192,6 +207,8 @@ $ pbi cache clear [OPTIONS]
 ### `pbi cache list`
 
 List cached data
+
+Lists the legacy cache; `pbi lake ls` lists the data lake.
 
 ```
 # List all cache keys
@@ -457,6 +474,185 @@ $ pbi export [OPTIONS]
 * `-t, --target <path>`: target file (if omitted, prints info to console)
 * `--help`: Show this message and exit.
 
+## `pbi lake`
+
+Browse the data lake of fetched API results
+
+**Usage**:
+
+```console
+$ pbi lake [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `ls`: List what the data lake holds
+* `prune`: Delete old versions, keeping the newest of...
+* `publish`: Publish the lake: a complete copy that...
+* `show`: Print a stored response (or its manifest)...
+
+### `pbi lake ls`
+
+List what the data lake holds
+
+One line per request (an endpoint with one set of parameters) shows when it was
+fetched, how many rows it has and how many versions are stored. Use REF with
+`pbi lake show`.
+
+```
+# Everything in the lake
+pbi lake ls
+
+# Only the workspace lists, with every stored version
+pbi lake ls -e admin.groups --all-versions
+
+# What someone shared, without any token
+pbi lake ls --lake s3://my-bucket/pbi-lake
+```
+
+**Usage**:
+
+```console
+$ pbi lake ls [OPTIONS]
+```
+
+**Options**:
+
+* `-e, --endpoint <str>`: Only this endpoint, for example admin.groups
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `--all-versions`: List every stored version, not only the newest of each request
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake prune`
+
+Delete old versions, keeping the newest of each request
+
+Every fetch adds a version and nothing is overwritten, so a lake grows. Pruning keeps
+the newest versions of each request (by default only the newest). Event logs are kept.
+
+```
+# Keep only the newest version of every request
+pbi lake prune
+
+# Keep the last three workspace lists
+pbi lake prune -e admin.groups --keep 3
+```
+
+Only the lake of the cache folder can be pruned: a lake given with `--lake`, and a
+published lake, are read-only.
+
+**Usage**:
+
+```console
+$ pbi lake prune [OPTIONS]
+```
+
+**Options**:
+
+* `--keep <int range>`: Versions of each request to keep (the newest)  [default: 1; x>=1]
+* `-e, --endpoint <str>`: Only this endpoint
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `--yes`: Confirm the action without prompting.
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake publish`
+
+Publish the lake: a complete copy that others can open without an account
+
+The copy has the layout of the lake, so `pbi tui --lake DESTINATION` and
+`pbi lake ls --lake DESTINATION` read it as it is. It holds the newest version of every
+request, every day of audit events, the scans and how the last syncs went. It is marked
+as published (`publish.json`), and from then on nothing but a later publish by the same
+person writes to it: anyone who points a sync at it is refused.
+
+The publish shows what it would copy, with what each category holds, and asks before it
+writes. A category that holds personal data or queries can be left out. Nothing that is
+in DESTINATION is overwritten (a version never changes), and DESTINATION must be empty
+or the place of an earlier publish. The lake that is published is the lake of the cache
+folder, or the one given with `--lake`.
+
+```
+# What would be published, without writing anything
+pbi lake publish s3://my-bucket/pbi-lake --dry-run
+
+# Publish, leaving out the audit events and who has access
+pbi lake publish s3://my-bucket/pbi-lake --exclude activity --exclude users
+
+# In a nightly job, after `pbi sync run`
+pbi lake publish s3://my-bucket/pbi-lake --yes
+```
+
+**Usage**:
+
+```console
+$ pbi lake publish [OPTIONS] {DESTINATION}
+```
+
+**Arguments**:
+
+* `DESTINATION`: Where to publish: an empty folder, or a URL such as s3://bucket/folder  [required]
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `-x, --exclude CATEGORY`: Leave a category out: scans, users, datasources, activity (repeatable)
+* `--history`: Publish every stored version, not only the newest of each request
+* `--prune`: Afterwards delete the versions in DESTINATION that are not the newest
+* `--dry-run`: Show what would be published and write nothing
+* `--yes`: Publish without asking
+* `--force`: Publish over a lake that someone else published
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake show`
+
+Print a stored response (or its manifest) as JSON
+
+When an endpoint was fetched with several sets of parameters, tell them apart with
+`-p KEY=VALUE` (as shown under PARAMETERS by `pbi lake ls`) or `--ref`. Event logs
+are kept per UTC day: choose the day with `--day`; events are printed one per line.
+
+```
+# The newest workspace list (there is only one kind of request)
+pbi lake show admin.groups
+
+# The request made with --top 50
+pbi lake show admin.groups -p '$top=50'
+
+# Where it came from: parameters, time, checksum
+pbi lake show admin.groups --manifest
+
+# The audit events of one day
+pbi lake show admin.activityevents --day 2026-09-29
+```
+
+**Usage**:
+
+```console
+$ pbi lake show [OPTIONS] {ENDPOINT}
+```
+
+**Arguments**:
+
+* `ENDPOINT`: Endpoint id, for example admin.groups (see pbi lake ls)  [required]
+
+**Options**:
+
+* `-p, --param KEY=VALUE`: A parameter of the stored request, to tell requests apart (repeatable)
+* `--ref <str>`: The REF of the request, as listed by pbi lake ls
+* `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
+* `-v, --version <str>`: Version to show (default: the newest)
+* `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
+* `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
 ## `pbi profile`
 
 Manage authentication profiles
@@ -610,7 +806,8 @@ $ pbi reports export [OPTIONS]
 List all reports in a workspace group.
 
 Retrieves the full list of reports from the specified workspace group and
-either prints the result to the console or saves it to a JSON file.
+either prints the result to the console or saves it to a JSON file. The answer
+is also stored in the data lake (see `pbi lake`) when a cache folder is configured.
 
 **Usage**:
 
@@ -630,7 +827,8 @@ Get pages of a report (or all reports) in a workspace group.
 
 When ``--report-id`` is provided, retrieves the pages for that specific
 report. When omitted, iterates over every report in the group and returns
-the combined pages for all of them.
+the combined pages for all of them. The answers are also stored in the data
+lake (see `pbi lake`) when a cache folder is configured.
 
 Examples::
 
@@ -668,6 +866,243 @@ $ pbi reports users [OPTIONS]
 * `-ft, --file-type <json|excel>`: [default: json]
 * `--help`: Show this message and exit.
 
+## `pbi sync`
+
+Keep what Power BI knows about the tenant in the data lake
+
+`pbi sync run` fetches the lists of workspaces, apps, reports and more, the audit
+events, and the metadata scans of the workspaces, within the quotas of the API. Run it
+as often as you like, for example every night: it continues where the last run stopped
+and never fetches twice what is still fresh. `pbi sync plan` shows what it would do
+and `pbi sync status` how the last runs went. What was fetched is in the data lake, see
+`pbi lake`.
+
+**Usage**:
+
+```console
+$ pbi sync [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `plan`: Show what a sync would fetch and what it...
+* `run`: Fetch what the targets need into the data...
+* `status`: Show how the last runs went and what the...
+
+### `pbi sync plan`
+
+Show what a sync would fetch and what it costs, without calling the API
+
+The plan is worked out from what the lake holds: how much of each target is fresh, how
+many requests are needed, and how they compare with the quotas (which `pbi sync run`
+keeps). Where the number of requests depends on a list that is not in the lake yet,
+such as the users of every report before the reports have been fetched, it says so.
+
+```
+# What a plain sync would do
+pbi sync plan
+
+# Plus the audit events of the last week, and a scan with lineage
+pbi sync plan default activity scan --days 7 --lineage
+
+# What a plan file would do: each of its steps, and what they cost together
+pbi sync plan --config pbi-plan.yaml
+```
+
+With `--config` the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; `--force`,
+`--max-age`, `--days` and the like still apply to every step of it.
+
+!!! warning "Requires Admin"
+
+    The admin targets need an admin account; the `user-...` targets need a user account.
+    Without names the plain targets are synced: the administrator's lists when there is
+    an administrator account, and else what a user can see, workspace by workspace.
+    `--admin-profile` and `--user-profile` choose other profiles than the active ones.
+
+**Usage**:
+
+```console
+$ pbi sync plan [OPTIONS] [TARGET]...
+```
+
+**Arguments**:
+
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, app-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.
+
+**Options**:
+
+* `--max-age DURATION`: Treat a stored answer younger than this as fresh, for example 30m, 6h or 2d (default: 24 hours for lists, 1 hour for audit events)
+* `--force`: Fetch again what the lake holds fresh, and scan every workspace again (a complete day of audit events cannot change and is never fetched again)
+* `--days <int range>`: Days of audit events to fetch, today included (the API keeps 28)  [default: 28; 1<=x<=28]
+* `--lineage`: Include lineage information
+* `--datasource-details`: Include datasource details
+* `--dataset-schema`: Include dataset schema
+* `--dataset-expressions`: Include dataset expressions
+* `--get-artifact-users`: Include artifact users
+* `--full-scan`: Scan every workspace, not only those that changed since the last scan
+* `--exclude-personal`: Leave personal workspaces out of scans
+* `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
+* `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
+* `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
+* `-c, --config <file>`: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it
+* `--help`: Show this message and exit.
+
+### `pbi sync run`
+
+Fetch what the targets need into the data lake, within the quotas
+
+Nothing is fetched twice: what the lake holds fresh is skipped, so the command can be
+run again and again, and it continues where the last run stopped.
+
+When the token expires the run stops and keeps what is done: sign in again with
+`pbi auth` and run the command again. What a quota holds back is tried again next
+time. A unit that fails, such as a report that cannot be read, is reported and the
+run goes on; it is tried again next time. A scan that was started and not collected is
+continued, not started again.
+
+Audit events are kept one log per UTC day; a day is complete, and never fetched again,
+a day after it ended. A scan fetches metadata of 100 workspaces per request and
+continues from the start of the last complete scan with the same options; the first
+one, or one with other options, covers every workspace.
+
+```
+# The plain targets: workspaces, apps, capacities, reports, datasets, ...
+pbi sync run
+
+# Also the audit events of the last 28 days, and a scan with lineage
+pbi sync run default activity scan --lineage
+
+# Only the users of every report (it fetches the reports first)
+pbi sync run report-users
+
+# Every night, from a scheduler: the events of the last week
+pbi sync run default activity --days 7
+
+# What a plan file says, step after step (the steps for the tenant first)
+pbi sync run --config pbi-plan.yaml
+```
+
+With `--config` the plan file says what to sync, so no target names and none of the
+options that it takes over (the scan options, the profiles) can be given; `--force`,
+`--max-age`, `--days`, `--workers` and the like still apply to every step of it. The
+run ends at the first step whose token expired; run it again after signing in and it
+continues, as every step skips what the lake holds fresh.
+
+!!! warning "Requires Admin"
+
+    The admin targets need an admin account; the `user-...` targets need a user account.
+    Without names the plain targets are synced: the administrator's lists when there is
+    an administrator account, and else what a user can see, workspace by workspace.
+    `--admin-profile` and `--user-profile` choose other profiles than the active ones.
+
+**Usage**:
+
+```console
+$ pbi sync run [OPTIONS] [TARGET]...
+```
+
+**Arguments**:
+
+* `[TARGET]...`: What to sync (default: the plain targets). Names: groups, apps, capacities, reports, datasets, dashboards, dataflows, scan, report-users, datasources, group-users, dataset-users, dashboard-users, dataflow-users, app-users, dataflow-datasources, refreshables, activity, user-groups, user-apps, user-reports, user-datasets, user-dashboards, user-dataflows, user-group-users, user-pages, user-dataset-users, user-dataset-datasources, user-dataflow-datasources, user-dataset-refreshes, user-dataset-parameters, user-dashboard-tiles; 'default' stands for the plain ones, 'all' for everything.
+
+**Options**:
+
+* `--max-age DURATION`: Treat a stored answer younger than this as fresh, for example 30m, 6h or 2d (default: 24 hours for lists, 1 hour for audit events)
+* `--force`: Fetch again what the lake holds fresh, and scan every workspace again (a complete day of audit events cannot change and is never fetched again)
+* `--days <int range>`: Days of audit events to fetch, today included (the API keeps 28)  [default: 28; 1<=x<=28]
+* `--workers <int range>`: Requests (and scans) worked on at the same time  [default: 4; 1<=x<=16]
+* `--wait <float range>`: Seconds a request may wait for quota before its unit is held back (0: never wait; the next run continues with it)  [default: 120.0; x>=0]
+* `--lineage`: Include lineage information
+* `--datasource-details`: Include datasource details
+* `--dataset-schema`: Include dataset schema
+* `--dataset-expressions`: Include dataset expressions
+* `--get-artifact-users`: Include artifact users
+* `--full-scan`: Scan every workspace, not only those that changed since the last scan
+* `--exclude-personal`: Leave personal workspaces out of scans
+* `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
+* `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
+* `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
+* `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
+* `-c, --config <file>`: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it
+* `--help`: Show this message and exit.
+
+### `pbi sync status`
+
+Show how the last runs went and what the lake holds
+
+Lists the latest run, the units that failed or that a quota held back, the scans that
+were started and not collected, the quota used in the last hour, and what the lake
+holds for each target. It reads the lake only, so it needs no token and no network.
+
+```
+pbi sync status
+
+# A lake that someone shared
+pbi sync status --lake s3://my-bucket/pbi-lake
+```
+
+**Usage**:
+
+```console
+$ pbi sync status [OPTIONS]
+```
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: every tenant synced)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+## `pbi tui`
+
+Browse the data lake, and sync it, in a terminal UI
+
+The Explorer shows the workspaces of the tenant, what is in them, who can open it,
+how it is connected and how fresh each part is, all from the data lake: it works
+without a token and without a network. The Sync screen plans a sync (what it would
+fetch, and what it costs against the quotas), runs it, and stops it. When the token
+expires, the UI asks for a fresh one and goes on where it stopped.
+
+Needs the optional dependency Textual: `pip install "pbi-cli[tui]"`. The lake is the
+one of `pbi config set-cache-folder`; it keeps what `pbi sync run` fetches. A bare
+`pbi` in a terminal opens the UI too.
+
+```
+pbi tui
+
+# Look at a lake that someone shared: no token, no network to Power BI, read-only
+pbi tui --lake s3://my-bucket/pbi-lake
+
+# With a plan file: its steps on the Sync screen, and its session settings
+pbi tui --config pbi-plan.yaml
+```
+
+A lake given with `--lake` is only read: nothing can be fetched into it, and no account
+is needed. Only the lake of the cache folder is written by a sync. With `--config` the
+lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
+else the lake of the cache folder.
+
+**Usage**:
+
+```console
+$ pbi tui [OPTIONS]
+```
+
+**Options**:
+
+* `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `-c, --config <file>`: A plan file (YAML): the Sync screen plans and runs its steps, and its session section says which lake to open, which workspace to select and what to do about a detail the lake lacks
+* `--help`: Show this message and exit.
+
 ## `pbi users`
 
 Command group for Power BI users
@@ -689,6 +1124,14 @@ $ pbi users [OPTIONS] COMMAND [ARGS]...
 ### `pbi users user-access`
 
 Get user access information from Power BI API
+
+Reads every page of the items the user has access to. The answer is stored in the
+data lake (see `pbi lake ls`) when a cache folder is configured; --use-cache reuses
+the stored answer and --cache-only never calls the API.
+
+!!! warning "Requires Admin"
+
+    This command requires an admin account.
 
 **Usage**:
 
@@ -772,6 +1215,10 @@ The --target-folder can be:
 - An absolute path: "C:\Users\Name\PowerBI\backups\2024-01-01"
 - A relative subfolder: "2024-01-01" (uses default output folder + this subfolder)
 - Omitted: prints results as a table to the console (no files created)
+
+The answer is stored in the data lake (see `pbi lake ls`) when a cache folder is
+configured. --use-cache reuses the stored answer to the same request (same --top,
+--expand and --odata-filter), whatever its age, and --cache-only never calls the API.
 
 ```sh
 # Print to console as a table
@@ -890,11 +1337,14 @@ $ pbi workspaces scan [OPTIONS] COMMAND [ARGS]...
 
 Scan every workspace listed in a YAML config file and save each result.
 
-Each workspace runs through its own initiate/status/result cycle so one
-failing workspace doesn't block the rest, and each result is
-saved as ``<target_folder>/<slugified-name>-<workspace_id>.json`` when a
-name is provided,
-or ``<target_folder>/<workspace_id>.json`` otherwise.
+Workspaces are scanned in batches of up to 100 per request: the API allows 500
+scan requests an hour, so scanning one by one would run out of quota. When a batch
+fails, its workspaces are scanned one by one, so one failing workspace doesn't
+block the rest. Each workspace gets its own file, holding the result for that
+workspace alone (the workspace and the data sources it uses), saved as
+``<target_folder>/<slugified-name>-<workspace_id>.json`` when a name is provided,
+or ``<target_folder>/<workspace_id>.json`` otherwise. The scans are also kept in
+the data lake (see `pbi lake`) when a cache folder is configured.
 
 Example config file:
 
@@ -917,10 +1367,10 @@ timeout: 300
 
 Only ``workspace_ids`` and ``target_folder`` are required; the scan flags
 default to ``false`` and ``interval``/``timeout`` default to ``5``/``300``
-seconds, same as ``pbi workspaces scan get``. When an entry has a
-``name``, the result is saved as
-``<target_folder>/<slugified-name>-<workspace_id>.json``; otherwise it
-falls back to ``<target_folder>/<workspace_id>.json``.
+seconds for each scan, same as ``pbi workspaces scan get``.
+
+If the token has expired or the API is throttling, every workspace would fail the
+same way, so the command stops and says so instead of listing each of them.
 
 ```sh
 pbi workspaces scan batch --config scan_config.yaml

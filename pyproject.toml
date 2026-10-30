@@ -1,6 +1,6 @@
 [project]
 name = "pbi_cli"
-version = "0.3.0"
+version = "0.4.0"
 description = "Power BI Command Line Tool for managing Power BI projects."
 readme = "README.md"
 license = {text = "MIT"}
@@ -29,6 +29,9 @@ dev = [
 docs = [
     "zensical>=0.0.67,<0.1.0",
     "mkdocstrings-python>=2.0.9,<3.0.0",
+]
+tui = [
+    "textual>=8.2,<9",
 ]
 
 [project.scripts]

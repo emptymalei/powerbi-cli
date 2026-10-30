@@ -7,7 +7,7 @@ from core_helpers import FakeClock
 
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
 from pbi_cli.core.registry import HOUR, MINUTE, RateLimit, get_endpoint
-from pbi_cli.errors import RateLimitError
+from pbi_cli.errors import RateLimitError, Stopped
 
 GROUPS = get_endpoint("admin.groups")  # 50/h and 15/min
 SCAN = get_endpoint("admin.scan.start")  # 500/h and 16 concurrent
@@ -191,6 +191,46 @@ def test_max_wait_can_be_overridden_per_request():
     assert clock.slept == [pytest.approx(60)]
 
 
+def test_an_interrupt_ends_the_wait_for_quota():
+    clock = FakeClock()
+    limiter, tracker = make_limiter(clock)
+    for _ in range(15):
+        with limiter.slot(GROUPS, "t1"):
+            pass
+    stop = threading.Event()
+    limiter.interrupt = stop
+    threading.Timer(0.1, stop.set).start()
+
+    with pytest.raises(Stopped, match="waiting for quota"):
+        with limiter.slot(GROUPS, "t1"):
+            pass
+
+    assert (
+        clock.slept == []
+    )  # it did not "sleep" the 60 seconds: it waited for the event
+    assert tracker.count("t1/admin.groups", MINUTE) == 15  # and spent no request
+
+
+def test_a_wait_that_is_not_interrupted_is_a_wait():
+    clock = FakeClock()
+    limiter, _ = make_limiter(clock)
+    limiter.interrupt = threading.Event()  # set up, but never set
+    for _ in range(15):
+        with limiter.slot(GROUPS, "t1"):
+            pass
+
+    def times_out(seconds):
+        clock.now += seconds  # the time passes ...
+        return False  # ... and the event was not set
+
+    limiter.interrupt.wait = times_out
+    with limiter.slot(GROUPS, "t1"):
+        pass
+
+    assert clock.slept == []  # the wait was the event's, not the sleep function's
+    assert clock.now >= 1_000_000.0 + 60
+
+
 def test_endpoint_without_quota_is_counted_but_never_waits():
     clock = FakeClock()
     limiter, tracker = make_limiter(clock)
@@ -309,3 +349,18 @@ def test_a_shorter_block_does_not_shorten_a_longer_one():
     tracker.block("k", 600)
     tracker.block("k", 30)
     assert tracker.next_slot("k", None) == pytest.approx(600)
+
+
+def test_the_counters_are_put_in_place_with_the_helper_that_waits_for_readers(
+    tmp_path, monkeypatch
+):
+    moved = []
+    monkeypatch.setattr(
+        "pbi_cli.core.ratelimit.replace_file",
+        lambda source, target: moved.append(target),
+    )
+    path = tmp_path / "quota.json"
+
+    QuotaTracker(path, clock=FakeClock()).record("k")
+
+    assert moved == [path]

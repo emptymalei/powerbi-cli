@@ -1,160 +1,72 @@
-# Cache System
+# Cache (legacy)
 
-The PowerBI CLI includes a cache system for API call results, allowing you to:
-- Avoid redundant API calls
-- Work offline with previously fetched data
-- Version data over time for analysis
-- Use cached data as a database for other tasks
+!!! note "The data lake replaced the cache"
 
-## Features
+    The commands keep what they fetch in the [data lake](lake.md) now. This page is for
+    anyone who still has entries in the older cache, and so that old links keep working.
 
-- **JSON Format**: All cached data is stored in JSON format for easy analysis
-- **Versioning**: Each cache entry is timestamped for version tracking
-- **Local and Remote Storage**: Support for both local paths and cloud storage (S3, etc.) via cloudpathlib
-- **Configurable**: Easy configuration through CLI commands
-- **Extensible**: Designed to be used as a database for analysis
+## What changed
 
-## Setup
+The older cache kept **one entry per command** (`workspaces`, `apps_user`,
+`user_access_<user>`), whatever options the command was given and whoever was signed in.
+`pbi workspaces list --use-cache --top 5` could therefore answer with the workspaces that
+an earlier `--top 1000` call had fetched, or with those of another tenant.
 
-### Configure Cache Folder
+The [data lake](lake.md) stores every answer under the request that produced it: the
+endpoint, its parameters and the tenant. Use it with the same cache folder you already
+configured:
 
 ```bash
-# Local path
-pbi config set-cache-folder ~/PowerBI/cache
-
-# Cloud path (S3)
-pbi config set-cache-folder s3://my-bucket/powerbi-cache
+pbi config set-cache-folder ~/PowerBI/cache    # the lake is ~/PowerBI/cache/lake
+pbi workspaces list                            # asks the API, stores the answer
+pbi workspaces list --use-cache                # reuses the stored answer
+pbi lake ls                                    # see what is stored
 ```
 
-### Enable/Disable Caching
+Entries of the older cache are not read by the commands and are not migrated to the lake.
+They stay in the cache folder until you remove them with `pbi cache clear`.
+
+## The commands
+
+`pbi cache list` and `pbi cache clear` work on the older layout only:
 
 ```bash
-# Enable caching (default)
-pbi config enable-cache
-
-# Disable caching
-pbi config disable-cache
-
-# Check status
-pbi config show
-```
-
-## Usage
-
-### Using Cache with Commands
-
-Most API-based commands support caching. Here's an example with the `workspaces list` command:
-
-```bash
-# Fetch from API and cache the result
-pbi workspaces list --top 1000
-
-# Use cached data if available (falls back to API if not cached)
-pbi workspaces list --use-cache
-
-# Only use cache (fails if not cached)
-pbi workspaces list --cache-only
-```
-
-### Managing Cache
-
-```bash
-# List all cached data
+# List the cache keys, or the versions of one key
 pbi cache list
-
-# List versions for a specific cache key
 pbi cache list -k workspaces
 
-# Clear specific cache key
-pbi cache clear -k workspaces
-
-# Clear specific version
+# Clear one version, all versions of a key, or the whole older cache
 pbi cache clear -k workspaces -v 20240101_120000
-
-# Clear all cache
+pbi cache clear -k workspaces
 pbi cache clear
 ```
 
-## Cache Structure
+`pbi cache clear` never touches the data lake, which is the `lake` folder in the same cache
+folder: clearing the whole cache keeps it, and `lake` is refused as a cache key. To delete
+old versions from the lake use [`pbi lake prune`](lake.md#look-into-the-lake-pbi-lake).
 
-The cache is organized as follows:
+## The layout of the older cache
 
-```
+```text
 cache_folder/
 ├── workspaces/
 │   ├── 20240101_120000/
 │   │   └── workspaces.json
 │   └── 20240102_150000/
 │       └── workspaces.json
-└── apps/
-    └── 20240101_130000/
-        └── apps.json
+├── apps_user/
+│   └── 20240101_130000/
+│       └── apps_user.json
+└── lake/                        the data lake (not part of the older cache)
 ```
 
-Each cache file contains:
-- `cache_key`: The key identifying the cached data
-- `cached_at`: ISO timestamp when data was cached
-- `version`: Version identifier (timestamp-based)
-- `metadata`: Additional metadata about the request
-- `data`: The actual cached data
-
-## Example: Using Cache as a Database
+Each file holds `cache_key`, `cached_at`, `version`, `metadata` (the options of the call)
+and `data` (the API response). To read an old entry from Python:
 
 ```python
 from pbi_cli.cache import CacheManager
-import json
 
-# Load cached data
 cache = CacheManager(cache_folder="~/PowerBI/cache")
-data = cache.load("workspaces", version="latest")
-
-# Access the cached data
-workspaces = data["data"]["value"]
-print(f"Found {len(workspaces)} workspaces")
-
-# Analyze metadata
-print(f"Cached at: {data['cached_at']}")
-print(f"Request parameters: {data['metadata']}")
+entry = cache.load("workspaces", version="latest")
+print(entry["cached_at"], entry["metadata"], len(entry["data"]["value"]))
 ```
-
-## Cloud Storage
-
-The cache system supports cloud storage via cloudpathlib. Ensure you have the necessary credentials configured for your cloud provider.
-
-### S3 Example
-
-```bash
-# Configure AWS credentials (standard AWS CLI configuration)
-aws configure
-
-# Set S3 cache folder
-pbi config set-cache-folder s3://my-bucket/powerbi-cache
-
-# Use as normal
-pbi workspaces list
-```
-
-## Best Practices
-
-1. **Use Versioning**: The cache automatically versions data with timestamps. Keep multiple versions for time-series analysis.
-
-2. **Regular Cleanup**: Clear old cache versions periodically to save space:
-   ```bash
-   pbi cache clear -k workspaces -v <old_version>
-   ```
-
-3. **Offline Analysis**: Use `--cache-only` for analysis tasks to ensure you're working with a consistent snapshot:
-   ```bash
-   pbi workspaces list --cache-only
-   ```
-
-4. **Metadata**: The cache stores request metadata, making it easy to understand what parameters were used:
-   ```json
-   {
-     "metadata": {
-       "top": 1000,
-       "expand": ["reports", "dashboards"],
-       "filter": "state eq 'Active'"
-     }
-   }
-   ```

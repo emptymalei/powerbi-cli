@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pytest
+from core_helpers import make_response
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app
@@ -73,3 +75,31 @@ def test_api_calls_use_the_setting(tmp_path, monkeypatch):
         result = runner.invoke(app, ["apps", "app", "-a", "some-app"])
     assert result.exit_code == 0, result.output
     assert fake_app.call_args.kwargs["verify"] == str(bundle)
+
+
+@pytest.mark.parametrize(
+    "setting, expected",
+    [(None, True), ("true", True), ("false", False), ("<bundle>", "<bundle>")],
+    ids=["default", "true", "false", "bundle"],
+)
+def test_the_commands_that_use_the_lake_verify_as_the_setting_says(
+    fake_api, signed_in, tmp_path, monkeypatch, setting, expected
+):
+    runner = _isolated_runner(tmp_path, monkeypatch)
+    bundle = tmp_path / "ca.pem"
+    bundle.write_text("x")
+    if setting is not None:
+        runner.invoke(
+            app,
+            [
+                "config",
+                "set-verify-certificates",
+                setting.replace("<bundle>", str(bundle)),
+            ],
+        )
+    fake_api.add("GET", "/admin/groups", make_response(200, {"value": []}))
+
+    result = runner.invoke(app, ["workspaces", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert fake_api.verifies == [str(bundle) if expected == "<bundle>" else expected]

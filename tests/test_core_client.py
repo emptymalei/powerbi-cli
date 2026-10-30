@@ -6,7 +6,17 @@ from datetime import datetime, timedelta
 
 import pytest
 import requests
-from core_helpers import NOW, UTC, FakeAdapter, make_response, make_token
+from core_helpers import (
+    BASE,
+    NOW,
+    UTC,
+    FakeAdapter,
+    Time,
+    make_client,
+    make_response,
+    make_token,
+)
+from loguru import logger
 
 from pbi_cli.core import client as client_module
 from pbi_cli.core.auth import Credentials
@@ -14,64 +24,15 @@ from pbi_cli.core.client import FOREVER, PowerBIClient, Throttled, body_hash, ro
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore
-from pbi_cli.errors import ApiError, OfflineCacheMiss, RateLimitError, TokenExpiredError
+from pbi_cli.errors import (
+    ApiError,
+    OfflineCacheMiss,
+    PBIError,
+    RateLimitError,
+    TokenExpiredError,
+)
 
-BASE = "https://api.test/v1.0/myorg"
 T0 = NOW
-
-
-class Time:
-    """One fake time for the client and its limiter."""
-
-    def __init__(self):
-        self.t = NOW.timestamp()
-        self.slept = []
-
-    def now(self) -> datetime:
-        return datetime.fromtimestamp(self.t, tz=UTC)
-
-    def time(self) -> float:
-        return self.t
-
-    def sleep(self, seconds: float) -> None:
-        self.slept.append(seconds)
-        self.t += seconds
-
-    def advance(self, **delta) -> None:
-        self.t += timedelta(**delta).total_seconds()
-
-
-def make_client(
-    adapter,
-    *,
-    clock=None,
-    store=None,
-    token=None,
-    profile="admin-nlm",
-    group="admin",
-    tenant=None,
-    quota_wait=120.0,
-    **kwargs,
-):
-    clock = clock or Time()
-    credentials = Credentials(
-        token or make_token(expires_in=timedelta(days=1)), profile=profile, group=group
-    )
-    limiter = Limiter(
-        QuotaTracker(clock=clock.time), sleep=clock.sleep, max_wait=quota_wait
-    )
-    client = PowerBIClient(
-        lambda: credentials,
-        store=store,
-        limiter=limiter,
-        tenant=tenant,
-        session=adapter.session(),
-        base_url=BASE,
-        clock=clock.now,
-        sleep=clock.sleep,
-        **kwargs,
-    )
-    return client, clock
 
 
 def ok(body, **kw):
@@ -204,6 +165,24 @@ def test_401_means_the_token_was_rejected():
     assert "401" in str(excinfo.value)
     assert "pbi auth -t <token> -p admin-nlm -g admin" in str(excinfo.value)
     assert token not in str(excinfo.value)
+
+
+def test_a_rejected_token_says_which_kind_of_account_it_was():
+    body = {"error": {"code": "TokenExpired", "message": "Access token has expired"}}
+    admin = FakeAdapter().add("GET", "/admin/apps", make_response(401, body))
+    user = FakeAdapter().add("GET", "/apps", make_response(401, body))
+    admin_client, _ = make_client(admin, token=make_token())
+    user_client, _ = make_client(user, token=make_token(), group="user", profile="svc")
+
+    with pytest.raises(TokenExpiredError) as rejected_admin:
+        admin_client.request("admin.apps")
+    with pytest.raises(TokenExpiredError) as rejected_user:
+        user_client.request("user.apps")
+
+    assert rejected_admin.value.group == "admin"
+    assert rejected_user.value.group == "user"
+    assert rejected_admin.value.profile == "admin-nlm"
+    assert rejected_user.value.profile == "svc"
 
 
 def test_403_on_an_admin_endpoint_points_at_the_admin_profile():
@@ -348,13 +327,15 @@ def test_a_long_retry_after_is_not_waited_out_and_blocks_the_endpoint():
     with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
     assert excinfo.value.retry_after == 3000
+    assert excinfo.value.endpoint == "admin.groups"
     assert "50 minutes" in str(excinfo.value)
     assert clock.slept == []
     assert len(adapter.requests) == 1
 
     # the next attempt does not hit the same wall: it fails fast, locally
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as again:
         client.request("admin.groups", {"$top": 1})
+    assert again.value.endpoint == "admin.groups"
     assert len(adapter.requests) == 1
 
 
@@ -384,8 +365,10 @@ def test_a_request_fails_fast_when_the_quota_wait_is_too_long():
     client, clock = make_client(adapter, quota_wait=30)
     for _ in range(15):
         client.request("admin.groups", {"$top": 1})
-    with pytest.raises(RateLimitError):
+    with pytest.raises(RateLimitError) as excinfo:
         client.request("admin.groups", {"$top": 1})
+    assert excinfo.value.endpoint == "admin.groups"  # which quota ran out
+    assert 0 < excinfo.value.retry_after <= 60
     assert len(adapter.requests) == 15
 
 
@@ -641,7 +624,7 @@ def test_a_fetched_answer_is_written_to_the_lake(store):
     assert result.from_cache is False
     assert result.snapshot is not None
     assert result.fetched_at == T0
-    stored = store.latest("tenant-1", "user.apps", {})
+    stored = store.latest("tenant-1", "user.apps", {"_as": "profile:admin-nlm"})
     assert stored is not None and stored.load() == {"value": [{"id": "a1"}]}
     manifest = stored.manifest
     assert manifest["endpoint"] == "user.apps" and manifest["tenant"] == "tenant-1"
@@ -649,7 +632,9 @@ def test_a_fetched_answer_is_written_to_the_lake(store):
     assert manifest["request"] == {
         "method": "GET",
         "path": "/apps",
-        "params": {},
+        "params": {
+            "_as": "profile:admin-nlm"
+        },  # who asked is a part of the key: it is never sent
         "body_sha256": None,
     }
     assert manifest["rows"] == 1 and manifest["pages"] == 1
@@ -677,7 +662,9 @@ def test_a_stale_snapshot_is_fetched_again(store):
     second = client.fetch("user.apps")
     assert second.from_cache is False
     assert second.data == {"value": [{"id": "a2"}]}
-    assert len(store.versions("tenant-1", "user.apps", {})) == 2
+    assert (
+        len(store.versions("tenant-1", "user.apps", {"_as": "profile:admin-nlm"})) == 2
+    )
 
 
 def test_max_age_overrides_the_endpoint_default(store):
@@ -698,7 +685,9 @@ def test_refresh_ignores_the_lake_but_still_stores(store):
     client.fetch("user.apps")
     result = client.fetch("user.apps", refresh=True)
     assert result.from_cache is False and result.data == {"value": [2]}
-    assert store.latest("tenant-1", "user.apps", {}).load() == {"value": [2]}
+    assert store.latest(
+        "tenant-1", "user.apps", {"_as": "profile:admin-nlm"}
+    ).load() == {"value": [2]}
 
 
 def test_offline_answers_from_the_lake_whatever_its_age(store):
@@ -789,9 +778,9 @@ def test_a_token_without_a_tenant_is_keyed_by_the_profile(store):
 
 
 def test_a_tenant_can_be_fixed_and_then_no_credentials_are_needed_offline(store):
-    adapter = apps_adapter({"value": [1]})
-    client, _ = make_client(adapter, store=store, group="user", tenant="fixed")
-    client.fetch("user.apps")
+    adapter = FakeAdapter().add("GET", "/admin/capacities", ok({"value": [1]}))
+    client, _ = make_client(adapter, store=store, group="admin", tenant="fixed")
+    client.fetch("admin.capacities")
     assert store.tenants() == ["fixed"]
 
     def no_credentials():
@@ -800,7 +789,22 @@ def test_a_tenant_can_be_fixed_and_then_no_credentials_are_needed_offline(store)
     offline = PowerBIClient(
         no_credentials, store=store, tenant="fixed", session=FakeAdapter().session()
     )
-    assert offline.fetch("user.apps", offline=True).data == {"value": [1]}
+    assert offline.fetch("admin.capacities", offline=True).data == {"value": [1]}
+
+
+def test_what_depends_on_who_asks_needs_the_credentials_even_offline(store):
+    adapter = apps_adapter({"value": [1]})
+    client, _ = make_client(adapter, store=store, group="user", tenant="fixed")
+    client.fetch("user.apps")
+
+    def no_credentials():
+        raise AssertionError("asked for the credentials")
+
+    offline = PowerBIClient(
+        no_credentials, store=store, tenant="fixed", session=FakeAdapter().session()
+    )
+    with pytest.raises(AssertionError, match="asked for the credentials"):
+        offline.fetch("user.apps", offline=True)  # whose answer: its key needs to know
 
 
 def test_an_expired_token_does_not_stop_a_fresh_cached_answer(store):
@@ -829,6 +833,69 @@ def test_a_lake_that_cannot_be_written_does_not_lose_the_answer(tmp_path):
     result = client.fetch("user.apps")
     assert result.data == {"value": [1]}
     assert result.snapshot is None and result.from_cache is False
+
+
+class UnreadableStore(LakeStore):
+    def latest(self, *args, **kwargs):
+        raise OSError("S3 is not reachable")
+
+
+def test_a_lake_that_cannot_be_read_does_not_stop_a_call_the_api_can_answer(tmp_path):
+    adapter = apps_adapter({"value": [1]})
+    client, _ = make_client(
+        adapter, store=UnreadableStore(tmp_path / "lake"), group="user"
+    )
+    messages = []
+    sink = logger.add(lambda message: messages.append(str(message)), level="WARNING")
+    try:
+        result = client.fetch("user.apps", max_age=FOREVER)
+    finally:
+        logger.remove(sink)
+
+    assert result.from_cache is False and result.data == {"value": [1]}
+    assert len(adapter.requests) == 1
+    assert any("Could not read user.apps from the lake" in m for m in messages)
+    assert any("S3 is not reachable" in m for m in messages)
+
+
+def test_a_damaged_stored_answer_is_fetched_again_and_replaced(store):
+    adapter = apps_adapter({"value": [1]}, {"value": [2]})
+    client, _ = make_client(adapter, store=store, group="user")
+    first = client.fetch("user.apps")
+    (first.snapshot.directory / "data.json").write_text("{not json", encoding="utf-8")
+
+    second = client.fetch("user.apps")  # fresh by age, but it cannot be read
+
+    assert second.from_cache is False and second.data == {"value": [2]}
+    assert len(adapter.requests) == 2
+    assert (
+        len(store.versions("tenant-1", "user.apps", {"_as": "profile:admin-nlm"})) == 2
+    )
+    assert client.fetch("user.apps").data == {"value": [2]}  # the new one is served
+
+
+def test_offline_with_a_lake_that_cannot_be_read_says_why(tmp_path):
+    adapter = FakeAdapter()
+    client, _ = make_client(
+        adapter, store=UnreadableStore(tmp_path / "lake"), group="user"
+    )
+    with pytest.raises(
+        PBIError, match="could not be read: S3 is not reachable"
+    ) as info:
+        client.fetch("user.apps", offline=True)
+    assert not isinstance(info.value, OfflineCacheMiss)
+    assert adapter.requests == []
+
+
+def test_offline_with_a_damaged_stored_answer_says_why(store):
+    adapter = apps_adapter({"value": [1]})
+    client, _ = make_client(adapter, store=store, group="user")
+    first = client.fetch("user.apps")
+    (first.snapshot.directory / "data.json").write_text("", encoding="utf-8")
+
+    with pytest.raises(PBIError, match="The data lake could not be read"):
+        client.fetch("user.apps", offline=True)
+    assert len(adapter.requests) == 1
 
 
 def test_the_token_never_reaches_the_lake(store, tmp_path):
@@ -886,3 +953,95 @@ def test_body_hash_is_stable():
     assert body_hash({"a": 1, "b": 2}) == body_hash({"b": 2, "a": 1})
     assert body_hash({"a": 1}) != body_hash({"a": 2})
     assert re.fullmatch(r"[0-9a-f]{64}", body_hash({"workspaces": ["w1"]}))
+
+
+def test_the_default_session_keeps_enough_connections_for_the_most_workers_of_a_sync():
+    adapter = client_module.make_session().get_adapter("https://api.powerbi.com")
+
+    assert adapter._pool_maxsize >= 16  # a sync may run 16 requests at once
+
+
+# ---------------------------------------------------------------------------
+# accounts: what depends on who asks is kept per account
+# ---------------------------------------------------------------------------
+
+
+def account_client(store, name, oid, adapter, **kwargs):
+    token = make_token(tenant="tenant-1", expires_in=timedelta(days=1), oid=oid)
+    return make_client(
+        adapter, store=store, group="user", profile=name, token=token, **kwargs
+    )[0]
+
+
+def test_two_accounts_of_one_tenant_keep_their_own_workspaces_and_apps(store):
+    first = account_client(
+        store, "ana", "oid-ana", FakeAdapter().add("GET", "/apps", ok({"value": ["a"]}))
+    )
+    second = account_client(
+        store, "bob", "oid-bob", FakeAdapter().add("GET", "/apps", ok({"value": ["b"]}))
+    )
+
+    assert first.fetch("user.apps").data == {"value": ["a"]}
+    assert second.fetch("user.apps").data == {"value": ["b"]}  # not Ana's answer
+    assert first.fetch("user.apps").data == {"value": ["a"]}  # and hers is still hers
+    assert store.tenants() == ["tenant-1"]
+    assert sorted(
+        s.params["_as"] for s in store.parameter_sets("tenant-1", "user.apps")
+    ) == [
+        "oid-ana",
+        "oid-bob",
+    ]
+
+
+def test_an_account_is_told_by_the_token_not_by_the_name_of_the_profile(store):
+    adapter = FakeAdapter().add(
+        "GET", "/apps", ok({"value": ["a"]}), ok({"value": ["b"]})
+    )
+    renamed = account_client(store, "ana-new-name", "oid-ana", adapter)
+    other = account_client(store, "ana", "oid-someone-else", adapter)
+
+    renamed.fetch("user.apps")
+    stored = store.latest("tenant-1", "user.apps", {"_as": "oid-ana"})
+    assert stored is not None and stored.manifest["profile"] == "ana-new-name"
+    assert other.fetch("user.apps").from_cache is False  # the name is not who it is
+
+
+def test_a_token_that_does_not_say_who_is_told_by_its_profile(store):
+    adapter = FakeAdapter().add("GET", "/apps", ok({"value": []}))
+    client, _ = make_client(
+        adapter, store=store, group="user", token="opaque", profile="my profile"
+    )
+
+    client.fetch("user.apps")
+
+    assert client.identity_key() == "profile:my profile"
+    assert store.latest(
+        "profile-my_profile", "user.apps", {"_as": "profile:my profile"}
+    )
+
+
+def test_who_asks_is_never_sent_to_the_api(store):
+    adapter = FakeAdapter().add("GET", "/apps", ok({"value": []}))
+    client = account_client(store, "ana", "oid-ana", adapter)
+
+    client.fetch("user.apps")
+    client.fetch("user.apps", {"_as": "oid-ana"}, refresh=True)  # also when it is given
+
+    assert [r.url for r in adapter.requests] == [f"{BASE}/apps", f"{BASE}/apps"]
+
+
+def test_a_request_that_says_whose_it_is_keeps_it(store):
+    adapter = FakeAdapter().add("GET", "/apps", ok({"value": ["a"]}))
+    client = account_client(store, "ana", "oid-ana", adapter)
+
+    client.fetch("user.apps", {"_as": "oid-someone-else"})  # a plan says who it is for
+
+    assert store.latest("tenant-1", "user.apps", {"_as": "oid-someone-else"})
+    assert store.latest("tenant-1", "user.apps", {"_as": "oid-ana"}) is None
+
+
+def test_an_operation_that_does_not_depend_on_who_asks_takes_no_identity(store):
+    client = account_client(store, "ana", "oid-ana", FakeAdapter())
+
+    with pytest.raises(ValueError, match="unknown parameter"):
+        client.fetch("admin.capacities", {"_as": "oid-ana"})

@@ -33,6 +33,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from pbi_cli.core.auth import Credentials, CredentialsProvider, ensure_not_expired
+from pbi_cli.core.jwt import TokenInfo
 from pbi_cli.core.ratelimit import (
     DEFAULT_MAX_WAIT,
     Limiter,
@@ -40,15 +41,32 @@ from pbi_cli.core.ratelimit import (
     QuotaTracker,
     format_wait,
 )
-from pbi_cli.core.registry import BASE_URL, Endpoint, Kind, Paging, get_endpoint
+from pbi_cli.core.registry import (
+    BASE_URL,
+    IDENTITY_PARAM,
+    Endpoint,
+    Kind,
+    Paging,
+    get_endpoint,
+)
 from pbi_cli.core.store import LakeStore, Snapshot, safe_name
-from pbi_cli.errors import ApiError, OfflineCacheMiss, RateLimitError, TokenExpiredError
+from pbi_cli.errors import (
+    ApiError,
+    OfflineCacheMiss,
+    PBIError,
+    RateLimitError,
+    TokenExpiredError,
+)
 
 #: ``max_age`` meaning "any age is fine".
 FOREVER = timedelta.max
 
 #: Safety net: a list that needs more pages than this is not read.
 MAX_PAGES = 10_000
+
+#: Connections the session keeps for reuse. A sync runs up to 16 requests at once; with the
+#: default of 10, the others would open a connection (and a TLS handshake) for each request.
+POOL_SIZE = 32
 
 #: Keys of a response that only steer the paging.
 _PAGING_KEYS = (
@@ -84,7 +102,9 @@ def make_session() -> requests.Session:
         status_forcelist=(500, 502, 503, 504),
         respect_retry_after_header=False,
     )
-    adapter = HTTPAdapter(max_retries=retry)
+    adapter = HTTPAdapter(
+        max_retries=retry, pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE
+    )
     session = requests.Session()
     session.mount("https://", adapter)
     session.mount("http://", adapter)
@@ -285,6 +305,23 @@ class PowerBIClient:
         """The key the lake uses for the current credentials."""
         return self._tenant_key(self._credentials())
 
+    def profile_name(self) -> Optional[str]:
+        """The name of the profile the current credentials belong to, if they say."""
+        return self._credentials().profile
+
+    def identity_key(self) -> str:
+        """Who the current credentials are for (see `Credentials.identity`): what the lake
+        keeps the answers of the operations that depend on who asks apart by."""
+        return self._credentials().identity
+
+    def token_info(self) -> TokenInfo:
+        """The tenant and expiry the current token states.
+
+        They are read from the token itself: nothing is sent, and the signature is not
+        checked.
+        """
+        return self._credentials().info
+
     # -- one request ---------------------------------------------------------------
 
     def _check_origin(self, url: str) -> None:
@@ -349,6 +386,7 @@ class PowerBIClient:
                     f"Power BI is throttling requests to {endpoint.id} (HTTP 429). "
                     f"Try again in {format_wait(wait)}.",
                     retry_after=wait,
+                    endpoint=endpoint.id,
                 )
             logger.info(f"Throttled on {endpoint.id}, waiting {format_wait(wait)}")
             if self._on_throttle is not None:
@@ -415,7 +453,9 @@ class PowerBIClient:
             raise TokenExpiredError(
                 f"Power BI rejected the token (401 Unauthorized) for {endpoint.id}. "
                 f"Sign in again and store a fresh token with "
-                f"`{credentials.sign_in_hint()}`."
+                f"`{credentials.sign_in_hint()}`.",
+                group=credentials.group,
+                profile=credentials.profile,
             )
         if status == 403:
             if endpoint.scope.value == "admin":
@@ -423,6 +463,8 @@ class PowerBIClient:
                     " This operation needs a Fabric administrator: store that token "
                     "with `pbi auth -t <token> -g admin`."
                 )
+            elif endpoint.needs:
+                hint = f" The account needs {endpoint.needs}."
             else:
                 hint = " The account may have no access to this item, or the token lacks the scope."
             raise ApiError(
@@ -574,6 +616,14 @@ class PowerBIClient:
 
     # -- fetching with the lake ----------------------------------------------------
 
+    def _identified(
+        self, endpoint: Endpoint, params: Optional[Mapping[str, Any]]
+    ) -> Optional[Mapping[str, Any]]:
+        """Say who asks, for an operation whose answer depends on it (unless it says)."""
+        if not endpoint.per_identity or (params and params.get(IDENTITY_PARAM)):
+            return params
+        return {**(params or {}), IDENTITY_PARAM: self._credentials().identity}
+
     def fetch(
         self,
         endpoint_id: str,
@@ -598,6 +648,8 @@ class PowerBIClient:
             (wins over ``refresh``)
         :param max_wait: how long requests may wait for quota
         :raises OfflineCacheMiss: if ``offline`` and nothing is stored for this request
+        :raises PBIError: if ``offline`` and the lake cannot be read (without ``offline``
+            an unreadable lake is skipped and the API is asked)
         :raises ValueError: if the endpoint is not a read-only snapshot endpoint
         """
         endpoint = get_endpoint(endpoint_id)
@@ -606,6 +658,7 @@ class PowerBIClient:
                 f"{endpoint.id} cannot be fetched into the lake as a snapshot "
                 f"({endpoint.kind.value}); use request() or the sync engine."
             )
+        params = self._identified(endpoint, params)
         canonical = endpoint.canonical_params(params)  # also validates the parameters
 
         credentials: Optional[Credentials] = None
@@ -616,17 +669,27 @@ class PowerBIClient:
             tenant = self._tenant_key(credentials)
 
         if self._store is not None and (offline or not refresh):
-            snapshot = self._store.latest(tenant, endpoint.id, canonical)
-            if snapshot is not None:
-                limit = max_age if max_age is not None else endpoint.ttl
-                if offline or snapshot.age(self._clock()) < limit:
-                    return Result(
-                        data=snapshot.load(),
-                        from_cache=True,
-                        fetched_at=snapshot.fetched_at,
-                        manifest=snapshot.manifest,
-                        snapshot=snapshot,
-                    )
+            try:
+                snapshot = self._store.latest(tenant, endpoint.id, canonical)
+                if snapshot is not None:
+                    limit = max_age if max_age is not None else endpoint.ttl
+                    if offline or snapshot.age(self._clock()) < limit:
+                        return Result(
+                            data=snapshot.load(),
+                            from_cache=True,
+                            fetched_at=snapshot.fetched_at,
+                            manifest=snapshot.manifest,
+                            snapshot=snapshot,
+                        )
+            except Exception as error:  # an unreadable lake is not a reason to fail
+                if offline:
+                    raise PBIError(
+                        f"The data lake could not be read: {error}"
+                    ) from error
+                logger.warning(
+                    f"Could not read {endpoint.id} from the lake, asking the API "
+                    f"instead: {error}"
+                )
         if offline:
             raise OfflineCacheMiss(
                 f"Nothing is stored for {endpoint.id} with these parameters"
