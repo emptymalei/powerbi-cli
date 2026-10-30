@@ -262,7 +262,15 @@ class PBIApp(App[None]):
     def action_sign_in(
         self, reason: str = "", group: str = "admin", profile: Optional[str] = None
     ) -> None:
-        """Ask for a fresh token (of ``profile``, or of the active one of the group)."""
+        """Ask for a fresh token (of ``profile``, or of the active one of the group); not
+        from inside a dialog, where ``a`` would stack another one on it."""
+        if not self._in_modal():
+            self.ask_for_token(reason, group, profile)
+
+    def ask_for_token(
+        self, reason: str = "", group: str = "admin", profile: Optional[str] = None
+    ) -> None:
+        """Ask for a fresh token, whatever is shown (what a sync that needs one asks)."""
         if isinstance(self.screen, SignInModal):
             return
         if self.refuse_when_view_only():
@@ -301,7 +309,7 @@ class PBIApp(App[None]):
                 return
             action, group, profile = picked
             if action == "sign_in":
-                self.action_sign_in(group=group, profile=profile)
+                self.ask_for_token(group=group, profile=profile)
             else:
                 self.activate_profile(group, profile)
 
@@ -352,7 +360,7 @@ class PBIApp(App[None]):
                     f"The token that was just stored for {signed[1]} ({group}) was "
                     f"refused as well. {reason}"
                 )
-            self.action_sign_in(reason=reason, group=group, profile=error.profile)
+            self.ask_for_token(reason=reason, group=group, profile=error.profile)
         elif isinstance(error, PBIError):
             self.notify(str(error), title="Cannot sync", severity="error")
         else:
@@ -390,6 +398,8 @@ class PBIApp(App[None]):
 
     def action_choose_tenant(self) -> None:
         """Choose which tenant of the lake to browse."""
+        if self._in_modal():
+            return
         found = self.backend.store.tenants()
         if not [name for name in found if name != self.tenant]:
             # nothing to choose: the lake holds the tenant that is shown, or nothing
