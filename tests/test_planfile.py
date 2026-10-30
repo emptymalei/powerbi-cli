@@ -886,6 +886,21 @@ def test_workspaces_that_are_scanned_alike_are_scanned_together():
     ]
 
 
+def test_a_workspace_two_entries_scan_is_scanned_once_with_the_options_of_both():
+    compiled = steps_for(
+        "  - {name: 'Finance*', scan: {lineage: true}}\n"
+        "  - {id: ws-eu, scan: {dataset_schema: true}}\n"
+    )
+
+    # ws-eu is named by both: one scan with both options, as the TUI says it is asked for
+    assert [
+        (s.options.scan_flags, s.options.workspace_ids) for s in compiled.steps
+    ] == [
+        (ScanFlags(lineage=True), ("ws-hid", "ws-us")),
+        (ScanFlags(lineage=True, dataset_schema=True), ("ws-eu",)),
+    ]
+
+
 def test_the_users_of_every_kind_of_item_are_fetched_by_the_administrator():
     compiled = steps_for("  - {name: Sales, details: [users], via: admin}\n")
 
