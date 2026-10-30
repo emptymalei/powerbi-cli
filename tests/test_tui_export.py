@@ -541,6 +541,25 @@ def test_names_with_brackets_are_offered_as_they_are(world, tmp_path):
     ]
 
 
+def test_any_failure_to_write_is_said_and_the_dialog_stays(world, folder, monkeypatch):
+    def broken(item, fmt, path):
+        raise RuntimeError("the library broke")
+
+    monkeypatch.setattr("pbi_cli.tui.exporting.write", broken)
+
+    async def scenario(ui):
+        await on_the_users_of_a_report(ui)
+        await ui.press("x")
+        await set_path(ui, folder / "out.csv")
+        await ui.click("#save")
+        return error_of(ui), type(ui.app.screen).__name__
+
+    assert run_ui(backend_of(world), scenario) == (
+        "Could not write the file: the library broke",
+        "ExportModal",
+    )
+
+
 def test_the_format_becomes_one_that_the_other_export_can_have(world, tmp_path):
     table = Exportable("A table", ("a",), (("1",),))
     data = Exportable("Some data", data={"x": 1})
