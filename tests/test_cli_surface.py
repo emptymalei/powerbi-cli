@@ -20,6 +20,12 @@ import pytest
 # Key format: "<command path>/<field path>", e.g. "pbi workspaces scan get/params/interval/type/name".
 # An entry covers every difference at or below that key. Value = reason.
 ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
+    # pbi auth reads the token from standard input or signs in with PowerShell.
+    "pbi auth/help": "documents --login and the piped token",
+    "pbi auth/param_order": "gains --login",
+    "pbi auth/params/bearer_token/help": "'-' reads the token from standard input",
+    "pbi auth/params/bearer_token/required": "the token may come from stdin or --login",
+    "pbi auth/params/login": "new: pbi auth --login (PowerShell sign-in)",
     # Typer adds shell completion to the root command.
     "pbi/param_order": "root gains --install-completion and --show-completion",
     "pbi/params/install_completion": "new: pbi --install-completion",

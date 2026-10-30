@@ -33,6 +33,7 @@ nav = [
         { "jwt" = "references/core/jwt.md" },
         { "planfile" = "references/core/planfile.md" },
         { "planrun" = "references/core/planrun.md" },
+        { "powershell" = "references/core/powershell.md" },
         { "publish" = "references/core/publish.md" },
         { "ratelimit" = "references/core/ratelimit.md" },
         { "registry" = "references/core/registry.md" },

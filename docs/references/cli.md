@@ -130,7 +130,16 @@ pbi auth -t <your_bearer_token> -p admin-nlm -g admin
 pbi auth -t <your_bearer_token> -p user-nlm -g user
 ```
 
+or read from standard input, or get one by signing in with PowerShell (needs the
+`MicrosoftPowerBIMgmt` module):
+
+```
+Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin
+pbi auth --login -p adm -g admin
+```
+
 :param bearer_token: Bearer token to authenticate with Power BI API
+:param login: Sign in with PowerShell to get the token
 :param profile: Profile name to associate with this credential
 :param group: Optional group ('user' or 'admin') to store the profile in
 
@@ -142,7 +151,8 @@ $ pbi auth [OPTIONS]
 
 **Options**:
 
-* `-t, --bearer-token <str>`: Bearer token  [required]
+* `-t, --bearer-token <str>`: Bearer token; '-' (or a token piped in) reads it from standard input
+* `--login`: Sign in with PowerShell (Login-PowerBI opens a window) instead
 * `-p, --profile <str>`: Profile name for this credential set  [default: default]
 * `-g, --group <user|admin>`: Group to store this profile in ('user' or 'admin')
 * `--help`: Show this message and exit.
