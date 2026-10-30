@@ -9,13 +9,24 @@ edit_uri = "blob/main/docs/"
 nav = [
   { "Home" = "index.md" },
   { "Guides" = [
+    { "Authentication" = "auth.md" },
     { "Workspace Scans" = "scan.md" },
     { "Cache" = "cache.md" },
+    { "Data lake" = "lake.md" },
   ] },
   { "References" = [
     { "Introduction" = "references/index.md" },
     { "pbi_cli" = [
       { "cli" = "references/cli.md" },
+      { "errors" = "references/errors.md" },
+      { "core" = [
+        { "auth" = "references/core/auth.md" },
+        { "client" = "references/core/client.md" },
+        { "jwt" = "references/core/jwt.md" },
+        { "ratelimit" = "references/core/ratelimit.md" },
+        { "registry" = "references/core/registry.md" },
+        { "store" = "references/core/store.md" },
+      ] },
       { "powerbi" = [
         { "index" = "references/powerbi/index.md" },
         { "admin" = "references/powerbi/admin.md" },

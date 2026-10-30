@@ -55,6 +55,12 @@ The CLI uses [Typer](https://typer.tiangolo.com). The commands live in
 with `Annotated[..., typer.Option(...)]`. Keep the option names explicit, including short
 names such as `-ft`: existing scripts use them.
 
+The code that talks to the Power BI API and keeps what it fetched lives in
+`src/pbi_cli/core` and has no dependency on the command line framework: the endpoint
+registry with the documented quotas (`registry.py`), the client (`client.py`), the quota
+counters (`ratelimit.py`) and the data lake store (`store.py`). See
+`docs/lake.md`; the commands will move onto this client step by step.
+
 ### Running the tests
 
 ```bash
