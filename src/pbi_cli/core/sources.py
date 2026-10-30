@@ -16,6 +16,7 @@ query, or a parameter of the dataset) when it can, and reports what it could not
 never raises: an expression that it cannot read has no sources.
 """
 
+import bisect
 import re
 from dataclasses import dataclass, field
 from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
@@ -305,6 +306,12 @@ def _steps(tokens: Sequence[Token]) -> Dict[str, List[Token]]:
 
 _LITERALS = ("null", "true", "false")
 
+#: The connectors that are given the native query they send as their second argument.
+_QUERY_CALLS = ("Odbc.Query", "OleDb.Query")
+
+#: The functions that send a native query to the source their first argument names.
+_NATIVE_CALLS = ("Value.NativeQuery",)
+
 
 def _operands(tokens: Sequence[Token]) -> List[List[Token]]:
     """Tokens cut at the ``&`` that are not inside a bracket."""
@@ -358,20 +365,46 @@ def _text(
     return "".join(pieces)
 
 
-def _record(tokens: Sequence[Token]) -> Dict[str, str]:
-    """The text values of a record ``[Key = "text", Other = 1]`` (the others are left out)."""
+def _record(
+    tokens: Sequence[Token],
+    steps: Optional[Mapping[str, Sequence[Token]]] = None,
+    names: Optional[Mapping[str, str]] = None,
+    unresolved: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """The text values of a record ``[Key = "text", Query = "select " & Name, Other = 1]``
+    (the values that are no text are left out).
+
+    :param steps: the steps of the query, to follow a name in a value
+    :param names: the texts that names of the dataset stand for
+    :param unresolved: where the names that could not be followed are added
+    """
     found: Dict[str, str] = {}
     if not tokens or tokens[0].text != "[":
         return found
     inner = tokens[1 : _matching(tokens, 0)]
+    missing = unresolved if unresolved is not None else []
     for part in _split(inner):
         if len(part) >= 3 and part[0].is_name and part[1].text == "=":
-            if part[2].kind == "string":
-                found[part[0].text] = part[2].text
+            value_tokens = part[2:]
+            if (  # a constant of M, such as TextEncoding.Utf8, is not a text to follow
+                len(value_tokens) == 1
+                and value_tokens[0].kind == "ident"
+                and "." in value_tokens[0].text
+                and value_tokens[0].text not in (steps or {})
+                and value_tokens[0].text not in (names or {})
+            ):
+                continue
+            value = _text(value_tokens, steps or {}, names or {}, missing)
+            if value:
+                found[part[0].text] = value
     return found
 
 
-def _navigations(tokens: Sequence[Token]) -> List[Tuple[str, Dict[str, str]]]:
+def _navigations(
+    tokens: Sequence[Token],
+    steps: Mapping[str, Sequence[Token]],
+    names: Mapping[str, str],
+) -> List[Tuple[str, Dict[str, str]]]:
     """The places where a step is navigated: ``Source{[Schema="dbo", Item="Sales"]}[Data]``,
     as the name of the step and the record."""
     found = []
@@ -383,7 +416,7 @@ def _navigations(tokens: Sequence[Token]) -> List[Tuple[str, Dict[str, str]]]:
             and tokens[index + 2].text == "["
         ):
             close = _matching(tokens, index + 1)
-            record = _record(tokens[index + 2 : close])
+            record = _record(tokens[index + 2 : close], steps, names)
             if record:
                 found.append((token.text, record))
     return found
@@ -427,9 +460,12 @@ def _build(
     roles = list(connector.roles)
     for position, tokens in enumerate(call.args):
         if tokens and tokens[0].text == "[":
-            record = _record(tokens)
+            record = _record(tokens, steps, names, unresolved)
             query = record.get("Query") or record.get("CommandText") or query
             database = record.get("Database") or database
+            continue
+        if position == 1 and call.name in _QUERY_CALLS:  # the query it sends
+            query = _text(tokens, steps, names, unresolved) or query
             continue
         role = roles[position] if position < len(roles) else "-"
         if role == "-":
@@ -461,16 +497,24 @@ def _build(
     )
 
 
-def _native_query(tokens: Sequence[Token], steps, names) -> str:
-    """The text of a ``Value.NativeQuery(Source, "select ...")`` call, if there is one."""
+def _native_queries(
+    tokens: Sequence[Token], steps, names
+) -> List[Tuple[int, int, List[Token], str]]:
+    """The ``Value.NativeQuery(Source, "select ...")`` calls of an expression: where the
+    tokens of their first argument start and end, those tokens, and the text of the query.
+    """
+    found = []
     for index, token in enumerate(tokens):
-        if token.kind == "ident" and token.text in ("Value.NativeQuery", "Odbc.Query"):
+        if token.kind == "ident" and token.text in _NATIVE_CALLS:
             if index + 1 < len(tokens) and tokens[index + 1].text == "(":
                 close = _matching(tokens, index + 1)
                 args = _split(tokens[index + 2 : close])
                 if len(args) >= 2:
-                    return _text(args[1], steps, names, [])
-    return ""
+                    first = index + 2
+                    query = _text(args[1], steps, names, [])
+                    if query:
+                        found.append((first, first + len(args[0]), args[0], query))
+    return found
 
 
 def extract_sources(
@@ -497,40 +541,64 @@ def extract_sources(
         return []
 
 
+class _Places:
+    """Where the steps of a ``let`` are in its tokens, worked out once for an expression.
+
+    :param tokens: the tokens of the expression
+    :param steps: its steps, whose tokens are slices of ``tokens``
+    """
+
+    def __init__(
+        self, tokens: Sequence[Token], steps: Mapping[str, Sequence[Token]]
+    ) -> None:
+        position = {id(token): index for index, token in enumerate(tokens)}
+        ranges = []
+        for name, step_tokens in steps.items():
+            if step_tokens and id(step_tokens[0]) in position:
+                start = position[id(step_tokens[0])]
+                ranges.append((start, start + len(step_tokens), name))
+        ranges.sort()
+        self._starts = [start for start, _, _ in ranges]
+        self._ranges = ranges
+
+    def step_at(self, index: int) -> str:
+        """The name of the step that the token at ``index`` is in (empty for none)."""
+        found = bisect.bisect_right(self._starts, index) - 1
+        if found >= 0:
+            start, end, name = self._ranges[found]
+            if start <= index < end:
+                return name
+        return ""
+
+
 def _extract(expression: str, parameters: Mapping[str, str]) -> List[Source]:
     tokens = tokenize(expression)
     steps = _steps(tokens)
     names: Dict[str, str] = dict(parameters)
-    calls = list(_calls(tokens))
+    calls = list(_calls(tokens))  # in the order of where they start
+    places = _Places(tokens, steps)
+    step_of = {id(call): places.step_at(call.start) for call in calls}
+    location_of_step: Dict[str, _Call] = {}
+    for call in calls:
+        if CONNECTORS[call.name].location:
+            location_of_step.setdefault(step_of[id(call)], call)
     # the call that opens the file or the address belongs to the reader of the format
     consumed: set = set()
     inside_of: Dict[int, _Call] = {}
-    for call in calls:
+    for position, call in enumerate(calls):
         if not CONNECTORS[call.name].wraps:
             continue
-        inside = next(
-            (
-                c
-                for c in calls
-                if c is not call
-                and call.start < c.start < call.end
-                and CONNECTORS[c.name].location
-            ),
-            None,
-        )
+        inside = None
+        for other in calls[position + 1 :]:  # the calls in its brackets come next
+            if other.start >= call.end:
+                break
+            if CONNECTORS[other.name].location:
+                inside = other
+                break
         first = call.args[0] if call.args else []
         if inside is None and len(first) == 1 and first[0].is_name:
             # a name that stands for the step that opens the file
-            inside = next(
-                (
-                    c
-                    for c in calls
-                    if c is not call
-                    and CONNECTORS[c.name].location
-                    and _step_of(c, tokens, steps) == first[0].text
-                ),
-                None,
-            )
+            inside = location_of_step.get(first[0].text)
         if inside is not None:
             inside_of[id(call)] = inside
             consumed.add(id(inside))
@@ -539,27 +607,76 @@ def _extract(expression: str, parameters: Mapping[str, str]) -> List[Source]:
         if id(call) not in consumed:
             built.append((call, _build(call, steps, names, inside_of.get(id(call)))))
 
-    native = _native_query(tokens, steps, names)
-    navigations = _navigations(tokens)
+    native = _natives_of(
+        _native_queries(tokens, steps, names), calls, built, steps, step_of
+    )
+    navigations = _navigations(tokens, steps, names)
+    navigation_of_step: Dict[str, Dict[str, str]] = {}
+    for name, record in navigations:
+        navigation_of_step.setdefault(name, record)
     sources: List[Source] = []
     for call, source in built:
-        step = _step_of(call, tokens, steps)
         item = ""
         if len(built) == 1:  # the path down to the table: database, schema, table
             item = " / ".join(i for i in (_item(r) for _, r in navigations) if i)
-        else:
-            for name, record in navigations:
-                if name == step:
-                    item = _item(record)
-                    break
+        elif step_of[id(call)] in navigation_of_step:
+            item = _item(navigation_of_step[step_of[id(call)]])
         extra = {}
         if item:
             extra["item"] = item
-        if native and not source.query:
-            extra["query"] = _shown(native)
-            extra["tables"] = _native_tables(native)
+        query = native.get(id(call), "")
+        if query and not source.query:
+            extra["query"] = _shown(query)
+            extra["tables"] = _native_tables(query)
         sources.append(replace_source(source, **extra) if extra else source)
     return _once(sources)
+
+
+def _natives_of(
+    natives: Sequence[Tuple[int, int, List[Token], str]],
+    calls: Sequence[_Call],
+    built: Sequence[Tuple[_Call, Source]],
+    steps: Mapping[str, Sequence[Token]],
+    step_of: Mapping[int, str],
+) -> Dict[int, str]:
+    """The native query that is sent to each source, by the ``id`` of its call.
+
+    A query goes to the call written in the first argument of ``Value.NativeQuery``, or to
+    the one built in the step that argument names, followed through steps that only navigate
+    it (``Db = Source{[Name="db"]}[Data]``). A query whose source is not found goes to the
+    only source of the expression, when there is one.
+    """
+    shown = {id(call) for call, _ in built}
+    starts = [call.start for call in calls]
+    built_of_step: Dict[str, int] = {}
+    for call, _ in built:
+        if step_of[id(call)]:
+            built_of_step.setdefault(step_of[id(call)], id(call))
+    found: Dict[int, str] = {}
+    lost: List[str] = []
+    for start, end, first, query in natives:
+        target = None
+        index = bisect.bisect_left(starts, start)
+        while index < len(calls) and calls[index].start < end:
+            if id(calls[index]) in shown:
+                target = id(calls[index])
+                break
+            index += 1
+        name = first[0].text if target is None and first[0].is_name else ""
+        for _ in range(MAX_FOLLOWED):
+            if not name or name in built_of_step:
+                break
+            followed = steps.get(name) or []
+            name = followed[0].text if followed and followed[0].is_name else ""
+        if target is None and name in built_of_step:
+            target = built_of_step[name]
+        if target is None:
+            lost.append(query)
+        else:
+            found.setdefault(target, query)
+    if lost and len(built) == 1 and id(built[0][0]) not in found:
+        found[id(built[0][0])] = lost[0]
+    return found
 
 
 def replace_source(source: Source, **changes: object) -> Source:
@@ -569,28 +686,13 @@ def replace_source(source: Source, **changes: object) -> Source:
     return Source(**values)  # type: ignore[arg-type]
 
 
-def _step_of(
-    call: _Call, tokens: Sequence[Token], steps: Mapping[str, Sequence[Token]]
-) -> str:
-    """The name of the step of the ``let`` that a call is in (empty for none)."""
-    for name, step_tokens in steps.items():
-        if not step_tokens:
-            continue
-        first = step_tokens[0]
-        # the tokens of a step are a slice of the tokens: find where it starts
-        for index, token in enumerate(tokens):
-            if token is first:
-                if index <= call.start < index + len(step_tokens):
-                    return name
-                break
-    return ""
-
-
 def _once(sources: Sequence[Source]) -> List[Source]:
     """The sources without the same one twice (the same place and the same item)."""
     found: List[Source] = []
+    seen: set = set()
     for source in sources:
-        if source not in found:
+        if source not in seen:
+            seen.add(source)
             found.append(source)
     return found
 
@@ -609,12 +711,32 @@ def language_of(expression: str) -> str:
     return "DAX"
 
 
+def is_parameter(expression: str) -> bool:
+    """Whether a shared query is a parameter: its value has ``meta [IsParameterQuery=true]``
+    after it (``false``, or the words in a text or a comment, are not)."""
+    tokens = tokenize(expression)
+    for index, token in enumerate(tokens):
+        if token.kind != "ident" or token.text != "meta":
+            continue
+        if index + 1 < len(tokens) and tokens[index + 1].text == "[":
+            close = _matching(tokens, index + 1)
+            for part in _split(tokens[index + 2 : close]):
+                if (
+                    len(part) == 3
+                    and part[0].is_name
+                    and part[0].text == "IsParameterQuery"
+                    and part[1].text == "="
+                ):
+                    return part[2].kind == "ident" and part[2].text == "true"
+    return False
+
+
 def parameter_values(queries: Sequence[Mapping[str, object]]) -> Dict[str, str]:
     """The texts that the shared queries (``expressions`` of a dataset) stand for.
 
     :param queries: the shared queries as the scan has them (``name`` and ``expression``)
-    :return: for each one that is a text, or a text with ``meta [...]`` after it (a parameter),
-        its text, by name
+    :return: for each one that is a text, texts joined with ``&``, or such a text with
+        ``meta [...]`` after it (a parameter), its whole text, by name
     """
     found: Dict[str, str] = {}
     for query in queries:
@@ -622,5 +744,5 @@ def parameter_values(queries: Sequence[Mapping[str, object]]) -> Dict[str, str]:
         tokens = tokenize(str(query.get("expression") or ""))
         if name and tokens and tokens[0].kind == "string":
             if len(tokens) == 1 or tokens[1].text in ("meta", "&"):
-                found[name] = tokens[0].text
+                found[name] = _text(tokens, {}, found, [])
     return found
