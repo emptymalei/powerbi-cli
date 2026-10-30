@@ -500,10 +500,47 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
+* `backup`: Copy a whole data lake, to have a way back
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
 * `show`: Print a stored response (or its manifest)...
+
+### `pbi lake backup`
+
+Copy a whole data lake, to have a way back
+
+A local lake replaces each file in one step, so a file is never half written. S3 has no
+such step: a sync, a prune or a publish that stops half way leaves some objects new and
+some old. Take a copy before; `pbi sync run`, `pbi lake prune` and `pbi lake publish`
+also take one with `--backup`.
+
+The copy has the layout of a lake: `pbi tui --lake COPY` opens it. Its `backup.json` is
+written last; a copy without it is incomplete. Between two places of the same cloud the
+objects are copied by the cloud, not through this machine.
+
+```
+# The lake of the cache folder, next to it
+pbi lake backup
+
+# A lake in S3, to a place of your choice
+pbi lake backup --lake s3://my-bucket/pbi-lake --to s3://my-bucket/backups/2026-10-30
+```
+
+To go back, copy the backup over the lake, for example with
+`aws s3 sync s3://my-bucket/pbi-lake-backup-... s3://my-bucket/pbi-lake --delete`.
+
+**Usage**:
+
+```console
+$ pbi lake backup [OPTIONS]
+```
+
+**Options**:
+
+* `--to <str>`: Where the copy goes: an empty folder or URL (default: next to the lake, as <lake>-backup-<UTC time>)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
 
 ### `pbi lake ls`
 
@@ -551,6 +588,9 @@ pbi lake prune
 
 # Keep the last three workspace lists
 pbi lake prune -e admin.groups --keep 3
+
+# The same, with a copy of the lake taken first (a lake in S3, say)
+pbi lake prune --backup
 ```
 
 Only the lake of the cache folder can be pruned: a lake given with `--lake`, and a
@@ -569,6 +609,8 @@ $ pbi lake prune [OPTIONS]
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--yes`: Confirm the action without prompting.
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--backup`: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone
+* `--backup-to <str>`: Where the backup goes: an empty folder or URL (implies --backup)
 * `--help`: Show this message and exit.
 
 ### `pbi lake publish`
@@ -596,6 +638,9 @@ pbi lake publish s3://my-bucket/pbi-lake --exclude activity --exclude users
 
 # In a nightly job, after `pbi sync run`
 pbi lake publish s3://my-bucket/pbi-lake --yes
+
+# Copy the earlier publish first, in case this one stops half way
+pbi lake publish s3://my-bucket/pbi-lake --backup
 ```
 
 **Usage**:
@@ -618,6 +663,8 @@ $ pbi lake publish [OPTIONS] {DESTINATION}
 * `--yes`: Publish without asking
 * `--force`: Publish over a lake that someone else published
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--backup`: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone
+* `--backup-to <str>`: Where the backup goes: an empty folder or URL (implies --backup)
 * `--help`: Show this message and exit.
 
 ### `pbi lake show`
@@ -997,6 +1044,9 @@ pbi sync run default activity --days 7
 
 # What a plan file says, step after step (the steps for the tenant first)
 pbi sync run --config pbi-plan.yaml
+
+# A lake in S3: copy it first, in case the run stops half way
+pbi sync run --backup
 ```
 
 With `--config` the plan file says what to sync, so no target names and none of the
@@ -1042,6 +1092,8 @@ $ pbi sync run [OPTIONS] [TARGET]...
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
 * `--user-profile <str>`: The profile of the user account to use (default: the active profile of the group user)
 * `-c, --config <file>`: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it
+* `--backup`: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone
+* `--backup-to <str>`: Where the backup goes: an empty folder or URL (implies --backup)
 * `--help`: Show this message and exit.
 
 ### `pbi sync status`

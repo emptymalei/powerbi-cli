@@ -10,11 +10,13 @@ import re
 import shlex
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import AbstractSet, Annotated, List, Optional, Sequence
+from typing import AbstractSet, Annotated, Callable, List, Optional, Sequence
 
 import typer
 
 from pbi_cli.cli_support import (
+    BackupOption,
+    BackupToOption,
     ClientPool,
     LakeOption,
     ScanArtifactUsers,
@@ -22,6 +24,7 @@ from pbi_cli.cli_support import (
     ScanDatasetSchema,
     ScanDatasourceDetails,
     ScanLineage,
+    back_up,
     command,
     format_age,
     new_app,
@@ -345,15 +348,21 @@ def _quote(word: str) -> str:
     return shlex.quote(word)
 
 
+#: Options that the command continuing a run leaves out.
+_NOT_AGAIN = {"backup", "backup_to"}
+
+
 def _again(ctx: typer.Context) -> str:
-    """The command that continues a run: the one that was typed, with every option given.
+    """The command that continues a run: the one that was typed, with every option given
+    but the backup (the lake was copied before this run; a second copy is not needed to
+    continue it).
 
     :param ctx: the context of ``pbi sync run``
     """
     words = ["pbi", "sync", "run"]
     for param in ctx.command.params:
         name = param.name
-        if name is None or not _given(ctx, name):
+        if name is None or name in _NOT_AGAIN or not _given(ctx, name):
             continue
         value = ctx.params.get(name)
         if param.param_type_name == "argument":
@@ -716,6 +725,8 @@ def sync_run(
     admin_profile: AdminProfileOption = None,
     user_profile: UserProfileOption = None,
     config: ConfigOption = None,
+    backup: BackupOption = False,
+    backup_to: BackupToOption = None,
 ):
     """Fetch what the targets need into the data lake, within the quotas
 
@@ -748,6 +759,9 @@ def sync_run(
 
     # What a plan file says, step after step (the steps for the tenant first)
     pbi sync run --config pbi-plan.yaml
+
+    # A lake in S3: copy it first, in case the run stops half way
+    pbi sync run --backup
     ```
 
     With `--config` the plan file says what to sync, so no target names and none of the
@@ -768,6 +782,7 @@ def sync_run(
         _refuse_with_a_plan_file(ctx, targets)
         report = _plan_file_run(
             config,
+            lambda store: back_up(store.root, backup, backup_to, "the sync"),
             _overrides(
                 ctx,
                 force=force,
@@ -802,6 +817,7 @@ def sync_run(
         user_profile=user_profile,
     )
     store = _lake()
+    back_up(store.root, backup, backup_to, "the sync")
     with ClientPool() as clients:
         engine = SyncEngine(clients, store)
         _print_targets(
@@ -814,9 +830,12 @@ def sync_run(
     _finish_run(report, _again(ctx))
 
 
-def _plan_file_run(config: Path, overrides: Overrides) -> RunReport:
+def _plan_file_run(
+    config: Path, before: Callable[[LakeStore], None], overrides: Overrides
+) -> RunReport:
     """``pbi sync run --config``: the steps of the plan file, one after the other.
 
+    :param before: called with the lake before anything is written into it (the backup)
     :return: how it went
     """
     store = _lake()
@@ -824,6 +843,7 @@ def _plan_file_run(config: Path, overrides: Overrides) -> RunReport:
     typer.echo(f"Data lake: {store.root}")
     typer.echo(f"Plan file: {plan_file.path}")
     _say_what_session_lake_is_for(plan_file)
+    before(store)
     with ClientPool() as clients:
         run = PlanRun(SyncEngine(clients, store), store, plan_file, overrides=overrides)
         labels = run.accounting().labels()

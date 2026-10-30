@@ -11,8 +11,18 @@ from typing import Annotated, Any, Dict, List, Optional, Sequence
 
 import typer
 
-from pbi_cli.cli_support import LakeOption, command, format_age, new_app, print_table
+from pbi_cli.cli_support import (
+    BackupOption,
+    BackupToOption,
+    LakeOption,
+    back_up,
+    command,
+    format_age,
+    new_app,
+    print_table,
+)
 from pbi_cli.config import PBIConfig
+from pbi_cli.core.backup import backup_lake
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
@@ -385,6 +395,8 @@ def lake_prune(
         ),
     ] = False,
     lake: LakeOption = None,
+    backup: BackupOption = False,
+    backup_to: BackupToOption = None,
 ):
     """Delete old versions, keeping the newest of each request
 
@@ -397,6 +409,9 @@ def lake_prune(
 
     # Keep the last three workspace lists
     pbi lake prune -e admin.groups --keep 3
+
+    # The same, with a copy of the lake taken first (a lake in S3, say)
+    pbi lake prune --backup
     ```
 
     Only the lake of the cache folder can be pruned: a lake given with `--lake`, and a
@@ -406,6 +421,9 @@ def lake_prune(
         raise typer.Abort()
 
     store = _store(lake)
+    if not store.writable:
+        raise PBIError(store.why_read_only())
+    back_up(store.root, backup, backup_to, "pruning")
     removed = 0
     for tenant_name in _tenants(store, tenant):
         removed += store.prune(keep=keep, tenant=tenant_name, endpoint_id=endpoint)
@@ -494,6 +512,8 @@ def lake_publish(
         typer.Option("--force", help="Publish over a lake that someone else published"),
     ] = False,
     lake: LakeOption = None,
+    backup: BackupOption = False,
+    backup_to: BackupToOption = None,
 ):
     """Publish the lake: a complete copy that others can open without an account
 
@@ -518,6 +538,9 @@ def lake_publish(
 
     # In a nightly job, after `pbi sync run`
     pbi lake publish s3://my-bucket/pbi-lake --yes
+
+    # Copy the earlier publish first, in case this one stops half way
+    pbi lake publish s3://my-bucket/pbi-lake --backup
     ```
     """
     opened = resolve_lake(lake)
@@ -544,6 +567,9 @@ def lake_publish(
         return
     if not yes and not typer.confirm(f"\nPublish this to {target.root}?"):
         raise typer.Abort()
+    if plan.before is not None or backup or backup_to is not None:
+        # an earlier publish is there: what it holds is copied before it is updated
+        back_up(target.root, backup, backup_to, "the publish")
     result = publish(plan)
     typer.secho(
         f"✓ Published to {target.root}: {result.copied} file(s) copied "
@@ -552,3 +578,59 @@ def lake_publish(
         fg="green",
     )
     typer.echo(f"Others open it with: pbi tui --lake {target.root}")
+
+
+@command(lake_app, "backup")
+def lake_backup(
+    to: Annotated[
+        Optional[str],
+        typer.Option(
+            "--to",
+            help=(
+                "Where the copy goes: an empty folder or URL (default: next to the lake, "
+                "as <lake>-backup-<UTC time>)"
+            ),
+        ),
+    ] = None,
+    lake: LakeOption = None,
+):
+    """Copy a whole data lake, to have a way back
+
+    A local lake replaces each file in one step, so a file is never half written. S3 has no
+    such step: a sync, a prune or a publish that stops half way leaves some objects new and
+    some old. Take a copy before; `pbi sync run`, `pbi lake prune` and `pbi lake publish`
+    also take one with `--backup`.
+
+    The copy has the layout of a lake: `pbi tui --lake COPY` opens it. Its `backup.json` is
+    written last; a copy without it is incomplete. Between two places of the same cloud the
+    objects are copied by the cloud, not through this machine.
+
+    ```
+    # The lake of the cache folder, next to it
+    pbi lake backup
+
+    # A lake in S3, to a place of your choice
+    pbi lake backup --lake s3://my-bucket/pbi-lake --to s3://my-bucket/backups/2026-10-30
+    ```
+
+    To go back, copy the backup over the lake, for example with
+    `aws s3 sync s3://my-bucket/pbi-lake-backup-... s3://my-bucket/pbi-lake --delete`.
+    """
+    opened = resolve_lake(lake)
+    if opened is None:
+        raise PBIError(f"There is no data lake yet. {lake_hint()}")
+    root = opened.store.root
+    typer.echo(f"Backing up {root} ...")
+    done = backup_lake(
+        root,
+        None if to is None else as_path(to),
+        on_file=lambda n: n % 500 == 0 and typer.echo(f"  {n} file(s) ..."),
+    )
+    if done is None:
+        typer.echo("The lake holds nothing yet: there is nothing to back up.")
+        return
+    typer.secho(
+        f"✓ Backed up {done.files} file(s) ({_size(done.size)}) to {done.destination}",
+        fg="green",
+    )
+    typer.echo(f"Open it with: pbi tui --lake {done.destination}")

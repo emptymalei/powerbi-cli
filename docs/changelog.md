@@ -62,6 +62,12 @@
 
 ### Added
 
+- `pbi lake backup` copies a whole lake, by default next to it as `<lake>-backup-<UTC time>`,
+  and `--backup` / `--backup-to` on `pbi sync run`, `pbi lake prune` and `pbi lake publish`
+  take that copy before the first write. A write to S3 that stops half way cannot be undone;
+  the copy is the way back. Within one cloud the objects are copied server side; a
+  `backup.json` written last marks a complete copy. See
+  [Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
 - **Sign in with PowerShell.** `pbi auth --login -p NAME -g admin|user` runs `Login-PowerBI` (the sign-in
   window of the Power BI PowerShell module and its own client id) and stores the token for that profile and
   group; the sign-in dialog of the terminal UI has a **Sign in with PowerShell** button that does the same.

@@ -368,6 +368,10 @@ hours. A scan that takes longer than `--scan-timeout`
 (10 minutes) is reported as failed, but it may still finish, so the next run looks at it
 again before starting another. A scan that failed is started again.
 
+A lake in S3 is worth copying before a large run: `pbi sync run --backup` copies it next
+to itself before the first write (`--backup-to PLACE` chooses where). See
+[Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
+
 ## Stopping, and continuing
 
 A sync can be stopped at any time, and run again:

@@ -242,6 +242,56 @@ LakeOption = Annotated[
 ]
 
 
+# -- a backup of a lake before a command writes into it ---------------------------------
+
+BackupOption = Annotated[
+    bool,
+    typer.Option(
+        "--backup",
+        help=(
+            "Copy the whole lake before writing into it, next to it as "
+            "<lake>-backup-<UTC time>; worth it for a lake in S3, where a write that "
+            "stops half way cannot be undone"
+        ),
+    ),
+]
+BackupToOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--backup-to",
+        help="Where the backup goes: an empty folder or URL (implies --backup)",
+    ),
+]
+
+
+def back_up(root: Any, backup: bool, backup_to: Optional[str], what: str) -> None:
+    """Copy a lake before a command writes into it, when ``--backup`` or ``--backup-to``
+    asks for it, and say where the copy is. Without either, a lake in the cloud gets a hint.
+
+    :param root: the folder or URL of the lake that is about to be written
+    :param what: what writes into it, for the messages (``the sync``)
+    :raises PBIError: when the backup cannot be made; nothing has been written then
+    """
+    from cloudpathlib import CloudPath
+
+    from pbi_cli.core.backup import backup_lake
+    from pbi_cli.session import as_path
+
+    if not backup and backup_to is None:
+        if isinstance(root, CloudPath):
+            typer.echo(
+                f"Tip: --backup copies the lake before {what} writes into it; a write to "
+                "S3 that stops half way cannot be undone."
+            )
+        return
+    typer.echo(f"Backing up {root} before {what} ...")
+    done = backup_lake(root, None if backup_to is None else as_path(backup_to))
+    if done is None:
+        typer.echo("  The lake holds nothing yet: there is nothing to back up.")
+        return
+    typer.secho(f"✓ Backed up {done.files} file(s) to {done.destination}", fg="green")
+
+
 # -- small helpers for printing and parsing --------------------------------------------
 
 
