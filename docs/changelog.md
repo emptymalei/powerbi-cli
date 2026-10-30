@@ -286,6 +286,23 @@
 
 ### Fixed
 
+- In the [terminal UI](tui.md):
+    - The Export dialog no longer ends the app when what it offers has a name like
+      `Finance [/EU]`, and the command palette shows such names, and `[Confidential]Finance`,
+      as they are, with the letters you typed lit. The keys of the JSON in the Info tab are
+      shown as they are too.
+    - Saving an Excel workbook of text with a control character in it (a vertical tab) no
+      longer ends the app: the workbook leaves the character out, and any file that cannot be
+      written is said in the dialog.
+    - A day of audit events with a half-written line no longer ends the app: the line above
+      the table says *Could not read this*.
+    - A lake (or tenant) that is slow to read no longer replaces the one you opened after it.
+    - `a` and `t` do nothing while a dialog is open, as `o` does, instead of opening another
+      dialog over it.
+    - The palette names a key only where it does that: *Stop the sync* said `x`, which exports
+      on the Explorer, and *Reload the lake* said `l`, which the Sync screen does not have.
+    - Typing in the tree filter of a big lake is quicker: the tree is built when you pause, and
+      the palette works out its commands once each time it opens instead of at every key.
 - `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake
   (`pbi config set-cache-folder`). `pbi sync plan|run --config` says the same. A bucket that holds no
