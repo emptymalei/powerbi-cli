@@ -30,7 +30,7 @@ import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.auth import PBIAuth
-from pbi_cli.cache import LAKE_FOLDER, CacheManager
+from pbi_cli.cache import LAKE_FOLDER, CacheManager, check_cache_name
 from pbi_cli.cli_lake import lake_app
 from pbi_cli.cli_support import (
     ScanArtifactUsers,
@@ -1448,11 +1448,18 @@ def clear_cache(
     if not yes:
         raise typer.Abort()
 
-    if cache_key == LAKE_FOLDER:
-        raise PBIError(
-            f"'{LAKE_FOLDER}' is the data lake, not a cache key. "
-            "Use `pbi lake prune` to delete old versions from it."
-        )
+    if cache_key is not None:
+        if cache_key.casefold() == LAKE_FOLDER:
+            raise PBIError(
+                f"'{cache_key}' is the data lake, not a cache key. "
+                "Use `pbi lake prune` to delete old versions from it."
+            )
+        try:
+            check_cache_name(cache_key)
+            if version is not None:
+                check_cache_name(version, "version")
+        except ValueError as e:
+            raise PBIError(str(e)) from None
 
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
