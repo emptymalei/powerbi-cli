@@ -52,6 +52,7 @@ from pbi_cli.config import (
 )
 from pbi_cli.core.auth import Credentials, credentials_from_headers
 from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
+from pbi_cli.core.fsutil import replace_file
 from pbi_cli.core.powershell import powershell_token
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.scan import (
@@ -165,28 +166,103 @@ def _check_keyring_availability():
 IN_KEYRING = "keyring"
 
 
-def _forget_keyring_entry(profile: str) -> None:
-    """Remove the token of a profile from the keyring, if it has one.
+def _credential_key(profile: str, group: Optional[str]) -> str:
+    """The name a token is kept under in the keyring and in the credentials file.
+
+    A profile of a group is kept as ``<group>:<profile>`` (``admin:default``), so that the
+    ``default`` profile of the user group and the one of the admin group do not share a
+    token. The flat, legacy profiles keep the bare name, as tokens were kept before.
+
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    """
+    return profile if group is None else f"{group}:{profile}"
+
+
+def _keyring_get(key: str) -> Optional[str]:
+    """The token kept under *key* in the system keyring, if there is a keyring and one."""
+    if not _check_keyring_availability():
+        return None
+    try:
+        return keyring.get_password(KEYRING_SERVICE, key)
+    except Exception as e:
+        # no keyring after all, or a Windows Credential Manager error
+        logger.debug(f"Keyring error: {e}")
+        return None
+
+
+def _forget_keyring_entry(key: str) -> None:
+    """Remove the token kept under *key* from the keyring, if it has one.
 
     The keyring is read before the file, so an older token in it would hide a newer one that
     went to the file (a token that is too long for the Windows Credential Manager does).
     """
+    if not KEYRING_AVAILABLE:
+        return
     try:
-        keyring.delete_password(KEYRING_SERVICE, profile)
+        keyring.delete_password(KEYRING_SERVICE, key)
     except Exception:
         # nothing there, or no keyring at all: there is nothing to forget
         pass
 
 
-def _set_credential(profile: str, token: str) -> str:
-    """Set credential for a profile using keyring or fallback to file storage
+def _read_credentials_file() -> Dict[str, str]:
+    """The tokens kept in the credentials file (none when there is no file).
 
+    :raises AuthError: when the file cannot be read as JSON
+    """
+    credentials_file = _get_credentials_file()
+    if not credentials_file.exists():
+        return {}
+    try:
+        with open(credentials_file, "r", encoding="utf-8") as fp:
+            credentials = json.load(fp)
+    except (OSError, ValueError) as e:
+        raise AuthError(
+            f"Could not read the stored tokens in {credentials_file} ({e}). Fix or "
+            "delete the file, then store the tokens again with 'pbi auth'."
+        ) from None
+    if not isinstance(credentials, dict):
+        raise AuthError(
+            f"The stored tokens in {credentials_file} are not a JSON object. Fix or "
+            "delete the file, then store the tokens again with 'pbi auth'."
+        )
+    return credentials
+
+
+def _write_credentials_file(credentials: Dict[str, str]) -> None:
+    """Replace the credentials file with *credentials*, readable by the owner only.
+
+    The tokens are written to a new file that is created with owner-only permissions (so
+    they are never readable by others, not even for a moment) and then moved over the old
+    one, so that a failed write never leaves half a file.
+    """
+    credentials_file = _get_credentials_file()
+    credentials_file.parent.mkdir(parents=True, exist_ok=True)
+    temporary = credentials_file.with_name(
+        f".{credentials_file.name}.{os.getpid()}.tmp"
+    )
+    descriptor = os.open(str(temporary), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as fp:
+            json.dump(credentials, fp, indent=2)
+        replace_file(temporary, credentials_file)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    credentials_file.chmod(0o600)
+
+
+def _store(key: str, token: str, quiet: bool = False) -> str:
+    """Keep *token* under *key*: in the keyring, else in the credentials file.
+
+    :param quiet: do not warn when the token goes to the file (when an old entry is moved)
     :return: where the token went: ``keyring``, or the path of the credentials file
     """
     refused = False
     if _check_keyring_availability():
         try:
-            keyring.set_password(KEYRING_SERVICE, profile, token)
+            keyring.set_password(KEYRING_SERVICE, key, token)
             return IN_KEYRING
         except NoKeyringError:
             pass
@@ -197,87 +273,136 @@ def _set_credential(profile: str, token: str) -> str:
             refused = True
 
     # Fallback to file-based storage
-    config_dir = _get_config_dir()
     credentials_file = _get_credentials_file()
+    credentials = _read_credentials_file()
     if refused:
-        logger.warning(
-            "The system keyring did not take the token (on Windows usually because it is "
-            f"longer than the Credential Manager holds): storing it in {credentials_file}"
-        )
-        _forget_keyring_entry(profile)
-    else:
+        if not quiet:
+            logger.warning(
+                "The system keyring did not take the token (on Windows usually because "
+                "it is longer than the Credential Manager holds): storing it in "
+                f"{credentials_file}"
+            )
+        _forget_keyring_entry(key)
+    elif not quiet:
         logger.warning(
             "Keyring not available, storing credentials in file. "
             "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
         )
-    if not config_dir.exists():
-        config_dir.mkdir(parents=True, exist_ok=True)
 
-    credentials = {}
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
-
-    credentials[profile] = token
-
-    with open(credentials_file, "w") as fp:
-        json.dump(credentials, fp, indent=2)
-
-    # Set restrictive permissions on the credentials file
-    credentials_file.chmod(0o600)
+    credentials[key] = token
+    _write_credentials_file(credentials)
     return str(credentials_file)
 
 
-def _get_credential(profile: str) -> Optional[str]:
-    """Get credential for a profile from keyring or file storage"""
-    if _check_keyring_availability():
+def _lookup(key: str) -> Optional[str]:
+    """The token kept under *key*: from the keyring, else from the credentials file."""
+    token = _keyring_get(key)
+    if token is not None:
+        return token
+    return _read_credentials_file().get(key)
+
+
+def _forget(key: str) -> None:
+    """Remove the token kept under *key* from the keyring and from the credentials file."""
+    _forget_keyring_entry(key)
+    credentials = _read_credentials_file()
+    if key in credentials:
+        del credentials[key]
+        _write_credentials_file(credentials)
+
+
+def _legacy_entry_needed(profile: str, group: str) -> bool:
+    """Whether the bare-name token of *profile* may still be needed by someone else.
+
+    Tokens used to be kept under the bare profile name, shared by the profile of that name
+    in every group (and by the flat profile of that name). It stays as long as a flat
+    profile or a profile of another group has that name and no token of its own yet.
+
+    :param profile: the name of the profile
+    :param group: the group that no longer needs it
+    """
+    pbi_config = PBIConfig()
+    if profile in (pbi_config.profiles or {}):
+        return True
+    return any(
+        pbi_config.has_profile_in_group(other, profile)
+        and _lookup(_credential_key(profile, other)) is None
+        for other in VALID_GROUPS
+        if other != group
+    )
+
+
+def _drop_legacy_entry(profile: str, group: str) -> None:
+    """Remove the bare-name token of *profile* once no one else may need it."""
+    if _lookup(profile) is not None and not _legacy_entry_needed(profile, group):
+        _forget(profile)
+
+
+def _set_credential(profile: str, token: str, group: Optional[str] = None) -> str:
+    """Set credential for a profile using keyring or fallback to file storage
+
+    :param profile: the name of the profile
+    :param token: the bearer token, without the ``Bearer`` prefix
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    :return: where the token went: ``keyring``, or the path of the credentials file
+    """
+    where = _store(_credential_key(profile, group), token)
+    if group is not None:
+        _drop_legacy_entry(profile, group)
+    return where
+
+
+def _get_credential(profile: str, group: Optional[str] = None) -> Optional[str]:
+    """Get credential for a profile from keyring or file storage
+
+    A profile of a group whose token is still kept under the bare profile name (as tokens
+    were kept before they were kept per group) gets that token, and it is moved to the name
+    of the group and profile.
+
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    :raises AuthError: when the credentials file cannot be read
+    """
+    token = _lookup(_credential_key(profile, group))
+    if token is not None or group is None:
+        return token
+
+    token = _lookup(profile)
+    if token is not None:
         try:
-            token = keyring.get_password(KEYRING_SERVICE, profile)
-            if token is not None:
-                return token
-        except NoKeyringError:
-            pass
-        except (OSError, Exception) as e:
-            # Handle Windows Credential Manager errors and other keyring errors
-            logger.debug(f"Keyring error: {e}")
-            pass
-
-    # Fallback to file-based storage
-    credentials_file = _get_credentials_file()
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
-            return credentials.get(profile)
-
-    return None
+            _store(_credential_key(profile, group), token, quiet=True)
+            _drop_legacy_entry(profile, group)
+        except Exception as e:
+            # the token can still be used; it is moved on the next try
+            logger.debug(f"Could not move the token of profile '{profile}': {e}")
+    return token
 
 
-def _delete_credential(profile: str):
-    """Delete credential for a profile from keyring or file storage"""
-    if _check_keyring_availability():
-        try:
-            keyring.delete_password(KEYRING_SERVICE, profile)
-            return
-        except (NoKeyringError, PasswordDeleteError):
-            pass
-        except (OSError, Exception) as e:
-            # Handle Windows Credential Manager errors and other keyring errors
-            logger.debug(f"Keyring error: {e}")
-            pass
+def _delete_credential(profile: str, group: Optional[str] = None) -> None:
+    """Delete the token of a profile from the keyring and from the credentials file.
 
-    # Fallback to file-based storage
-    credentials_file = _get_credentials_file()
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
+    The token of the profile is removed, and the bare-name token that tokens were kept
+    under before too, unless a profile of that name in another group still uses it.
 
-        if profile in credentials:
-            del credentials[profile]
-
-            with open(credentials_file, "w") as fp:
-                json.dump(credentials, fp, indent=2)
-
-            credentials_file.chmod(0o600)
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    """
+    if group is None:
+        # the groups' profiles of that name that still use the bare-name token keep it
+        token = _lookup(profile)
+        pbi_config = PBIConfig()
+        for other in VALID_GROUPS:
+            key = _credential_key(profile, other)
+            if (
+                token is not None
+                and pbi_config.has_profile_in_group(other, profile)
+                and _lookup(key) is None
+            ):
+                _store(key, token, quiet=True)
+        _forget(profile)
+        return
+    _forget(_credential_key(profile, group))
+    _drop_legacy_entry(profile, group)
 
 
 def _migrate_legacy_auth():
@@ -410,8 +535,10 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     """
     profile = _resolve_profile(profile, group)
 
-    # Get token from keyring or file.
-    token = _get_credential(profile)
+    # Get token from keyring or file: a profile of the group has a token of its own, a
+    # flat (legacy) profile the one under its bare name.
+    in_group = PBIConfig().has_profile_in_group(group, profile)
+    token = _get_credential(profile, group if in_group else None)
     if token is None:
         raise AuthError(
             f"No credentials found for profile '{profile}'. Please re-authenticate.",
@@ -668,8 +795,8 @@ def store_token(
         logger.info(f"Creating config folder: {config_dir}")
         config_dir.mkdir(parents=True, exist_ok=True)
 
-    # Store token securely (keyed by profile name)
-    where = _set_credential(profile, bearer_token)
+    # Store token securely (keyed by group and profile name)
+    where = _set_credential(profile, bearer_token, group)
 
     if group is not None:
         # Store in group-based config
@@ -977,7 +1104,7 @@ def list_auth():
             typer.echo(f"Group '{group}':")
             for profile_name in group_profiles.keys():
                 active_marker = " (active)" if profile_name == group_active else ""
-                token_exists = _get_credential(profile_name) is not None
+                token_exists = _get_credential(profile_name, group) is not None
                 status = "✓" if token_exists else "✗"
                 typer.echo(f"  {status} {profile_name}{active_marker}")
             typer.echo(f"  Active: {group_active or 'None'}")
@@ -1045,7 +1172,7 @@ def delete_auth(
             )
             return
 
-        _delete_credential(profile)
+        _delete_credential(profile, group_name)
         pbi_config.remove_profile_from_group(group_name, profile)
         typer.secho(
             f"✓ Profile '{profile}' deleted from group '{group_name}'", fg="green"

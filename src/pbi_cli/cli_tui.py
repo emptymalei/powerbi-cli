@@ -79,7 +79,7 @@ def build_backend(
         for group in VALID_GROUPS:
             active = config.get_group_active_profile(group)
             for profile in config.get_group_profiles(group):
-                token = _get_credential(profile)
+                token = _get_credential(profile, group)
                 info = token_info(token) if token else TokenInfo()
                 found.append(
                     AccountInfo(
