@@ -243,7 +243,7 @@ def test_endpoint_without_quota_is_counted_but_never_waits():
     assert tracker.count("t1/user.apps", HOUR) == 300
     assert limiter.remaining(USER_APPS, "t1") is None
     assert limiter.usage(USER_APPS, "t1") == []
-    assert limiter.wait_time(USER_APPS, "t1") == 0
+    assert limiter.tracker.next_slot(Limiter.key(USER_APPS, "t1"), USER_APPS.limit) == 0
 
 
 def test_a_failed_request_still_counts():
