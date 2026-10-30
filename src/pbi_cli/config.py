@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, overload
 
 import yaml
 from loguru import logger
@@ -573,6 +573,18 @@ def migrate_legacy_config():
             logger.warning(f"Could not migrate profiles.json: {e}")
 
     # No explicit save needed - the properties handle it
+
+
+@overload
+def resolve_output_path(path_input: str) -> Path: ...
+
+
+@overload
+def resolve_output_path(path_input: None) -> None: ...
+
+
+@overload
+def resolve_output_path(path_input: Optional[str]) -> Optional[Path]: ...
 
 
 def resolve_output_path(path_input: Optional[str]) -> Optional[Path]:

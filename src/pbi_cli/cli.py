@@ -29,7 +29,6 @@ import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
-from pbi_cli.auth import PBIAuth
 from pbi_cli.cache import LAKE_FOLDER, CacheManager, check_cache_name
 from pbi_cli.cli_lake import lake_app
 from pbi_cli.cli_support import (
@@ -72,27 +71,24 @@ from pbi_cli.web import DataRetriever
 
 try:
     import keyring
-    from keyring.errors import NoKeyringError, PasswordDeleteError
+    from keyring.errors import NoKeyringError
 
     KEYRING_AVAILABLE = True
 except ImportError:
     KEYRING_AVAILABLE = False
     NoKeyringError = Exception
-    PasswordDeleteError = Exception
 
 
 logger.remove()
 logger.add(sys.stderr, level="INFO", enqueue=True)
 
 
-__CWD__ = os.getcwd()
 # These are computed at import time for backward compatibility.
 # Functions that need runtime-resolved paths use Path.home() directly.
 CONFIG_DIR = Path.home() / ".pbi_cli"
 # Legacy files for migration
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
 LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
-CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
 
 
@@ -451,31 +447,6 @@ def _save_profiles(profiles_data: dict):
     pbi_config = PBIConfig()
     pbi_config.active_profile = profiles_data.get("active_profile")
     pbi_config.profiles = profiles_data.get("profiles", {})
-
-
-def _load_group_profiles(group: str) -> dict:
-    """Load profiles for a specific group from config.
-
-    :param group: Group name (e.g. 'user' or 'admin')
-    :return: dict with 'active_profile' and 'profiles' keys for the group
-    """
-    pbi_config = PBIConfig()
-    return {
-        "active_profile": pbi_config.get_group_active_profile(group),
-        "profiles": pbi_config.get_group_profiles(group),
-    }
-
-
-def _save_group_profiles(group: str, group_data: dict):
-    """Save profiles for a specific group to config.
-
-    :param group: Group name (e.g. 'user' or 'admin')
-    :param group_data: dict with 'active_profile' and 'profiles' keys
-    """
-    pbi_config = PBIConfig()
-    for profile_name, profile_info in group_data.get("profiles", {}).items():
-        pbi_config.add_profile_to_group(group, profile_name, profile_info)
-    pbi_config.set_group_active_profile(group, group_data.get("active_profile"))
 
 
 def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
@@ -1766,13 +1737,6 @@ def workspaces_list(
     # Resolve the target folder path (handles absolute/relative paths)
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -1780,7 +1744,7 @@ def workspaces_list(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing to {json_file_path}")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
@@ -1813,7 +1777,7 @@ def format_convert(
 
     typer.echo(f"Converting to {format=}: {source=} -> {target}")
 
-    with open(source, "r") as fp:
+    with open(source, "r", encoding="utf-8") as fp:
         workspaces_data = json.load(fp)
 
     flattened = workspaces.flatten_workspaces(workspaces_data["value"])
@@ -1916,21 +1880,29 @@ def report_users(
         if report_users and len(report_users) > 0:
             try:
                 # Flatten the structure for better table display
+                # one row per report: report_users maps each workspace name to its
+                # reports, each with its users under reports_users_value
                 all_reports = []
-                for workspace_data in report_users:
-                    workspace_name = workspace_data.get("name", "Unknown")
-                    for report in workspace_data.get("reports", []):
-                        report_info = {
-                            "workspace": workspace_name,
-                            "report_name": report.get("name", ""),
-                            "report_id": report.get("id", ""),
-                            **{
-                                k: v
-                                for k, v in report.items()
-                                if k not in ["name", "id"]
-                            },
-                        }
-                        all_reports.append(report_info)
+                for w_name, reports in report_users.items():
+                    for report in reports:
+                        users = report.get("reports_users_value") or []
+                        all_reports.append(
+                            {
+                                "workspace": w_name,
+                                "report_name": report.get("reports_name", ""),
+                                "report_id": report.get("reports_id", ""),
+                                "users": ", ".join(
+                                    str(
+                                        u.get("emailAddress")
+                                        or u.get("identifier")
+                                        or u.get("displayName")
+                                        or ""
+                                    )
+                                    for u in users
+                                    if isinstance(u, dict)
+                                ),
+                            }
+                        )
 
                 if all_reports:
                     df = pd.DataFrame(all_reports)
@@ -1951,13 +1923,6 @@ def report_users(
     # Resolve the target folder path (handles absolute/relative paths)
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -1966,7 +1931,7 @@ def report_users(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(report_users, fp)
     if "excel" in file_type:
         excel_file_path = target_path / f"{file_name}.xlsx"
@@ -2051,28 +2016,22 @@ def user_access(
     # Display or save results
     if target_folder is None:
         logger.info(f"No target folder provided, printing to console...")
-        if isinstance(result, dict):
-            try:
-                df = pd.json_normalize(result)
-                typer.echo("\n" + "=" * 80)
-                typer.echo(f"User Access Information for: {user_id}")
-                typer.echo("=" * 80)
-                typer.echo(df.to_string(index=False))
-                typer.echo("=" * 80)
-            except Exception:
-                typer.echo(json.dumps(result, indent=4))
-        else:
+        if not result["artifacts"]:
+            typer.echo(f"No access found for: {user_id}")
+            return
+        try:
+            df = pd.json_normalize(result["artifacts"])
+            typer.echo("\n" + "=" * 80)
+            typer.echo(f"User Access Information for: {user_id}")
+            typer.echo("=" * 80)
+            typer.echo(df.to_string(index=False))
+            typer.echo("=" * 80)
+        except Exception:
             typer.echo(json.dumps(result, indent=4))
         return
 
     # Resolve the target folder path
     target_path = resolve_output_path(target_folder)
-
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
 
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
@@ -2081,12 +2040,12 @@ def user_access(
     if "json" in file_types:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
     if "excel" in file_types:
         excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
-        df = pd.json_normalize(result)
+        df = pd.json_normalize(result["artifacts"])
         df.to_excel(excel_file_path)
 
 
@@ -2156,13 +2115,6 @@ def apps_list(
     # Resolve the target folder path
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -2170,7 +2122,7 @@ def apps_list(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
@@ -2210,7 +2162,7 @@ def app_info(
     else:
         # Save to file
         if file_type == "json":
-            with open(target, "w") as fp:
+            with open(target, "w", encoding="utf-8") as fp:
                 json.dump(app_data, fp)
             typer.secho(f"✓ Saved to {target}", fg="green")
         elif file_type == "excel":
@@ -2251,7 +2203,7 @@ def augment(
             typer.secho(f"Cannot download {a.app_info}: {e}", fg="red")
 
     if file_type == "json":
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(apps_data, fp)
     elif file_type == "excel":
         for a_data in apps_data:
@@ -2336,7 +2288,7 @@ def reports_users(
         )
 
     if file_type == "json":
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(updated_apps_data, fp)
     elif file_type == "excel":
         for a_data in updated_apps_data:
@@ -2451,7 +2403,7 @@ def reports_list_group(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Reports list saved to {target}", fg="green")
 
@@ -2504,7 +2456,7 @@ def reports_pages(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Report pages saved to {target}", fg="green")
 
@@ -2721,7 +2673,7 @@ def scan_result(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Scan results saved to {target}", fg="green")
 
@@ -2859,14 +2811,6 @@ def scan_get(
 
     if target_folder is not None:
         target_path = resolve_output_path(target_folder)
-        if target_path is None:
-            typer.secho("Error: Unable to determine output folder.", fg="red")
-            typer.echo(
-                "Use 'pbi config set-output-folder' to set a default output folder,"
-            )
-            typer.echo("or provide an absolute path with --target-folder.")
-            raise typer.Abort()
-
         if not target_path.exists():
             typer.secho(f"creating folder {target_path}", fg="blue")
             target_path.mkdir(parents=True, exist_ok=True)
@@ -2961,11 +2905,6 @@ def scan_batch(
         raise PBIError(f"Config file {config_path} must set 'target_folder'.")
 
     target_path = resolve_output_path(str(target_folder))
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or set 'target_folder' to an absolute path in the config file.")
-        raise typer.Abort()
 
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
