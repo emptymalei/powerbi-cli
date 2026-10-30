@@ -39,6 +39,7 @@ from pbi_cli.cli_support import (
     ScanDatasourceDetails,
     ScanLineage,
     command,
+    describe_request_error,
     fail,
     new_app,
 )
@@ -1634,6 +1635,11 @@ def export_report(
     uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
 
     result = dr.get(uri)
+    try:
+        result.raise_for_status()
+    except requests.HTTPError as error:
+        # the body is the API's error, not the report: do not save it as one
+        raise PBIError(describe_request_error(error)) from None
 
     if target is None:
         # For binary export data, we can't print it directly to console
@@ -2241,8 +2247,8 @@ def augment(
     for a in pbi_apps.apps:
         try:
             apps_data.append(a())
-        except ValueError as e:
-            typer.secho(f"Cannot download {a.app_info}", fg="red")
+        except (ValueError, requests.RequestException) as e:
+            typer.secho(f"Cannot download {a.app_info}: {e}", fg="red")
 
     if file_type == "json":
         with open(target, "w") as fp:
@@ -2295,27 +2301,39 @@ def reports_users(
     for a in pbi_apps.apps:
         try:
             apps_data.append(a())
-        except ValueError as e:
-            typer.secho(f"Can not download {a.app_info}", fg="red")
+        except (ValueError, requests.RequestException) as e:
+            typer.secho(f"Can not download {a.app_info}: {e}", fg="red")
 
+    # the users of a report are only listed to an administrator
+    admin_auth = load_auth(group="admin") if apps_data else {}
+    failed_id = []
     updated_apps_data = []
     for a in apps_data:
         report_data = []
-        failed_id = []
         for r in a.get("reports", []):
             report_id = r.get("id")
             try:
-                logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
+                logger.debug(f"Retrieving user info for {r.get('name')}, {report_id}")
                 r_data = powerbi_admin_report.ReportUsers(
-                    auth=load_auth(), report_id=report_id, verify=_verify_certificates()
+                    auth=admin_auth, report_id=report_id, verify=_verify_certificates()
                 ).users
                 r_data = {**r_data, **r}
                 report_data.append(r_data)
-            except ValueError as e:
+            except (ValueError, requests.RequestException) as e:
                 failed_id.append(report_id)
-                logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
+                typer.secho(
+                    f"Can not download the users of report {r.get('name')} "
+                    f"({report_id}): {describe_request_error(e)}",
+                    fg="red",
+                )
         a["reports"] = report_data
         updated_apps_data.append(a)
+    if failed_id:
+        typer.secho(
+            f"The users of {len(failed_id)} report(s) could not be downloaded: "
+            f"{', '.join(str(i) for i in failed_id)}",
+            fg="yellow",
+        )
 
     if file_type == "json":
         with open(target, "w") as fp:
@@ -2520,7 +2538,7 @@ def _run_scan(
             get_artifact_users=get_artifact_users,
         )
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+        raise PBIError(describe_request_error(e)) from e
     scan_id = scan_response.get("id")
     if not scan_id:
         raise PBIError(f"Unexpected initiate response: {scan_response}")
@@ -2533,7 +2551,7 @@ def _run_scan(
         try:
             status_response = workspace_info.get_scan_status(scan_id=scan_id)
         except (ValueError, requests.exceptions.RequestException) as e:
-            raise PBIError(str(e)) from e
+            raise PBIError(describe_request_error(e)) from e
         status = status_response.get("status")
 
         if status == "Succeeded":
@@ -2554,10 +2572,16 @@ def _run_scan(
         )
         time.sleep(sleep_time)
 
-    try:
-        return workspace_info.get_scan_result(scan_id=scan_id)
-    except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+    while True:
+        try:
+            return workspace_info.get_scan_result(scan_id=scan_id)
+        except powerbi_admin.ScanNotReadyError as e:
+            # the status can say Succeeded a moment before the result is there
+            if time.monotonic() >= deadline:
+                raise PBIError(describe_request_error(e)) from e
+            time.sleep(min(interval, max(deadline - time.monotonic(), 0)))
+        except (ValueError, requests.exceptions.RequestException) as e:
+            raise PBIError(describe_request_error(e)) from e
 
 
 def _normalize_workspace_entries(entries: Iterable) -> list:
@@ -2734,7 +2758,7 @@ def scan_status(
     try:
         result = workspace_info.get_scan_status(scan_id=scan_id)
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+        raise PBIError(describe_request_error(e)) from e
     typer.echo(json.dumps(result, indent=2))
 
 
