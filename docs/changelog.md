@@ -300,6 +300,21 @@
   completely (a file in use on Windows) stays readable; an S3 lake whose bucket cannot be
   asked counts as protected instead of failing.
 - Two programs saving the quota counters at once no longer trip over each other's file.
+- Reading the sources of a query is quick again: a query that combines many files (a hundred
+  CSV files took 18 seconds) slowed down the Scan tab of the [terminal UI](tui.md).
+- A native query (`Value.NativeQuery`) is the query of the source it is sent to only, not of
+  every source of the table (an Excel file showed the SQL of another step).
+  `[Query="select * from " & TableName]` is read whole, following parameters and steps, and a
+  parameter `"a" & "b"` is `ab`. A shared query with `IsParameterQuery=false` is no longer a
+  parameter.
+- A newer scan that was asked for a workspace but did not return it no longer hides an older
+  scan that has it.
+- The lineage finds the dataset of a report or a tile in the scan of the same workspace when no
+  list has it (it said *not in the lake*), and follows an item built on two others once.
+- An item that the first list held without a workspace is placed in the workspace a later list
+  gives it.
+- The Users tab, and the users of many selected workspaces, read only what they need, once
+  until the lake is read again; an unreadable stored answer is skipped instead of failing.
 
 - `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake

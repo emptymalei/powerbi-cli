@@ -203,7 +203,8 @@ connectors that it calls and what it gives them: `Sql.Database("srv", "db")` is 
 file (and the sheet that is taken from it), `SharePoint.Files("https://...")` the site, `Web.Contents` the
 address. A name that stands for a text (a parameter of the dataset, or an earlier step of the query) is
 followed; text joined with `&` is put together, and a part that cannot be followed is shown as `{Name}`
-and listed as *not known*. A native query (`[Query="select ..."]`, or `Value.NativeQuery`) is shown on
+and listed as *not known*. A native query (`[Query="select ..."]`, `Value.NativeQuery`, or the query of
+`Odbc.Query`) belongs to the source it is sent to, and is shown on
 one line (the line breaks and tabs that M writes as `#(lf)`, `#(cr,lf)` and `#(tab)` are blanks), and
 the tables after its `FROM` and `JOIN`. It is not an M parser: a connector it does not know is not a
 source (the table says so, and the JSON tab has the whole expression), and a calculated table (DAX)
@@ -256,7 +257,8 @@ The **Lineage** tab follows what the scan of the workspace says (it needs a scan
 - *Built on it*: the reports of a dataset, from the lists of the whole tenant, and
   everything else (datasets on a dataflow, dashboards on a report) from the scan of the
   item's **own** workspace. Another workspace may build on the item without the lake
-  knowing; the tab says so.
+  knowing; the tab says so. An item that is built on two others is followed under the
+  first and marked *shown above* under the second.
 
 ### Copying and saving what you see
 
