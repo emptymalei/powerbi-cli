@@ -166,6 +166,9 @@ class _Session:
     lock: threading.Lock = field(default_factory=threading.Lock)
     forbidden_streak: Counter = field(default_factory=Counter)
     forbidden: Set[str] = field(default_factory=set)
+    #: when the oldest scan whose result the run relied on began (a scan it ran, continued
+    #: or found fresh)
+    scanned_from: Optional[datetime] = None
 
     def client(self, scope: Scope) -> PowerBIClient:
         """The client of a kind of token, for the profile this run uses."""
@@ -547,6 +550,12 @@ class SyncEngine:
         report.counts[outcome.status] += 1
         report.by_target.setdefault(unit.target, Counter())[outcome.status] += 1
         state = session.state
+        if outcome.scanned_at is not None and outcome.status in (DONE, SKIPPED):
+            if (
+                session.scanned_from is None
+                or outcome.scanned_at < session.scanned_from
+            ):
+                session.scanned_from = outcome.scanned_at
         if outcome.status == FAILED:
             report.failures.append((unit.key, outcome.message))
             state.mark(
@@ -619,8 +628,10 @@ class SyncEngine:
 
         # Every workspace is scanned as of the start of this run when the units of the scan
         # target all succeeded (the list of workspaces, then every batch) and the run was
-        # not cut short: the next scan can then continue from here. A scan of chosen
-        # workspaces covers only those, so it moves nothing.
+        # not cut short: the next scan can then continue from here, or from the start of the
+        # oldest scan the run relied on (one continued from an earlier run, or found fresh),
+        # if that is earlier: what changed after it began may be missing from it. A scan of
+        # chosen workspaces covers only those, so it moves nothing.
         scanned = report.by_target.get("scan")
         if (
             scanned
@@ -629,8 +640,11 @@ class SyncEngine:
             and not scanned[FAILED]
             and not scanned[DEFERRED]
         ):
+            baseline = started
+            if session.scanned_from is not None and session.scanned_from < baseline:
+                baseline = session.scanned_from
             session.state.set_scan_baseline(
-                session.options.scan_flags, session.planner.coverage(), started
+                session.options.scan_flags, session.planner.coverage(), baseline
             )
         session.state.end_run(
             report.status,

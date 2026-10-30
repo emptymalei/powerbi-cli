@@ -140,6 +140,24 @@ def test_the_next_scan_continues_from_the_start_of_the_last_one(world):
     assert baseline(world) == world.clock.now().isoformat()
 
 
+def test_a_workspace_changed_again_is_scanned_again_by_the_next_incremental_scan(world):
+    world.run("scan")
+    changed = world.fake.workspaces[3]["id"]
+    for _ in range(2):
+        world.clock.advance(hours=2)
+        world.fake.modify_workspace(changed, world.clock.now() - timedelta(minutes=30))
+        world.fake.reset_calls()
+
+        report = world.run("scan")
+
+        # the scan of the first incremental run is younger than 24 hours, but older than
+        # the change: it is no answer
+        assert report.status == COMPLETED and report.by_target["scan"][SKIPPED] == 0
+        (scan,) = world.fake.calls_to(*POST)
+        assert scan.body["workspaces"] == [changed]
+        assert baseline(world) == world.clock.now().isoformat()
+
+
 def test_nothing_is_scanned_when_nothing_changed(world):
     world.run("scan")
     world.clock.advance(hours=2)
@@ -213,6 +231,19 @@ def test_a_full_scan_on_request_does_not_repeat_what_is_fresh(world):
     assert report.by_target["scan"][SKIPPED] == 3 and world.fake.count(*POST) == 0
 
 
+def test_a_full_scan_of_fresh_batches_continues_from_when_they_were_scanned(world):
+    first_start = world.clock.now()
+    world.run("scan")
+    world.clock.advance(hours=2)
+
+    report = world.run("scan", full_scan=True)
+
+    # nothing was scanned: the next scan continues from the scans that were reused, not
+    # from the start of this run, or what changed in between would be missed
+    assert report.by_target["scan"][SKIPPED] == 3
+    assert baseline(world) == first_start.isoformat()
+
+
 def test_force_scans_everything_again_not_only_what_changed(world):
     world.run("scan")
     world.clock.advance(hours=2)  # nothing has changed since
@@ -267,6 +298,9 @@ def test_a_scan_that_takes_too_long_is_continued_by_the_next_run(tmp_path):
     assert report.counts[FAILED] == 1
     assert "did not complete within 12.0s" in report.failures[0][1]
     assert len(world.state()["scan"]["jobs"]) == 1  # the scan may still succeed
+    (job,) = world.state()["scan"]["jobs"].values()
+    job_started = job["started_at"]
+    world.clock.advance(hours=1)
     world.fake.scan_polls = 0  # it does
     world.fake.reset_calls()
     events = []
@@ -277,6 +311,8 @@ def test_a_scan_that_takes_too_long_is_continued_by_the_next_run(tmp_path):
     assert world.fake.count(*POST) == 0  # continued, not started again
     assert world.state()["scan"]["jobs"] == {}
     assert len(world.store.parameter_sets(TENANT, RESULT)) == 1
+    # the next scan continues from when the continued scan began, not from this run
+    assert baseline(world) == job_started
     assert any(
         "continued an earlier scan" in e.outcome.message
         for e in events

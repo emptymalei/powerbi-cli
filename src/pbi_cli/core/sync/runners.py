@@ -16,7 +16,7 @@ from loguru import logger
 from pbi_cli.core.client import PowerBIClient, rows_of
 from pbi_cli.core.registry import Scope, get_endpoint
 from pbi_cli.core.scan import batch_key, latest_scan, run_scan, store_scan
-from pbi_cli.core.store import LakeStore
+from pbi_cli.core.store import LakeStore, Snapshot
 from pbi_cli.core.sync.plan import (
     EVENTS,
     MODIFIED,
@@ -51,6 +51,8 @@ class Outcome:
     :param requests: how many requests it took
     :param retry_after: for a deferred unit, the seconds until a request fits
     :param endpoint: for a deferred unit, the operation that has no quota left
+    :param scanned_at: for a scan, when the scan whose result it stored (or found fresh)
+        began: the changes made after that moment may be missing from it
     """
 
     status: str
@@ -60,6 +62,7 @@ class Outcome:
     requests: int = 0
     retry_after: Optional[float] = None
     endpoint: Optional[str] = None
+    scanned_at: Optional[datetime] = None
 
 
 @dataclass
@@ -238,7 +241,12 @@ def run_scan_batch(ctx: Context, unit: Unit) -> Outcome:
     flags = options.scan_flags
     if ctx.planner.is_fresh(unit):
         found = latest_scan(ctx.store, ctx.tenant, unit.workspace_ids, flags)
-        return Outcome(SKIPPED, "fresh", version=found.version if found else None)
+        return Outcome(
+            SKIPPED,
+            "fresh",
+            version=found.version if found else None,
+            scanned_at=_scan_started(found) if found else None,
+        )
 
     batch = batch_key(unit.workspace_ids)
     client = ctx.client_for(unit.scope, unit.account)
@@ -277,7 +285,20 @@ def run_scan_batch(ctx: Context, unit: Unit) -> Outcome:
         f"{count} workspaces" + (", continued an earlier scan" if run.resumed else ""),
         version=snapshot.version,
         requests=(0 if run.resumed else 1) + run.polls + 1,
+        scanned_at=run.started_at,
     )
+
+
+def _scan_started(snapshot: Snapshot) -> datetime:
+    """When a stored scan began (when it was received, for a scan stored without it)."""
+    stamp = snapshot.manifest.get("started_at")
+    try:
+        moment = datetime.fromisoformat(stamp) if stamp else None
+    except (TypeError, ValueError):
+        moment = None
+    if moment is None:
+        return snapshot.fetched_at
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
 RUNNERS: Dict[str, Callable[[Context, Unit], Outcome]] = {

@@ -543,6 +543,12 @@ class Planner:
         if self.options.force or unit.kind == MODIFIED:
             return False
         if unit.kind == SCAN:
+            if unit.params.get("modifiedSince"):
+                # A batch of an incremental scan holds workspaces that changed since the
+                # last scan: a stored scan of the same workspaces may be older than that
+                # change, however young it is. (A scan that was started and not collected
+                # is still continued, from the state.)
+                return False
             found = latest_scan(
                 self._store, self._tenant, unit.workspace_ids, self.options.scan_flags
             )
