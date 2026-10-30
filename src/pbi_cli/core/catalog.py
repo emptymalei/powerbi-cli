@@ -47,7 +47,7 @@ from typing import (
 from loguru import logger
 
 from pbi_cli.core.client import rows_of
-from pbi_cli.core.details import Detail, collect
+from pbi_cli.core.details import Detail, Provider, collect, detail_names, providers_of
 from pbi_cli.core.registry import IDENTITY_PARAM, get_endpoint
 from pbi_cli.core.scan import RESULT_ENDPOINT, ScanFlags, split_scan_result
 from pbi_cli.core.scanmodel import (
@@ -126,6 +126,9 @@ OLD_AFTER = timedelta(days=7)
 #: How many loaded scans, and how many workspaces of them, are kept in memory.
 SCAN_CACHE = 4
 VIEW_CACHE = 64
+
+#: How many subjects keep their details and their users in memory.
+DETAIL_CACHE = 512
 
 #: How many steps of lineage are followed.
 MAX_DEPTH = 6
@@ -327,6 +330,9 @@ class Item:
 
 
 Subject = Union[Workspace, Item]
+
+#: What a subject is remembered by: its kind, its id and its workspace.
+_SubjectKey = Tuple[str, str, Optional[str]]
 
 
 @dataclass(frozen=True)
@@ -598,6 +604,8 @@ class Catalog:
         self._pieces: "OrderedDict[str, Dict[str, Dict[str, Any]]]" = OrderedDict()
         self._views: "OrderedDict[str, ScanView]" = OrderedDict()
         self._models: "OrderedDict[str, WorkspaceModel]" = OrderedDict()
+        self._details: "OrderedDict[_SubjectKey, List[Detail]]" = OrderedDict()
+        self._users: "OrderedDict[_SubjectKey, UsersView]" = OrderedDict()
         self._s = self._read()
 
     # -- reading the lake --------------------------------------------------------------
@@ -609,6 +617,8 @@ class Catalog:
             self._pieces.clear()
             self._views.clear()
             self._models.clear()
+            self._details.clear()
+            self._users.clear()
             self._s = state
 
     def now(self) -> datetime:
@@ -641,7 +651,13 @@ class Catalog:
             ref = ScanRef(
                 found.latest, ScanFlags.from_query(manifest.get("flags") or {})
             )
-            for workspace_id in manifest.get("workspace_ids") or []:
+            # the workspaces the result holds: a scan asked for one may not return it
+            returned = manifest.get("workspaces")
+            if isinstance(returned, dict):
+                held: Iterable[Any] = list(returned)
+            else:  # a scan stored before the manifest described its workspaces
+                held = manifest.get("workspace_ids") or []
+            for workspace_id in held:
                 current = refs.get(str(workspace_id))
                 if current is None or ref.fetched_at > current.fetched_at:
                     refs[str(workspace_id)] = ref
@@ -734,7 +750,21 @@ class Catalog:
 
         def add(kind: str, row: Dict[str, Any], home: Optional[str]) -> None:
             item_id = id_of(kind, row)
-            if not item_id or item_id in items[kind]:  # the first list to have it wins
+            if not item_id:
+                return
+            known = items[kind].get(item_id)
+            if known is not None:  # the first list to have it wins
+                if home and not known.workspace_id:  # ... but a later one may place it
+                    known.workspace_id = home
+                    by_workspace.setdefault(home, {}).setdefault(kind, []).append(known)
+                if (  # ... or name the dataset of a report
+                    kind == "report"
+                    and row.get("datasetId")
+                    and not known.raw.get("datasetId")
+                ):
+                    reports = reports_of_dataset.setdefault(_text(row["datasetId"]), [])
+                    if not any(r is known for r in reports):
+                        reports.append(known)
                 return
             item = Item(kind, item_id, name_of(kind, row), home, row)
             items[kind][item_id] = item
@@ -1116,15 +1146,19 @@ class Catalog:
         the pages of a report, ...), each with what the lake holds of it, and the targets
         that can fetch it. See `pbi_cli.core.details`.
 
+        Worked out once for each subject until `reload`.
+
         :param state: the state of the sync, when it was read already (for many subjects)
         """
-        if isinstance(subject, Workspace):
-            kind, workspace_id = "workspace", subject.id
-        else:
-            kind, workspace_id = subject.kind, subject.workspace_id
+        kind, workspace_id = self._subject_key(subject)
+        key = (kind, subject.id, workspace_id)
+        with self._lock:
+            if key in self._details:
+                self._details.move_to_end(key)
+                return list(self._details[key])
         if state is None:
             state = self._store.read_state(self.tenant, STATE_NAME) or {}
-        return collect(
+        found = collect(
             self._store,
             self.tenant,
             kind,
@@ -1132,14 +1166,65 @@ class Catalog:
             workspace_id,
             state.get("units") or {},
         )
+        with self._lock:
+            self._details[key] = found
+            while len(self._details) > DETAIL_CACHE:
+                self._details.popitem(last=False)
+        return list(found)
+
+    @staticmethod
+    def _subject_key(subject: Subject) -> Tuple[str, Optional[str]]:
+        """The kind of a workspace or an item, and its workspace."""
+        if isinstance(subject, Workspace):
+            return "workspace", subject.id
+        return subject.kind, subject.workspace_id
+
+    def _held_users(
+        self, subject: Subject
+    ) -> Tuple[Tuple[Provider, ...], Optional[Tuple[Provider, Snapshot]]]:
+        """The ways to fetch the users of a subject, and the newest answer of one of them
+        that the lake holds (nothing else of the subject is read, unlike `details`)."""
+        kind, workspace_id = self._subject_key(subject)
+        if "users" not in detail_names(kind):
+            return (), None
+        providers = tuple(providers_of(kind, "users", subject.id, workspace_id))
+        newest: Optional[Tuple[Provider, Snapshot]] = None
+        for provider in providers:
+            snapshot = self._store.latest(
+                self.tenant,
+                provider.endpoint.id,
+                provider.endpoint.canonical_params(provider.params),
+            )
+            if snapshot is not None and (
+                newest is None or snapshot.fetched_at > newest[1].fetched_at
+            ):
+                newest = (provider, snapshot)
+        return providers, newest
 
     def users(
         self, subject: Subject, state: Optional[Mapping[str, Any]] = None
     ) -> UsersView:
         """Who has access to a workspace or an item, as far as the lake knows.
 
-        :param state: the state of the sync, when it was read already (for many subjects)
+        Worked out once for each subject until `reload`.
+
+        :param state: the state of the sync, when it was read already (for many subjects;
+            the users do not depend on it)
         """
+        kind, workspace_id = self._subject_key(subject)
+        key = (kind, subject.id, workspace_id)
+        with self._lock:
+            if key in self._users:
+                self._users.move_to_end(key)
+                return self._users[key]
+        view = self._read_users(subject)
+        with self._lock:
+            self._users[key] = view
+            while len(self._users) > DETAIL_CACHE:
+                self._users.popitem(last=False)
+        return view
+
+    def _read_users(self, subject: Subject) -> UsersView:
         if isinstance(subject, Workspace) and subject.raw.get("users"):
             found = self.listing("workspace")
             return UsersView(
@@ -1147,15 +1232,17 @@ class Catalog:
                 "admin.groups",
                 found.fetched_at if found else None,
             )
-        detail = next(
-            (d for d in self.details(subject, state) if d.name == "users"), None
-        )
-        if detail is not None and detail.held is not None:
-            held = detail.held
-            rows = rows_of(held.provider.endpoint, held.snapshot.load())
-            return UsersView(
-                self._access(rows), held.provider.endpoint.id, held.fetched_at
-            )
+        providers, held = self._held_users(subject)
+        if held is not None:
+            provider, snapshot = held
+            try:
+                rows = rows_of(provider.endpoint, snapshot.load())
+            except (OSError, ValueError) as error:
+                logger.warning(f"Ignoring unreadable {provider.endpoint.id}: {error}")
+            else:
+                return UsersView(
+                    self._access(rows), provider.endpoint.id, snapshot.fetched_at
+                )
         if isinstance(subject, Workspace):
             view = self.scan_of(subject.id)
             if view is not None and view.workspace.get("users"):
@@ -1171,10 +1258,7 @@ class Catalog:
                     "scan",
                     view.as_of if view else None,
                 )
-        targets = " or ".join(
-            f"`pbi sync run {p.target.name}`"
-            for p in (detail.providers if detail is not None else ())
-        )
+        targets = " or ".join(f"`pbi sync run {p.target.name}`" for p in providers)
         if isinstance(subject, Workspace):
             ways = (
                 "a scan (`pbi sync run scan`), or list the workspaces with `-e users`"
@@ -1247,8 +1331,15 @@ class Catalog:
         item_id: str,
         workspace_id: Optional[str],
         home: Optional[str],
+        look_in: Optional[str] = None,
     ) -> LineageNode:
-        found = self.item(kind, item_id, workspace_id)
+        """A node of the lineage of an item.
+
+        :param workspace_id: the workspace the reference names for it, if any
+        :param look_in: where to look for it when the reference names none (the workspace
+            of what refers to it); not shown when it is not found there
+        """
+        found = self.item(kind, item_id, workspace_id or look_in)
         if found is None:
             return LineageNode(
                 kind,
@@ -1311,6 +1402,8 @@ class Catalog:
         data = item.data
         view = self.scan_of(item.workspace_id) if item.workspace_id else None
         refs: List[Tuple[str, str, Optional[str]]] = []  # (kind, id, workspace)
+        # a dataset that a report or a tile names may be in another workspace, but is most
+        # often in the same one: looked for in its scan when the lists do not have it
         if kind == "report" and data.get("datasetId"):
             refs.append(("dataset", _text(data["datasetId"]), None))
         if kind == "dashboard":
@@ -1337,14 +1430,14 @@ class Catalog:
             if (ref_kind, ref_id) in seen:
                 continue
             seen.add((ref_kind, ref_id))
-            node = self._node(ref_kind, ref_id, ref_workspace, home)
+            node = self._node(ref_kind, ref_id, ref_workspace, home, item.workspace_id)
             if (ref_kind, ref_id) in path:
                 node.note = node.note or "shown above"
             elif depth < MAX_DEPTH:
                 node.children = self._upstream(
                     ref_kind,
                     ref_id,
-                    ref_workspace,
+                    ref_workspace or item.workspace_id,
                     home,
                     path + ((ref_kind, ref_id),),
                     depth + 1,
@@ -1359,12 +1452,17 @@ class Catalog:
         home: Optional[str],
         path: Tuple[Tuple[str, str], ...],
         depth: int,
+        expanded: Optional[Set[Tuple[str, str]]] = None,
     ) -> List[LineageNode]:
         """What is built on an item, each with what is built on that.
 
         Reports come from the lists of the whole tenant; the rest only from the scan of the
         item's own workspace.
+
+        :param expanded: the items whose users are shown already in this lineage: one that
+            is built on two of them is followed once, and is "shown above" the second time
         """
+        expanded = set() if expanded is None else expanded
         found: List[Item] = []
         view = self.scan_of(item.workspace_id) if item.workspace_id else None
         seen: Set[Tuple[str, str]] = set()
@@ -1386,15 +1484,14 @@ class Catalog:
 
         nodes = []
         for user in sorted(found, key=lambda i: (i.kind, i.name.casefold())):
+            key = (user.kind, user.id)
             node = self._node(user.kind, user.id, user.workspace_id, home)
-            if (user.kind, user.id) in path or (user.kind, user.id) == (
-                item.kind,
-                item.id,
-            ):
+            if key in path or key == (item.kind, item.id) or key in expanded:
                 node.note = "shown above"
             elif depth < MAX_DEPTH:
+                expanded.add(key)
                 node.children = self._downstream(
-                    user, home, path + ((user.kind, user.id),), depth + 1
+                    user, home, path + (key,), depth + 1, expanded
                 )
             nodes.append(node)
         return nodes
@@ -1444,7 +1541,9 @@ class Catalog:
         lineage = Lineage(
             upstream=self._upstream(item.kind, item.id, home, home, start, 1),
             downstream=(
-                self._downstream(item, home, start, 1) if item.kind != "app" else []
+                self._downstream(item, home, start, 1, set())
+                if item.kind != "app"
+                else []
             ),
         )
         view = self.scan_of(home) if home else None
