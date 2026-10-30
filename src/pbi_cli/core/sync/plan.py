@@ -470,8 +470,7 @@ class Planner:
             ids = sorted({str(row) for row in rows})
             since = unit.params.get("modifiedSince")
             return [
-                self._scan_batch(target, batch, since)
-                for batch in chunked(ids, MAX_WORKSPACES)
+                self._scan_batch(target, batch, since) for batch in self._batches(ids)
             ]
 
         children: List[Unit] = []
@@ -502,6 +501,22 @@ class Planner:
                         seen.add(made.key)
                         children.append(made)
         return children
+
+    def _batches(self, ids: Sequence[str]) -> List[List[str]]:
+        """Cut workspaces in batches of up to 100.
+
+        A scan that an earlier run started and did not collect is continued only for the
+        very same batch; the list of workspaces may have changed since, which would shift
+        every batch. So the batches of those scans whose workspaces are all still to scan
+        are kept as they were, and the rest is cut in batches after them.
+        """
+        rest = set(ids)
+        batches: List[List[str]] = []
+        for pending in self._state.pending_batches(self.options.scan_flags):
+            if len(pending) <= MAX_WORKSPACES and rest.issuperset(pending):
+                batches.append(sorted(pending))
+                rest.difference_update(pending)
+        return batches + chunked(sorted(rest), MAX_WORKSPACES)
 
     def unplaced_notes(self) -> Dict[str, str]:
         """What to say about the rows that were left out for want of a workspace, by target."""
@@ -704,7 +719,7 @@ class Planner:
             {str(row["id"]) for row in rows if isinstance(row, dict) and row.get("id")}
         )
         target = get_target(unit.target)
-        for batch in chunked(ids, MAX_WORKSPACES):
+        for batch in self._batches(ids):
             self._count(plans, needed, self._scan_batch(target, batch))
         plan.add_note(
             f"every workspace is scanned: {len(ids)} are in the stored list of workspaces, "

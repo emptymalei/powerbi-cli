@@ -343,6 +343,28 @@ def test_an_expired_token_leaves_a_started_scan_to_be_continued(tmp_path):
     assert len(world.store.parameter_sets(TENANT, RESULT)) == 3
 
 
+def test_a_started_scan_is_continued_when_the_batches_shift(tmp_path):
+    world = World(tmp_path, workspaces=250, scan_polls=3)
+    world.fake.expire_token_after(3)  # the list, the start of batch 1, one check of it
+    world.run("scan")
+    (job,) = world.state()["scan"]["jobs"].values()
+    assert job["workspace_ids"] == [f"ws-{n:04d}" for n in range(1, 101)]
+    # a new workspace that sorts first: cut in hundreds, every batch would shift by one
+    world.fake.workspaces.insert(0, dict(world.fake.workspaces[0], id="ws-0000"))
+    world.fake.expire_token_after(None)
+    world.fake.scan_polls = 0
+    world.fake.reset_calls()
+
+    report = world.run("scan")
+
+    assert report.status == COMPLETED
+    # the started batch is continued as it was; the 151 others make two new scans
+    sizes = sorted(len(c.body["workspaces"]) for c in world.fake.calls_to(*POST))
+    assert sizes == [51, 100]
+    assert world.state()["scan"]["jobs"] == {}
+    assert scanned(world) == {w["id"] for w in world.fake.workspaces}
+
+
 def test_a_scan_the_api_forgot_is_started_again(tmp_path):
     world = World(tmp_path, workspaces=50, scan_polls=10**6)
     world.run("scan", scan_timeout=6.0, scan_interval=5.0)

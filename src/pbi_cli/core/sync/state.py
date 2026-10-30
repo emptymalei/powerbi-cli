@@ -278,8 +278,18 @@ class SyncState:
                 return None
             return None if job.expired(self._clock()) else job
 
-    def set_job(self, batch: str, job: ScanJob, flags: ScanFlags) -> None:
-        """Remember a scan that the API has accepted (written at once: it must not get lost)."""
+    def set_job(
+        self,
+        batch: str,
+        job: ScanJob,
+        flags: ScanFlags,
+        workspace_ids: Sequence[str] = (),
+    ) -> None:
+        """Remember a scan that the API has accepted (written at once: it must not get lost).
+
+        :param workspace_ids: the workspaces of the batch, so that the next run can make
+            the same batch again even when the list of workspaces to scan changed
+        """
         with self._lock:
             jobs = self.scan.setdefault("jobs", {})
             jobs[batch] = {
@@ -287,6 +297,8 @@ class SyncState:
                 "started_at": job.started_at.isoformat(),
                 "flags": flags.canonical(),
             }
+            if workspace_ids:
+                jobs[batch]["workspace_ids"] = sorted(str(i) for i in workspace_ids)
             self._dirty = True
             self.flush(force=True)
 
@@ -311,6 +323,26 @@ class SyncState:
             if (job := self._job_of(entry)) is None or job.expired(now)
         ]:
             del jobs[batch]
+
+    def pending_batches(self, flags: ScanFlags) -> List[List[str]]:
+        """The workspaces of each scan with these flags that was started and not collected
+        and that the API still has (those started by an older version are not known)."""
+        with self._lock:
+            now = self._clock()
+            found = []
+            for entry in (self.scan.get("jobs") or {}).values():
+                job = self._job_of(entry)
+                ids = entry.get("workspace_ids") if isinstance(entry, dict) else None
+                if (
+                    job is None
+                    or job.expired(now)
+                    or entry.get("flags") != flags.canonical()
+                    or not isinstance(ids, list)
+                    or not ids
+                ):
+                    continue
+                found.append([str(i) for i in ids])
+            return sorted(found)
 
     @property
     def pending_jobs(self) -> int:

@@ -293,7 +293,9 @@ def run_scan_batch(ctx: Context, unit: Unit) -> Outcome:
             interval=options.scan_interval,
             timeout=options.scan_timeout,
             resume=ctx.state.job(batch, flags),
-            on_started=lambda job: ctx.state.set_job(batch, job, flags),
+            on_started=lambda job: ctx.state.set_job(
+                batch, job, flags, unit.workspace_ids
+            ),
             sleep=ctx.sleep,
             monotonic=ctx.monotonic,
             clock=ctx.clock,
