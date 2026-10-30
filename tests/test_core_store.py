@@ -329,6 +329,36 @@ def test_prune_can_be_limited_and_never_touches_unfinished_writes(store):
     assert (unfinished.directory / "data.json").exists()
 
 
+def test_prune_keeps_a_version_whose_manifest_cannot_be_deleted(store, monkeypatch):
+    old = write(store, {"n": 1}, at=T0)
+    write(store, {"n": 2}, at=T0 + timedelta(hours=1))
+    real_unlink = type(old.directory).unlink
+
+    def unlink(path, *args, **kwargs):
+        if path.name == "manifest.json":
+            raise PermissionError("in use")  # a reader holds it open, on Windows
+        return real_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(type(old.directory), "unlink", unlink)
+    assert store.prune(keep=1) == 0
+    assert (old.directory / "data.json").exists()  # still complete, still readable
+
+
+@pytest.mark.parametrize("name", ["../../secret", "..", "", "a/b", "a\\b", "C:x"])
+def test_a_manifest_cannot_point_a_reader_outside_its_folder(store, name):
+    snapshot = write(store, {"n": 1})
+    manifest = dict(snapshot.manifest, data_file=name)
+    with pytest.raises(ValueError, match="not the name of a file"):
+        type(snapshot)(manifest, snapshot.directory).load()
+
+    store.append_events("t1", "admin.activityevents", date(2026, 9, 1), [{"Id": "a"}])
+    day = store.event_day("t1", "admin.activityevents", date(2026, 9, 1))
+    path = day.directory / "manifest.json"
+    path.write_text(json.dumps(dict(day.manifest, parts=[name])), encoding="utf-8")
+    with pytest.raises(ValueError, match="not the name of a file"):
+        list(store.read_events("t1", "admin.activityevents", date(2026, 9, 1)))
+
+
 def test_prune_needs_a_positive_keep(store):
     with pytest.raises(ValueError):
         store.prune(keep=0)
@@ -692,6 +722,18 @@ def test_the_marker_says_who_when_and_what(filled):
     assert raw["excluded"] == ["activity"] and raw["files"] == 12
     assert raw["bytes"] == 3456 and raw["published_at"].startswith("2026-09-30T12:00")
     assert PublishInfo.from_json(raw) == INFO
+
+
+def test_a_marker_that_cannot_be_asked_for_protects_the_lake(filled, monkeypatch):
+    class BucketError(Exception):
+        """Not an OSError: what a cloud client raises for expired credentials."""
+
+    def refuse(path):
+        raise BucketError("ExpiredToken")
+
+    monkeypatch.setattr(type(filled.root), "exists", refuse)
+    store = LakeStore(filled.root)
+    assert store.writable is False
 
 
 @pytest.mark.parametrize("content", ["{not json", "[]", "null", "{}"])

@@ -1,6 +1,7 @@
 """Helpers shared by the Typer command modules of pbi-cli."""
 
 import functools
+import json
 import re
 import threading
 from contextlib import ExitStack
@@ -18,6 +19,7 @@ from typing import (
     Tuple,
 )
 
+import requests
 import typer
 from typer.core import TyperGroup
 
@@ -25,6 +27,8 @@ from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.registry import Scope
 from pbi_cli.core.timefmt import format_age  # noqa: F401  (re-exported)
 from pbi_cli.errors import PBIError
+from pbi_cli.powerbi.admin import ScanNotReadyError
+from pbi_cli.powerbi.base import ApiResponseError
 
 
 class SortedGroup(TyperGroup):
@@ -63,11 +67,68 @@ def fail(message: str, code: int = 1) -> NoReturn:
     raise typer.Exit(code)
 
 
+def _api_error_text(body: Any) -> Optional[str]:
+    """The code and message of the error in an API answer, if it has one."""
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, dict):
+        parts = [str(error[k]) for k in ("code", "message") if error.get(k)]
+        return ": ".join(parts) or None
+    return str(error) if error else None
+
+
+def describe_request_error(error: Exception) -> str:
+    """Say in one line what went wrong with a request of the older API wrappers.
+
+    The wrappers in ``pbi_cli.powerbi`` let the errors of ``requests`` through; this turns
+    them into a message for the user: the status and reason of an error answer (and the
+    error the API gave in it), or what kept the request from being answered.
+
+    :param error: what a wrapper raised
+    """
+    if isinstance(error, ScanNotReadyError):
+        return f"{error}. Try again in a moment."
+    if isinstance(error, ApiResponseError):
+        text = _api_error_text(error.body) or str(error.body)
+        return f"The API answered with an error: {text}"
+    if isinstance(error, json.JSONDecodeError):
+        return (
+            "The API answered with something that is not JSON (an expired or refused "
+            f"token is often answered with an empty body): {error}"
+        )
+    response = getattr(error, "response", None)
+    if isinstance(error, requests.HTTPError) and response is not None:
+        request = response.request
+        where = f" to {request.method} {response.url}" if request is not None else ""
+        message = f"The API answered {response.status_code} {response.reason}{where}"
+        try:
+            detail = _api_error_text(response.json())
+        except ValueError:
+            detail = None
+        if detail:
+            message += f": {detail}"
+        if response.status_code in (401, 403):
+            message += (
+                ". Check that the token is valid and allowed to do this (pbi auth)."
+            )
+        return message
+    return f"The request to the API failed: {error}"
+
+
+#: What the older API wrappers raise that `command` reports as an error, not a traceback.
+REQUEST_ERRORS = (
+    requests.RequestException,
+    json.JSONDecodeError,
+    ScanNotReadyError,
+    ApiResponseError,
+)
+
+
 def command(app: typer.Typer, name: Optional[str] = None, **kwargs: Any) -> Callable:
     """Register a function as a command of ``app``; use instead of ``@app.command()``.
 
     A :class:`~pbi_cli.errors.PBIError` raised by the command is reported as
-    ``Error: <message>`` with exit status 1. The decorated function itself is returned
+    ``Error: <message>`` with exit status 1, and so is a failed request of the older API
+    wrappers (see `describe_request_error`). The decorated function itself is returned
     unchanged, so it can still be called directly.
 
     :param app: the Typer app or group to add the command to
@@ -82,6 +143,8 @@ def command(app: typer.Typer, name: Optional[str] = None, **kwargs: Any) -> Call
                 return func(*args, **kw)
             except PBIError as error:
                 fail(str(error))
+            except REQUEST_ERRORS as error:
+                fail(describe_request_error(error))
 
         app.command(name, **kwargs)(wrapper)
         return func

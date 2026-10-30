@@ -3,6 +3,19 @@ from abc import ABC, abstractmethod
 from pbi_cli.web import DataRetriever
 
 
+class ApiResponseError(ValueError):
+    """The API answered with an error in the body of its response.
+
+    It is a `ValueError`, as the error these classes raised before was.
+
+    :param body: the body of the response, which has an ``error`` in it
+    """
+
+    def __init__(self, body: dict):
+        super().__init__(f"Error: {body}")
+        self.body = body
+
+
 class Base(ABC):
     """
     Abstract Base Class for accessing all workspaces.

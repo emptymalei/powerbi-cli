@@ -114,6 +114,17 @@ In your system keyring (Keychain, Credential Manager, Secret Service). When no k
 available, or it will not take the token, they go to `~/.pbi_cli/credentials.json` in your
 profile folder. The profile names and which profile is active are in `~/.pbi_cli/config.yaml`.
 
+Each token is kept under its group and profile, such as `admin:default` and `user:default`,
+so a profile of the same name in the two groups has two tokens, and deleting one leaves the
+other. Older versions kept tokens under the bare profile name; those are still read, and
+moved to the group and profile the first time they are used (a bare-name token stays as long
+as a profile of that name in the other group still uses it). Profiles stored without a group
+(`pbi auth` without `-g`) keep the bare name.
+
+The credentials file is created readable by you only, and replaced in one step when it
+changes, so it is never seen half written. If it cannot be read, commands say so and name
+the file; fix or delete it, and store the tokens again with `pbi auth`.
+
 **On Windows the file is the usual place**: the Credential Manager holds about 1,200
 characters at most, and a Power BI token is longer. `pbi auth` says where the token went:
 

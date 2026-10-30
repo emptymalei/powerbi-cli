@@ -1,5 +1,6 @@
 """The audit event logs: one per UTC day, read page by page, sealed when complete."""
 
+import json
 from datetime import timedelta
 
 import pytest
@@ -258,3 +259,99 @@ def test_the_last_page_ends_the_read_even_if_it_still_carries_a_link(world):
     assert len(ids(world, yesterday)) == 5
     assert logs(world)[yesterday].cursor is None  # nothing left to resume
     assert world.fake.count(PATH) == 8  # 3 + 3 + 2 pages: no request beyond the last
+
+
+# -- how far a read covers, and sealing --------------------------------------------------
+
+
+def interrupt_today(world):
+    """A read of today that stops after its first page: the link to go on keeps the window
+    that ends at 12:00."""
+    today = world.clock.now().date()
+    world.fake.fail(
+        "GET",
+        r"activityevents",
+        500,
+        query={"continuationToken": rf"^'{today}\|2\|"},
+        times=1,
+    )
+    world.run("activity", days=1)
+    return today
+
+
+def test_a_read_says_how_far_it_covers_the_day(world):
+    today, yesterday, _ = days(world)
+
+    world.run("activity", days=2)
+
+    found = logs(world)
+    assert (
+        found[yesterday].covered_until.isoformat()
+        == f"{yesterday}T23:59:59.999000+00:00"
+    )
+    assert found[today].covered_until.isoformat() == f"{today}T12:00:00+00:00"
+
+
+def test_a_continued_read_that_covered_part_of_the_day_does_not_seal_it_short(world):
+    today = interrupt_today(world)
+    assert logs(world)[today].rows == 2 and logs(world)[today].cursor
+    assert logs(world)[today].covered_until is None
+    world.clock.advance(hours=40)  # the day is over, and so is the time to wait
+    world.fake.reset_calls()
+
+    report = world.run("activity", days=3)
+
+    assert report.status == COMPLETED
+    found = logs(world)[today]
+    # the continued read ended at 12:00; the day was then read whole before it was sealed
+    assert found.sealed and found.rows == 5
+    assert ids(world, today) == [f"ev-{today:%Y%m%d}-00{k}" for k in range(5)]
+    windows = [
+        c.query["endDateTime"]
+        for c in world.fake.calls_to(PATH)
+        if c.query.get("startDateTime", "").startswith(f"'{today}")
+    ]
+    assert windows == [f"'{today}T23:59:59.999Z'"]
+
+
+def test_a_continued_read_of_a_day_still_open_is_not_read_again(world):
+    today = interrupt_today(world)
+    world.clock.advance(hours=2)  # 14:00: today is not over
+    world.fake.reset_calls()
+
+    report = world.run("activity", days=1)
+
+    assert report.status == COMPLETED
+    assert not any("startDateTime" in c.query for c in world.fake.calls_to(PATH))
+    found = logs(world)[today]
+    assert not found.sealed
+    assert found.covered_until.isoformat().startswith(f"{today}T12:00")
+
+
+def test_a_day_stored_by_an_older_version_is_read_whole_before_it_is_sealed(world):
+    today = interrupt_today(world)
+    stored = logs(world)[today]
+    manifest = dict(stored.manifest)
+    del manifest["window_end"]  # written before reads said how far they cover
+    (stored.directory / "manifest.json").write_text(json.dumps(manifest))
+    world.clock.advance(hours=40)
+
+    world.run("activity", days=3)
+
+    found = logs(world)[today]
+    assert found.sealed and found.rows == 5
+
+
+def test_the_stored_events_are_read_once_per_day_not_once_per_page(world, monkeypatch):
+    calls = []
+    real = world.store.read_events
+
+    def counting(*args, **kwargs):
+        calls.append(args)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(world.store, "read_events", counting)
+
+    world.run("activity", days=3)
+
+    assert len(calls) == 3  # one per day, though the days take 3, 3 and 2 pages

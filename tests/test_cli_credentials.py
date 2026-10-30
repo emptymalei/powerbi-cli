@@ -55,7 +55,7 @@ def test_a_token_that_the_keyring_holds_is_stored_there(memory_keyring):
     stored = store_token("abc", "adm", "admin")
 
     assert stored.where == IN_KEYRING == "keyring"
-    assert memory_keyring.get_password(KEYRING_SERVICE, "adm") == "abc"
+    assert memory_keyring.get_password(KEYRING_SERVICE, "admin:adm") == "abc"
     assert not _get_credentials_file().exists()
 
 
@@ -65,19 +65,19 @@ def test_a_token_that_the_keyring_refuses_goes_to_the_credentials_file():
     stored = store_token(LONG, "adm", "admin")
 
     assert stored.where == str(_get_credentials_file())
-    assert json.loads(_get_credentials_file().read_text())["adm"] == LONG
-    assert _get_credential("adm") == LONG
+    assert json.loads(_get_credentials_file().read_text())["admin:adm"] == LONG
+    assert _get_credential("adm", "admin") == LONG
 
 
 def test_an_older_token_in_the_keyring_does_not_hide_a_newer_one_in_the_file():
     keyring.set_keyring(LimitedKeyring())
     store_token("short", "adm", "admin")  # it fits
-    assert keyring.get_password(KEYRING_SERVICE, "adm") == "short"
+    assert keyring.get_password(KEYRING_SERVICE, "admin:adm") == "short"
 
     store_token(LONG, "adm", "admin")  # this one does not
 
-    assert _get_credential("adm") == LONG
-    assert keyring.get_password(KEYRING_SERVICE, "adm") is None
+    assert _get_credential("adm", "admin") == LONG
+    assert keyring.get_password(KEYRING_SERVICE, "admin:adm") is None
 
 
 def test_the_token_of_another_profile_stays_in_the_keyring():
@@ -86,8 +86,9 @@ def test_the_token_of_another_profile_stays_in_the_keyring():
 
     store_token(LONG, "adm", "admin")
 
-    assert keyring.get_password(KEYRING_SERVICE, "svc") == "short"
-    assert _get_credential("svc") == "short" and _get_credential("adm") == LONG
+    assert keyring.get_password(KEYRING_SERVICE, "user:svc") == "short"
+    assert _get_credential("svc", "user") == "short"
+    assert _get_credential("adm", "admin") == LONG
 
 
 def test_a_token_that_fits_again_is_read_from_the_keyring():
@@ -96,7 +97,7 @@ def test_a_token_that_fits_again_is_read_from_the_keyring():
 
     store_token("short", "adm", "admin")  # in the keyring, which is read first
 
-    assert _get_credential("adm") == "short"
+    assert _get_credential("adm", "admin") == "short"
 
 
 def test_what_is_said_of_a_token_the_keyring_refused_is_true():
@@ -117,7 +118,7 @@ def test_what_is_said_when_there_is_no_keyring_gives_the_advice(monkeypatch):
 
     [message] = [m for m in said if "eyring" in m]
     assert "Keyring not available" in message and "install a keyring backend" in message
-    assert _get_credential("adm") == "abc"
+    assert _get_credential("adm", "admin") == "abc"
 
 
 def test_pbi_auth_says_securely_only_when_the_keyring_holds_the_token():

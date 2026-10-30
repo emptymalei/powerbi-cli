@@ -258,6 +258,7 @@ def test_an_expired_token_stops_the_run_and_the_next_run_continues(world):
     assert report.status == TOKEN_EXPIRED
     assert "Sign in again" in report.message and "pbi auth" in report.message
     assert report.counts[DONE] == 4 and not report.counts[FAILED]
+    assert report.cancelled == 3  # the three users that were not read
     assert (report.group, report.profile) == ("admin", "admin-nlm")  # whose it was
     assert len(world.fake.calls) == 5  # one request with the dead token, then nothing
     assert world.state()["runs"][-1]["status"] == "token_expired"

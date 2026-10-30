@@ -405,7 +405,9 @@ def test_a_token_without_a_tenant_is_filed_under_its_profile(
     config = PBIConfig()
     config.add_profile_to_group("admin", "admin-nlm")
     config.set_group_active_profile("admin", "admin-nlm")
-    _set_credential("admin-nlm", make_token(tenant=None, expires_in=FAR_FUTURE))
+    _set_credential(
+        "admin-nlm", make_token(tenant=None, expires_in=FAR_FUTURE), "admin"
+    )
     fake_api.add("GET", GROUPS, make_response(200, groups_body("A")))
 
     result = run("workspaces", "list")
@@ -487,7 +489,7 @@ def sign_in_as_admin(token: str, profile: str = "admin-nlm") -> None:
     config = PBIConfig()
     config.add_profile_to_group("admin", profile)
     config.set_group_active_profile("admin", profile)
-    _set_credential(profile, token)
+    _set_credential(profile, token, "admin")
 
 
 def test_an_expired_token_is_reported_with_the_command_to_fix_it(fake_api):

@@ -29,8 +29,7 @@ import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
 import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
-from pbi_cli.auth import PBIAuth
-from pbi_cli.cache import LAKE_FOLDER, CacheManager
+from pbi_cli.cache import LAKE_FOLDER, CacheManager, check_cache_name
 from pbi_cli.cli_lake import lake_app
 from pbi_cli.cli_support import (
     ScanArtifactUsers,
@@ -39,6 +38,7 @@ from pbi_cli.cli_support import (
     ScanDatasourceDetails,
     ScanLineage,
     command,
+    describe_request_error,
     fail,
     new_app,
 )
@@ -52,6 +52,7 @@ from pbi_cli.config import (
 )
 from pbi_cli.core.auth import Credentials, credentials_from_headers
 from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
+from pbi_cli.core.fsutil import replace_file
 from pbi_cli.core.powershell import powershell_token
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.scan import (
@@ -70,27 +71,24 @@ from pbi_cli.web import DataRetriever
 
 try:
     import keyring
-    from keyring.errors import NoKeyringError, PasswordDeleteError
+    from keyring.errors import NoKeyringError
 
     KEYRING_AVAILABLE = True
 except ImportError:
     KEYRING_AVAILABLE = False
     NoKeyringError = Exception
-    PasswordDeleteError = Exception
 
 
 logger.remove()
 logger.add(sys.stderr, level="INFO", enqueue=True)
 
 
-__CWD__ = os.getcwd()
 # These are computed at import time for backward compatibility.
 # Functions that need runtime-resolved paths use Path.home() directly.
 CONFIG_DIR = Path.home() / ".pbi_cli"
 # Legacy files for migration
 AUTH_CONFIG_FILE = CONFIG_DIR / "auth.json"
 LEGACY_PROFILES_FILE = CONFIG_DIR / "profiles.json"
-CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 KEYRING_SERVICE = "pbi-cli"
 
 
@@ -165,28 +163,103 @@ def _check_keyring_availability():
 IN_KEYRING = "keyring"
 
 
-def _forget_keyring_entry(profile: str) -> None:
-    """Remove the token of a profile from the keyring, if it has one.
+def _credential_key(profile: str, group: Optional[str]) -> str:
+    """The name a token is kept under in the keyring and in the credentials file.
+
+    A profile of a group is kept as ``<group>:<profile>`` (``admin:default``), so that the
+    ``default`` profile of the user group and the one of the admin group do not share a
+    token. The flat, legacy profiles keep the bare name, as tokens were kept before.
+
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    """
+    return profile if group is None else f"{group}:{profile}"
+
+
+def _keyring_get(key: str) -> Optional[str]:
+    """The token kept under *key* in the system keyring, if there is a keyring and one."""
+    if not _check_keyring_availability():
+        return None
+    try:
+        return keyring.get_password(KEYRING_SERVICE, key)
+    except Exception as e:
+        # no keyring after all, or a Windows Credential Manager error
+        logger.debug(f"Keyring error: {e}")
+        return None
+
+
+def _forget_keyring_entry(key: str) -> None:
+    """Remove the token kept under *key* from the keyring, if it has one.
 
     The keyring is read before the file, so an older token in it would hide a newer one that
     went to the file (a token that is too long for the Windows Credential Manager does).
     """
+    if not KEYRING_AVAILABLE:
+        return
     try:
-        keyring.delete_password(KEYRING_SERVICE, profile)
+        keyring.delete_password(KEYRING_SERVICE, key)
     except Exception:
         # nothing there, or no keyring at all: there is nothing to forget
         pass
 
 
-def _set_credential(profile: str, token: str) -> str:
-    """Set credential for a profile using keyring or fallback to file storage
+def _read_credentials_file() -> Dict[str, str]:
+    """The tokens kept in the credentials file (none when there is no file).
 
+    :raises AuthError: when the file cannot be read as JSON
+    """
+    credentials_file = _get_credentials_file()
+    if not credentials_file.exists():
+        return {}
+    try:
+        with open(credentials_file, "r", encoding="utf-8") as fp:
+            credentials = json.load(fp)
+    except (OSError, ValueError) as e:
+        raise AuthError(
+            f"Could not read the stored tokens in {credentials_file} ({e}). Fix or "
+            "delete the file, then store the tokens again with 'pbi auth'."
+        ) from None
+    if not isinstance(credentials, dict):
+        raise AuthError(
+            f"The stored tokens in {credentials_file} are not a JSON object. Fix or "
+            "delete the file, then store the tokens again with 'pbi auth'."
+        )
+    return credentials
+
+
+def _write_credentials_file(credentials: Dict[str, str]) -> None:
+    """Replace the credentials file with *credentials*, readable by the owner only.
+
+    The tokens are written to a new file that is created with owner-only permissions (so
+    they are never readable by others, not even for a moment) and then moved over the old
+    one, so that a failed write never leaves half a file.
+    """
+    credentials_file = _get_credentials_file()
+    credentials_file.parent.mkdir(parents=True, exist_ok=True)
+    temporary = credentials_file.with_name(
+        f".{credentials_file.name}.{os.getpid()}.tmp"
+    )
+    descriptor = os.open(str(temporary), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as fp:
+            json.dump(credentials, fp, indent=2)
+        replace_file(temporary, credentials_file)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+    credentials_file.chmod(0o600)
+
+
+def _store(key: str, token: str, quiet: bool = False) -> str:
+    """Keep *token* under *key*: in the keyring, else in the credentials file.
+
+    :param quiet: do not warn when the token goes to the file (when an old entry is moved)
     :return: where the token went: ``keyring``, or the path of the credentials file
     """
     refused = False
     if _check_keyring_availability():
         try:
-            keyring.set_password(KEYRING_SERVICE, profile, token)
+            keyring.set_password(KEYRING_SERVICE, key, token)
             return IN_KEYRING
         except NoKeyringError:
             pass
@@ -197,87 +270,136 @@ def _set_credential(profile: str, token: str) -> str:
             refused = True
 
     # Fallback to file-based storage
-    config_dir = _get_config_dir()
     credentials_file = _get_credentials_file()
+    credentials = _read_credentials_file()
     if refused:
-        logger.warning(
-            "The system keyring did not take the token (on Windows usually because it is "
-            f"longer than the Credential Manager holds): storing it in {credentials_file}"
-        )
-        _forget_keyring_entry(profile)
-    else:
+        if not quiet:
+            logger.warning(
+                "The system keyring did not take the token (on Windows usually because "
+                "it is longer than the Credential Manager holds): storing it in "
+                f"{credentials_file}"
+            )
+        _forget_keyring_entry(key)
+    elif not quiet:
         logger.warning(
             "Keyring not available, storing credentials in file. "
             "For better security, install a keyring backend (e.g., pip install keyrings.alt)"
         )
-    if not config_dir.exists():
-        config_dir.mkdir(parents=True, exist_ok=True)
 
-    credentials = {}
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
-
-    credentials[profile] = token
-
-    with open(credentials_file, "w") as fp:
-        json.dump(credentials, fp, indent=2)
-
-    # Set restrictive permissions on the credentials file
-    credentials_file.chmod(0o600)
+    credentials[key] = token
+    _write_credentials_file(credentials)
     return str(credentials_file)
 
 
-def _get_credential(profile: str) -> Optional[str]:
-    """Get credential for a profile from keyring or file storage"""
-    if _check_keyring_availability():
+def _lookup(key: str) -> Optional[str]:
+    """The token kept under *key*: from the keyring, else from the credentials file."""
+    token = _keyring_get(key)
+    if token is not None:
+        return token
+    return _read_credentials_file().get(key)
+
+
+def _forget(key: str) -> None:
+    """Remove the token kept under *key* from the keyring and from the credentials file."""
+    _forget_keyring_entry(key)
+    credentials = _read_credentials_file()
+    if key in credentials:
+        del credentials[key]
+        _write_credentials_file(credentials)
+
+
+def _legacy_entry_needed(profile: str, group: str) -> bool:
+    """Whether the bare-name token of *profile* may still be needed by someone else.
+
+    Tokens used to be kept under the bare profile name, shared by the profile of that name
+    in every group (and by the flat profile of that name). It stays as long as a flat
+    profile or a profile of another group has that name and no token of its own yet.
+
+    :param profile: the name of the profile
+    :param group: the group that no longer needs it
+    """
+    pbi_config = PBIConfig()
+    if profile in (pbi_config.profiles or {}):
+        return True
+    return any(
+        pbi_config.has_profile_in_group(other, profile)
+        and _lookup(_credential_key(profile, other)) is None
+        for other in VALID_GROUPS
+        if other != group
+    )
+
+
+def _drop_legacy_entry(profile: str, group: str) -> None:
+    """Remove the bare-name token of *profile* once no one else may need it."""
+    if _lookup(profile) is not None and not _legacy_entry_needed(profile, group):
+        _forget(profile)
+
+
+def _set_credential(profile: str, token: str, group: Optional[str] = None) -> str:
+    """Set credential for a profile using keyring or fallback to file storage
+
+    :param profile: the name of the profile
+    :param token: the bearer token, without the ``Bearer`` prefix
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    :return: where the token went: ``keyring``, or the path of the credentials file
+    """
+    where = _store(_credential_key(profile, group), token)
+    if group is not None:
+        _drop_legacy_entry(profile, group)
+    return where
+
+
+def _get_credential(profile: str, group: Optional[str] = None) -> Optional[str]:
+    """Get credential for a profile from keyring or file storage
+
+    A profile of a group whose token is still kept under the bare profile name (as tokens
+    were kept before they were kept per group) gets that token, and it is moved to the name
+    of the group and profile.
+
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    :raises AuthError: when the credentials file cannot be read
+    """
+    token = _lookup(_credential_key(profile, group))
+    if token is not None or group is None:
+        return token
+
+    token = _lookup(profile)
+    if token is not None:
         try:
-            token = keyring.get_password(KEYRING_SERVICE, profile)
-            if token is not None:
-                return token
-        except NoKeyringError:
-            pass
-        except (OSError, Exception) as e:
-            # Handle Windows Credential Manager errors and other keyring errors
-            logger.debug(f"Keyring error: {e}")
-            pass
-
-    # Fallback to file-based storage
-    credentials_file = _get_credentials_file()
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
-            return credentials.get(profile)
-
-    return None
+            _store(_credential_key(profile, group), token, quiet=True)
+            _drop_legacy_entry(profile, group)
+        except Exception as e:
+            # the token can still be used; it is moved on the next try
+            logger.debug(f"Could not move the token of profile '{profile}': {e}")
+    return token
 
 
-def _delete_credential(profile: str):
-    """Delete credential for a profile from keyring or file storage"""
-    if _check_keyring_availability():
-        try:
-            keyring.delete_password(KEYRING_SERVICE, profile)
-            return
-        except (NoKeyringError, PasswordDeleteError):
-            pass
-        except (OSError, Exception) as e:
-            # Handle Windows Credential Manager errors and other keyring errors
-            logger.debug(f"Keyring error: {e}")
-            pass
+def _delete_credential(profile: str, group: Optional[str] = None) -> None:
+    """Delete the token of a profile from the keyring and from the credentials file.
 
-    # Fallback to file-based storage
-    credentials_file = _get_credentials_file()
-    if credentials_file.exists():
-        with open(credentials_file, "r") as fp:
-            credentials = json.load(fp)
+    The token of the profile is removed, and the bare-name token that tokens were kept
+    under before too, unless a profile of that name in another group still uses it.
 
-        if profile in credentials:
-            del credentials[profile]
-
-            with open(credentials_file, "w") as fp:
-                json.dump(credentials, fp, indent=2)
-
-            credentials_file.chmod(0o600)
+    :param profile: the name of the profile
+    :param group: ``user`` or ``admin``; ``None`` for a flat, legacy profile
+    """
+    if group is None:
+        # the groups' profiles of that name that still use the bare-name token keep it
+        token = _lookup(profile)
+        pbi_config = PBIConfig()
+        for other in VALID_GROUPS:
+            key = _credential_key(profile, other)
+            if (
+                token is not None
+                and pbi_config.has_profile_in_group(other, profile)
+                and _lookup(key) is None
+            ):
+                _store(key, token, quiet=True)
+        _forget(profile)
+        return
+    _forget(_credential_key(profile, group))
+    _drop_legacy_entry(profile, group)
 
 
 def _migrate_legacy_auth():
@@ -325,31 +447,6 @@ def _save_profiles(profiles_data: dict):
     pbi_config = PBIConfig()
     pbi_config.active_profile = profiles_data.get("active_profile")
     pbi_config.profiles = profiles_data.get("profiles", {})
-
-
-def _load_group_profiles(group: str) -> dict:
-    """Load profiles for a specific group from config.
-
-    :param group: Group name (e.g. 'user' or 'admin')
-    :return: dict with 'active_profile' and 'profiles' keys for the group
-    """
-    pbi_config = PBIConfig()
-    return {
-        "active_profile": pbi_config.get_group_active_profile(group),
-        "profiles": pbi_config.get_group_profiles(group),
-    }
-
-
-def _save_group_profiles(group: str, group_data: dict):
-    """Save profiles for a specific group to config.
-
-    :param group: Group name (e.g. 'user' or 'admin')
-    :param group_data: dict with 'active_profile' and 'profiles' keys
-    """
-    pbi_config = PBIConfig()
-    for profile_name, profile_info in group_data.get("profiles", {}).items():
-        pbi_config.add_profile_to_group(group, profile_name, profile_info)
-    pbi_config.set_group_active_profile(group, group_data.get("active_profile"))
 
 
 def _resolve_profile(profile: Optional[str] = None, group: str = "user") -> str:
@@ -410,8 +507,10 @@ def load_auth(profile: Optional[str] = None, group: str = "user") -> dict:
     """
     profile = _resolve_profile(profile, group)
 
-    # Get token from keyring or file.
-    token = _get_credential(profile)
+    # Get token from keyring or file: a profile of the group has a token of its own, a
+    # flat (legacy) profile the one under its bare name.
+    in_group = PBIConfig().has_profile_in_group(group, profile)
+    token = _get_credential(profile, group if in_group else None)
     if token is None:
         raise AuthError(
             f"No credentials found for profile '{profile}'. Please re-authenticate.",
@@ -668,8 +767,8 @@ def store_token(
         logger.info(f"Creating config folder: {config_dir}")
         config_dir.mkdir(parents=True, exist_ok=True)
 
-    # Store token securely (keyed by profile name)
-    where = _set_credential(profile, bearer_token)
+    # Store token securely (keyed by group and profile name)
+    where = _set_credential(profile, bearer_token, group)
 
     if group is not None:
         # Store in group-based config
@@ -977,7 +1076,7 @@ def list_auth():
             typer.echo(f"Group '{group}':")
             for profile_name in group_profiles.keys():
                 active_marker = " (active)" if profile_name == group_active else ""
-                token_exists = _get_credential(profile_name) is not None
+                token_exists = _get_credential(profile_name, group) is not None
                 status = "✓" if token_exists else "✗"
                 typer.echo(f"  {status} {profile_name}{active_marker}")
             typer.echo(f"  Active: {group_active or 'None'}")
@@ -1045,7 +1144,7 @@ def delete_auth(
             )
             return
 
-        _delete_credential(profile)
+        _delete_credential(profile, group_name)
         pbi_config.remove_profile_from_group(group_name, profile)
         typer.secho(
             f"✓ Profile '{profile}' deleted from group '{group_name}'", fg="green"
@@ -1448,11 +1547,18 @@ def clear_cache(
     if not yes:
         raise typer.Abort()
 
-    if cache_key == LAKE_FOLDER:
-        raise PBIError(
-            f"'{LAKE_FOLDER}' is the data lake, not a cache key. "
-            "Use `pbi lake prune` to delete old versions from it."
-        )
+    if cache_key is not None:
+        if cache_key.casefold() == LAKE_FOLDER:
+            raise PBIError(
+                f"'{cache_key}' is the data lake, not a cache key. "
+                "Use `pbi lake prune` to delete old versions from it."
+            )
+        try:
+            check_cache_name(cache_key)
+            if version is not None:
+                check_cache_name(version, "version")
+        except ValueError as e:
+            raise PBIError(str(e)) from None
 
     pbi_config = PBIConfig()
     cache_folder = pbi_config.cache_folder
@@ -1500,6 +1606,11 @@ def export_report(
     uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
 
     result = dr.get(uri)
+    try:
+        result.raise_for_status()
+    except requests.HTTPError as error:
+        # the body is the API's error, not the report: do not save it as one
+        raise PBIError(describe_request_error(error)) from None
 
     if target is None:
         # For binary export data, we can't print it directly to console
@@ -1626,13 +1737,6 @@ def workspaces_list(
     # Resolve the target folder path (handles absolute/relative paths)
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -1640,7 +1744,7 @@ def workspaces_list(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing to {json_file_path}")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
@@ -1673,7 +1777,7 @@ def format_convert(
 
     typer.echo(f"Converting to {format=}: {source=} -> {target}")
 
-    with open(source, "r") as fp:
+    with open(source, "r", encoding="utf-8") as fp:
         workspaces_data = json.load(fp)
 
     flattened = workspaces.flatten_workspaces(workspaces_data["value"])
@@ -1776,21 +1880,29 @@ def report_users(
         if report_users and len(report_users) > 0:
             try:
                 # Flatten the structure for better table display
+                # one row per report: report_users maps each workspace name to its
+                # reports, each with its users under reports_users_value
                 all_reports = []
-                for workspace_data in report_users:
-                    workspace_name = workspace_data.get("name", "Unknown")
-                    for report in workspace_data.get("reports", []):
-                        report_info = {
-                            "workspace": workspace_name,
-                            "report_name": report.get("name", ""),
-                            "report_id": report.get("id", ""),
-                            **{
-                                k: v
-                                for k, v in report.items()
-                                if k not in ["name", "id"]
-                            },
-                        }
-                        all_reports.append(report_info)
+                for w_name, reports in report_users.items():
+                    for report in reports:
+                        users = report.get("reports_users_value") or []
+                        all_reports.append(
+                            {
+                                "workspace": w_name,
+                                "report_name": report.get("reports_name", ""),
+                                "report_id": report.get("reports_id", ""),
+                                "users": ", ".join(
+                                    str(
+                                        u.get("emailAddress")
+                                        or u.get("identifier")
+                                        or u.get("displayName")
+                                        or ""
+                                    )
+                                    for u in users
+                                    if isinstance(u, dict)
+                                ),
+                            }
+                        )
 
                 if all_reports:
                     df = pd.DataFrame(all_reports)
@@ -1811,13 +1923,6 @@ def report_users(
     # Resolve the target folder path (handles absolute/relative paths)
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -1826,7 +1931,7 @@ def report_users(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(report_users, fp)
     if "excel" in file_type:
         excel_file_path = target_path / f"{file_name}.xlsx"
@@ -1911,28 +2016,22 @@ def user_access(
     # Display or save results
     if target_folder is None:
         logger.info(f"No target folder provided, printing to console...")
-        if isinstance(result, dict):
-            try:
-                df = pd.json_normalize(result)
-                typer.echo("\n" + "=" * 80)
-                typer.echo(f"User Access Information for: {user_id}")
-                typer.echo("=" * 80)
-                typer.echo(df.to_string(index=False))
-                typer.echo("=" * 80)
-            except Exception:
-                typer.echo(json.dumps(result, indent=4))
-        else:
+        if not result["artifacts"]:
+            typer.echo(f"No access found for: {user_id}")
+            return
+        try:
+            df = pd.json_normalize(result["artifacts"])
+            typer.echo("\n" + "=" * 80)
+            typer.echo(f"User Access Information for: {user_id}")
+            typer.echo("=" * 80)
+            typer.echo(df.to_string(index=False))
+            typer.echo("=" * 80)
+        except Exception:
             typer.echo(json.dumps(result, indent=4))
         return
 
     # Resolve the target folder path
     target_path = resolve_output_path(target_folder)
-
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
 
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
@@ -1941,12 +2040,12 @@ def user_access(
     if "json" in file_types:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}...")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
     if "excel" in file_types:
         excel_file_path = target_path / f"{file_name}.xlsx"
         logger.info(f"Writing excel file to {excel_file_path}...")
-        df = pd.json_normalize(result)
+        df = pd.json_normalize(result["artifacts"])
         df.to_excel(excel_file_path)
 
 
@@ -2016,13 +2115,6 @@ def apps_list(
     # Resolve the target folder path
     target_path = resolve_output_path(target_folder)
 
-    # Check if path resolution failed
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or provide an absolute path with --target-folder.")
-        raise typer.Abort()
-
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")
         target_path.mkdir(parents=True, exist_ok=True)
@@ -2030,7 +2122,7 @@ def apps_list(
     if "json" in file_type:
         json_file_path = target_path / f"{file_name}.json"
         logger.info(f"Writing json file to {json_file_path}")
-        with open(json_file_path, "w") as fp:
+        with open(json_file_path, "w", encoding="utf-8") as fp:
             json.dump(result, fp)
 
     if "excel" in file_type:
@@ -2070,7 +2162,7 @@ def app_info(
     else:
         # Save to file
         if file_type == "json":
-            with open(target, "w") as fp:
+            with open(target, "w", encoding="utf-8") as fp:
                 json.dump(app_data, fp)
             typer.secho(f"✓ Saved to {target}", fg="green")
         elif file_type == "excel":
@@ -2107,11 +2199,11 @@ def augment(
     for a in pbi_apps.apps:
         try:
             apps_data.append(a())
-        except ValueError as e:
-            typer.secho(f"Cannot download {a.app_info}", fg="red")
+        except (ValueError, requests.RequestException) as e:
+            typer.secho(f"Cannot download {a.app_info}: {e}", fg="red")
 
     if file_type == "json":
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(apps_data, fp)
     elif file_type == "excel":
         for a_data in apps_data:
@@ -2161,30 +2253,42 @@ def reports_users(
     for a in pbi_apps.apps:
         try:
             apps_data.append(a())
-        except ValueError as e:
-            typer.secho(f"Can not download {a.app_info}", fg="red")
+        except (ValueError, requests.RequestException) as e:
+            typer.secho(f"Can not download {a.app_info}: {e}", fg="red")
 
+    # the users of a report are only listed to an administrator
+    admin_auth = load_auth(group="admin") if apps_data else {}
+    failed_id = []
     updated_apps_data = []
     for a in apps_data:
         report_data = []
-        failed_id = []
         for r in a.get("reports", []):
             report_id = r.get("id")
             try:
-                logger.debug(f"Retrieving user info for {r['name']}, {report_id}")
+                logger.debug(f"Retrieving user info for {r.get('name')}, {report_id}")
                 r_data = powerbi_admin_report.ReportUsers(
-                    auth=load_auth(), report_id=report_id, verify=_verify_certificates()
+                    auth=admin_auth, report_id=report_id, verify=_verify_certificates()
                 ).users
                 r_data = {**r_data, **r}
                 report_data.append(r_data)
-            except ValueError as e:
+            except (ValueError, requests.RequestException) as e:
                 failed_id.append(report_id)
-                logger.warning(f"Failed to download {r['name']}, {report_id}\n{e}")
+                typer.secho(
+                    f"Can not download the users of report {r.get('name')} "
+                    f"({report_id}): {describe_request_error(e)}",
+                    fg="red",
+                )
         a["reports"] = report_data
         updated_apps_data.append(a)
+    if failed_id:
+        typer.secho(
+            f"The users of {len(failed_id)} report(s) could not be downloaded: "
+            f"{', '.join(str(i) for i in failed_id)}",
+            fg="yellow",
+        )
 
     if file_type == "json":
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(updated_apps_data, fp)
     elif file_type == "excel":
         for a_data in updated_apps_data:
@@ -2299,7 +2403,7 @@ def reports_list_group(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Reports list saved to {target}", fg="green")
 
@@ -2352,7 +2456,7 @@ def reports_pages(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Report pages saved to {target}", fg="green")
 
@@ -2386,7 +2490,7 @@ def _run_scan(
             get_artifact_users=get_artifact_users,
         )
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+        raise PBIError(describe_request_error(e)) from e
     scan_id = scan_response.get("id")
     if not scan_id:
         raise PBIError(f"Unexpected initiate response: {scan_response}")
@@ -2399,7 +2503,7 @@ def _run_scan(
         try:
             status_response = workspace_info.get_scan_status(scan_id=scan_id)
         except (ValueError, requests.exceptions.RequestException) as e:
-            raise PBIError(str(e)) from e
+            raise PBIError(describe_request_error(e)) from e
         status = status_response.get("status")
 
         if status == "Succeeded":
@@ -2420,10 +2524,16 @@ def _run_scan(
         )
         time.sleep(sleep_time)
 
-    try:
-        return workspace_info.get_scan_result(scan_id=scan_id)
-    except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+    while True:
+        try:
+            return workspace_info.get_scan_result(scan_id=scan_id)
+        except powerbi_admin.ScanNotReadyError as e:
+            # the status can say Succeeded a moment before the result is there
+            if time.monotonic() >= deadline:
+                raise PBIError(describe_request_error(e)) from e
+            time.sleep(min(interval, max(deadline - time.monotonic(), 0)))
+        except (ValueError, requests.exceptions.RequestException) as e:
+            raise PBIError(describe_request_error(e)) from e
 
 
 def _normalize_workspace_entries(entries: Iterable) -> list:
@@ -2563,7 +2673,7 @@ def scan_result(
     if target is None:
         typer.echo(json.dumps(result, indent=2))
     else:
-        with open(target, "w") as fp:
+        with open(target, "w", encoding="utf-8") as fp:
             json.dump(result, fp, indent=2)
         typer.secho(f"✓ Scan results saved to {target}", fg="green")
 
@@ -2600,7 +2710,7 @@ def scan_status(
     try:
         result = workspace_info.get_scan_status(scan_id=scan_id)
     except (ValueError, requests.exceptions.RequestException) as e:
-        raise PBIError(str(e)) from e
+        raise PBIError(describe_request_error(e)) from e
     typer.echo(json.dumps(result, indent=2))
 
 
@@ -2701,14 +2811,6 @@ def scan_get(
 
     if target_folder is not None:
         target_path = resolve_output_path(target_folder)
-        if target_path is None:
-            typer.secho("Error: Unable to determine output folder.", fg="red")
-            typer.echo(
-                "Use 'pbi config set-output-folder' to set a default output folder,"
-            )
-            typer.echo("or provide an absolute path with --target-folder.")
-            raise typer.Abort()
-
         if not target_path.exists():
             typer.secho(f"creating folder {target_path}", fg="blue")
             target_path.mkdir(parents=True, exist_ok=True)
@@ -2803,11 +2905,6 @@ def scan_batch(
         raise PBIError(f"Config file {config_path} must set 'target_folder'.")
 
     target_path = resolve_output_path(str(target_folder))
-    if target_path is None:
-        typer.secho("Error: Unable to determine output folder.", fg="red")
-        typer.echo("Use 'pbi config set-output-folder' to set a default output folder,")
-        typer.echo("or set 'target_folder' to an absolute path in the config file.")
-        raise typer.Abort()
 
     if not target_path.exists():
         typer.secho(f"creating folder {target_path}", fg="blue")

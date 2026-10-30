@@ -391,6 +391,14 @@ def test_other_fields_and_missing_lists_are_handled():
     assert split_scan_result({}) == {}
 
 
+def test_a_workspace_that_is_not_an_object_or_has_no_id_is_left_out():
+    pieces = split_scan_result(
+        {"workspaces": ["junk", None, {"name": "no id"}, {"id": ""}, {"id": "a"}]}
+    )
+
+    assert list(pieces) == ["a"]
+
+
 def test_a_real_scan_result_is_cut_per_workspace(client, clock, fake):
     run = scan(
         client,

@@ -887,9 +887,17 @@ class PlanFile:
             if entry.names_a_profile and not accounts.has_account(
                 Scope.USER, entry.via
             ):
+                # not a profile: perhaps a word of `via` that is misspelt (`admn`)
+                close = difflib.get_close_matches(entry.via, _VIA_WORDS, n=1)
+                hint = (
+                    f" Did you mean '{close[0]}'? via is auto, admin, user or the name "
+                    "of a profile."
+                    if close
+                    else ""
+                )
                 raise PlanFileError(
                     f"{self.name}:{entry.line}: {entry.where}.via: no token is stored under "
-                    f"the profile '{entry.via}'. Store one with "
+                    f"the profile '{entry.via}'.{hint} Store one with "
                     f"`pbi auth -t <token> -p {entry.via} -g user`."
                 )
         return Accounting(admin=admin, users=tuple(users))
@@ -1145,7 +1153,7 @@ class PlanFile:
         """
         compiled = Compiled()
         needs: Dict[str, Dict[Tuple[Scope, Optional[str]], Set[str]]] = {}
-        scans: Dict[ScanFlags, Set[str]] = {}
+        scanned: Dict[str, Any] = {}  # the workspaces an entry asks to scan, by id
 
         for entry in self.workspaces:
             compiled.notes.extend(self._check(entry, accounting))
@@ -1167,7 +1175,7 @@ class PlanFile:
             orphans: List[str] = []
             for workspace in found:
                 if entry.scan is not None:
-                    scans.setdefault(entry.scan, set()).add(workspace.id)
+                    scanned.setdefault(workspace.id, workspace)
                 for detail in entry.details:
                     for candidates in _providers(detail).values():
                         picked = self._pick(entry, workspace, candidates, accounting)
@@ -1205,6 +1213,14 @@ class PlanFile:
                         "name another with via: <profile>"
                     )
 
+        # One scan per workspace, with the options of every entry that names it (and of the
+        # tenant's scan) put together, as `scan_for` tells them; the workspaces that end up
+        # with the same options are scanned in one step.
+        scans: Dict[ScanFlags, Set[str]] = {}
+        for workspace_id, workspace in scanned.items():
+            flags = self.scan_for(workspace)
+            if flags is not None:
+                scans.setdefault(flags, set()).add(workspace_id)
         compiled.steps.extend(self._scan_steps(scans, accounting))
         compiled.steps.extend(self._detail_steps(needs, accounting))
         return compiled

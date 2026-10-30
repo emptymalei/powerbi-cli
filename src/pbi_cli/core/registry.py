@@ -155,6 +155,10 @@ class Endpoint:
         missing = [k for k in self.path_params if k not in path_params]
         if missing:
             raise ValueError(f"{self.id}: missing path parameter(s) {missing}")
+        # "." and ".." would be resolved as path segments and reach another operation
+        empty = [k for k, v in path_params.items() if str(v).strip() in ("", ".", "..")]
+        if empty:
+            raise ValueError(f"{self.id}: no usable value for {empty}")
         unknown = sorted(set(given) - set(self.query))
         if unknown:
             raise ValueError(

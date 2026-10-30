@@ -25,11 +25,38 @@ from typing import Any, Dict, List, Optional, Union
 from cloudpathlib import AnyPath, CloudPath
 from loguru import logger
 
-__all__ = ["CacheManager", "CacheConfig", "LAKE_FOLDER"]
+__all__ = ["CacheManager", "CacheConfig", "LAKE_FOLDER", "check_cache_name"]
 
 #: Sub-folder of the cache folder that holds the data lake (see ``pbi lake``). This cache
 #: never lists it and never deletes it, even when the whole cache is cleared.
 LAKE_FOLDER = "lake"
+
+
+def check_cache_name(name: str, what: str = "cache key") -> str:
+    """Check that a cache key or version names one folder directly in the cache folder.
+
+    A key is used as a folder name, so it has to be one plain path segment: no slashes, no
+    ``.`` or ``..``, and not the data lake (in any case, since some file systems ignore
+    case).
+
+    :param name: the cache key or version given by the user
+    :param what: what the name is, for the message ("cache key" or "version")
+    :return: the name, unchanged
+    :raises ValueError: when the name is not a plain folder name, or names the lake
+    """
+    if (
+        not name
+        or name in (".", "..")
+        or any(sep in name for sep in ("/", "\\", "\0"))
+        or ":" in name
+    ):
+        raise ValueError(
+            f"'{name}' is not a {what}: give the name of one folder in the cache, "
+            "without slashes"
+        )
+    if name.casefold() == LAKE_FOLDER:
+        raise ValueError(f"'{name}' is the data lake, not a {what}")
+    return name
 
 
 class CacheConfig:
@@ -311,6 +338,25 @@ class CacheManager:
             logger.warning(f"Failed to list cache keys: {e}")
             return []
 
+    def _directly_inside(self, path: AnyPath) -> bool:
+        """Say whether a path, once resolved, is a direct child of the cache folder.
+
+        Remote paths cannot be resolved; their names were checked by `check_cache_name`.
+
+        :param path: the path to check
+        :return: True when ``path`` is directly in the cache folder (and is not the lake)
+        """
+        base = self._base_path
+        if base is None:
+            return False
+        if isinstance(path, CloudPath) or isinstance(base, CloudPath):
+            return True
+        resolved = Path(str(path)).resolve()
+        return (
+            resolved.parent == Path(str(base)).resolve()
+            and resolved.name.casefold() != LAKE_FOLDER
+        )
+
     def clear(self, cache_key: Optional[str] = None, version: Optional[str] = None):
         """Clear cache data.
 
@@ -325,10 +371,13 @@ class CacheManager:
             logger.warning("Cache path not configured")
             return
 
-        if cache_key == LAKE_FOLDER:
-            logger.warning(
-                f"'{LAKE_FOLDER}' is the data lake, not a cache key: nothing was cleared"
-            )
+        try:
+            if cache_key is not None:
+                check_cache_name(cache_key)
+            if version is not None:
+                check_cache_name(version, "version")
+        except ValueError as e:
+            logger.warning(f"{e}: nothing was cleared")
             return
 
         try:
@@ -349,6 +398,11 @@ class CacheManager:
             elif version is None:
                 # Clear all versions of a specific key
                 cache_dir = self._base_path / cache_key
+                if not self._directly_inside(cache_dir):
+                    logger.warning(
+                        f"'{cache_key}' is not a folder in the cache: nothing was cleared"
+                    )
+                    return
                 if cache_dir.exists():
                     if isinstance(cache_dir, CloudPath):
                         cache_dir.rmtree()

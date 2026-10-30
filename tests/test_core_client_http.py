@@ -7,6 +7,7 @@ server that keeps failing. Nothing leaves the machine.
 
 import json
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -15,6 +16,7 @@ from core_helpers import make_token
 
 from pbi_cli.core.auth import Credentials
 from pbi_cli.core.client import PowerBIClient
+from pbi_cli.core.ratelimit import Limiter, QuotaTracker
 from pbi_cli.errors import ApiError, RateLimitError, TokenExpiredError
 
 
@@ -70,7 +72,17 @@ def make_client(base_url, sleep=lambda seconds: None):
     # real sockets, real clock: the token must be valid now
     token = make_token(now=datetime.now(timezone.utc), expires_in=timedelta(hours=1))
     credentials = Credentials(token, profile="p", group="admin")
-    return PowerBIClient(lambda: credentials, base_url=base_url, sleep=sleep)
+    # the quota counters run on a time that the fake sleep moves on
+    now = [time.time()]
+
+    def pause(seconds):
+        sleep(seconds)
+        now[0] += seconds
+
+    limiter = Limiter(QuotaTracker(clock=lambda: now[0]), sleep=pause)
+    return PowerBIClient(
+        lambda: credentials, base_url=base_url, sleep=sleep, limiter=limiter
+    )
 
 
 def test_a_request_over_the_wire(api):
@@ -101,6 +113,7 @@ def test_a_server_that_keeps_failing_is_an_api_error(api):
         with pytest.raises(ApiError) as excinfo:
             client.request("admin.apps")
     assert "admin.apps" in str(excinfo.value)
+    assert excinfo.value.status == 500
     assert len(script["requests"]) == 4  # the first try and three retries
 
 

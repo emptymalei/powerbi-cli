@@ -292,16 +292,21 @@ def commands_for(app: Any, screen: Any) -> List[Command]:
     running = state is not None and state.running
     on_explorer = isinstance(screen, ExplorerScreen)
 
+    on_sync = isinstance(screen, SyncScreen)
+
     found: List[Command] = []
     if on_explorer:
         found.extend(_explorer(screen, view_only))
-    elif isinstance(screen, SyncScreen):
+    elif on_sync:
         found.extend(_sync(screen))
     if running and not state.stopping:
         found.append(
             Command(
                 "Stop the sync",
-                _help("Finish the requests in flight and start nothing new", "x"),
+                _help(
+                    "Finish the requests in flight and start nothing new",
+                    "x" if on_sync else "",  # on the Explorer, x exports
+                ),
                 app.stop_sync,
                 "cancel interrupt halt",
             )
@@ -315,7 +320,7 @@ def commands_for(app: Any, screen: Any) -> List[Command]:
                 "tree workspaces browse",
             )
         )
-    if not isinstance(screen, SyncScreen):
+    if not on_sync:
         found.append(
             Command(
                 "Open the Sync screen",
@@ -327,7 +332,10 @@ def commands_for(app: Any, screen: Any) -> List[Command]:
     found.append(
         Command(
             "Reload the lake",
-            _help("Read the lake again, for example after another sync", "l"),
+            _help(
+                "Read the lake again, for example after another sync",
+                "l" if on_explorer else "",  # the Sync screen has no such key
+            ),
             partial(app.reload_catalog, True),
             "refresh read",
         )

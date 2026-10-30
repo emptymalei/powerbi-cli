@@ -286,6 +286,81 @@
 
 ### Fixed
 
+- When Power BI throttles a request (HTTP 429), every request of the tenant to that
+  operation waits, not only the one that was throttled; a stopped sync no longer waits for
+  the throttle to end; and the request that is tried again carries the token of that moment
+  (one renewed during the wait, or a clear "expired" message).
+- A server error that stays after the retries says its HTTP status.
+- Publishing with `--exclude` a category that an earlier publish copied deletes it from the
+  published lake; a day of events that grows while `pbi lake publish` runs is copied with
+  exactly the parts its manifest lists.
+- An id of `.` or `..` (or an empty one) is refused instead of reaching another operation of
+  the API; a manifest can no longer name a file outside its own folder.
+- `pbi lake prune` deletes the manifest of a version first, so a version it cannot delete
+  completely (a file in use on Windows) stays readable; an S3 lake whose bucket cannot be
+  asked counts as protected instead of failing.
+- Two programs saving the quota counters at once no longer trip over each other's file.
+- Reading the sources of a query is quick again: a query that combines many files (a hundred
+  CSV files took 18 seconds) slowed down the Scan tab of the [terminal UI](tui.md).
+- A native query (`Value.NativeQuery`) is the query of the source it is sent to only, not of
+  every source of the table (an Excel file showed the SQL of another step).
+  `[Query="select * from " & TableName]` is read whole, following parameters and steps, and a
+  parameter `"a" & "b"` is `ab`. A shared query with `IsParameterQuery=false` is no longer a
+  parameter.
+- A newer scan that was asked for a workspace but did not return it no longer hides an older
+  scan that has it.
+- The lineage finds the dataset of a report or a tile in the scan of the same workspace when no
+  list has it (it said *not in the lake*), and follows an item built on two others once.
+- An item that the first list held without a workspace is placed in the workspace a later list
+  gives it.
+- The Users tab, and the users of many selected workspaces, read only what they need, once
+  until the lake is read again; an unreadable stored answer is skipped instead of failing.
+
+- **Tokens are kept per group and profile** (`admin:default`, `user:default`). The `default`
+  profile of the user group and the one of the admin group shared one token, so admin commands
+  sent the user token, and deleting one profile deleted the other's token. Tokens stored the old
+  way are still read and moved; see [Where tokens are kept](auth.md#where-tokens-are-kept).
+  Deleting a token removes it from the keyring and from the credentials file; the file is
+  created readable by its owner only and replaced in one step, and a damaged one is reported
+  with its path instead of a traceback.
+- A config file that cannot be read is no longer replaced by the defaults (which wiped the
+  profiles) on the next save: the command stops and names the file. It is now written to a
+  temporary file and moved into place, so it is never seen half written.
+- `pbi cache clear -k` only deletes one folder directly in the cache folder: `lake/`, `./lake`
+  or `LAKE` no longer delete the data lake, and `../sibling` no longer deletes a folder outside
+  the cache.
+- The commands on the older API wrappers (`pbi reports export`, `pbi reports users`,
+  `pbi apps app`, `pbi apps augment`, `pbi workspaces scan initiate|result|get`) report a failed
+  request as `Error: ...` with the status, reason and the API's error, not with a traceback.
+  `pbi export` no longer saves an error answer as the report. `pbi workspaces scan get` waits
+  for a result that is not there yet when the status already says it succeeded.
+- `pbi reports users` asks for the users of a report with the admin token (it used the user
+  token), and goes on after a report that fails, listing the ones that did.
+- `pbi users user-access` prints one row per item (it printed one cell with everything), and
+  `pbi workspaces report-users` prints one row per report with its users (it fell back to
+  JSON). `pbi workspaces list -ft excel` and `pbi workspaces format-convert` work when there
+  are no workspaces.
+- JSON files are read and written as UTF-8 whatever the locale of the system is.
+- The command that `pbi sync run` gives to continue an expired or interrupted run keeps every
+  option that was given (`--lineage`, `--days`, the profiles, ...) and quotes a `--config` path
+  with spaces.
+- In the [terminal UI](tui.md):
+    - The Export dialog no longer ends the app when what it offers has a name like
+      `Finance [/EU]`, and the command palette shows such names, and `[Confidential]Finance`,
+      as they are, with the letters you typed lit. The keys of the JSON in the Info tab are
+      shown as they are too.
+    - Saving an Excel workbook of text with a control character in it (a vertical tab) no
+      longer ends the app: the workbook leaves the character out, and any file that cannot be
+      written is said in the dialog.
+    - A day of audit events with a half-written line no longer ends the app: the line above
+      the table says *Could not read this*.
+    - A lake (or tenant) that is slow to read no longer replaces the one you opened after it.
+    - `a` and `t` do nothing while a dialog is open, as `o` does, instead of opening another
+      dialog over it.
+    - The palette names a key only where it does that: *Stop the sync* said `x`, which exports
+      on the Explorer, and *Reload the lake* said `l`, which the Sync screen does not have.
+    - Typing in the tree filter of a big lake is quicker: the tree is built when you pause, and
+      the palette works out its commands once each time it opens instead of at every key.
 - `pbi tui --config` no longer refuses to start when `session.lake` names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake
   (`pbi config set-cache-folder`). `pbi sync plan|run --config` says the same. A bucket that holds no
@@ -333,6 +408,30 @@
 - `pbi workspaces list --top` below 1 is reported as a usage error.
 - `pbi apps augment` and `pbi reports users` with `--file-type excel` and a target that
   has a file extension now report a usage error. They used to crash with a `TypeError`.
+
+#### Sync and plan files
+
+- An incremental scan skipped a workspace that changed again within 24 hours of its last
+  scan, and moved the starting point of the next scan past the change. The batches of an
+  incremental scan are now always scanned, and the next scan continues from the start of
+  the oldest scan a run relied on (one it found fresh or continued) when that is earlier
+  than the start of the run. See [Sync](sync.md#scans).
+- A day of audit events whose read was interrupted could be sealed without its later
+  events: the continued read kept its old window. A day is now sealed only once a finished
+  read covered it to its end, and is read whole first when it was not; the manifest says
+  how far the reads cover (`window_end`, `covered_until`). Reading a day no longer reads all
+  its stored events again for each page.
+- A scan that an earlier run started is continued even when a workspace was added or
+  removed since, which used to shift the batches and start it over.
+- A [plan file](plan-file.md) that scans a workspace through two entries (or an entry and
+  the tenant) scans it once with the options of all of them, as the TUI says, instead of
+  once per entry. A `via:` that is no stored profile and looks like a misspelt `auto`,
+  `admin` or `user` says which was meant.
+- The sync state forgets failed and deferred units that no run touched for 30 days, and
+  those of days of events older than the API keeps; once 1,000 were kept, new failures were
+  no longer recorded. Runs that begin within the same second (the steps of a plan file) get
+  their own ids (`20261001T080000Z-2`). A run stopped by an expired token counts the units
+  it left undone.
 
 ### Development
 

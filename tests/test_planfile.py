@@ -612,6 +612,16 @@ def test_a_profile_that_has_no_token_is_said_with_the_command_that_stores_one():
         error.value
     )
     assert "pbi-plan.yaml:4:" in str(error.value)
+    assert "Did you mean" not in str(error.value)
+
+
+def test_a_via_that_is_no_profile_and_looks_like_a_misspelt_word_says_which():
+    with pytest.raises(PlanFileError) as error:
+        read(
+            "version: 1\nworkspaces:\n  - {id: b, details: [pages], via: admn}\n"
+        ).accounting(Stored())
+    assert "no token is stored under the profile 'admn'" in str(error.value)
+    assert "Did you mean 'admin'?" in str(error.value)
 
 
 # ---------------------------------------------------------------------------
@@ -883,6 +893,21 @@ def test_workspaces_that_are_scanned_alike_are_scanned_together():
     ] == [
         (ScanFlags(), ("ws-us",)),  # the plainer scan first
         (ScanFlags(lineage=True), ("ws-eu", "ws-sales")),
+    ]
+
+
+def test_a_workspace_two_entries_scan_is_scanned_once_with_the_options_of_both():
+    compiled = steps_for(
+        "  - {name: 'Finance*', scan: {lineage: true}}\n"
+        "  - {id: ws-eu, scan: {dataset_schema: true}}\n"
+    )
+
+    # ws-eu is named by both: one scan with both options, as the TUI says it is asked for
+    assert [
+        (s.options.scan_flags, s.options.workspace_ids) for s in compiled.steps
+    ] == [
+        (ScanFlags(lineage=True), ("ws-hid", "ws-us")),
+        (ScanFlags(lineage=True, dataset_schema=True), ("ws-eu",)),
     ]
 
 
