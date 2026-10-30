@@ -458,6 +458,7 @@ class SyncEngine:
                     except TokenExpiredError as error:
                         session.stop.set()
                         token_error = token_error or error
+                        report.cancelled += 1  # it is done by the next run
                         continue
                     if outcome.status == CANCELLED:
                         report.cancelled += 1
@@ -481,10 +482,10 @@ class SyncEngine:
             raise
         finally:
             pool.shutdown(wait=True, cancel_futures=True)
-        if token_error is not None:
-            raise token_error
         # the units that were never started, because the run was stopped
         report.cancelled += sum(1 for _ in pending)
+        if token_error is not None:
+            raise token_error
         return finished
 
     def _execute(self, session: _Session, unit: Unit) -> Outcome:
