@@ -1230,6 +1230,29 @@ def test_the_events_of_a_day_come_newest_first(world):
     assert stamps == sorted(stamps, reverse=True)
 
 
+def test_the_days_of_events_are_read_once_until_the_lake_is_read_again(
+    world, monkeypatch
+):
+    world.run("activity", days=2)
+    catalog = catalog_of(world)
+    reads = []
+    real = type(world.store).event_days
+    monkeypatch.setattr(
+        type(world.store),
+        "event_days",
+        lambda store, *args: reads.append(args) or real(store, *args),
+    )
+
+    first = catalog.event_days()
+    first.clear()  # what a caller does with its list does not change the catalog
+    assert len(catalog.event_days()) == 2
+    assert len(reads) == 1
+
+    catalog.reload()
+    catalog.event_days()
+    assert len(reads) == 2
+
+
 def test_what_the_lake_holds_is_listed_by_target(world):
     world.run("groups", "activity", days=2)
 

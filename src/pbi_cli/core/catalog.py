@@ -606,6 +606,7 @@ class Catalog:
         self._models: "OrderedDict[str, WorkspaceModel]" = OrderedDict()
         self._details: "OrderedDict[_SubjectKey, List[Detail]]" = OrderedDict()
         self._users: "OrderedDict[_SubjectKey, UsersView]" = OrderedDict()
+        self._event_days: Optional[List[EventDay]] = None
         self._s = self._read()
 
     # -- reading the lake --------------------------------------------------------------
@@ -619,6 +620,7 @@ class Catalog:
             self._models.clear()
             self._details.clear()
             self._users.clear()
+            self._event_days = None
             self._s = state
 
     def now(self) -> datetime:
@@ -1615,8 +1617,14 @@ class Catalog:
     # -- activity ----------------------------------------------------------------------
 
     def event_days(self) -> List[EventDay]:
-        """The days of audit events in the lake, newest first."""
-        return self._store.event_days(self.tenant, ACTIVITY_ENDPOINT)
+        """The days of audit events in the lake, newest first (read once until `reload`:
+        each day is a manifest to read, which is slow on a remote lake)."""
+        days = self._event_days
+        if days is None:
+            days = self._store.event_days(self.tenant, ACTIVITY_ENDPOINT)
+            with self._lock:
+                self._event_days = days
+        return list(days)
 
     def events(self, day: date) -> List[Dict[str, Any]]:
         """The events of a day, newest first."""
