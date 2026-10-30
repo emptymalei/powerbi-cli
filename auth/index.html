@@ -476,6 +476,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Sign in">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-ways-to-hand-pbi-the-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Three ways to hand pbi the token
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1256,6 +1273,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powershell
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/publish/" class="md-nav__link">
         
   
@@ -1458,10 +1502,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
             
   
   
@@ -1479,8 +1523,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_16">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_17">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2274,6 +2318,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Sign in">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-ways-to-hand-pbi-the-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Three ways to hand pbi the token
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2396,6 +2457,19 @@ PowerShell module, which opens the usual sign-in window:</p>
 leading <code>Bearer</code> and warns). Then store it:</p>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>auth<span class="w"> </span>--bearer-token<span class="w"> </span>&lt;your_bearer_token&gt;
 </code></pre></div>
+<h3 id="three-ways-to-hand-pbi-the-token">Three ways to hand pbi the token<a class="headerlink" href="#three-ways-to-hand-pbi-the-token" title="Permanent link">¤</a></h3>
+<ul>
+<li><strong>A window pops out</strong> (PowerShell): <code>pbi auth --login -p adm -g admin</code>. It runs <code>Login-PowerBI</code>,
+  the sign-in window of the Power BI PowerShell module (it uses that module's own client id), and
+  stores the token for the profile (<code>-p</code>) and the group (<code>-g</code>, <code>admin</code> or <code>user</code>). Install the module
+  once: <code>Install-Module MicrosoftPowerBIMgmt -Scope CurrentUser</code>. In the terminal UI the sign-in
+  dialog has the same as a <strong>Sign in with PowerShell</strong> button.</li>
+<li><strong>Pipe it in</strong>: <code>Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin</code> reads the token
+  from standard input (<code>Bearer</code> is removed).</li>
+<li><strong>Paste it</strong>: <code>pbi auth -t &lt;token&gt;</code>, as above.</li>
+</ul>
+<p>Which user the token is for is whoever signs in: log in as the administrator for <code>-g admin</code>, as the
+service account for <code>-g user</code>. The token lasts about an hour either way.</p>
 <h2 id="profiles-and-groups">Profiles and groups<a class="headerlink" href="#profiles-and-groups" title="Permanent link">¤</a></h2>
 <p>A token is stored under a <em>profile</em> name, and a profile belongs to a <em>group</em>:</p>
 <ul>

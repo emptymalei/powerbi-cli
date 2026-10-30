@@ -1101,6 +1101,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  powershell
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/publish/" class="md-nav__link">
         
   
@@ -1303,10 +1330,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_16" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_16" id="__nav_3_2_4_16_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
             
   
   
@@ -1324,8 +1351,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_16_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_16">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_17">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2362,6 +2389,13 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><strong>Sign in with PowerShell.</strong> <code>pbi auth --login -p NAME -g admin|user</code> runs <code>Login-PowerBI</code> (the sign-in
+  window of the Power BI PowerShell module and its own client id) and stores the token for that profile and
+  group; the sign-in dialog of the terminal UI has a <strong>Sign in with PowerShell</strong> button that does the same.
+  <code>pbi auth -t -</code> (or a token piped in) reads the token from standard input, for example
+  <code>Get-PowerBIAccessToken -AsString | pbi auth -t - -p adm -g admin</code>. Pasting a token with <code>-t</code> still works.
+  The token still lasts about an hour (PowerShell does not hand out a refresh token). Needs
+  <code>Install-Module MicrosoftPowerBIMgmt -Scope CurrentUser</code>.</li>
 <li><strong>Copy and save what the <a href="../tui/#copying-and-saving-what-you-see">terminal UI</a> shows.</strong> <code>y</code> puts
   the tab (or the table) on the clipboard as tab-separated text, which pastes into a spreadsheet;
   <code>x</code> opens a dialog that saves it as a file (CSV for Excel, an Excel workbook, JSON, a Markdown table,
