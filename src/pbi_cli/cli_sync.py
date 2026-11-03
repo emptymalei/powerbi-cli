@@ -30,6 +30,7 @@ from pbi_cli.cli_support import (
     new_app,
     parse_duration,
     print_table,
+    stored_plan_file,
 )
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.catalog import holding
@@ -328,6 +329,28 @@ def _given(ctx: typer.Context, name: str) -> bool:
     return getattr(ctx.get_parameter_source(name), "name", "") == "COMMANDLINE"
 
 
+def _plan_to_use(
+    ctx: typer.Context, config: Optional[Path], targets: Optional[List[str]]
+) -> Optional[Path]:
+    """The plan file a command works from: the one given with ``--config``, else, when no
+    target and none of the options that a plan file takes over were typed, the one that was
+    named once (``PBI_PLAN``, ``pbi config set-plan-file``). Naming targets always means
+    "these targets", never the stored plan.
+
+    :return: the plan file, or ``None`` for a run of target names
+    """
+    if config is not None:
+        return config
+    if targets or any(_given(ctx, name) for name in _IN_THE_FILE):
+        return None
+    stored = stored_plan_file()
+    if stored is None:
+        return None
+    path, where = stored
+    typer.echo(f"Plan file: {path} (from {where}; name targets to sync those instead)")
+    return path
+
+
 #: Words that a shell (POSIX or PowerShell) takes as they are, without quotes.
 _PLAIN_WORD = re.compile(r"^[A-Za-z0-9_@%+=:,./-]+$")
 
@@ -570,6 +593,11 @@ def sync_plan(
     pbi sync plan --config pbi-plan.yaml
     ```
 
+    The plan file can be named once instead of on every command: `pbi config
+    set-plan-file PATH`, or the environment variable `PBI_PLAN`. Then a plain `pbi sync run`
+    runs it; naming targets, or an option that a plan file takes over, runs those instead.
+    Nothing is looked for by its place (such as the current folder).
+
     With `--config` the plan file says what to sync, so no target names and none of the
     options that it takes over (the scan options, the profiles) can be given; `--force`,
     `--max-age`, `--days` and the like still apply to every step of it.
@@ -582,6 +610,7 @@ def sync_plan(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    config = _plan_to_use(ctx, config, targets)
     if config is not None:
         _refuse_with_a_plan_file(ctx, targets)
         _plan_file_plan(
@@ -778,6 +807,7 @@ def sync_run(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    config = _plan_to_use(ctx, config, targets)
     if config is not None:
         _refuse_with_a_plan_file(ctx, targets)
         report = _plan_file_run(

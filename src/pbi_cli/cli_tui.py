@@ -13,7 +13,7 @@ from typing import Annotated, List, Optional
 import typer
 from loguru import logger
 
-from pbi_cli.cli_support import ClientPool, LakeOption
+from pbi_cli.cli_support import ClientPool, LakeOption, stored_plan_file
 from pbi_cli.config import VALID_GROUPS, PBIConfig
 from pbi_cli.core.jwt import TokenInfo, token_info
 from pbi_cli.core.planfile import PlanFile
@@ -210,9 +210,17 @@ def tui(
     pbi tui --config pbi-plan.yaml
     ```
 
+    A plan file named once (`pbi config set-plan-file PATH`, or `PBI_PLAN`) is used when
+    `--config` is not given.
+
     A lake given with `--lake` is only read: nothing can be fetched into it, and no account
     is needed. Only the lake of the cache folder is written by a sync. With `--config` the
     lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
     else the lake of the cache folder.
     """
+    if config is None:
+        stored = stored_plan_file()
+        if stored is not None:
+            config = stored[0]
+            typer.echo(f"Plan file: {config} (from {stored[1]})")
     launch(tenant, lake, config)

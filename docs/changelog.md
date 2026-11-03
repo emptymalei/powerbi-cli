@@ -62,6 +62,12 @@
 
 ### Added
 
+- A plan file can be named once instead of with `--config` on every command: `pbi config
+  set-plan-file PATH` (checked at once, kept as an absolute path; `get-plan-file` and
+  `clear-plan-file` show and forget it), or the environment variable `PBI_PLAN` for one shell
+  or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
+  given; naming targets, or an option that a plan file takes over, still means those targets.
+  A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
 - `pbi lake access USER` lists everything that one person has access to (workspaces, reports,
   datasets, dashboards, dataflows, apps), found by e-mail address or name in the users the lake
   holds, with `--partial` for a part of one, `-k` and `-w` to narrow it down and `-o` to save

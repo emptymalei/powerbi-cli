@@ -38,6 +38,11 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     # "x > 0" is now checked by a callback: Typer only has inclusive bounds.
     "pbi workspaces scan get/params/interval/type": "value must still be > 0, checked by a callback",
     "pbi workspaces scan get/params/timeout/type": "value must still be > 0, checked by a callback",
+    # The plan file can be named once instead of on every command.
+    "pbi config/command_order": "pbi config gains set-plan-file, get-plan-file, clear-plan-file",
+    "pbi config set-plan-file": "new: pbi config set-plan-file",
+    "pbi config get-plan-file": "new: pbi config get-plan-file",
+    "pbi config clear-plan-file": "new: pbi config clear-plan-file",
     # The data lake: commands that browse and tidy what the other commands fetched.
     "pbi/command_order": "the root gains the lake, sync and tui commands",
     "pbi lake": "new: pbi lake",

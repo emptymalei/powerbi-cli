@@ -300,6 +300,28 @@ names, the scan options (`--lineage`, `--datasource-details`, `--dataset-schema`
 `--dataset-expressions`, `--get-artifact-users`), `--full-scan`, `--exclude-personal`,
 `--exclude-inactive`, `--admin-profile` and `--user-profile`.
 
+### Name the file once
+
+Typing `--config` on every command is the plain way, and the only way that is never a
+surprise. If you always use the same file, name it once, and a bare command uses it:
+
+```bash
+pbi config set-plan-file ~/PowerBI/pbi-plan.yaml   # checked now; kept as an absolute path
+pbi sync run                                       # runs that file
+pbi tui                                            # opens it
+pbi config get-plan-file                           # which file, and from where
+pbi config clear-plan-file                         # forget it
+```
+
+For one shell or one scheduled job, the environment variable does the same without touching
+the settings: `PBI_PLAN=~/PowerBI/pbi-plan.yaml pbi sync run` (PowerShell:
+`$env:PBI_PLAN = "C:\PowerBI\pbi-plan.yaml"`). The order is `--config`, then `PBI_PLAN`, then
+`pbi config set-plan-file`. Naming targets (`pbi sync run groups`), or typing an option that
+a plan file takes over, always means "these targets": the named file is left alone. And the
+file is never looked for by where it lies: a `pbi-plan.yaml` in the current folder is not
+used unless you name it. The command says which file it uses and where that was named, and
+a named file that is gone is an error with the way out.
+
 ## In the terminal UI
 
 ```bash

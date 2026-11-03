@@ -291,6 +291,26 @@ class PBIConfig:
             self.set("default_output_folder", None)
 
     @property
+    def plan_file(self) -> Optional[str]:
+        """The plan file that ``pbi sync`` and ``pbi tui`` use when none is given.
+
+        :return: its absolute path, or None
+        """
+        return self.get("plan_file")
+
+    @plan_file.setter
+    def plan_file(self, value: Optional[str]):
+        """Set (or, with None, forget) the plan file to use when none is given.
+
+        :param value: the path to the file; ``~`` is expanded and the path made absolute,
+            so that it means the same from any folder
+        """
+        self.set(
+            "plan_file",
+            None if value is None else str(Path(value).expanduser().absolute()),
+        )
+
+    @property
     def cache_folder(self) -> Optional[str]:
         """Get the cache folder.
 

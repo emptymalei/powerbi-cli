@@ -1346,6 +1346,76 @@ def get_cache_folder():
         typer.echo("Use 'pbi config set-cache-folder' to set one.")
 
 
+@command(config_app, "set-plan-file")
+def set_plan_file(
+    path: Annotated[
+        Path,
+        typer.Argument(
+            metavar="PATH",
+            exists=True,
+            dir_okay=False,
+            help="The plan file (YAML) to use when --config is not given",
+        ),
+    ],
+):
+    """Name the plan file that `pbi sync` and `pbi tui` use when none is given
+
+    Instead of `--config PATH` on every command. The file is checked now, and its absolute
+    path is kept, so it means the same from any folder. The environment variable `PBI_PLAN`
+    does the same for one shell and wins over this setting. Naming targets
+    (`pbi sync run groups`) or giving `--config` still overrides it.
+
+    ```
+    pbi config set-plan-file ~/PowerBI/pbi-plan.yaml
+    pbi sync run
+    ```
+    """
+    from pbi_cli.core.planfile import PlanFile
+
+    PlanFile.load(path)  # a file that cannot be used is refused here, not at 6 a.m.
+    pbi_config = PBIConfig()
+    pbi_config.plan_file = str(path)
+    typer.secho(f"✓ Plan file set to: {pbi_config.plan_file}", fg="green")
+    typer.echo("  `pbi sync plan`, `pbi sync run` and `pbi tui` use it from now on.")
+
+
+@command(config_app, "get-plan-file")
+def get_plan_file():
+    """Show which plan file is used when none is given
+
+    ```
+    pbi config get-plan-file
+    ```
+    """
+    named = os.environ.get("PBI_PLAN", "").strip()
+    stored = PBIConfig().plan_file
+    if named:
+        typer.echo(f"Plan file: {named} (from the environment variable PBI_PLAN)")
+        if stored:
+            typer.echo(f"  The setting {stored} is overruled by it.")
+    elif stored:
+        typer.echo(f"Plan file: {stored} (from `pbi config set-plan-file`)")
+    else:
+        typer.secho("No plan file is named.", fg="yellow")
+        typer.echo("Use `pbi config set-plan-file PATH`, or `--config PATH`.")
+        return
+    used = Path(named or stored or "").expanduser()
+    if not used.is_file():
+        typer.secho(f"  but {used} is not a file.", fg="red")
+
+
+@command(config_app, "clear-plan-file")
+def clear_plan_file():
+    """Forget the plan file that was named with `pbi config set-plan-file`
+
+    ```
+    pbi config clear-plan-file
+    ```
+    """
+    PBIConfig().plan_file = None
+    typer.secho("✓ No plan file is named any more.", fg="green")
+
+
 @command(config_app, "enable-cache")
 def enable_cache():
     """Enable caching of API call results

@@ -2,10 +2,12 @@
 
 import functools
 import json
+import os
 import re
 import threading
 from contextlib import ExitStack
 from datetime import timedelta
+from pathlib import Path
 from typing import (
     Annotated,
     Any,
@@ -23,6 +25,7 @@ import requests
 import typer
 from typer.core import TyperGroup
 
+from pbi_cli.config import PBIConfig
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.registry import Scope
 from pbi_cli.core.timefmt import format_age  # noqa: F401  (re-exported)
@@ -240,6 +243,37 @@ LakeOption = Annotated[
         ),
     ),
 ]
+
+
+# -- the plan file that is used when none is given ---------------------------------------
+
+#: The environment variable that names a plan file, like ``--config`` does.
+PLAN_ENV = "PBI_PLAN"
+
+
+def stored_plan_file() -> Optional[Tuple[Path, str]]:
+    """The plan file that was named once instead of on every command: ``PBI_PLAN``, else
+    the one of ``pbi config set-plan-file``. The file is never looked for by its place
+    (such as the current folder): somebody has to name it.
+
+    :return: the path and where it was named, or ``None`` when nobody did
+    :raises PBIError: when the file named is not there any more
+    """
+    named = os.environ.get(PLAN_ENV, "").strip()
+    where = PLAN_ENV
+    if not named:
+        named = PBIConfig().plan_file or ""
+        where = "pbi config set-plan-file"
+    if not named:
+        return None
+    path = Path(named).expanduser()
+    if not path.is_file():
+        raise PBIError(
+            f"{where} names the plan file {path}, which is not a file. Name another "
+            "with --config, or forget it with `pbi config clear-plan-file`"
+            + (f" (and unset {PLAN_ENV})." if where == PLAN_ENV else ".")
+        )
+    return path, where
 
 
 # -- a backup of a lake before a command writes into it ---------------------------------

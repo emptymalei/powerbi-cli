@@ -257,15 +257,36 @@ $ pbi config [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
+* `clear-plan-file`: Forget the plan file that was named with...
 * `disable-cache`: Disable caching of API call results
 * `enable-cache`: Enable caching of API call results
 * `get-cache-folder`: Get the currently configured cache folder
 * `get-output-folder`: Get the currently configured default...
+* `get-plan-file`: Show which plan file is used when none is...
 * `get-verify-certificates`: Show how API requests verify TLS certificates
 * `set-cache-folder`: Set the cache folder for storing API call...
 * `set-output-folder`: Set the default parent folder for all...
+* `set-plan-file`: Name the plan file that `pbi sync` and...
 * `set-verify-certificates`: Set how API requests verify TLS certificates
 * `show`: Show all configuration settings
+
+### `pbi config clear-plan-file`
+
+Forget the plan file that was named with `pbi config set-plan-file`
+
+```
+pbi config clear-plan-file
+```
+
+**Usage**:
+
+```console
+$ pbi config clear-plan-file [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
 
 ### `pbi config disable-cache`
 
@@ -333,6 +354,24 @@ pbi config get-output-folder
 
 ```console
 $ pbi config get-output-folder [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `pbi config get-plan-file`
+
+Show which plan file is used when none is given
+
+```
+pbi config get-plan-file
+```
+
+**Usage**:
+
+```console
+$ pbi config get-plan-file [OPTIONS]
 ```
 
 **Options**:
@@ -416,6 +455,34 @@ $ pbi config set-output-folder [OPTIONS] {FOLDER_PATH}
 **Arguments**:
 
 * `FOLDER_PATH`: Folder that holds the output of commands  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `pbi config set-plan-file`
+
+Name the plan file that `pbi sync` and `pbi tui` use when none is given
+
+Instead of `--config PATH` on every command. The file is checked now, and its absolute
+path is kept, so it means the same from any folder. The environment variable `PBI_PLAN`
+does the same for one shell and wins over this setting. Naming targets
+(`pbi sync run groups`) or giving `--config` still overrides it.
+
+```
+pbi config set-plan-file ~/PowerBI/pbi-plan.yaml
+pbi sync run
+```
+
+**Usage**:
+
+```console
+$ pbi config set-plan-file [OPTIONS] {PATH}
+```
+
+**Arguments**:
+
+* `PATH`: The plan file (YAML) to use when --config is not given  [required]
 
 **Options**:
 
@@ -1059,6 +1126,11 @@ pbi sync plan default activity scan --days 7 --lineage
 pbi sync plan --config pbi-plan.yaml
 ```
 
+The plan file can be named once instead of on every command: `pbi config
+set-plan-file PATH`, or the environment variable `PBI_PLAN`. Then a plain `pbi sync run`
+runs it; naming targets, or an option that a plan file takes over, runs those instead.
+Nothing is looked for by its place (such as the current folder).
+
 With `--config` the plan file says what to sync, so no target names and none of the
 options that it takes over (the scan options, the profiles) can be given; `--force`,
 `--max-age`, `--days` and the like still apply to every step of it.
@@ -1235,6 +1307,9 @@ pbi tui --lake s3://my-bucket/pbi-lake
 # With a plan file: its steps on the Sync screen, and its session settings
 pbi tui --config pbi-plan.yaml
 ```
+
+A plan file named once (`pbi config set-plan-file PATH`, or `PBI_PLAN`) is used when
+`--config` is not given.
 
 A lake given with `--lake` is only read: nothing can be fetched into it, and no account
 is needed. Only the lake of the cache folder is written by a sync. With `--config` the
