@@ -62,6 +62,11 @@
 
 ### Added
 
+- `pbi lake users KIND` lists everyone with access to every report, dataset, dashboard,
+  dataflow, app or workspace in one table or file (`-o users.xlsx`, `.csv`, `.json`, `.md`,
+  `.tsv`), optionally for some workspaces (`-w`), from what the lake holds. Items whose users
+  the lake does not hold are named. See
+  [Who has access to everything](lake.md#who-has-access-to-everything-pbi-lake-users).
 - `pbi lake backup` copies a whole lake, by default next to it as `<lake>-backup-<UTC time>`,
   and `--backup` / `--backup-to` on `pbi sync run`, `pbi lake prune` and `pbi lake publish`
   take that copy before the first write. A write to S3 that stops half way cannot be undone;

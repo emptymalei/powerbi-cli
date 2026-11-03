@@ -25,6 +25,7 @@ nav = [
       { "errors" = "references/errors.md" },
       { "session" = "references/session.md" },
       { "core" = [
+        { "accessreport" = "references/core/accessreport.md" },
         { "auth" = "references/core/auth.md" },
         { "backup" = "references/core/backup.md" },
         { "catalog" = "references/core/catalog.md" },

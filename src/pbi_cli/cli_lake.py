@@ -7,6 +7,7 @@ expired token. The lake is the ``lake`` folder in the cache folder
 
 import json
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional, Sequence
 
 import typer
@@ -22,12 +23,15 @@ from pbi_cli.cli_support import (
     print_table,
 )
 from pbi_cli.config import PBIConfig
+from pbi_cli.core.accessreport import ACCESS_KINDS, COLUMNS, AccessReport, access_report
 from pbi_cli.core.backup import backup_lake
+from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
 from pbi_cli.errors import PBIError
 from pbi_cli.session import as_path, lake_hint, resolve_lake
+from pbi_cli.tui import exporting
 
 lake_app = new_app("lake")
 
@@ -634,3 +638,130 @@ def lake_backup(
         fg="green",
     )
     typer.echo(f"Open it with: pbi tui --lake {done.destination}")
+
+
+#: The columns of ``pbi lake users`` on the terminal; a file has them all.
+_SHOWN = (0, 1, 3, 5, 6, 7)
+
+
+@command(lake_app, "users")
+def lake_users(
+    kind: Annotated[
+        str,
+        typer.Argument(
+            metavar="KIND",
+            help=f"Whose users: {', '.join(ACCESS_KINDS)}",
+        ),
+    ],
+    output: Annotated[
+        Optional[str],
+        typer.Option(
+            "--output",
+            "-o",
+            help=(
+                "Save to this file instead of printing; the format follows its ending: "
+                ".csv, .xlsx, .json, .md or .tsv"
+            ),
+        ),
+    ] = None,
+    fmt: Annotated[
+        Optional[str],
+        typer.Option(
+            "--format",
+            "-f",
+            help="csv, xlsx, json, md or tsv (default: from the file name, else csv)",
+        ),
+    ] = None,
+    workspace: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--workspace",
+            "-w",
+            help="Only the items of this workspace, by id or name (repeat for more)",
+        ),
+    ] = None,
+    tenant: Annotated[
+        Optional[str],
+        typer.Option(
+            "--tenant", "-t", help="Tenant (only needed if the lake holds several)"
+        ),
+    ] = None,
+    lake: LakeOption = None,
+):
+    """Who has access to every item of a kind, as a table or a file
+
+    One row for each person and item: every person of every report, of every workspace,
+    of every app, and so on, from what the lake holds (no token, no network). Items whose
+    users the lake does not hold are listed at the end, with what fetches them.
+
+    ```
+    # Every person of every report, on the terminal
+    pbi lake users report
+
+    # ... in a spreadsheet
+    pbi lake users report -o report-users.xlsx
+
+    # Everyone with access to the workspaces of one team
+    pbi lake users workspace -w Finance -o finance.csv
+    ```
+
+    The users come from `pbi sync run report-users`, `app-users` or a scan with
+    `--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
+    exports the same for the item or the workspace that you are looking at (`x`).
+    """
+    if kind not in ACCESS_KINDS:
+        raise typer.BadParameter(
+            f"'{kind}' is not a kind. Choose one of: {', '.join(ACCESS_KINDS)}.",
+            param_hint="KIND",
+        )
+    store = _store(lake)
+    catalog = Catalog(store, _one_tenant(store, tenant))
+    try:
+        found = access_report(catalog, kind, workspace)
+    except ValueError as error:
+        raise PBIError(str(error)) from error
+
+    title = f"Users of {kind}s" if kind != "workspace" else "Users of workspaces"
+    table = exporting.Exportable(title, COLUMNS, found.table)
+    if output is not None:
+        chosen = fmt or Path(output).suffix.lstrip(".").lower() or exporting.CSV
+        if chosen not in exporting.TABLE_FORMATS:
+            raise PBIError(
+                f"Cannot write '{chosen}'. Formats: {', '.join(exporting.TABLE_FORMATS)}."
+            )
+        if not found.rows:
+            raise PBIError(_nobody(kind, found))
+        path = exporting.write(table, chosen, output)
+        typer.secho(
+            f"✓ Saved {len(found.rows)} row(s) for {found.items} {kind}(s) to {path}",
+            fg="green",
+        )
+    elif found.rows:
+        print_table(
+            [COLUMNS[i] for i in _SHOWN],
+            [[row[i] for i in _SHOWN] for row in table.cells],
+        )
+        typer.echo(
+            f"\n{len(found.rows)} row(s): {found.people} different people, "
+            f"{found.items - len(found.missing)} of {found.items} {kind}(s) with users."
+        )
+    else:
+        raise PBIError(_nobody(kind, found))
+    if found.missing and found.rows:
+        shown = ", ".join(found.missing[:5])
+        more = f" and {len(found.missing) - 5} more" if len(found.missing) > 5 else ""
+        typer.secho(
+            f"{len(found.missing)} {kind}(s) have no users in the lake: {shown}{more}.",
+            fg="yellow",
+        )
+
+
+def _nobody(kind: str, found: AccessReport) -> str:
+    count = found.items
+    if not count:
+        return f"The lake holds no {kind}s. Fetch them with `pbi sync run`."
+    hint = {
+        "workspace": "`pbi sync run scan --get-artifact-users`",
+        "app": "`pbi sync run app-users`",
+    }.get(kind, "`pbi sync run report-users` or a scan with `--get-artifact-users`")
+    return f"The lake holds none of the users of its {count} {kind}(s). Fetch them with {hint}."

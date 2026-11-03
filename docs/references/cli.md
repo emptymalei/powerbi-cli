@@ -505,6 +505,7 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
 * `show`: Print a stored response (or its manifest)...
+* `users`: Who has access to every item of a kind, as...
 
 ### `pbi lake backup`
 
@@ -707,6 +708,48 @@ $ pbi lake show [OPTIONS] {ENDPOINT}
 * `-v, --version <str>`: Version to show (default: the newest)
 * `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
 * `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake users`
+
+Who has access to every item of a kind, as a table or a file
+
+One row for each person and item: every person of every report, of every workspace,
+of every app, and so on, from what the lake holds (no token, no network). Items whose
+users the lake does not hold are listed at the end, with what fetches them.
+
+```
+# Every person of every report, on the terminal
+pbi lake users report
+
+# ... in a spreadsheet
+pbi lake users report -o report-users.xlsx
+
+# Everyone with access to the workspaces of one team
+pbi lake users workspace -w Finance -o finance.csv
+```
+
+The users come from `pbi sync run report-users`, `app-users` or a scan with
+`--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
+exports the same for the item or the workspace that you are looking at (`x`).
+
+**Usage**:
+
+```console
+$ pbi lake users [OPTIONS] {KIND}
+```
+
+**Arguments**:
+
+* `KIND`: Whose users: workspace, report, dataset, dashboard, dataflow, app  [required]
+
+**Options**:
+
+* `-o, --output <str>`: Save to this file instead of printing; the format follows its ending: .csv, .xlsx, .json, .md or .tsv
+* `-f, --format <str>`: csv, xlsx, json, md or tsv (default: from the file name, else csv)
+* `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
+* `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 

@@ -169,6 +169,31 @@ $ pbi lake prune --yes
 
 `pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
+### Who has access to everything: `pbi lake users`
+
+`pbi lake users KIND` lists the people of every item of a kind at once (`report`,
+`dataset`, `dashboard`, `dataflow`, `app` or `workspace`): one row for each person and item,
+from what the lake holds, with no token and no network.
+
+```text
+$ pbi lake users report
+Kind    Item          Workspace    Name  E-mail or id          Access
+Report  Sales         Finance      Ann   ann@example.com       Owner
+Report  Sales         Finance      Bob   bob@example.com       Viewer
+Report  Stock         Logistics    Ann   ann@example.com       Owner
+
+3 row(s): 2 different people, 2 of 2 report(s) with users.
+```
+
+`-o report-users.xlsx` saves it instead (the ending says the format: `.csv`, `.xlsx`,
+`.json`, `.md` or `.tsv`, or choose with `-f`), and `-w Finance` narrows it to the items of a
+workspace, by name or id (repeat it for more). A file has more columns than the terminal
+shows: the ids of the item and of its workspace, the type of the person (user, group) and
+where the lake has them from. Items whose users the lake does not hold are named after the
+table, so a gap is never mistaken for an item nobody can open. The users come from
+`pbi sync run report-users`, `app-users` or a scan with `--get-artifact-users` (see
+[Sync](sync.md)).
+
 ### Back up a lake before writing into it
 
 In a local lake every file is written to a temporary name and then moved over the old one,
