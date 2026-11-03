@@ -77,6 +77,7 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi lake users": "new: pbi lake users (who has access to every item of a kind)",
     "pbi lake access": "new: pbi lake access (what one person has access to)",
     "pbi lake duckdb": "new: pbi lake duckdb (the lake as DuckDB tables)",
+    "pbi lake restore": "new: pbi lake restore (a backup put back over the lake)",
     # pbi sync: keeps the tenant in the data lake
     "pbi sync": "new: pbi sync",
     "pbi sync plan": "new: pbi sync plan",

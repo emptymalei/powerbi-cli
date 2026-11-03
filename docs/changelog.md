@@ -76,6 +76,11 @@
   or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
   given; naming targets, or an option that a plan file takes over, still means those targets.
   A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
+- `pbi lake restore BACKUP` puts a backup made by `pbi lake backup` back over the lake of the
+  cache folder: it shows what it would copy and delete and asks, copies everything before it
+  deletes anything (so a restore that stops half way loses nothing), refuses a backup without its
+  `backup.json`, and first copies the lake as it is now (`<lake>-before-restore-<time>`, unless
+  `--no-safety-copy`). See [Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
 - `pbi lake duckdb [DATABASE]` loads the lake into a [DuckDB](https://duckdb.org) database
   (`pip install "pbi-cli[duckdb]"`): a table for each list, for who has access to what
   (`access`), for what a scan found (`scan_items`, `scan_edges` for the lineage,

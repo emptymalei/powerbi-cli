@@ -251,10 +251,33 @@ copied by the cloud, not through your machine; the bucket needs room for a secon
 
 The copy has the layout of a lake: `pbi tui --lake <copy>` opens it (read only). Its
 `backup.json` is written last and says what was copied and when; a copy without it stopped
-before it was complete. To go back, copy the backup over the lake, for example
-`aws s3 sync s3://my-bucket/pbi-lake-backup-20261030T224000Z s3://my-bucket/pbi-lake --delete`,
-or a folder over the folder. Backups are never deleted by pbi: remove the old ones yourself.
-The terminal UI takes no backup; run `pbi lake backup` before a large sync from it.
+before it was complete. Backups are never deleted by pbi: remove the old ones yourself.
+
+To go back, `pbi lake restore BACKUP` puts a backup back over the lake of the cache folder:
+
+```text
+$ pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+Backup: s3://my-bucket/pbi-lake-backup-20261030T224000Z, made 2026-10-30 22:40 UTC
+  of:   s3://my-bucket/pbi-lake
+Lake:   s3://my-bucket/pbi-lake
+
+To restore: copy 4210 file(s) (310.2 MB), delete 12 file(s) that the backup does not have.
+
+Replace the lake s3://my-bucket/pbi-lake with the backup? [y/N]: y
+✓ The lake as it was is kept in s3://my-bucket/pbi-lake-before-restore-20261031T071500Z
+✓ Restored: 4210 file(s) copied (310.2 MB), 12 deleted
+```
+
+It shows what it would copy and delete and asks first (`--yes` skips). The lake becomes what
+the backup holds: files of the backup are copied back and files that it does not have are
+deleted (`--keep-extra` keeps them). All files are copied before any is deleted, so a restore
+that stops half way has lost nothing; run it again. Unless you say `--no-safety-copy`, the lake
+as it is now is copied first (`<lake>-before-restore-<time>`), so that a restore can be undone
+too. A backup without its `backup.json` stopped before it was complete and is refused
+(`--allow-incomplete` overrides that). Close the terminal UI and stop any sync before you
+restore: nothing should write to the lake while it is replaced. A published lake is protected
+and is not restored over. The terminal UI takes no backup; run `pbi lake backup` before a
+large sync from it.
 
 Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
 than the one of your cache folder, such as one that a colleague shared, with

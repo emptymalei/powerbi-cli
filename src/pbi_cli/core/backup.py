@@ -23,7 +23,7 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple
 
 from cloudpathlib import CloudPath
 
@@ -56,7 +56,7 @@ class BackupResult:
     made_at: datetime
 
 
-def default_place(root: Any, now: datetime) -> Any:
+def default_place(root: Any, now: datetime, suffix: str = SUFFIX) -> Any:
     """Where a backup goes when no place is given: next to the lake, named after it and the
     time (``s3://bucket/pbi-lake`` gives ``s3://bucket/pbi-lake-backup-20261030T224000Z``).
 
@@ -67,7 +67,7 @@ def default_place(root: Any, now: datetime) -> Any:
             f"The lake {root} is the whole bucket, so there is no place next to it for a "
             "backup. Say where it goes with --backup-to."
         )
-    return root.parent / f"{root.name}{SUFFIX}{now:%Y%m%dT%H%M%SZ}"
+    return root.parent / f"{root.name}{suffix}{now:%Y%m%dT%H%M%SZ}"
 
 
 def _files(root: Any) -> Iterator[Tuple[Any, Tuple[str, ...]]]:
@@ -102,6 +102,7 @@ def backup_lake(
     *,
     now: Optional[datetime] = None,
     on_file: Optional[Callable[[int], None]] = None,
+    suffix: str = SUFFIX,
 ) -> Optional[BackupResult]:
     """Copy every file of a lake to another place.
 
@@ -110,6 +111,7 @@ def backup_lake(
         or not exist yet
     :param now: when the backup is made (default: now)
     :param on_file: called with the number of files copied so far, for a progress line
+    :param suffix: what follows the name of the lake in the default place
     :return: what was copied, or ``None`` when the lake holds nothing yet
     :raises PBIError: for a destination that is the lake, inside it or around it, or that
         holds something already; or when a file cannot be copied
@@ -117,7 +119,7 @@ def backup_lake(
     when = now or datetime.now(timezone.utc)
     if _is_empty(root):
         return None
-    target = default_place(root, when) if destination is None else destination
+    target = default_place(root, when, suffix) if destination is None else destination
     if inside_place(target, root) or inside_place(root, target):
         raise PBIError(
             f"A backup of {root} cannot go to {target}: it must be a place of its own, "
@@ -156,3 +158,150 @@ def backup_lake(
             f"{BACKUP_FILE}."
         ) from error
     return BackupResult(root, target, files, size, when)
+
+
+#: What follows the name of the lake in the safety copy that a restore takes first.
+SAFETY_SUFFIX = "-before-restore-"
+
+
+@dataclass(frozen=True)
+class RestorePlan:
+    """What restoring a backup over a lake would do.
+
+    :param backup: the backup
+    :param lake: the lake that it would replace
+    :param copy: the files of the backup, as the folders below its root
+    :param delete: the files of the lake that the backup does not have (kept with
+        ``keep_extra``)
+    :param size: bytes to copy
+    :param made_at: when the backup was made, if it says
+    :param source: the lake it is a backup of, if it says
+    :param complete: whether the backup has its ``backup.json``
+    """
+
+    backup: Any
+    lake: Any
+    copy: Tuple[Tuple[str, ...], ...]
+    delete: Tuple[Tuple[str, ...], ...]
+    size: int
+    made_at: Optional[str]
+    source: Optional[str]
+    complete: bool
+
+
+@dataclass(frozen=True)
+class RestoreResult:
+    """What a restore did.
+
+    :param copied: files copied from the backup
+    :param deleted: files of the lake that were not in the backup and are gone
+    :param size: bytes copied
+    """
+
+    copied: int
+    deleted: int
+    size: int
+
+
+def plan_restore(
+    backup: Any,
+    lake: Any,
+    *,
+    keep_extra: bool = False,
+    allow_incomplete: bool = False,
+) -> RestorePlan:
+    """Work out what restoring ``backup`` over ``lake`` would do. Nothing is written.
+
+    :param backup: the backup (its root, as a path)
+    :param lake: the lake to put it back into
+    :param keep_extra: leave the files of the lake that the backup does not have
+    :param allow_incomplete: also restore a copy without ``backup.json``
+    :raises PBIError: for a backup that is empty, not complete (it stopped half way), or
+        the lake itself, inside it or around it
+    """
+    if _is_empty(backup):
+        raise PBIError(f"{backup} holds nothing: there is nothing to restore.")
+    if inside_place(lake, backup) or inside_place(backup, lake):
+        raise PBIError(
+            f"A backup cannot be restored over {lake} from {backup}: they must be "
+            "places of their own, not the same, nor one inside the other."
+        )
+    marker = backup / BACKUP_FILE
+    info: Dict[str, Any] = {}
+    if marker.exists():
+        try:
+            info = json.loads(marker.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            info = {}
+    complete = marker.exists()
+    if not complete and not allow_incomplete:
+        raise PBIError(
+            f"{backup} has no {BACKUP_FILE}: the backup stopped before it was complete, or "
+            "it is not a backup made by `pbi lake backup`. Restore it anyway with "
+            "--allow-incomplete if you know what it holds."
+        )
+    wanted = {parts: path for path, parts in _files(backup) if parts != (BACKUP_FILE,)}
+    present = {parts for _, parts in _files(lake)} if not _is_empty(lake) else set()
+    return RestorePlan(
+        backup=backup,
+        lake=lake,
+        copy=tuple(sorted(wanted)),
+        delete=() if keep_extra else tuple(sorted(present - set(wanted))),
+        size=sum(path.stat().st_size for path in wanted.values()),
+        made_at=info.get("made_at"),
+        source=info.get("source"),
+        complete=complete,
+    )
+
+
+def restore_lake(
+    plan: RestorePlan, *, on_file: Optional[Callable[[int], None]] = None
+) -> RestoreResult:
+    """Put a backup back over a lake, as `plan_restore` worked out.
+
+    Everything is copied first and only then are the files that the backup does not have
+    deleted, so a restore that stops half way has lost nothing; run it again to finish.
+    Nobody should be writing to the lake meanwhile.
+
+    :param on_file: called with the number of files copied so far
+    :raises PBIError: when a file cannot be copied or deleted
+    """
+    done = size = 0
+    try:
+        for parts in plan.copy:
+            source = plan.backup.joinpath(*parts)
+            _copy(source, plan.lake.joinpath(*parts))
+            done += 1
+            size += source.stat().st_size
+            if on_file is not None:
+                on_file(done)
+    except Exception as error:  # an OSError, or what the cloud client raises
+        raise PBIError(
+            f"The restore stopped after {done} of {len(plan.copy)} file(s): {error}. "
+            "Nothing was deleted; run it again to finish."
+        ) from error
+    deleted = 0
+    for parts in plan.delete:
+        try:
+            plan.lake.joinpath(*parts).unlink()
+            deleted += 1
+        except Exception as error:  # an OSError, or what the cloud client raises
+            raise PBIError(
+                f"The restore copied everything but could not delete {'/'.join(parts)}: "
+                f"{error}."
+            ) from error
+    _remove_empty_folders(plan.lake)
+    return RestoreResult(done, deleted, size)
+
+
+def _remove_empty_folders(root: Any) -> None:
+    """Folders of a local lake that have nothing left in them (a cloud has no folders)."""
+    if isinstance(root, CloudPath) or not Path(root).exists():
+        return
+    for folder in sorted(
+        (p for p in Path(root).rglob("*") if p.is_dir()), reverse=True
+    ):
+        try:
+            folder.rmdir()  # only an empty one can be removed
+        except OSError:
+            pass

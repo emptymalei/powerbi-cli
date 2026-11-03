@@ -588,6 +588,7 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
+* `restore`: Put a backup back over the data lake of...
 * `show`: Print a stored response (or its manifest)...
 * `users`: Who has access to every item of a kind, as...
 
@@ -839,6 +840,44 @@ $ pbi lake publish [OPTIONS] {DESTINATION}
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--backup`: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone
 * `--backup-to <str>`: Where the backup goes: an empty folder or URL (implies --backup)
+* `--help`: Show this message and exit.
+
+### `pbi lake restore`
+
+Put a backup back over the data lake of the cache folder
+
+The lake becomes what the backup holds: the files of the backup are copied back, and the
+files that it does not have are deleted (`--keep-extra` keeps them). Everything is copied
+before anything is deleted, so a restore that stops half way has lost nothing; run it
+again. Unless you say `--no-safety-copy`, the lake as it is now is copied first, next to it
+as `<lake>-before-restore-<time>`, so that a restore can be undone too. A backup that has
+no `backup.json` stopped before it was complete and is refused.
+
+```
+pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+pbi lake restore ~/PowerBI/cache/lake-backup-20261030T224000Z --yes
+```
+
+Close the terminal UI and stop any sync first: nothing should write to the lake while it
+is replaced. Only the lake of the cache folder can be restored; a published lake is
+protected.
+
+**Usage**:
+
+```console
+$ pbi lake restore [OPTIONS] {BACKUP}
+```
+
+**Arguments**:
+
+* `BACKUP`: The backup made by `pbi lake backup`: a folder or a URL such as s3://...  [required]
+
+**Options**:
+
+* `--yes`: Restore without asking
+* `--no-safety-copy`: Do not copy the lake as it is now before replacing it
+* `--keep-extra`: Keep the files of the lake that the backup does not have
+* `--allow-incomplete`: Also restore a copy that has no backup.json (it stopped half way)
 * `--help`: Show this message and exit.
 
 ### `pbi lake show`

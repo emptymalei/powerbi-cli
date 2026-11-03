@@ -30,14 +30,14 @@ from pbi_cli.core.accessreport import (
     access_of,
     access_report,
 )
-from pbi_cli.core.backup import backup_lake
+from pbi_cli.core.backup import SAFETY_SUFFIX, backup_lake, plan_restore, restore_lake
 from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.lakesql import describe, load_lake
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
 from pbi_cli.errors import PBIError
-from pbi_cli.session import as_path, lake_hint, resolve_lake
+from pbi_cli.session import as_path, lake_hint, lake_path, resolve_lake
 from pbi_cli.tui import exporting
 
 lake_app = new_app("lake")
@@ -970,3 +970,104 @@ def lake_duckdb(
         typer.echo(f"  {name:<18} {count} row(s)")
     typer.secho(f"✓ Wrote {database} ({len(tables)} tables and views)", fg="green")
     typer.echo(f"Open it with: duckdb {database}")
+
+
+@command(lake_app, "restore")
+def lake_restore(
+    backup: Annotated[
+        str,
+        typer.Argument(
+            metavar="BACKUP",
+            help="The backup made by `pbi lake backup`: a folder or a URL such as s3://...",
+        ),
+    ],
+    yes: Annotated[bool, typer.Option("--yes", help="Restore without asking")] = False,
+    no_safety_copy: Annotated[
+        bool,
+        typer.Option(
+            "--no-safety-copy",
+            help="Do not copy the lake as it is now before replacing it",
+        ),
+    ] = False,
+    keep_extra: Annotated[
+        bool,
+        typer.Option(
+            "--keep-extra",
+            help="Keep the files of the lake that the backup does not have",
+        ),
+    ] = False,
+    allow_incomplete: Annotated[
+        bool,
+        typer.Option(
+            "--allow-incomplete",
+            help="Also restore a copy that has no backup.json (it stopped half way)",
+        ),
+    ] = False,
+):
+    """Put a backup back over the data lake of the cache folder
+
+    The lake becomes what the backup holds: the files of the backup are copied back, and the
+    files that it does not have are deleted (`--keep-extra` keeps them). Everything is copied
+    before anything is deleted, so a restore that stops half way has lost nothing; run it
+    again. Unless you say `--no-safety-copy`, the lake as it is now is copied first, next to it
+    as `<lake>-before-restore-<time>`, so that a restore can be undone too. A backup that has
+    no `backup.json` stopped before it was complete and is refused.
+
+    ```
+    pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+    pbi lake restore ~/PowerBI/cache/lake-backup-20261030T224000Z --yes
+    ```
+
+    Close the terminal UI and stop any sync first: nothing should write to the lake while it
+    is replaced. Only the lake of the cache folder can be restored; a published lake is
+    protected.
+    """
+    work = lake_path()
+    if work is None:
+        raise PBIError(f"There is no data lake yet. {lake_hint()}")
+    store = LakeStore(work)
+    if not store.writable:
+        raise PBIError(store.why_read_only())
+    try:
+        source = as_path(backup)
+    except Exception as error:
+        raise PBIError(f"Cannot use {backup} as the backup: {error}") from error
+    plan = plan_restore(
+        source, work, keep_extra=keep_extra, allow_incomplete=allow_incomplete
+    )
+    when = f", made {plan.made_at[:16].replace('T', ' ')} UTC" if plan.made_at else ""
+    typer.echo(f"Backup: {plan.backup}{when}")
+    if plan.source:
+        typer.echo(f"  of:   {plan.source}")
+    typer.echo(f"Lake:   {plan.lake}")
+    typer.echo(
+        f"\nTo restore: copy {len(plan.copy)} file(s) ({_size(plan.size)})"
+        + (
+            f", delete {len(plan.delete)} file(s) that the backup does not have"
+            if plan.delete
+            else ""
+        )
+        + "."
+    )
+    if not plan.complete:
+        typer.secho("The backup has no backup.json: it may be incomplete.", fg="yellow")
+    if not yes and not typer.confirm(
+        f"\nReplace the lake {plan.lake} with the backup?"
+    ):
+        raise typer.Abort()
+    if not no_safety_copy:
+        saved = backup_lake(work, suffix=SAFETY_SUFFIX)
+        if saved is None:
+            typer.echo("The lake holds nothing yet: no safety copy is needed.")
+        else:
+            typer.secho(
+                f"✓ The lake as it was is kept in {saved.destination}", fg="green"
+            )
+    done = restore_lake(
+        plan, on_file=lambda n: n % 500 == 0 and typer.echo(f"  {n} file(s) ...")
+    )
+    typer.secho(
+        f"✓ Restored: {done.copied} file(s) copied ({_size(done.size)}), "
+        f"{done.deleted} deleted",
+        fg="green",
+    )

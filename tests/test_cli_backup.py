@@ -1,6 +1,6 @@
 """``pbi lake backup``, and ``--backup`` on the commands that write into a lake."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from cloudpathlib import CloudPath
@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 from pbi_cli.cli import app, store_token
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.backup import BACKUP_FILE
-from pbi_cli.core.store import PUBLISH_FILE, LakeStore
+from pbi_cli.core.store import PUBLISH_FILE, LakeStore, PublishInfo
 
 
 def pbi(*args, input=None):
@@ -205,3 +205,122 @@ def test_without_a_lake_there_is_nothing_to_back_up(isolated_home):
     result = pbi("lake", "backup")
 
     assert result.exit_code == 1 and "no data lake yet" in result.output
+
+
+# ---------------------------------------------------------------------------
+# pbi lake restore
+# ---------------------------------------------------------------------------
+
+
+def lake_files(root):
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+
+
+@pytest.fixture
+def damaged(work, tmp_path):
+    """A work lake with a backup of how it was, and then a sync that went wrong."""
+    root = work.store.root
+    assert pbi("lake", "backup").exit_code == 0
+    [saved] = backups_next_to(root)
+    before = lake_files(root)
+    gone = sorted(root.rglob("data.json"))[0]
+    gone.unlink()
+    (root / "stray.json").write_text("{}", encoding="utf-8")
+    return root, saved, before
+
+
+def test_a_restore_puts_the_lake_back_and_keeps_a_safety_copy(damaged):
+    root, saved, before = damaged
+
+    result = pbi("lake", "restore", str(saved), "--yes")
+
+    assert result.exit_code == 0, result.output
+    assert lake_files(root) == before
+    assert "Restored:" in result.output and "1 deleted" in result.output
+    [safety] = sorted(root.parent.glob(f"{root.name}-before-restore-*"))
+    assert (safety / "stray.json").exists()  # the lake as it was before the restore
+    assert str(safety) in result.output
+
+
+def test_it_shows_what_it_would_do_and_asks_first(damaged):
+    root, saved, before = damaged
+    now = lake_files(root)
+
+    result = pbi("lake", "restore", str(saved), input="n\n")
+
+    assert result.exit_code == 1
+    assert "copy" in result.output and "delete 1 file(s)" in result.output
+    assert "Replace the lake" in result.output
+    assert lake_files(root) == now  # a no is a no
+    assert not list(root.parent.glob(f"{root.name}-before-restore-*"))
+
+
+def test_the_safety_copy_can_be_left_out(damaged):
+    root, saved, before = damaged
+
+    result = pbi("lake", "restore", str(saved), "--yes", "--no-safety-copy")
+
+    assert result.exit_code == 0, result.output
+    assert lake_files(root) == before
+    assert not list(root.parent.glob(f"{root.name}-before-restore-*"))
+
+
+def test_files_can_be_kept_that_the_backup_does_not_have(damaged):
+    root, saved, before = damaged
+
+    result = pbi("lake", "restore", str(saved), "--yes", "--keep-extra")
+
+    assert result.exit_code == 0, result.output
+    assert (root / "stray.json").exists()
+
+
+def test_an_incomplete_backup_is_refused_unless_asked(damaged):
+    root, saved, before = damaged
+    (saved / BACKUP_FILE).unlink()
+
+    refused = pbi("lake", "restore", str(saved), "--yes")
+    allowed = pbi("lake", "restore", str(saved), "--yes", "--allow-incomplete")
+
+    assert refused.exit_code == 1 and "no backup.json" in refused.output
+    assert allowed.exit_code == 0 and "may be incomplete" in allowed.output
+    assert lake_files(root) == before
+
+
+def test_a_published_lake_is_not_restored_over(work, tmp_path):
+    root = work.store.root
+    pbi("lake", "backup")
+    [saved] = backups_next_to(root)
+    LakeStore(root, publishing=True).write_marker(
+        PublishInfo(
+            published_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            published_by="ana@laptop",
+        )
+    )
+
+    result = pbi("lake", "restore", str(saved), "--yes")
+
+    assert result.exit_code == 1 and "published by ana@laptop" in result.output
+
+
+def test_without_a_cache_folder_there_is_no_lake_to_restore_into(
+    isolated_home, tmp_path
+):
+    result = pbi("lake", "restore", str(tmp_path), "--yes")
+
+    assert result.exit_code == 1 and "no data lake yet" in result.output
+
+
+def test_a_backup_in_s3_is_restored_into_the_work_lake(work, local_s3):
+    root = work.store.root
+    before = lake_files(root)
+    pbi("lake", "backup", "--to", "s3://bucket/saved")
+    (root / "stray.json").write_text("{}", encoding="utf-8")
+
+    result = pbi("lake", "restore", "s3://bucket/saved", "--yes", "--no-safety-copy")
+
+    assert result.exit_code == 0, result.output
+    assert lake_files(root) == before
