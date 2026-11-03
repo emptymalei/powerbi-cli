@@ -21,14 +21,16 @@ from textual.app import App
 from textual.binding import Binding
 from textual.notifications import SeverityLevel
 
-from pbi_cli.core.catalog import Catalog, Match
+from pbi_cli.core.backup import backup_lake
+from pbi_cli.core.catalog import Catalog, Item, Match
 from pbi_cli.core.planfile import SHOW_ALL, find_workspace
 from pbi_cli.core.planrun import PlanRun
+from pbi_cli.core.reportexport import export_report
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.core.timefmt import format_age
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
-from pbi_cli.tui import clipboard
+from pbi_cli.tui import clipboard, exporting
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
 from pbi_cli.tui.fetching import Fetching
@@ -703,6 +705,94 @@ class PBIApp(App[None]):
             ),
             timeout=NOTICE_LONG if not tool else None,
         )
+
+    # -- a copy of the lake, a report as a file ------------------------------------------------
+
+    def backup_now(self) -> None:
+        """Copy the whole lake next to itself (`pbi lake backup`), before something big."""
+        if self.backend.readonly:
+            self.notify(self.backend.readonly, title="Backup", severity="warning")
+            return
+        state = self.run_state
+        if state is not None and state.running:
+            self.notify(
+                "A sync is running: stop it, or wait for it, then back up.",
+                title="Backup",
+                severity="warning",
+            )
+            return
+        self.notify("Backing up the lake …", title="Backup")
+        self._backup()
+
+    @work(thread=True, exclusive=True, group="backup")
+    def _backup(self) -> None:
+        try:
+            done = backup_lake(self.backend.store.root)
+        except Exception as error:  # the lake is not ours to end the UI over
+            self.call_from_thread(
+                self.notify, str(error), title="Backup", severity="error"
+            )
+            return
+        self.call_from_thread(
+            self.notify,
+            (
+                "The lake holds nothing yet: there is nothing to back up."
+                if done is None
+                else f"Backed up {done.files} file(s) to {done.destination}. "
+                f"Restore it with: pbi lake restore {done.destination}"
+            ),
+            title="Backup",
+            timeout=NOTICE_LONG,
+        )
+
+    def download_report(self, item: Item, fmt: str) -> None:
+        """Save a report as a file (`pbi reports export`) in the export folder.
+
+        :param item: the report
+        :param fmt: ``pbix``, ``pdf``, ``pptx`` or ``png``
+        """
+        if not item.workspace_id:
+            self.notify(
+                "The lake does not say which workspace this report is in.",
+                title="Download",
+                severity="warning",
+            )
+            return
+        folder = self.export_folder or str(Path.cwd())
+        self.notify(
+            f"Asking Power BI for {item.name} as {fmt} …"
+            + ("" if fmt == "pbix" else " this can take a while."),
+            title="Download",
+        )
+        self._download(item, fmt, folder)
+
+    @work(thread=True, exclusive=True, group="download")
+    def _download(self, item: Item, fmt: str, folder: str) -> None:
+        try:
+            client = self.backend.client_for("user")
+            done = export_report(client, item.workspace_id or "", item.id, fmt)
+            path = exporting.free_path(
+                folder, exporting.file_stem(item.name) + done.extension
+            )
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(done.content)
+        except AuthError as error:  # no token, or an expired one: ask for a fresh one
+            self.call_from_thread(self.explain_sync_problem, error, None)
+            return
+        except Exception as error:  # an ExportError, a refusal of the API, a full disk
+            self.call_from_thread(
+                self.notify,
+                str(error) or type(error).__name__,
+                title="Download",
+                severity="error",
+                timeout=NOTICE_LONG,
+            )
+            return
+        self.call_from_thread(self._downloaded, path)
+
+    def _downloaded(self, path: Path) -> None:
+        self.export_folder = str(path.parent)
+        self.notify(f"Saved {path}", title="Download", timeout=NOTICE_LONG)
 
     def workspace_scope(
         self, catalog: Optional[Catalog] = None

@@ -76,6 +76,10 @@
   or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
   given; naming targets, or an option that a plan file takes over, still means those targets.
   A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
+- The [terminal UI](tui.md#who-has-access-a-report-as-a-file-a-copy-of-the-lake) has three more
+  actions in its palette: *Who has access to …* (what a person can open, from the lake, to save or
+  copy), *Download this report as …* (a `.pbix`, PDF, PowerPoint or images, in the export folder)
+  and *Back up the lake*.
 - `pbi lake users` and `pbi lake access` take `--fetch` (and `--yes`): they fetch the users
   that the lake lacks first, as `pbi sync run report-users` and its kin do, after showing what it
   costs against the quotas and asking. Only the gaps cost requests, and `-w` limits it to the items

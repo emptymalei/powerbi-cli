@@ -32,6 +32,8 @@ from textual.widgets import (
 from textual.widgets.tree import TreeNode
 from textual.worker import get_current_worker
 
+from pbi_cli.core.accessreport import COLUMNS as ACCESS_COLUMNS
+from pbi_cli.core.accessreport import AccessReport, access_of
 from pbi_cli.core.catalog import Catalog, Item, Workspace, label
 from pbi_cli.core.planfile import describe_scan
 from pbi_cli.core.registry import Scope
@@ -39,7 +41,14 @@ from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.sync.plan import Plan, SyncOptions
 from pbi_cli.tui import exporting, render, tabexport
 from pbi_cli.tui.exporting import Exportable
-from pbi_cli.tui.modals import COPIED, SAVED, ConfirmModal, Exported, ExportModal
+from pbi_cli.tui.modals import (
+    COPIED,
+    SAVED,
+    AskModal,
+    ConfirmModal,
+    Exported,
+    ExportModal,
+)
 from pbi_cli.tui.plain import PlainStatic, PlainTable
 from pbi_cli.tui.render import Entry, Subject
 from pbi_cli.tui.status import NOTICE_LONG, StatusBar
@@ -666,6 +675,72 @@ class ExplorerScreen(Screen):
     def action_copy(self) -> None:
         """Put what the tab shows (else the table) on the clipboard, for a spreadsheet."""
         self._start_export(copy=True)
+
+    @property
+    def subject(self) -> Optional[Subject]:
+        """What is selected in the tree (a workspace, an item, ...), if anything."""
+        return self._subject
+
+    def action_find_access(self) -> None:
+        """Ask whose access to look for, then offer what that person can open."""
+        if self.catalog is None:
+            self.notify("The lake is not read yet.", severity="warning")
+            return
+        self.app.push_screen(
+            AskModal(
+                "Who has access to…",
+                "An e-mail address or a name, in any case. What the person can open is "
+                "looked up in the users that the lake holds; nothing is sent to Power BI.",
+                "ann@example.com",
+                "Find",
+            ),
+            self._access_asked,
+        )
+
+    def _access_asked(self, who: Optional[str]) -> None:
+        if who:
+            self._find_access(who)
+
+    @work(thread=True, exclusive=True, group="access")
+    def _find_access(self, who: str) -> None:
+        """Look through the users of the lake (in a worker: it reads a lot of files)."""
+        catalog = self.catalog
+        if catalog is None:
+            return
+        try:
+            found = access_of(catalog, who)
+            partial = False
+            if not found.rows:  # a part of a name or an address finds people too
+                found = access_of(catalog, who, partial=True)
+                partial = True
+        except Exception as error:  # a broken lake file must not end the UI
+            self.app.call_from_thread(
+                self.notify, f"Could not look: {error}", severity="error"
+            )
+            return
+        self.app.call_from_thread(self._access_found, who, found, partial)
+
+    def _access_found(self, who: str, found: AccessReport, partial: bool) -> None:
+        if found.missing:
+            self.notify(
+                f"{len(found.missing)} of {found.items} item(s) have no users in the "
+                "lake, so the answer may be incomplete (`pbi lake access --fetch` gets "
+                "them).",
+                severity="warning",
+                timeout=NOTICE_LONG,
+            )
+        if not found.rows:
+            held = found.items - len(found.missing)
+            self.notify(
+                f"Nothing in the lake gives '{who}' access: {held} of {found.items} "
+                "item(s) have their users in the lake and none lists that person.",
+                severity="warning",
+                timeout=NOTICE_LONG,
+            )
+            return
+        what = Exportable(f"Access of {who}", ACCESS_COLUMNS, found.table)
+        label_ = f"What '{who}' can open" + (" (part of a name)" if partial else "")
+        self._offer_exports(False, [(label_, what)])
 
     def _start_export(self, copy: bool) -> None:
         rows = render.filter_entries(self._entries, self._table_filter)

@@ -304,8 +304,8 @@ as it is now is copied first (`<lake>-before-restore-<time>`), so that a restore
 too. A backup without its `backup.json` stopped before it was complete and is refused
 (`--allow-incomplete` overrides that). Close the terminal UI and stop any sync before you
 restore: nothing should write to the lake while it is replaced. A published lake is protected
-and is not restored over. The terminal UI takes no backup; run `pbi lake backup` before a
-large sync from it.
+and is not restored over. The [terminal UI](tui.md#who-has-access-a-report-as-a-file-a-copy-of-the-lake) has
+*Back up the lake* in its palette; a sync run from it takes no backup of its own.
 
 Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
 than the one of your cache folder, such as one that a colleague shared, with
