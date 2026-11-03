@@ -1172,6 +1172,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/catalog/" class="md-nav__link">
         
   
@@ -1590,10 +1617,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
             
   
   
@@ -1611,8 +1638,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_18">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3141,6 +3168,9 @@ between (the other workspaces are cut in batches after it); the API keeps a resu
 hours. A scan that takes longer than <code>--scan-timeout</code>
 (10 minutes) is reported as failed, but it may still finish, so the next run looks at it
 again before starting another. A scan that failed is started again.</p>
+<p>A lake in S3 is worth copying before a large run: <code>pbi sync run --backup</code> copies it next
+to itself before the first write (<code>--backup-to PLACE</code> chooses where). See
+<a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</p>
 <h2 id="stopping-and-continuing">Stopping, and continuing<a class="headerlink" href="#stopping-and-continuing" title="Permanent link">¤</a></h2>
 <p>A sync can be stopped at any time, and run again:</p>
 <ul>

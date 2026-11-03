@@ -1065,6 +1065,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pbi-lake-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake backup</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pbi-lake-ls" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2155,6 +2166,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../core/catalog/" class="md-nav__link">
         
   
@@ -2573,10 +2611,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
             
   
   
@@ -2594,8 +2632,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_18">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3618,6 +3656,17 @@
   
     <nav class="md-nav" aria-label="pbi lake">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pbi-lake-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake backup</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#pbi-lake-ls" class="md-nav__link">
@@ -4929,10 +4978,37 @@ pbi config set-verify-certificates false
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
+<li><code>backup</code>: Copy a whole data lake, to have a way back</li>
 <li><code>ls</code>: List what the data lake holds</li>
 <li><code>prune</code>: Delete old versions, keeping the newest of...</li>
 <li><code>publish</code>: Publish the lake: a complete copy that...</li>
 <li><code>show</code>: Print a stored response (or its manifest)...</li>
+</ul>
+<h3 id="pbi-lake-backup"><code>pbi lake backup</code><a class="headerlink" href="#pbi-lake-backup" title="Permanent link">¤</a></h3>
+<p>Copy a whole data lake, to have a way back</p>
+<p>A local lake replaces each file in one step, so a file is never half written. S3 has no
+such step: a sync, a prune or a publish that stops half way leaves some objects new and
+some old. Take a copy before; <code>pbi sync run</code>, <code>pbi lake prune</code> and <code>pbi lake publish</code>
+also take one with <code>--backup</code>.</p>
+<p>The copy has the layout of a lake: <code>pbi tui --lake COPY</code> opens it. Its <code>backup.json</code> is
+written last; a copy without it is incomplete. Between two places of the same cloud the
+objects are copied by the cloud, not through this machine.</p>
+<div class="highlight"><pre><span></span><code># The lake of the cache folder, next to it
+pbi lake backup
+
+# A lake in S3, to a place of your choice
+pbi lake backup --lake s3://my-bucket/pbi-lake --to s3://my-bucket/backups/2026-10-30
+</code></pre></div>
+<p>To go back, copy the backup over the lake, for example with
+<code>aws s3 sync s3://my-bucket/pbi-lake-backup-... s3://my-bucket/pbi-lake --delete</code>.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>backup<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>--to &lt;str&gt;</code>: Where the copy goes: an empty folder or URL (default: next to the lake, as <lake>-backup-<UTC time>)</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-lake-ls"><code>pbi lake ls</code><a class="headerlink" href="#pbi-lake-ls" title="Permanent link">¤</a></h3>
 <p>List what the data lake holds</p>
@@ -4968,6 +5044,9 @@ pbi lake prune
 
 # Keep the last three workspace lists
 pbi lake prune -e admin.groups --keep 3
+
+# The same, with a copy of the lake taken first (a lake in S3, say)
+pbi lake prune --backup
 </code></pre></div>
 <p>Only the lake of the cache folder can be pruned: a lake given with <code>--lake</code>, and a
 published lake, are read-only.</p>
@@ -4981,6 +5060,8 @@ published lake, are read-only.</p>
 <li><code>-t, --tenant &lt;str&gt;</code>: Only this tenant (default: all)</li>
 <li><code>--yes</code>: Confirm the action without prompting.</li>
 <li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>--backup</code>: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone</li>
+<li><code>--backup-to &lt;str&gt;</code>: Where the backup goes: an empty folder or URL (implies --backup)</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-lake-publish"><code>pbi lake publish</code><a class="headerlink" href="#pbi-lake-publish" title="Permanent link">¤</a></h3>
@@ -5003,6 +5084,9 @@ pbi lake publish s3://my-bucket/pbi-lake --exclude activity --exclude users
 
 # In a nightly job, after `pbi sync run`
 pbi lake publish s3://my-bucket/pbi-lake --yes
+
+# Copy the earlier publish first, in case this one stops half way
+pbi lake publish s3://my-bucket/pbi-lake --backup
 </code></pre></div>
 <p><strong>Usage</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>DESTINATION<span class="o">}</span>
@@ -5021,6 +5105,8 @@ pbi lake publish s3://my-bucket/pbi-lake --yes
 <li><code>--yes</code>: Publish without asking</li>
 <li><code>--force</code>: Publish over a lake that someone else published</li>
 <li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>--backup</code>: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone</li>
+<li><code>--backup-to &lt;str&gt;</code>: Where the backup goes: an empty folder or URL (implies --backup)</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-lake-show"><code>pbi lake show</code><a class="headerlink" href="#pbi-lake-show" title="Permanent link">¤</a></h3>
@@ -5306,6 +5392,9 @@ pbi sync run default activity --days 7
 
 # What a plan file says, step after step (the steps for the tenant first)
 pbi sync run --config pbi-plan.yaml
+
+# A lake in S3: copy it first, in case the run stops half way
+pbi sync run --backup
 </code></pre></div>
 <p>With <code>--config</code> the plan file says what to sync, so no target names and none of the
 options that it takes over (the scan options, the profiles) can be given; <code>--force</code>,
@@ -5346,6 +5435,8 @@ an administrator account, and else what a user can see, workspace by workspace.
 <li><code>--admin-profile &lt;str&gt;</code>: The profile of the administrator account to use (default: the active profile of the group admin)</li>
 <li><code>--user-profile &lt;str&gt;</code>: The profile of the user account to use (default: the active profile of the group user)</li>
 <li><code>-c, --config &lt;file&gt;</code>: A plan file (YAML) that says what to keep, for which workspaces and through which account, instead of target names. --force, --max-age, --days, --workers, --wait, --scan-interval and --scan-timeout still apply to every step of it</li>
+<li><code>--backup</code>: Copy the whole lake before writing into it, next to it as <lake>-backup-<UTC time>; worth it for a lake in S3, where a write that stops half way cannot be undone</li>
+<li><code>--backup-to &lt;str&gt;</code>: Where the backup goes: an empty folder or URL (implies --backup)</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>
 <h3 id="pbi-sync-status"><code>pbi sync status</code><a class="headerlink" href="#pbi-sync-status" title="Permanent link">¤</a></h3>

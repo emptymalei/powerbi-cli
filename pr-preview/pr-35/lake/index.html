@@ -577,6 +577,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#back-up-a-lake-before-writing-into-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Back up a lake before writing into it
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1134,6 +1145,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/catalog/" class="md-nav__link">
         
   
@@ -1552,10 +1590,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
             
   
   
@@ -1573,8 +1611,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_18">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2415,6 +2453,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#back-up-a-lake-before-writing-into-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Back up a lake before writing into it
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2723,6 +2772,51 @@ narrow it down). It asks first, or pass <code>--yes</code>. Event logs are never
 ✓ Deleted 1 old version(s), kept the newest 1 of each request
 </code></pre></div>
 <p><code>pbi cache clear</code> never touches the lake; see <a href="../cache/">Cache (legacy)</a>.</p>
+<h3 id="back-up-a-lake-before-writing-into-it">Back up a lake before writing into it<a class="headerlink" href="#back-up-a-lake-before-writing-into-it" title="Permanent link">¤</a></h3>
+<p>In a local lake every file is written to a temporary name and then moved over the old one,
+so a file is never seen half written. S3 (and the other clouds) has no such move: a sync, a
+prune or a publish that stops half way, because the connection dropped or the laptop went to
+sleep, leaves some objects new and some old. A copy taken just before is the way back.</p>
+<p><code>pbi lake backup</code> copies a whole lake, by default next to it as
+<code>&lt;lake&gt;-backup-&lt;UTC time&gt;</code>, or to <code>--to &lt;empty folder or URL&gt;</code>. The commands that write into
+a lake take the copy themselves with <code>--backup</code> (or <code>--backup-to PLACE</code>), before the first
+write:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What is copied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pbi sync run --backup</code></td>
+<td>the work lake</td>
+</tr>
+<tr>
+<td><code>pbi lake prune --backup</code></td>
+<td>the work lake</td>
+</tr>
+<tr>
+<td><code>pbi lake publish DESTINATION --backup</code></td>
+<td>the destination, when an earlier publish is there</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>$ pbi sync run --backup
+Backing up s3://my-bucket/pbi-lake before the sync ...
+✓ Backed up 4210 file(s) to s3://my-bucket/pbi-lake-backup-20261030T224000Z
+</code></pre></div>
+<p>Without the flag, these commands give a one-line tip when the lake is in a cloud. A backup
+that cannot be made (the place holds something already, the bucket refuses) stops the
+command before anything is written. Between two places of the same cloud the objects are
+copied by the cloud, not through your machine; the bucket needs room for a second copy.</p>
+<p>The copy has the layout of a lake: <code>pbi tui --lake &lt;copy&gt;</code> opens it (read only). Its
+<code>backup.json</code> is written last and says what was copied and when; a copy without it stopped
+before it was complete. To go back, copy the backup over the lake, for example
+<code>aws s3 sync s3://my-bucket/pbi-lake-backup-20261030T224000Z s3://my-bucket/pbi-lake --delete</code>,
+or a folder over the folder. Backups are never deleted by pbi: remove the old ones yourself.
+The terminal UI takes no backup; run <code>pbi lake backup</code> before a large sync from it.</p>
 <p>Every one of these commands (and <code>pbi sync status</code> and <code>pbi tui</code>) can look at another lake
 than the one of your cache folder, such as one that a colleague shared, with
 <code>--lake &lt;folder or s3://bucket/folder&gt;</code>. A lake opened that way is only read, and <code>prune</code>
