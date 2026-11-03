@@ -1119,6 +1119,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pbi-lake-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake users</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2139,6 +2150,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../core/auth/" class="md-nav__link">
         
   
@@ -2611,10 +2649,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -2632,8 +2670,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_18">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3706,6 +3744,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code>pbi lake show</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pbi-lake-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>pbi lake users</code>
       </span>
     </span>
   </a>
@@ -4983,6 +5032,7 @@ pbi config set-verify-certificates false
 <li><code>prune</code>: Delete old versions, keeping the newest of...</li>
 <li><code>publish</code>: Publish the lake: a complete copy that...</li>
 <li><code>show</code>: Print a stored response (or its manifest)...</li>
+<li><code>users</code>: Who has access to every item of a kind, as...</li>
 </ul>
 <h3 id="pbi-lake-backup"><code>pbi lake backup</code><a class="headerlink" href="#pbi-lake-backup" title="Permanent link">¤</a></h3>
 <p>Copy a whole data lake, to have a way back</p>
@@ -5141,6 +5191,39 @@ pbi lake show admin.activityevents --day 2026-09-29
 <li><code>-v, --version &lt;str&gt;</code>: Version to show (default: the newest)</li>
 <li><code>-d, --day &lt;str&gt;</code>: For event logs: the UTC day to show (YYYY-MM-DD)</li>
 <li><code>-m, --manifest</code>: Show the manifest (what was asked, when, checksum) instead of the data</li>
+<li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
+<li><code>--help</code>: Show this message and exit.</li>
+</ul>
+<h3 id="pbi-lake-users"><code>pbi lake users</code><a class="headerlink" href="#pbi-lake-users" title="Permanent link">¤</a></h3>
+<p>Who has access to every item of a kind, as a table or a file</p>
+<p>One row for each person and item: every person of every report, of every workspace,
+of every app, and so on, from what the lake holds (no token, no network). Items whose
+users the lake does not hold are listed at the end, with what fetches them.</p>
+<div class="highlight"><pre><span></span><code># Every person of every report, on the terminal
+pbi lake users report
+
+# ... in a spreadsheet
+pbi lake users report -o report-users.xlsx
+
+# Everyone with access to the workspaces of one team
+pbi lake users workspace -w Finance -o finance.csv
+</code></pre></div>
+<p>The users come from <code>pbi sync run report-users</code>, <code>app-users</code> or a scan with
+<code>--get-artifact-users</code>; <code>pbi lake ls</code> shows what the lake holds. The terminal UI
+exports the same for the item or the workspace that you are looking at (<code>x</code>).</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>pbi<span class="w"> </span>lake<span class="w"> </span>users<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">{</span>KIND<span class="o">}</span>
+</code></pre></div>
+<p><strong>Arguments</strong>:</p>
+<ul>
+<li><code>KIND</code>: Whose users: workspace, report, dataset, dashboard, dataflow, app  [required]</li>
+</ul>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>-o, --output &lt;str&gt;</code>: Save to this file instead of printing; the format follows its ending: .csv, .xlsx, .json, .md or .tsv</li>
+<li><code>-f, --format &lt;str&gt;</code>: csv, xlsx, json, md or tsv (default: from the file name, else csv)</li>
+<li><code>-w, --workspace &lt;str&gt;</code>: Only the items of this workspace, by id or name (repeat for more)</li>
+<li><code>-t, --tenant &lt;str&gt;</code>: Tenant (only needed if the lake holds several)</li>
 <li><code>--lake &lt;str&gt;</code>: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written</li>
 <li><code>--help</code>: Show this message and exit.</li>
 </ul>

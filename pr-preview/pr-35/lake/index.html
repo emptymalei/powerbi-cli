@@ -578,6 +578,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#who-has-access-to-everything-pbi-lake-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Who has access to everything: <code>pbi lake users</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#back-up-a-lake-before-writing-into-it" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1118,6 +1129,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1590,10 +1628,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1611,8 +1649,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_18">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2454,6 +2492,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#who-has-access-to-everything-pbi-lake-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Who has access to everything: <code>pbi lake users</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#back-up-a-lake-before-writing-into-it" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2772,6 +2821,26 @@ narrow it down). It asks first, or pass <code>--yes</code>. Event logs are never
 ✓ Deleted 1 old version(s), kept the newest 1 of each request
 </code></pre></div>
 <p><code>pbi cache clear</code> never touches the lake; see <a href="../cache/">Cache (legacy)</a>.</p>
+<h3 id="who-has-access-to-everything-pbi-lake-users">Who has access to everything: <code>pbi lake users</code><a class="headerlink" href="#who-has-access-to-everything-pbi-lake-users" title="Permanent link">¤</a></h3>
+<p><code>pbi lake users KIND</code> lists the people of every item of a kind at once (<code>report</code>,
+<code>dataset</code>, <code>dashboard</code>, <code>dataflow</code>, <code>app</code> or <code>workspace</code>): one row for each person and item,
+from what the lake holds, with no token and no network.</p>
+<div class="highlight"><pre><span></span><code>$ pbi lake users report
+Kind    Item          Workspace    Name  E-mail or id          Access
+Report  Sales         Finance      Ann   ann@example.com       Owner
+Report  Sales         Finance      Bob   bob@example.com       Viewer
+Report  Stock         Logistics    Ann   ann@example.com       Owner
+
+3 row(s): 2 different people, 2 of 2 report(s) with users.
+</code></pre></div>
+<p><code>-o report-users.xlsx</code> saves it instead (the ending says the format: <code>.csv</code>, <code>.xlsx</code>,
+<code>.json</code>, <code>.md</code> or <code>.tsv</code>, or choose with <code>-f</code>), and <code>-w Finance</code> narrows it to the items of a
+workspace, by name or id (repeat it for more). A file has more columns than the terminal
+shows: the ids of the item and of its workspace, the type of the person (user, group) and
+where the lake has them from. Items whose users the lake does not hold are named after the
+table, so a gap is never mistaken for an item nobody can open. The users come from
+<code>pbi sync run report-users</code>, <code>app-users</code> or a scan with <code>--get-artifact-users</code> (see
+<a href="../sync/">Sync</a>).</p>
 <h3 id="back-up-a-lake-before-writing-into-it">Back up a lake before writing into it<a class="headerlink" href="#back-up-a-lake-before-writing-into-it" title="Permanent link">¤</a></h3>
 <p>In a local lake every file is written to a temporary name and then moved over the old one,
 so a file is never seen half written. S3 (and the other clouds) has no such move: a sync, a

@@ -885,6 +885,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1357,10 +1384,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_18" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_18" id="__nav_3_2_4_18_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1378,8 +1405,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_18_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_18">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2450,6 +2477,11 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi lake users KIND</code> lists everyone with access to every report, dataset, dashboard,
+  dataflow, app or workspace in one table or file (<code>-o users.xlsx</code>, <code>.csv</code>, <code>.json</code>, <code>.md</code>,
+  <code>.tsv</code>), optionally for some workspaces (<code>-w</code>), from what the lake holds. Items whose users
+  the lake does not hold are named. See
+  <a href="../lake/#who-has-access-to-everything-pbi-lake-users">Who has access to everything</a>.</li>
 <li><code>pbi lake backup</code> copies a whole lake, by default next to it as <code>&lt;lake&gt;-backup-&lt;UTC time&gt;</code>,
   and <code>--backup</code> / <code>--backup-to</code> on <code>pbi sync run</code>, <code>pbi lake prune</code> and <code>pbi lake publish</code>
   take that copy before the first write. A write to S3 that stops half way cannot be undone;
