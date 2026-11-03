@@ -351,6 +351,73 @@ which names its set of workspaces; `workspace_ids` lists them, and `scan_id` and
   like a snapshot, one request per set of workspaces and options, so scanning the same
   workspaces again adds a version. See [Sync](sync.md#scans).
 
+## The data model
+
+The lake is **not** a database with a schema of its own. It keeps what Power BI answered, as
+JSON, one folder per request (see [Layout](#layout)); `pbi_cli` adds only a manifest to each.
+How the pieces belong together is worked out when they are read, by Power BI's own ids.
+
+| What | Where it is | How it joins |
+| --- | --- | --- |
+| Workspaces | `admin.groups` (or `user.groups` per account) | `id` |
+| Reports, datasets, dashboards, dataflows | the lists of the tenant, else one list per workspace (`user.group_*`) | the row's `workspaceId` is a workspace's `id`; a report's `datasetId` is a dataset's `id` |
+| Inside a workspace | `admin.scan.result`, one scan per set of workspaces and options; the newest scan that *returned* a workspace is the one used | `workspaces[].id`, with its reports, datasets, tables, users, data sources |
+| Lineage | the scan, with `--lineage` | `upstreamDatasets[].targetDatasetId`, `upstreamDataflows[].targetDataflowId`, a dashboard tile's `reportId` and `datasetId`; `datasourceUsages[].datasourceInstanceId` is a data source's `datasourceId` |
+| People | one answer per item (`admin.reports.users` with `reportId`, `admin.apps.users` with `appId`, ...), else the `users` of the item in its scan | the item's id, which the request's parameters name |
+| Audit events | one file set per UTC day | `Id` (events are deduplicated by it) |
+| Freshness | `fetched_at` in the manifest against the lifetime of the operation | plus `_state/sync.json`: runs, units that failed, scans started |
+
+Nothing is normalized and no key is checked, so a lake that was synced only in part still
+works, and says what is missing. The people inside a *group* are not in the lake (Power BI
+lists the group, Microsoft Entra lists its members): access through a group shows as the
+group.
+
+### Query it with SQL: `pbi lake duckdb`
+
+`pbi lake duckdb` loads the newest answer of every request into a
+[DuckDB](https://duckdb.org) database (`pip install "pbi-cli[duckdb]"`). The tables carry the
+ids above, so the joins are the ones in this picture:
+
+![The tables of the data lake and the ids that join them: workspaces, reports, datasets and dashboards, access, scan_edges and scan_datasources](images/lake-tables.svg)
+
+| Table | One row for | Made from |
+| --- | --- | --- |
+| `workspaces`, `reports`, `datasets`, `dashboards`, `dataflows`, `apps`, `capacities` | each item of the newest complete list; the columns are Power BI's | the lists of the tenant |
+| `access` | each person with access to an item: `kind`, `item_id`, `workspace_id`, `name`, `email`, `access`, `type`, `source` | the user operations and the scans (`source` says which) |
+| `scan_items` | each report, dataset, dashboard or dataflow a scan found, with its `workspace_id` and `dataset_id` | the newest scan of each workspace |
+| `scan_edges` | each lineage link: `from_kind`, `from_id`, `to_kind`, `to_id`, `relation` | the scans |
+| `scan_datasources` | each data source: `instance_id`, `type`, `server`, `database`, `path`, `url` | the scans |
+| `scan_tables`, `scan_columns`, `scan_measures` | each table, column (with its DAX) and measure of a dataset | the scans, with the schema option |
+| `events` | each audit event, with its `day` | the event logs |
+| `requests` | each request the lake holds: endpoint, parameters, `fetched_at`, path | the manifests |
+| `report_overview` (a view) | each report with its workspace and dataset names | `reports`, `workspaces`, `datasets` |
+
+```bash
+pbi lake duckdb                      # makes pbi-lake.duckdb
+duckdb pbi-lake.duckdb
+```
+
+```sql
+-- Who can open a report that reads from the server sql.example?
+select distinct r.report, a.email
+from scan_datasources s
+join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+join report_overview r on r.report_id = b.from_id
+join access a on a.item_id = r.report_id and a.kind = 'report'
+where s.server = 'sql.example';
+
+-- Reports per workspace, and how many people can open them
+select workspace, count(distinct report_id) reports, count(distinct email) people
+from report_overview r left join access a on a.item_id = r.report_id
+group by workspace order by reports desc;
+```
+
+The database is a copy: load again after a sync. The lake must be in a folder (copy an S3 lake
+down first, for example with `aws s3 sync`). A table is made only when the lake holds the
+data for it, and a row of `access` from a scan exists only for a scan made with
+`--get-artifact-users`. From Python: [`pbi_cli.core.lakesql`](references/core/lakesql.md).
+
 ## Freshness
 
 A stored snapshot is used when it is younger than the `max_age` you ask for; the default is

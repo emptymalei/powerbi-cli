@@ -76,6 +76,12 @@
   or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
   given; naming targets, or an option that a plan file takes over, still means those targets.
   A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
+- `pbi lake duckdb [DATABASE]` loads the lake into a [DuckDB](https://duckdb.org) database
+  (`pip install "pbi-cli[duckdb]"`): a table for each list, for who has access to what
+  (`access`), for what a scan found (`scan_items`, `scan_edges` for the lineage,
+  `scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), for the audit events and
+  for the requests, with the ids that join them. The documentation of the
+  [data lake](lake.md#the-data-model) now describes its data model, with a diagram.
 - `pbi lake access USER` lists everything that one person has access to (workspaces, reports,
   datasets, dashboards, dataflows, apps), found by e-mail address or name in the users the lake
   holds, with `--partial` for a part of one, `-k` and `-w` to narrow it down and `-o` to save

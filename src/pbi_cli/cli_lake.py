@@ -32,6 +32,7 @@ from pbi_cli.core.accessreport import (
 )
 from pbi_cli.core.backup import backup_lake
 from pbi_cli.core.catalog import Catalog
+from pbi_cli.core.lakesql import describe, load_lake
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
@@ -915,3 +916,57 @@ def lake_access(
             + "."
         ),
     )
+
+
+@command(lake_app, "duckdb")
+def lake_duckdb(
+    database: Annotated[
+        Path,
+        typer.Argument(
+            metavar="DATABASE",
+            help="The DuckDB file to make (an existing one is replaced)",
+        ),
+    ] = Path("pbi-lake.duckdb"),
+    tenant: Annotated[
+        Optional[str],
+        typer.Option("--tenant", "-t", help="Only this tenant (default: all)"),
+    ] = None,
+    lake: LakeOption = None,
+):
+    """Load the lake into a DuckDB database, to question it with SQL
+
+    Makes a table of each list (`workspaces`, `reports`, `datasets`, ...), of who has access
+    to what (`access`), of what a scan found (`scan_items`, `scan_edges` for the lineage,
+    `scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), of the audit events
+    (`events`), and of the requests the lake holds (`requests`). Each table has the ids that
+    join it to the others. Needs `pip install "pbi-cli[duckdb]"`. The database is a copy of
+    the newest answers: load again after a sync. Reads the lake only.
+
+    ```
+    pbi lake duckdb
+    duckdb pbi-lake.duckdb "select workspace, report, dataset from report_overview"
+
+    # Who can open a report that reads from one server?
+    duckdb pbi-lake.duckdb "
+      select distinct a.email, r.report
+      from scan_datasources s
+      join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+      join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+      join report_overview r on r.report_id = b.from_id
+      join access a on a.item_id = r.report_id and a.kind = 'report'
+      where s.server = 'sql.example'"
+    ```
+
+    See the data model in the documentation of the data lake.
+    """
+    store = _store(lake)
+    typer.echo(f"Loading {store.root} ...")
+    con = load_lake(store, str(database), tenant)
+    try:
+        tables = describe(con)
+    finally:
+        con.close()
+    for name, count in tables:
+        typer.echo(f"  {name:<18} {count} row(s)")
+    typer.secho(f"✓ Wrote {database} ({len(tables)} tables and views)", fg="green")
+    typer.echo(f"Open it with: duckdb {database}")

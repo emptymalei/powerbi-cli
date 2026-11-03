@@ -584,6 +584,7 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 
 * `access`: What one person has access to: workspaces,...
 * `backup`: Copy a whole data lake, to have a way back
+* `duckdb`: Load the lake into a DuckDB database, to...
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
@@ -668,6 +669,50 @@ $ pbi lake backup [OPTIONS]
 **Options**:
 
 * `--to <str>`: Where the copy goes: an empty folder or URL (default: next to the lake, as <lake>-backup-<UTC time>)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
+
+### `pbi lake duckdb`
+
+Load the lake into a DuckDB database, to question it with SQL
+
+Makes a table of each list (`workspaces`, `reports`, `datasets`, ...), of who has access
+to what (`access`), of what a scan found (`scan_items`, `scan_edges` for the lineage,
+`scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), of the audit events
+(`events`), and of the requests the lake holds (`requests`). Each table has the ids that
+join it to the others. Needs `pip install "pbi-cli[duckdb]"`. The database is a copy of
+the newest answers: load again after a sync. Reads the lake only.
+
+```
+pbi lake duckdb
+duckdb pbi-lake.duckdb "select workspace, report, dataset from report_overview"
+
+# Who can open a report that reads from one server?
+duckdb pbi-lake.duckdb "
+  select distinct a.email, r.report
+  from scan_datasources s
+  join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+  join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+  join report_overview r on r.report_id = b.from_id
+  join access a on a.item_id = r.report_id and a.kind = 'report'
+  where s.server = 'sql.example'"
+```
+
+See the data model in the documentation of the data lake.
+
+**Usage**:
+
+```console
+$ pbi lake duckdb [OPTIONS] [DATABASE]
+```
+
+**Arguments**:
+
+* `DATABASE`: The DuckDB file to make (an existing one is replaced)  [default: pbi-lake.duckdb]
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: all)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
