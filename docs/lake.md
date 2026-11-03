@@ -220,6 +220,34 @@ a group shows as the group, since the lake does not hold who is in it. For Power
 answer, with an admin account, use `pbi users user-access -u <user id>`; it costs one request
 of the quota of 200 an hour.
 
+### Filling the gaps: `--fetch`
+
+Who can open what is in the lake only for the items that were synced with
+`pbi sync run report-users`, `app-users` and the like (or a scan with `--get-artifact-users`).
+`pbi lake users` and `pbi lake access` name the items they could not look into. Add `--fetch`
+and they fetch those users first, as the sync does:
+
+```text
+$ pbi lake access ann@example.com -k report --fetch
+To fetch the users that the lake lacks:
+
+Tenant: 72f988bf-...
+
+TARGET        ... REQUESTS
+report-users  ... 212
+...
+Fetch them now? [y/N]: y
+  [21/212] admin.reports.users ...
+```
+
+It shows what it costs against the quotas (the users of a report are 200 requests an hour)
+and asks (`--yes` skips that). What the lake holds fresh is not fetched again, so only the
+gaps cost anything, and `-w Finance` (or `-w ID`) fetches only for the items of that
+workspace. Without `-k`, `lake access` fetches every kind, so narrow it down if the lake is
+big. `--fetch` needs an admin account (`pbi auth -t <token> -g admin`) and writes into the lake
+of your cache folder; a lake given with `--lake` is only read. A run that a quota or an expired
+token stops keeps what it got: run the command again.
+
 ### Back up a lake before writing into it
 
 In a local lake every file is written to a temporary name and then moved over the old one,

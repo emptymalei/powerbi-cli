@@ -612,7 +612,9 @@ pbi lake access --partial @contractor.com -o contractors.csv
 
 The answer is as complete as the lake: items whose users the lake does not hold are
 named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
-scan with `--get-artifact-users`). Access through a group shows as the group, because
+scan with `--get-artifact-users`, or let `--fetch` do it: it shows the cost against the
+quotas and asks first, `--yes` skips that; every kind of item costs a request each, so
+narrow it with `-k` and `-w`). Access through a group shows as the group, because
 the lake does not hold who is in it. For the answer of Power BI itself, with an admin
 account, use `pbi users user-access -u <user id>`.
 
@@ -635,6 +637,8 @@ $ pbi lake access [OPTIONS] {USER}
 * `-f, --format <str>`: csv, xlsx, json, md or tsv (default: from the file name, else csv)
 * `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
+* `--yes`: With --fetch: do not ask before fetching
 * `--help`: Show this message and exit.
 
 ### `pbi lake backup`
@@ -943,8 +947,9 @@ pbi lake users workspace -w Finance -o finance.csv
 ```
 
 The users come from `pbi sync run report-users`, `app-users` or a scan with
-`--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
-exports the same for the item or the workspace that you are looking at (`x`).
+`--get-artifact-users`; `pbi lake ls` shows what the lake holds. `--fetch` fetches the
+ones the lake lacks first (it shows the cost and asks, `--yes` skips that). The terminal
+UI exports the same for the item or the workspace that you are looking at (`x`).
 
 **Usage**:
 
@@ -963,6 +968,8 @@ $ pbi lake users [OPTIONS] {KIND}
 * `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
 * `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
+* `--yes`: With --fetch: do not ask before fetching
 * `--help`: Show this message and exit.
 
 ## `pbi profile`

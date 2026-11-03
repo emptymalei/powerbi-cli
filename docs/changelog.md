@@ -76,6 +76,10 @@
   or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
   given; naming targets, or an option that a plan file takes over, still means those targets.
   A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
+- `pbi lake users` and `pbi lake access` take `--fetch` (and `--yes`): they fetch the users
+  that the lake lacks first, as `pbi sync run report-users` and its kin do, after showing what it
+  costs against the quotas and asking. Only the gaps cost requests, and `-w` limits it to the items
+  of some workspaces. See [Filling the gaps](lake.md#filling-the-gaps-fetch).
 - `pbi lake restore BACKUP` puts a backup made by `pbi lake backup` back over the lake of the
   cache folder: it shows what it would copy and delete and asks, copies everything before it
   deletes anything (so a restore that stops half way loses nothing), refuses a backup without its

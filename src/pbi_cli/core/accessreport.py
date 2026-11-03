@@ -105,10 +105,11 @@ class AccessReport:
         )
 
 
-def _wanted_workspaces(
+def resolve_workspaces(
     catalog: Catalog, workspaces: Optional[Iterable[str]]
 ) -> Optional[Set[str]]:
-    """The ids of the workspaces that were asked for by id or by name, ``None`` for all.
+    """The ids of the workspaces that were asked for by id or by name, ``None`` for all
+    (public, so that a command can restrict what it fetches to the same workspaces).
 
     :raises ValueError: for a name or id that no workspace has
     """
@@ -152,7 +153,7 @@ def access_report(
         raise ValueError(
             f"Unknown kind '{kind}'. Choose one of: {', '.join(ACCESS_KINDS)}."
         )
-    wanted = _wanted_workspaces(catalog, workspaces)
+    wanted = resolve_workspaces(catalog, workspaces)
     found = AccessReport()
     names = {w.id: w.name for w in catalog.workspaces()}
 

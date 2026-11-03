@@ -8,6 +8,7 @@ went and what the lake holds (it reads the lake only, so it needs no token).
 
 import re
 import shlex
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AbstractSet, Annotated, Callable, List, Optional, Sequence
@@ -327,6 +328,70 @@ _IN_THE_FILE = {
 def _given(ctx: typer.Context, name: str) -> bool:
     """Whether an option was typed on the command line (and not just left at its default)."""
     return getattr(ctx.get_parameter_source(name), "name", "") == "COMMANDLINE"
+
+
+#: The sync target that fetches the users of each kind of item.
+USER_TARGETS = {
+    "workspace": "group-users",
+    "report": "report-users",
+    "dataset": "dataset-users",
+    "dashboard": "dashboard-users",
+    "dataflow": "dataflow-users",
+    "app": "app-users",
+}
+
+
+def fetch_users(
+    kinds: Sequence[str],
+    workspace_ids: Sequence[str] = (),
+    *,
+    yes: bool = False,
+) -> RunReport:
+    """Fetch the users of the items the lake lacks them of, as `pbi sync run report-users`
+    and its kin do: after showing what it costs against the quotas, and asking.
+
+    What the lake holds fresh is not fetched again, so only the gaps cost requests.
+
+    :param kinds: the kinds of items (keys of `USER_TARGETS`)
+    :param workspace_ids: only the items of these workspaces (an app is in none)
+    :param yes: do not ask
+    :raises typer.Abort: when the answer is no
+    :raises PBIError: when there is no lake, no account that can do it, or the token expired
+    """
+    targets = [USER_TARGETS[kind] for kind in kinds if kind in USER_TARGETS]
+    if not targets:
+        # no names would mean the plain targets: never what a fetch of users wants
+        raise PBIError("There is no kind of item to fetch the users of.")
+    options = replace(
+        _options(
+            targets,
+            force=False,
+            max_age=None,
+            days=MAX_DAYS,
+            lineage=False,
+            datasource_details=False,
+            dataset_schema=False,
+            dataset_expressions=False,
+            get_artifact_users=False,
+            full_scan=False,
+            exclude_personal=False,
+            exclude_inactive=False,
+            scan_interval=5.0,
+            scan_timeout=600.0,
+        ),
+        workspace_ids=tuple(workspace_ids),
+    )
+    store = _lake()
+    with ClientPool() as clients:
+        engine = SyncEngine(clients, store)
+        plan = engine.plan(options)
+        typer.echo("To fetch the users that the lake lacks:\n")
+        _print_plan(plan)
+        if not yes and not typer.confirm("\nFetch them now?"):
+            raise typer.Abort()
+        report = engine.run(options, on_event=_Progress())
+    _finish_run(report, f"pbi sync run {' '.join(targets)}")
+    return report
 
 
 def _plan_to_use(

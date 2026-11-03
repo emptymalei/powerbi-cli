@@ -22,6 +22,7 @@ from pbi_cli.cli_support import (
     new_app,
     print_table,
 )
+from pbi_cli.cli_sync import fetch_users
 from pbi_cli.config import PBIConfig
 from pbi_cli.core.accessreport import (
     ACCESS_KINDS,
@@ -29,6 +30,7 @@ from pbi_cli.core.accessreport import (
     AccessReport,
     access_of,
     access_report,
+    resolve_workspaces,
 )
 from pbi_cli.core.backup import SAFETY_SUFFIX, backup_lake, plan_restore, restore_lake
 from pbi_cli.core.catalog import Catalog
@@ -647,6 +649,45 @@ def lake_backup(
     typer.echo(f"Open it with: pbi tui --lake {done.destination}")
 
 
+FetchOption = Annotated[
+    bool,
+    typer.Option(
+        "--fetch",
+        help=(
+            "Fetch the users that the lake lacks first (as `pbi sync run report-users` and "
+            "its kin do), after showing what it costs against the quotas. Needs an admin "
+            "account, and writes into the lake of the cache folder"
+        ),
+    ),
+]
+FetchYesOption = Annotated[
+    bool, typer.Option("--yes", help="With --fetch: do not ask before fetching")
+]
+
+
+def _fetch_users(
+    store: LakeStore,
+    catalog: Catalog,
+    kinds: Sequence[str],
+    workspaces: Optional[Sequence[str]],
+    yes: bool,
+) -> None:
+    """Fetch the users that the lake lacks of these kinds (for ``--fetch``).
+
+    :raises PBIError: for a lake that is only read, or a workspace that is not in the lake
+    """
+    if not store.writable:
+        raise PBIError(
+            "--fetch writes into the lake of your cache folder: "
+            + (store.why_read_only() or "this lake is only read.")
+        )
+    try:
+        ids = resolve_workspaces(catalog, workspaces) or set()
+    except ValueError as error:
+        raise PBIError(str(error)) from error
+    fetch_users(kinds, sorted(ids), yes=yes)
+
+
 #: The columns of ``pbi lake users`` on the terminal; a file has them all.
 _SHOWN = (0, 1, 3, 5, 6, 7)
 
@@ -694,6 +735,8 @@ def lake_users(
         ),
     ] = None,
     lake: LakeOption = None,
+    fetch: FetchOption = False,
+    yes: FetchYesOption = False,
 ):
     """Who has access to every item of a kind, as a table or a file
 
@@ -713,8 +756,9 @@ def lake_users(
     ```
 
     The users come from `pbi sync run report-users`, `app-users` or a scan with
-    `--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
-    exports the same for the item or the workspace that you are looking at (`x`).
+    `--get-artifact-users`; `pbi lake ls` shows what the lake holds. `--fetch` fetches the
+    ones the lake lacks first (it shows the cost and asks, `--yes` skips that). The terminal
+    UI exports the same for the item or the workspace that you are looking at (`x`).
     """
     if kind not in ACCESS_KINDS:
         raise typer.BadParameter(
@@ -722,9 +766,14 @@ def lake_users(
             param_hint="KIND",
         )
     store = _store(lake)
-    catalog = Catalog(store, _one_tenant(store, tenant))
+    tenant_name = _one_tenant(store, tenant)
+    catalog = Catalog(store, tenant_name)
     try:
         found = access_report(catalog, kind, workspace)
+        if fetch and (found.missing or not found.items):
+            _fetch_users(store, catalog, [kind], workspace, yes)
+            catalog = Catalog(store, tenant_name)  # reads what was just fetched
+            found = access_report(catalog, kind, workspace)
     except ValueError as error:
         raise PBIError(str(error)) from error
 
@@ -858,6 +907,8 @@ def lake_access(
         ),
     ] = None,
     lake: LakeOption = None,
+    fetch: FetchOption = False,
+    yes: FetchYesOption = False,
 ):
     """What one person has access to: workspaces, reports, datasets, apps ...
 
@@ -877,16 +928,25 @@ def lake_access(
 
     The answer is as complete as the lake: items whose users the lake does not hold are
     named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
-    scan with `--get-artifact-users`). Access through a group shows as the group, because
+    scan with `--get-artifact-users`, or let `--fetch` do it: it shows the cost against the
+    quotas and asks first, `--yes` skips that; every kind of item costs a request each, so
+    narrow it with `-k` and `-w`). Access through a group shows as the group, because
     the lake does not hold who is in it. For the answer of Power BI itself, with an admin
     account, use `pbi users user-access -u <user id>`.
     """
     store = _store(lake)
-    catalog = Catalog(store, _one_tenant(store, tenant))
+    tenant_name = _one_tenant(store, tenant)
+    catalog = Catalog(store, tenant_name)
     try:
         found = access_of(
             catalog, who, kinds=kind, workspaces=workspace, partial=partial
         )
+        if fetch and (found.missing or not found.items):
+            _fetch_users(store, catalog, kind or ACCESS_KINDS, workspace, yes)
+            catalog = Catalog(store, tenant_name)  # reads what was just fetched
+            found = access_of(
+                catalog, who, kinds=kind, workspaces=workspace, partial=partial
+            )
     except ValueError as error:
         raise PBIError(str(error)) from error
     if not found.rows:
