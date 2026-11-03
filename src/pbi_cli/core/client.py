@@ -420,7 +420,7 @@ class PowerBIClient:
     ) -> requests.Response:
         headers = {
             **credentials.headers,
-            "Accept": "application/json",
+            "Accept": "*/*" if endpoint.binary else "application/json",
             "User-Agent": self._user_agent,
         }
         logger.debug(f"{endpoint.method} {endpoint.path}")
@@ -441,6 +441,8 @@ class PowerBIClient:
 
     @staticmethod
     def _parse_body(endpoint: Endpoint, response: requests.Response) -> Any:
+        if endpoint.binary:
+            return response.content
         if not response.content:
             return None
         try:

@@ -5,6 +5,9 @@ Only read-only operations are listed (plus the scanner API, whose start request 
 add user, ...) and operations that return business data (``Execute Queries``) are not
 here on purpose: they are never cached or synced.
 
+The files that a person asks for by name (a report as ``.pbix``, ``.pdf``, ...) are listed
+apart, in `DOWNLOADS`: they are never synced, cached or stored in the lake.
+
 A rate limit is recorded only when the documentation page of the operation states one
 (verified 2026-09-30, see ``doc_url``). ``limit=None`` means the documentation states
 none; such endpoints are not throttled locally and rely on the ``429 Retry-After``
@@ -110,6 +113,7 @@ class Endpoint:
     :param per_identity: whether the answer depends on who asks (the workspaces *a user*
         has access to, the apps *a user* installed): the lake then keeps the answers of
         each account apart, by the parameter `IDENTITY_PARAM`
+    :param binary: whether the answer is a file, not JSON (it is returned as bytes)
     :param needs: the permission a user needs on the item, when the documentation states one
         beyond being able to see it (``Write permission on the dataset``); it is said when the
         API refuses
@@ -132,6 +136,7 @@ class Endpoint:
     parent: Optional[str] = None
     parent_field: str = "id"
     per_identity: bool = False
+    binary: bool = False
     needs: str = ""
 
     @property
@@ -639,7 +644,58 @@ ENDPOINTS: Tuple[Endpoint, ...] = (
     ),
 )
 
-_BY_ID: Dict[str, Endpoint] = {endpoint.id: endpoint for endpoint in ENDPOINTS}
+#: Operations that hand over a file the user asked for: never planned by a sync, never
+#: stored in the lake. See `pbi_cli.core.reportexport`.
+DOWNLOADS: Tuple[Endpoint, ...] = (
+    Endpoint(
+        id="user.report_pbix",
+        title="Download a report as a .pbix (or .rdl) file",
+        method="GET",
+        path="/groups/{groupId}/reports/{reportId}/Export",
+        scope=Scope.USER,
+        kind=Kind.JOB,
+        doc_url=f"{_DOCS}/reports/export-report-in-group",
+        items_keys=(),
+        query=("downloadType", "preferClientRouting"),
+        binary=True,
+    ),
+    Endpoint(
+        id="user.report_export.start",
+        title="Start exporting a report to PDF, PowerPoint, an image ...",
+        method="POST",
+        path="/groups/{groupId}/reports/{reportId}/ExportTo",
+        scope=Scope.USER,
+        kind=Kind.JOB,
+        doc_url=f"{_DOCS}/reports/export-to-file-in-group",
+        items_keys=(),
+        needs="a workspace on a Premium, Embedded or Fabric capacity (not Premium Per User)",
+    ),
+    Endpoint(
+        id="user.report_export.status",
+        title="How far an export of a report has come",
+        method="GET",
+        path="/groups/{groupId}/reports/{reportId}/exports/{exportId}",
+        scope=Scope.USER,
+        kind=Kind.JOB,
+        doc_url=f"{_DOCS}/reports/get-export-to-file-status-in-group",
+        items_keys=(),
+    ),
+    Endpoint(
+        id="user.report_export.file",
+        title="The file of a finished export of a report",
+        method="GET",
+        path="/groups/{groupId}/reports/{reportId}/exports/{exportId}/file",
+        scope=Scope.USER,
+        kind=Kind.JOB,
+        doc_url=f"{_DOCS}/reports/get-file-of-export-to-file-in-group",
+        items_keys=(),
+        binary=True,
+    ),
+)
+
+_BY_ID: Dict[str, Endpoint] = {
+    endpoint.id: endpoint for endpoint in ENDPOINTS + DOWNLOADS
+}
 
 
 def get_endpoint(endpoint_id: str) -> Endpoint:

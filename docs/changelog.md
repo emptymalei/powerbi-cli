@@ -62,6 +62,14 @@
 
 ### Added
 
+- `pbi reports export` (and `pbi export`) can save a report as more than a `.pbix`: `-f pdf`,
+  `pptx` or `png` (made by Power BI as a job that the command waits for, with `--timeout`), and
+  for a paginated report `xlsx`, `docx`, `csv`, `xml`, `mhtml` or `accessiblepdf`. `-p` chooses
+  pages, `--filter` and `--locale` shape them, `--include-hidden-pages` adds hidden ones,
+  `--param` sets paginated parameters, and `--live-connection` keeps a `.pbix` connected to its
+  dataset. The older `pbi export` now goes through the same client, so it honours the TLS
+  setting and throttling. The formats other than `pbix` need a Premium, Embedded or Fabric
+  capacity. See [Exporting a report](export.md).
 - A plan file can be named once instead of with `--config` on every command: `pbi config
   set-plan-file PATH` (checked at once, kept as an absolute path; `get-plan-file` and
   `clear-plan-file` show and forget it), or the environment variable `PBI_PLAN` for one shell

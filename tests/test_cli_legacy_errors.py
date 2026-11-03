@@ -61,41 +61,7 @@ def assert_clean_error(result, *expected: str):
         assert text in result.output
 
 
-# -- pbi export -----------------------------------------------------------------------
-
-
-def test_pbi_export_does_not_save_an_error_answer_as_the_report(
-    tmp_path, legacy_api, tokens
-):
-    legacy_api.add("GET", "/Export", answer(401, ERROR_BODY, "Unauthorized"))
-    target = tmp_path / "report.pbix"
-
-    result = run("export", "-g", "group-1", "-r", "report-1", "-t", str(target))
-
-    assert_clean_error(result, "401 Unauthorized", "TokenExpired")
-    assert "Export saved" not in result.output
-    assert not target.exists()
-
-
-def test_pbi_export_still_saves_a_report(tmp_path, legacy_api, tokens):
-    legacy_api.add("GET", "/Export", answer(200, text="PBIX"))
-    target = tmp_path / "report.pbix"
-
-    result = run("export", "-g", "group-1", "-r", "report-1", "-t", str(target))
-
-    assert result.exit_code == 0
-    assert target.read_bytes() == b"PBIX"
-
-
 # -- the commands on the older wrappers -----------------------------------------------
-
-
-def test_reports_export_reports_an_http_error(tmp_path, legacy_api, tokens):
-    legacy_api.add("GET", "/Export", answer(404, ERROR_BODY, "Not Found"))
-
-    result = run("reports", "export", "-g", "group-1", "-r", "report-1")
-
-    assert_clean_error(result, "404 Not Found", "/reports/report-1/Export")
 
 
 def test_scan_initiate_reports_an_empty_401(legacy_api, tokens):

@@ -20,7 +20,7 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 * `auth`: Store authentication bearer token securely
 * `cache`: Manage the legacy cache (the data lake is...
 * `config`: Manage pbi-cli configuration settings
-* `export`: export report based on id
+* `export`: export report based on id, as a .pbix or...
 * `lake`: Browse the data lake of fetched API results
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
@@ -536,7 +536,14 @@ $ pbi config show [OPTIONS]
 
 ## `pbi export`
 
-export report based on id
+export report based on id, as a .pbix or another format
+
+The same as `pbi reports export`.
+
+```
+pbi export -g GROUP -r REPORT -t sales.pbix
+pbi export -g GROUP -r REPORT -f pdf -t sales.pdf
+```
 
 **Usage**:
 
@@ -548,7 +555,15 @@ $ pbi export [OPTIONS]
 
 * `-g, --group-id <str>`: Group ID  [required]
 * `-r, --report-id <str>`: Report ID  [required]
-* `-t, --target <path>`: target file (if omitted, prints info to console)
+* `-t, --target <path>`: target file or folder (if omitted, prints info to console); a name without an ending gets the one of the format
+* `-f, --format <str>`: pbix (the report for Power BI Desktop), pdf, pptx, png, or for a paginated report xlsx, docx, csv, xml, mhtml, accessiblepdf. All but pbix need a workspace on a Premium, Embedded or Fabric capacity  [default: pbix]
+* `-p, --page <str>`: Only this page, by name as `pbi reports pages` lists it (repeat for more)
+* `--filter <str>`: A report filter such as "Store/Territory eq 'NC'" (pdf, pptx, png)
+* `--locale <str>`: How numbers and dates are written, such as en-us
+* `--include-hidden-pages`: Also the pages that are hidden (pdf, pptx, png)
+* `--param <str>`: NAME=VALUE for a parameter of a paginated report (repeat for more)
+* `--live-connection`: For pbix: keep the connection to the dataset instead of including the model
+* `--timeout <float range>`: Seconds to wait for Power BI to make a pdf, pptx or png  [default: 600.0; x>=1]
 * `--help`: Show this message and exit.
 
 ## `pbi lake`
@@ -992,14 +1007,35 @@ $ pbi reports [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `export`: Export report as file
+* `export`: Export a report as a .pbix file, or as a...
 * `list`: List all reports in a workspace group.
 * `pages`: Get pages of a report (or all reports) in...
 * `users`: Augment Power BI Apps data from a source...
 
 ### `pbi reports export`
 
-Export report as file
+Export a report as a .pbix file, or as a PDF, PowerPoint, images ...
+
+A `.pbix` opens in Power BI Desktop. The other formats are made by Power BI as a job
+that this command waits for (`--timeout`); they need the report in a workspace on a
+Premium, Embedded or Fabric capacity (not Premium Per User), and `png` has to be
+allowed in the tenant settings. A report of several pages comes as a `.zip` of images
+in `png`. Pages are named as `pbi reports pages` lists them.
+
+```
+# The report for Power BI Desktop
+pbi reports export -g GROUP -r REPORT -t sales.pbix
+
+# Two pages as a PDF, for one territory
+pbi reports export -g GROUP -r REPORT -f pdf -p ReportSection1 -p ReportSection3 \
+    --filter "Store/Territory eq 'NC'" -t sales.pdf
+
+# A PowerPoint presentation into a folder, named after the report
+pbi reports export -g GROUP -r REPORT -f pptx -t ~/Reports
+```
+
+The account needs access to the report; a `.pbix` also needs the permission to
+download it. Nothing is stored in the data lake.
 
 **Usage**:
 
@@ -1011,7 +1047,15 @@ $ pbi reports export [OPTIONS]
 
 * `-g, --group-id <str>`: Group ID  [required]
 * `-r, --report-id <str>`: Report ID  [required]
-* `-t, --target <path>`: target file (if omitted, prints info to console)
+* `-t, --target <path>`: target file or folder (if omitted, prints info to console); a name without an ending gets the one of the format
+* `-f, --format <str>`: pbix (the report for Power BI Desktop), pdf, pptx, png, or for a paginated report xlsx, docx, csv, xml, mhtml, accessiblepdf. All but pbix need a workspace on a Premium, Embedded or Fabric capacity  [default: pbix]
+* `-p, --page <str>`: Only this page, by name as `pbi reports pages` lists it (repeat for more)
+* `--filter <str>`: A report filter such as "Store/Territory eq 'NC'" (pdf, pptx, png)
+* `--locale <str>`: How numbers and dates are written, such as en-us
+* `--include-hidden-pages`: Also the pages that are hidden (pdf, pptx, png)
+* `--param <str>`: NAME=VALUE for a parameter of a paginated report (repeat for more)
+* `--live-connection`: For pbix: keep the connection to the dataset instead of including the model
+* `--timeout <float range>`: Seconds to wait for Power BI to make a pdf, pptx or png  [default: 600.0; x>=1]
 * `--help`: Show this message and exit.
 
 ### `pbi reports list`
