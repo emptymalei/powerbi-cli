@@ -125,7 +125,8 @@ def test_some_items_without_users_are_a_note_not_an_error(work):
     result = users("report")
 
     assert result.exit_code == 0, result.output
-    assert "1 report(s) have no users in the lake: Report 2" in result.output
+    assert "1 of 6 item(s) have no users in the lake" in result.output
+    assert "so this may be incomplete: Report 2 (Workspace 2)" in result.output
 
 
 def test_an_unknown_kind_is_a_usage_error(work):
@@ -141,3 +142,82 @@ def test_an_empty_lake_has_nobody_to_list(isolated_home):
     result = users("report")
 
     assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# pbi lake access
+# ---------------------------------------------------------------------------
+
+
+def access(*args):
+    return CliRunner().invoke(app, ["lake", "access", *args])
+
+
+def test_what_one_person_can_open_is_listed_by_kind_and_item(work):
+    result = access("ann-rep-0002@example.com")
+
+    assert result.exit_code == 0, result.output
+    assert "Report 2" in result.output and "Workspace 2" in result.output
+    assert "Report 1 " not in result.output  # somebody else's report
+    assert "admin.reports.users" in result.output
+    assert "1 item(s) in 1 workspace(s) for 'ann-rep-0002@example.com'" in result.output
+
+
+def test_the_person_is_found_by_name_too_and_case_does_not_matter(work):
+    by_mail = access("ANN-REP-0002@example.com")
+    by_name = access("Ann", "-k", "report")
+
+    assert by_mail.exit_code == 0 and "Report 2" in by_mail.output
+    assert by_name.exit_code == 0 and "Report 1" in by_name.output
+    assert "Report 6" in by_name.output  # every report has an Ann
+
+
+def test_a_part_of_an_address_needs_partial(work):
+    nothing = access("rep-0002")
+    some = access("rep-0002", "--partial")
+
+    assert (
+        nothing.exit_code == 1
+        and "Nothing in the lake gives 'rep-0002'" in nothing.output
+    )
+    assert "Try --partial" in nothing.output
+    assert some.exit_code == 0 and "ann-rep-0002@example.com" in some.output
+    assert "different people" in some.output
+
+
+def test_it_can_be_limited_to_kinds_and_workspaces(work):
+    assert access("Ann", "-k", "app").exit_code == 0
+    everything = access("Ann")
+    reports = access("Ann", "-k", "report")
+    one = access("Ann", "-w", "ws-0001")
+
+    assert len(reports.output.splitlines()) <= len(everything.output.splitlines())
+    assert "Workspace 2" not in one.output and "Workspace 1" in one.output
+    assert access("Ann", "-k", "table").exit_code == 1
+
+
+def test_what_the_lake_does_not_know_is_said_so_the_answer_is_not_trusted_too_much(
+    work,
+):
+    result = access("ann-rep-0002@example.com", "-k", "dataset")
+
+    assert result.exit_code == 1
+    assert "have their users in the lake and none lists them" in result.output
+
+
+def test_the_access_of_a_person_can_be_saved(work, tmp_path):
+    target = tmp_path / "ann.csv"
+
+    result = access("ann-rep-0002@example.com", "-o", str(target))
+
+    assert result.exit_code == 0, result.output
+    with open(target, encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [r["Item id"] for r in rows] == ["rep-0002"]
+    assert rows[0]["E-mail or id"] == "ann-rep-0002@example.com"
+
+
+def test_nobody_to_look_for_is_an_error(work):
+    result = access("  ")
+
+    assert result.exit_code == 1 and "Say whose access" in result.output

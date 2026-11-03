@@ -23,7 +23,13 @@ from pbi_cli.cli_support import (
     print_table,
 )
 from pbi_cli.config import PBIConfig
-from pbi_cli.core.accessreport import ACCESS_KINDS, COLUMNS, AccessReport, access_report
+from pbi_cli.core.accessreport import (
+    ACCESS_KINDS,
+    COLUMNS,
+    AccessReport,
+    access_of,
+    access_report,
+)
 from pbi_cli.core.backup import backup_lake
 from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
@@ -722,6 +728,39 @@ def lake_users(
         raise PBIError(str(error)) from error
 
     title = f"Users of {kind}s" if kind != "workspace" else "Users of workspaces"
+    if not found.rows:
+        raise PBIError(_nobody(kind, found))
+    _deliver(
+        found,
+        title,
+        _SHOWN,
+        output,
+        fmt,
+        saved=f"{len(found.rows)} row(s) for {found.items} {kind}(s)",
+        summary=(
+            f"{len(found.rows)} row(s): {found.people} different people, "
+            f"{found.items - len(found.missing)} of {found.items} {kind}(s) with users."
+        ),
+    )
+
+
+def _deliver(
+    found: AccessReport,
+    title: str,
+    shown: Sequence[int],
+    output: Optional[str],
+    fmt: Optional[str],
+    *,
+    saved: str,
+    summary: str,
+) -> None:
+    """Print an access report as a table, or save it as a file; then name the items whose
+    users the lake does not hold.
+
+    :param shown: the columns (indexes into `COLUMNS`) that the terminal shows
+    :param saved: what the file holds, for the message
+    :param summary: the line under the table
+    """
     table = exporting.Exportable(title, COLUMNS, found.table)
     if output is not None:
         chosen = fmt or Path(output).suffix.lstrip(".").lower() or exporting.CSV
@@ -729,29 +768,20 @@ def lake_users(
             raise PBIError(
                 f"Cannot write '{chosen}'. Formats: {', '.join(exporting.TABLE_FORMATS)}."
             )
-        if not found.rows:
-            raise PBIError(_nobody(kind, found))
         path = exporting.write(table, chosen, output)
-        typer.secho(
-            f"✓ Saved {len(found.rows)} row(s) for {found.items} {kind}(s) to {path}",
-            fg="green",
-        )
-    elif found.rows:
-        print_table(
-            [COLUMNS[i] for i in _SHOWN],
-            [[row[i] for i in _SHOWN] for row in table.cells],
-        )
-        typer.echo(
-            f"\n{len(found.rows)} row(s): {found.people} different people, "
-            f"{found.items - len(found.missing)} of {found.items} {kind}(s) with users."
-        )
+        typer.secho(f"✓ Saved {saved} to {path}", fg="green")
     else:
-        raise PBIError(_nobody(kind, found))
-    if found.missing and found.rows:
-        shown = ", ".join(found.missing[:5])
+        print_table(
+            [COLUMNS[i] for i in shown],
+            [[row[i] for i in shown] for row in table.cells],
+        )
+        typer.echo(f"\n{summary}")
+    if found.missing:
+        listed = ", ".join(found.missing[:5])
         more = f" and {len(found.missing) - 5} more" if len(found.missing) > 5 else ""
         typer.secho(
-            f"{len(found.missing)} {kind}(s) have no users in the lake: {shown}{more}.",
+            f"{len(found.missing)} of {found.items} item(s) have no users in the lake, "
+            f"so this may be incomplete: {listed}{more}.",
             fg="yellow",
         )
 
@@ -765,3 +795,123 @@ def _nobody(kind: str, found: AccessReport) -> str:
         "app": "`pbi sync run app-users`",
     }.get(kind, "`pbi sync run report-users` or a scan with `--get-artifact-users`")
     return f"The lake holds none of the users of its {count} {kind}(s). Fetch them with {hint}."
+
+
+#: The columns of ``pbi lake access`` on the terminal, without and with the person.
+_SHOWN_ITEMS = (0, 1, 3, 7, 9)
+_SHOWN_PEOPLE = (0, 1, 3, 5, 6, 7)
+
+
+@command(lake_app, "access")
+def lake_access(
+    who: Annotated[
+        str,
+        typer.Argument(
+            metavar="USER",
+            help="An e-mail address or a name (ignoring case)",
+        ),
+    ],
+    kind: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--kind",
+            "-k",
+            help=f"Only this kind (repeat for more): {', '.join(ACCESS_KINDS)}",
+        ),
+    ] = None,
+    workspace: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--workspace",
+            "-w",
+            help="Only the items of this workspace, by id or name (repeat for more)",
+        ),
+    ] = None,
+    partial: Annotated[
+        bool,
+        typer.Option(
+            "--partial",
+            help="Match a part of the e-mail address or name (for example a domain)",
+        ),
+    ] = False,
+    output: Annotated[
+        Optional[str],
+        typer.Option(
+            "--output",
+            "-o",
+            help="Save to this file instead of printing: .csv, .xlsx, .json, .md or .tsv",
+        ),
+    ] = None,
+    fmt: Annotated[
+        Optional[str],
+        typer.Option(
+            "--format",
+            "-f",
+            help="csv, xlsx, json, md or tsv (default: from the file name, else csv)",
+        ),
+    ] = None,
+    tenant: Annotated[
+        Optional[str],
+        typer.Option(
+            "--tenant", "-t", help="Tenant (only needed if the lake holds several)"
+        ),
+    ] = None,
+    lake: LakeOption = None,
+):
+    """What one person has access to: workspaces, reports, datasets, apps ...
+
+    The other way round from `pbi lake users`: it looks through the users of every item the
+    lake holds, and lists the ones where the person is. Nothing is sent to Power BI.
+
+    ```
+    # Everything that one person can open
+    pbi lake access ann@example.com
+
+    # ... only reports and dashboards, in a spreadsheet
+    pbi lake access ann@example.com -k report -k dashboard -o ann.xlsx
+
+    # Everybody of one domain
+    pbi lake access --partial @contractor.com -o contractors.csv
+    ```
+
+    The answer is as complete as the lake: items whose users the lake does not hold are
+    named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
+    scan with `--get-artifact-users`). Access through a group shows as the group, because
+    the lake does not hold who is in it. For the answer of Power BI itself, with an admin
+    account, use `pbi users user-access -u <user id>`.
+    """
+    store = _store(lake)
+    catalog = Catalog(store, _one_tenant(store, tenant))
+    try:
+        found = access_of(
+            catalog, who, kinds=kind, workspaces=workspace, partial=partial
+        )
+    except ValueError as error:
+        raise PBIError(str(error)) from error
+    if not found.rows:
+        held = found.items - len(found.missing)
+        raise PBIError(
+            f"Nothing in the lake gives '{who}' access: {held} of {found.items} item(s) "
+            f"have their users in the lake and none lists them"
+            + (
+                f"; {len(found.missing)} have no users in the lake (e.g. "
+                f"{found.missing[0]})."
+                if found.missing
+                else "."
+            )
+            + (" Try --partial for a part of a name." if not partial else "")
+        )
+    places = {r.workspace_id or r.item_id for r in found.rows if r.kind != "app"}
+    _deliver(
+        found,
+        f"Access of {who}",
+        _SHOWN_PEOPLE if partial else _SHOWN_ITEMS,
+        output,
+        fmt,
+        saved=f"{len(found.rows)} row(s) for {who}",
+        summary=(
+            f"{len(found.rows)} item(s) in {len(places)} workspace(s) for '{who}'"
+            + (f" ({found.people} different people)" if partial else "")
+            + "."
+        ),
+    )

@@ -62,6 +62,11 @@
 
 ### Added
 
+- `pbi lake access USER` lists everything that one person has access to (workspaces, reports,
+  datasets, dashboards, dataflows, apps), found by e-mail address or name in the users the lake
+  holds, with `--partial` for a part of one, `-k` and `-w` to narrow it down and `-o` to save
+  it. It says how many items it could not look into. See
+  [What one person has access to](lake.md#what-one-person-has-access-to-pbi-lake-access).
 - `pbi lake users KIND` lists everyone with access to every report, dataset, dashboard,
   dataflow, app or workspace in one table or file (`-o users.xlsx`, `.csv`, `.json`, `.md`,
   `.tsv`), optionally for some workspaces (`-w`), from what the lake holds. Items whose users

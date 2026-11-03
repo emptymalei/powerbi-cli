@@ -500,12 +500,58 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
+* `access`: What one person has access to: workspaces,...
 * `backup`: Copy a whole data lake, to have a way back
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
 * `show`: Print a stored response (or its manifest)...
 * `users`: Who has access to every item of a kind, as...
+
+### `pbi lake access`
+
+What one person has access to: workspaces, reports, datasets, apps ...
+
+The other way round from `pbi lake users`: it looks through the users of every item the
+lake holds, and lists the ones where the person is. Nothing is sent to Power BI.
+
+```
+# Everything that one person can open
+pbi lake access ann@example.com
+
+# ... only reports and dashboards, in a spreadsheet
+pbi lake access ann@example.com -k report -k dashboard -o ann.xlsx
+
+# Everybody of one domain
+pbi lake access --partial @contractor.com -o contractors.csv
+```
+
+The answer is as complete as the lake: items whose users the lake does not hold are
+named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
+scan with `--get-artifact-users`). Access through a group shows as the group, because
+the lake does not hold who is in it. For the answer of Power BI itself, with an admin
+account, use `pbi users user-access -u <user id>`.
+
+**Usage**:
+
+```console
+$ pbi lake access [OPTIONS] {USER}
+```
+
+**Arguments**:
+
+* `USER`: An e-mail address or a name (ignoring case)  [required]
+
+**Options**:
+
+* `-k, --kind <str>`: Only this kind (repeat for more): workspace, report, dataset, dashboard, dataflow, app
+* `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
+* `--partial`: Match a part of the e-mail address or name (for example a domain)
+* `-o, --output <str>`: Save to this file instead of printing: .csv, .xlsx, .json, .md or .tsv
+* `-f, --format <str>`: csv, xlsx, json, md or tsv (default: from the file name, else csv)
+* `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--help`: Show this message and exit.
 
 ### `pbi lake backup`
 

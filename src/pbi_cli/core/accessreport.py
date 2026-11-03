@@ -207,6 +207,59 @@ def access_report(
     return found
 
 
+def _is_person(person: Access, who: str, partial: bool) -> bool:
+    wanted = who.strip().casefold()
+    fields = (person.email.casefold(), person.name.casefold())
+    if partial:
+        return any(wanted in field for field in fields)
+    return wanted in fields
+
+
+def access_of(
+    catalog: Catalog,
+    who: str,
+    *,
+    kinds: Optional[Sequence[str]] = None,
+    workspaces: Optional[Sequence[str]] = None,
+    partial: bool = False,
+) -> AccessReport:
+    """Everything that one person has access to, as far as the lake knows.
+
+    The person is matched by e-mail address or name, ignoring case. Access that comes
+    through a group shows as the group: the lake does not hold who is in a group.
+
+    :param who: an e-mail address or a name (a part of one with ``partial``)
+    :param kinds: only these kinds (default: all of `ACCESS_KINDS`)
+    :param workspaces: only the items of these workspaces, by id or name (apps are in
+        none, so they are left out)
+    :param partial: match a part of the e-mail address or name, not all of it
+    :return: one row for each item they have access to; ``items`` counts the items looked
+        at and ``missing`` those whose users the lake does not hold, so the answer may be
+        incomplete
+    :raises ValueError: for a kind that is not in `ACCESS_KINDS`, a workspace the lake does
+        not have, or nobody to look for
+    """
+    if not who.strip():
+        raise ValueError("Say whose access to look for: an e-mail address or a name.")
+    wanted = list(kinds or ACCESS_KINDS)
+    for kind in wanted:
+        if kind not in ACCESS_KINDS:
+            raise ValueError(
+                f"Unknown kind '{kind}'. Choose one of: {', '.join(ACCESS_KINDS)}."
+            )
+    found = AccessReport()
+    for kind in wanted:
+        if workspaces and kind == "app":
+            continue
+        part = access_report(catalog, kind, workspaces)
+        found.items += part.items
+        found.missing += [f"{kind} {name}" for name in part.missing]
+        found.rows += [r for r in part.rows if _is_person(r.person, who, partial)]
+    order = {kind: n for n, kind in enumerate(ACCESS_KINDS)}
+    found.rows.sort(key=lambda r: (order[r.kind],) + _order(r))
+    return found
+
+
 def _order(row: AccessRow) -> Tuple[str, str, str, str]:
     return (
         row.item.casefold(),

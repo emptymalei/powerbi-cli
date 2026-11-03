@@ -194,6 +194,32 @@ table, so a gap is never mistaken for an item nobody can open. The users come fr
 `pbi sync run report-users`, `app-users` or a scan with `--get-artifact-users` (see
 [Sync](sync.md)).
 
+### What one person has access to: `pbi lake access`
+
+The other way round: `pbi lake access ann@example.com` looks through the users of every item
+the lake holds and lists the ones where that person is, whether a workspace, a report, a
+dataset, a dashboard, a dataflow or an app. The person is found by e-mail address or name,
+ignoring case; `--partial` takes a part of one (`--partial @contractor.com` for everybody of a
+domain, which also shows who they are).
+
+```text
+$ pbi lake access ann@example.com
+Kind       Item      Workspace  Access  Source
+Workspace  Finance   Finance    Admin   admin.groups
+Report     Sales     Finance    Owner   admin.reports.users
+Report     Stock     Logistics  Viewer  admin.reports.users
+
+3 item(s) in 2 workspace(s) for 'ann@example.com'.
+```
+
+`-k report -k dashboard` limits it to some kinds, `-w Finance` to the items of a workspace,
+and `-o ann.xlsx` saves it (`.csv`, `.xlsx`, `.json`, `.md`, `.tsv`). It sends nothing to
+Power BI, so it is only as complete as the lake: the items whose users the lake does not hold
+are counted and named under the table, because they might list the person too. Access through
+a group shows as the group, since the lake does not hold who is in it. For Power BI's own
+answer, with an admin account, use `pbi users user-access -u <user id>`; it costs one request
+of the quota of 200 an hour.
+
 ### Back up a lake before writing into it
 
 In a local lake every file is written to a temporary name and then moved over the old one,
