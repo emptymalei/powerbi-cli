@@ -1052,6 +1052,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1060,6 +1087,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1497,10 +1551,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1518,8 +1572,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2525,6 +2579,10 @@ opens the published lake sees all of it:</p>
 <p>A scan keeps whatever its options asked for: one made with <code>--get-artifact-users</code> or
 <code>--dataset-expressions</code> holds users and queries. Publishing does not take fields out of a
 scan. Leave the scans out, or scan again without those options, if that matters.</p>
+<p>Leaving a category out of a later publish takes it out of the published lake too: what an
+earlier publish copied of it is deleted, so the marker never says "left out" over data that
+is still there. Tenants that a publish with <code>--tenant</code> left alone stay, and the marker lists
+them.</p>
 <h3 id="what-it-never-does">What it never does<a class="headerlink" href="#what-it-never-does" title="Permanent link">¤</a></h3>
 <ul>
 <li>It never overwrites a version: a version of a request does not change, so one that is
@@ -2553,6 +2611,11 @@ reader knows how old the snapshot is.</p>
 pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--yes<span class="w"> </span>--exclude<span class="w"> </span>activity
 </code></pre></div>
 <p>Everyone else opens <code>s3://my-bucket/pbi-lake</code> with <code>pbi tui --lake</code>.</p>
+<p>A publish that stops half way leaves the published lake with some objects of this publish
+and some of the last one. Readers still see a lake (versions never change, and the marker
+still describes the last complete publish), but <code>--backup</code> copies the earlier publish first
+(<code>--backup-to PLACE</code> chooses where), so you can go back to it exactly. See
+<a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</p>
 <h2 id="where-a-lake-can-live">Where a lake can live<a class="headerlink" href="#where-a-lake-can-live" title="Permanent link">¤</a></h2>
 <ul>
 <li><strong>A folder.</strong> A local folder, a network share (<code>\\server\share\pbi-lake</code> on Windows) or a

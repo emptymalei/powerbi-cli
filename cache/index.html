@@ -974,6 +974,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -982,6 +1009,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1419,10 +1473,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1440,8 +1494,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2311,8 +2365,11 @@ pbi<span class="w"> </span>cache<span class="w"> </span>clear<span class="w"> </
 pbi<span class="w"> </span>cache<span class="w"> </span>clear
 </code></pre></div>
 <p><code>pbi cache clear</code> never touches the data lake, which is the <code>lake</code> folder in the same cache
-folder: clearing the whole cache keeps it, and <code>lake</code> is refused as a cache key. To delete
-old versions from the lake use <a href="../lake/#look-into-the-lake-pbi-lake"><code>pbi lake prune</code></a>.</p>
+folder: clearing the whole cache keeps it, and <code>lake</code> is refused as a cache key (in any
+spelling, such as <code>LAKE</code> or <code>lake/</code>). A cache key, and a version, must be the name of one
+folder: names with slashes, <code>.</code> or <code>..</code> are refused, so nothing outside the cache folder is
+deleted. To delete old versions from the lake use
+<a href="../lake/#look-into-the-lake-pbi-lake"><code>pbi lake prune</code></a>.</p>
 <h2 id="the-layout-of-the-older-cache">The layout of the older cache<a class="headerlink" href="#the-layout-of-the-older-cache" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>cache_folder/
 ├── workspaces/

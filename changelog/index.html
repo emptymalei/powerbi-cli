@@ -885,6 +885,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -893,6 +920,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1330,10 +1384,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1351,8 +1405,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2193,6 +2247,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Fixed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sync-and-plan-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sync and plan files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2289,6 +2360,23 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Fixed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sync-and-plan-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sync and plan files
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2389,6 +2477,17 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi lake users KIND</code> lists everyone with access to every report, dataset, dashboard,
+  dataflow, app or workspace in one table or file (<code>-o users.xlsx</code>, <code>.csv</code>, <code>.json</code>, <code>.md</code>,
+  <code>.tsv</code>), optionally for some workspaces (<code>-w</code>), from what the lake holds. Items whose users
+  the lake does not hold are named. See
+  <a href="../lake/#who-has-access-to-everything-pbi-lake-users">Who has access to everything</a>.</li>
+<li><code>pbi lake backup</code> copies a whole lake, by default next to it as <code>&lt;lake&gt;-backup-&lt;UTC time&gt;</code>,
+  and <code>--backup</code> / <code>--backup-to</code> on <code>pbi sync run</code>, <code>pbi lake prune</code> and <code>pbi lake publish</code>
+  take that copy before the first write. A write to S3 that stops half way cannot be undone;
+  the copy is the way back. Within one cloud the objects are copied server side; a
+  <code>backup.json</code> written last marks a complete copy. See
+  <a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</li>
 <li><strong>Sign in with PowerShell.</strong> <code>pbi auth --login -p NAME -g admin|user</code> runs <code>Login-PowerBI</code> (the sign-in
   window of the Power BI PowerShell module and its own client id) and stores the token for that profile and
   group; the sign-in dialog of the terminal UI has a <strong>Sign in with PowerShell</strong> button that does the same.
@@ -2613,6 +2712,86 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">¤</a></h3>
 <ul>
+<li>When Power BI throttles a request (HTTP 429), every request of the tenant to that
+  operation waits, not only the one that was throttled; a stopped sync no longer waits for
+  the throttle to end; and the request that is tried again carries the token of that moment
+  (one renewed during the wait, or a clear "expired" message).</li>
+<li>A server error that stays after the retries says its HTTP status.</li>
+<li>Publishing with <code>--exclude</code> a category that an earlier publish copied deletes it from the
+  published lake; a day of events that grows while <code>pbi lake publish</code> runs is copied with
+  exactly the parts its manifest lists.</li>
+<li>An id of <code>.</code> or <code>..</code> (or an empty one) is refused instead of reaching another operation of
+  the API; a manifest can no longer name a file outside its own folder.</li>
+<li><code>pbi lake prune</code> deletes the manifest of a version first, so a version it cannot delete
+  completely (a file in use on Windows) stays readable; an S3 lake whose bucket cannot be
+  asked counts as protected instead of failing.</li>
+<li>Two programs saving the quota counters at once no longer trip over each other's file.</li>
+<li>Reading the sources of a query is quick again: a query that combines many files (a hundred
+  CSV files took 18 seconds) slowed down the Scan tab of the <a href="../tui/">terminal UI</a>.</li>
+<li>A native query (<code>Value.NativeQuery</code>) is the query of the source it is sent to only, not of
+  every source of the table (an Excel file showed the SQL of another step).
+  <code>[Query="select * from " &amp; TableName]</code> is read whole, following parameters and steps, and a
+  parameter <code>"a" &amp; "b"</code> is <code>ab</code>. A shared query with <code>IsParameterQuery=false</code> is no longer a
+  parameter.</li>
+<li>A newer scan that was asked for a workspace but did not return it no longer hides an older
+  scan that has it.</li>
+<li>The lineage finds the dataset of a report or a tile in the scan of the same workspace when no
+  list has it (it said <em>not in the lake</em>), and follows an item built on two others once.</li>
+<li>An item that the first list held without a workspace is placed in the workspace a later list
+  gives it.</li>
+<li>
+<p>The Users tab, and the users of many selected workspaces, read only what they need, once
+  until the lake is read again; an unreadable stored answer is skipped instead of failing.</p>
+</li>
+<li>
+<p><strong>Tokens are kept per group and profile</strong> (<code>admin:default</code>, <code>user:default</code>). The <code>default</code>
+  profile of the user group and the one of the admin group shared one token, so admin commands
+  sent the user token, and deleting one profile deleted the other's token. Tokens stored the old
+  way are still read and moved; see <a href="../auth/#where-tokens-are-kept">Where tokens are kept</a>.
+  Deleting a token removes it from the keyring and from the credentials file; the file is
+  created readable by its owner only and replaced in one step, and a damaged one is reported
+  with its path instead of a traceback.</p>
+</li>
+<li>A config file that cannot be read is no longer replaced by the defaults (which wiped the
+  profiles) on the next save: the command stops and names the file. It is now written to a
+  temporary file and moved into place, so it is never seen half written.</li>
+<li><code>pbi cache clear -k</code> only deletes one folder directly in the cache folder: <code>lake/</code>, <code>./lake</code>
+  or <code>LAKE</code> no longer delete the data lake, and <code>../sibling</code> no longer deletes a folder outside
+  the cache.</li>
+<li>The commands on the older API wrappers (<code>pbi reports export</code>, <code>pbi reports users</code>,
+  <code>pbi apps app</code>, <code>pbi apps augment</code>, <code>pbi workspaces scan initiate|result|get</code>) report a failed
+  request as <code>Error: ...</code> with the status, reason and the API's error, not with a traceback.
+  <code>pbi export</code> no longer saves an error answer as the report. <code>pbi workspaces scan get</code> waits
+  for a result that is not there yet when the status already says it succeeded.</li>
+<li><code>pbi reports users</code> asks for the users of a report with the admin token (it used the user
+  token), and goes on after a report that fails, listing the ones that did.</li>
+<li><code>pbi users user-access</code> prints one row per item (it printed one cell with everything), and
+  <code>pbi workspaces report-users</code> prints one row per report with its users (it fell back to
+  JSON). <code>pbi workspaces list -ft excel</code> and <code>pbi workspaces format-convert</code> work when there
+  are no workspaces.</li>
+<li>JSON files are read and written as UTF-8 whatever the locale of the system is.</li>
+<li>The command that <code>pbi sync run</code> gives to continue an expired or interrupted run keeps every
+  option that was given (<code>--lineage</code>, <code>--days</code>, the profiles, ...) and quotes a <code>--config</code> path
+  with spaces.</li>
+<li>In the <a href="../tui/">terminal UI</a>:<ul>
+<li>The Export dialog no longer ends the app when what it offers has a name like
+  <code>Finance [/EU]</code>, and the command palette shows such names, and <code>[Confidential]Finance</code>,
+  as they are, with the letters you typed lit. The keys of the JSON in the Info tab are
+  shown as they are too.</li>
+<li>Saving an Excel workbook of text with a control character in it (a vertical tab) no
+  longer ends the app: the workbook leaves the character out, and any file that cannot be
+  written is said in the dialog.</li>
+<li>A day of audit events with a half-written line no longer ends the app: the line above
+  the table says <em>Could not read this</em>.</li>
+<li>A lake (or tenant) that is slow to read no longer replaces the one you opened after it.</li>
+<li><code>a</code> and <code>t</code> do nothing while a dialog is open, as <code>o</code> does, instead of opening another
+  dialog over it.</li>
+<li>The palette names a key only where it does that: <em>Stop the sync</em> said <code>x</code>, which exports
+  on the Explorer, and <em>Reload the lake</em> said <code>l</code>, which the Sync screen does not have.</li>
+<li>Typing in the tree filter of a big lake is quicker: the tree is built when you pause, and
+  the palette works out its commands once each time it opens instead of at every key.</li>
+</ul>
+</li>
 <li><code>pbi tui --config</code> no longer refuses to start when <code>session.lake</code> names a local folder that holds no
   lake: it opens the work lake and says so, with the command that makes that folder the work lake
   (<code>pbi config set-cache-folder</code>). <code>pbi sync plan|run --config</code> says the same. A bucket that holds no
@@ -2660,6 +2839,30 @@
 <li><code>pbi workspaces list --top</code> below 1 is reported as a usage error.</li>
 <li><code>pbi apps augment</code> and <code>pbi reports users</code> with <code>--file-type excel</code> and a target that
   has a file extension now report a usage error. They used to crash with a <code>TypeError</code>.</li>
+</ul>
+<h4 id="sync-and-plan-files">Sync and plan files<a class="headerlink" href="#sync-and-plan-files" title="Permanent link">¤</a></h4>
+<ul>
+<li>An incremental scan skipped a workspace that changed again within 24 hours of its last
+  scan, and moved the starting point of the next scan past the change. The batches of an
+  incremental scan are now always scanned, and the next scan continues from the start of
+  the oldest scan a run relied on (one it found fresh or continued) when that is earlier
+  than the start of the run. See <a href="../sync/#scans">Sync</a>.</li>
+<li>A day of audit events whose read was interrupted could be sealed without its later
+  events: the continued read kept its old window. A day is now sealed only once a finished
+  read covered it to its end, and is read whole first when it was not; the manifest says
+  how far the reads cover (<code>window_end</code>, <code>covered_until</code>). Reading a day no longer reads all
+  its stored events again for each page.</li>
+<li>A scan that an earlier run started is continued even when a workspace was added or
+  removed since, which used to shift the batches and start it over.</li>
+<li>A <a href="../plan-file/">plan file</a> that scans a workspace through two entries (or an entry and
+  the tenant) scans it once with the options of all of them, as the TUI says, instead of
+  once per entry. A <code>via:</code> that is no stored profile and looks like a misspelt <code>auto</code>,
+  <code>admin</code> or <code>user</code> says which was meant.</li>
+<li>The sync state forgets failed and deferred units that no run touched for 30 days, and
+  those of days of events older than the API keeps; once 1,000 were kept, new failures were
+  no longer recorded. Runs that begin within the same second (the steps of a plan file) get
+  their own ids (<code>20261001T080000Z-2</code>). A run stopped by an expired token counts the units
+  it left undone.</li>
 </ul>
 <h3 id="development">Development<a class="headerlink" href="#development" title="Permanent link">¤</a></h3>
 <ul>

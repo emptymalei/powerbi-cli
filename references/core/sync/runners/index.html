@@ -899,6 +899,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../auth/" class="md-nav__link">
         
   
@@ -907,6 +934,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1346,10 +1400,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1367,8 +1421,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="true">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2605,10 +2659,7 @@ the active one)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/sync/runners.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">68</span>
 <span class="normal">69</span>
 <span class="normal">70</span>
 <span class="normal">71</span>
@@ -2629,7 +2680,10 @@ the active one)</p>
 <span class="normal">86</span>
 <span class="normal">87</span>
 <span class="normal">88</span>
-<span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Context</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What the runners of a run share.</span>
 
@@ -2824,6 +2878,23 @@ the active one)</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>scanned_at</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="datetime.datetime">datetime</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>for a scan, when the scan whose result it stored (or found fresh)
+began: the changes made after that moment may be missing from it</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -2856,7 +2927,10 @@ the active one)</p>
 <span class="normal">59</span>
 <span class="normal">60</span>
 <span class="normal">61</span>
-<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Outcome</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What became of a unit.</span>
 
@@ -2868,6 +2942,8 @@ the active one)</p>
 <span class="sd">    :param requests: how many requests it took</span>
 <span class="sd">    :param retry_after: for a deferred unit, the seconds until a request fits</span>
 <span class="sd">    :param endpoint: for a deferred unit, the operation that has no quota left</span>
+<span class="sd">    :param scanned_at: for a scan, when the scan whose result it stored (or found fresh)</span>
+<span class="sd">        began: the changes made after that moment may be missing from it</span>
 <span class="sd">    """</span>
 
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
@@ -2877,6 +2953,7 @@ the active one)</p>
     <span class="n">requests</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">retry_after</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">endpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scanned_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -2917,15 +2994,18 @@ the active one)</p>
 <p>Every page is stored before the next one is asked for, with the link to the next page,
 so that an interrupted read continues where it stopped. Events are told apart by
 their <code>Id</code>, so reading a day again adds only what is new. A day is sealed, and never
-read again, once it is over and the events that arrive late have had time to arrive.</p>
+read again, once it is over, the events that arrive late have had time to arrive, and a
+read that went to its last page covered the day to its end.</p>
+<p>An interrupted read is continued with the window it was started with, which may end
+before the day did. The day's manifest says how far each read covers (<code>window_end</code>,
+and <code>covered_until</code> once a read went to its last page); when the continued read
+covered less than the day and the day is due to be sealed, the day is read once more
+whole before it is (only the events not stored yet are added).</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/runners.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
 <span class="normal">154</span>
@@ -2999,13 +3079,58 @@ read again, once it is over and the events that arrive late have had time to arr
 <span class="normal">222</span>
 <span class="normal">223</span>
 <span class="normal">224</span>
-<span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_events_day</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_events_day</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Read the events of one UTC day into its log, page by page.</span>
 
 <span class="sd">    Every page is stored before the next one is asked for, with the link to the next page,</span>
 <span class="sd">    so that an interrupted read continues where it stopped. Events are told apart by</span>
 <span class="sd">    their ``Id``, so reading a day again adds only what is new. A day is sealed, and never</span>
-<span class="sd">    read again, once it is over and the events that arrive late have had time to arrive.</span>
+<span class="sd">    read again, once it is over, the events that arrive late have had time to arrive, and a</span>
+<span class="sd">    read that went to its last page covered the day to its end.</span>
+
+<span class="sd">    An interrupted read is continued with the window it was started with, which may end</span>
+<span class="sd">    before the day did. The day's manifest says how far each read covers (``window_end``,</span>
+<span class="sd">    and ``covered_until`` once a read went to its last page); when the continued read</span>
+<span class="sd">    covered less than the day and the day is due to be sealed, the day is read once more</span>
+<span class="sd">    whole before it is (only the events not stored yet are added).</span>
 <span class="sd">    """</span>
     <span class="k">assert</span> <span class="n">unit</span><span class="o">.</span><span class="n">day</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="n">options</span><span class="p">,</span> <span class="n">store</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">store</span>
@@ -3018,14 +3143,24 @@ read again, once it is over and the events that arrive late have had time to arr
     <span class="n">now</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">day</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">min</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
     <span class="n">day_end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">last_moment</span> <span class="o">=</span> <span class="n">day_end</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">milliseconds</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="c1"># today is not over: ask for what has happened so far, and come back for the rest</span>
-    <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">day_end</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">milliseconds</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">now</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">last_moment</span><span class="p">,</span> <span class="n">now</span><span class="p">)</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"startDateTime"</span><span class="p">:</span> <span class="n">_quoted</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="s2">"endDateTime"</span><span class="p">:</span> <span class="n">_quoted</span><span class="p">(</span><span class="n">end</span><span class="p">)}</span>
     <span class="n">request</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">method</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">:</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">"params"</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">client_for</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span> <span class="n">unit</span><span class="o">.</span><span class="n">account</span><span class="p">)</span>
     <span class="n">profile</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">profile_name</span><span class="p">()</span>
+    <span class="c1"># the ids of the stored events, kept between pages rather than read for each page</span>
+    <span class="n">known</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">event_ids</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+    <span class="n">covered</span> <span class="o">=</span> <span class="n">stored</span><span class="o">.</span><span class="n">covered_until</span> <span class="k">if</span> <span class="n">stored</span> <span class="k">else</span> <span class="kc">None</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">start_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">start_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">window</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Read to the last page, from a link to continue at or from the first page.</span>
+
+<span class="sd">        :param window: where the window of the read ends (``None``: not known, for a read</span>
+<span class="sd">            started by an older version)</span>
+<span class="sd">        """</span>
+        <span class="k">nonlocal</span> <span class="n">covered</span>
         <span class="n">added</span> <span class="o">=</span> <span class="n">pages</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">iter_pages</span><span class="p">(</span>
             <span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">start_at</span><span class="p">,</span> <span class="n">max_wait</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">max_wait</span>
@@ -3034,6 +3169,12 @@ read again, once it is over and the events that arrive late have had time to arr
             <span class="n">body</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">data</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
             <span class="n">last</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"lastResultSet"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
             <span class="n">following</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">last</span> <span class="k">else</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"continuationUri"</span><span class="p">)</span>
+            <span class="n">extra</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">extra</span><span class="p">[</span><span class="s2">"window_end"</span><span class="p">]</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">following</span> <span class="ow">and</span> <span class="p">(</span><span class="n">covered</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">window</span> <span class="o">&gt;</span> <span class="n">covered</span><span class="p">):</span>
+                    <span class="n">covered</span> <span class="o">=</span> <span class="n">window</span>  <span class="c1"># the read is over: it covers its whole window</span>
+                    <span class="n">extra</span><span class="p">[</span><span class="s2">"covered_until"</span><span class="p">]</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
             <span class="n">added</span> <span class="o">+=</span> <span class="n">store</span><span class="o">.</span><span class="n">append_events</span><span class="p">(</span>
                 <span class="n">ctx</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span>
                 <span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
@@ -3043,14 +3184,20 @@ read again, once it is over and the events that arrive late have had time to arr
                 <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
                 <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
                 <span class="n">at</span><span class="o">=</span><span class="n">now</span><span class="p">,</span>
+                <span class="n">known</span><span class="o">=</span><span class="n">known</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
                 <span class="k">break</span>
         <span class="k">return</span> <span class="n">added</span><span class="p">,</span> <span class="n">pages</span>
 
     <span class="n">resume</span> <span class="o">=</span> <span class="n">stored</span><span class="o">.</span><span class="n">cursor</span> <span class="k">if</span> <span class="n">stored</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">options</span><span class="o">.</span><span class="n">force</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">resumed_window</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">resume</span> <span class="ow">and</span> <span class="n">stored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">stored</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"window_end"</span><span class="p">)</span>
+        <span class="n">resumed_window</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">stamp</span><span class="p">)</span> <span class="k">if</span> <span class="n">stamp</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">added</span><span class="p">,</span> <span class="n">pages</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">resume</span><span class="p">)</span>
+        <span class="n">added</span><span class="p">,</span> <span class="n">pages</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">resume</span><span class="p">,</span> <span class="n">resumed_window</span> <span class="k">if</span> <span class="n">resume</span> <span class="k">else</span> <span class="n">end</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">ApiError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">resume</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">error</span><span class="o">.</span><span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STALE_CURSOR</span><span class="p">:</span>
             <span class="k">raise</span>
@@ -3066,10 +3213,16 @@ read again, once it is over and the events that arrive late have had time to arr
             <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
             <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
             <span class="n">at</span><span class="o">=</span><span class="n">now</span><span class="p">,</span>
+            <span class="n">known</span><span class="o">=</span><span class="n">known</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">added</span><span class="p">,</span> <span class="n">pages</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">added</span><span class="p">,</span> <span class="n">pages</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
 
-    <span class="n">complete</span> <span class="o">=</span> <span class="n">now</span> <span class="o">&gt;=</span> <span class="n">day_end</span> <span class="o">+</span> <span class="n">options</span><span class="o">.</span><span class="n">seal_grace</span>
+    <span class="n">due</span> <span class="o">=</span> <span class="n">now</span> <span class="o">&gt;=</span> <span class="n">day_end</span> <span class="o">+</span> <span class="n">options</span><span class="o">.</span><span class="n">seal_grace</span>
+    <span class="k">if</span> <span class="n">due</span> <span class="ow">and</span> <span class="p">(</span><span class="n">covered</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">covered</span> <span class="o">&lt;</span> <span class="n">last_moment</span><span class="p">):</span>
+        <span class="c1"># the read that was continued stopped short of the end of the day: read it whole</span>
+        <span class="n">more</span><span class="p">,</span> <span class="n">more_pages</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="n">added</span><span class="p">,</span> <span class="n">pages</span> <span class="o">=</span> <span class="n">added</span> <span class="o">+</span> <span class="n">more</span><span class="p">,</span> <span class="n">pages</span> <span class="o">+</span> <span class="n">more_pages</span>
+    <span class="n">complete</span> <span class="o">=</span> <span class="n">due</span> <span class="ow">and</span> <span class="n">covered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">covered</span> <span class="o">&gt;=</span> <span class="n">last_moment</span>
     <span class="k">if</span> <span class="n">complete</span><span class="p">:</span>
         <span class="n">store</span><span class="o">.</span><span class="n">seal_day</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">at</span><span class="o">=</span><span class="n">now</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Outcome</span><span class="p">(</span>
@@ -3101,10 +3254,7 @@ every time, as the API allows only 30 of these requests an hour.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/runners.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">124</span>
 <span class="normal">125</span>
 <span class="normal">126</span>
 <span class="normal">127</span>
@@ -3116,7 +3266,10 @@ every time, as the API allows only 30 of these requests an hour.</p>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span>
-<span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_modified</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_modified</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""List the workspaces to scan: all of them, or those modified since the last scan.</span>
 
 <span class="sd">    The list is an intermediate result, not data: it is not stored, and it is asked for</span>
@@ -3156,45 +3309,7 @@ stopped) is continued, not started again.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/runners.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">231</span>
-<span class="normal">232</span>
-<span class="normal">233</span>
-<span class="normal">234</span>
-<span class="normal">235</span>
-<span class="normal">236</span>
-<span class="normal">237</span>
-<span class="normal">238</span>
-<span class="normal">239</span>
-<span class="normal">240</span>
-<span class="normal">241</span>
-<span class="normal">242</span>
-<span class="normal">243</span>
-<span class="normal">244</span>
-<span class="normal">245</span>
-<span class="normal">246</span>
-<span class="normal">247</span>
-<span class="normal">248</span>
-<span class="normal">249</span>
-<span class="normal">250</span>
-<span class="normal">251</span>
-<span class="normal">252</span>
-<span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span>
-<span class="normal">258</span>
-<span class="normal">259</span>
-<span class="normal">260</span>
-<span class="normal">261</span>
-<span class="normal">262</span>
-<span class="normal">263</span>
-<span class="normal">264</span>
-<span class="normal">265</span>
-<span class="normal">266</span>
-<span class="normal">267</span>
-<span class="normal">268</span>
-<span class="normal">269</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">269</span>
 <span class="normal">270</span>
 <span class="normal">271</span>
 <span class="normal">272</span>
@@ -3205,7 +3320,53 @@ stopped) is continued, not started again.</p>
 <span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span>
-<span class="normal">280</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_scan_batch</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_scan_batch</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Scan up to 100 workspaces and keep the result.</span>
 
 <span class="sd">    A scan that an earlier run started and did not collect (the token expired, the run was</span>
@@ -3215,7 +3376,12 @@ stopped) is continued, not started again.</p>
     <span class="n">flags</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">scan_flags</span>
     <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">planner</span><span class="o">.</span><span class="n">is_fresh</span><span class="p">(</span><span class="n">unit</span><span class="p">):</span>
         <span class="n">found</span> <span class="o">=</span> <span class="n">latest_scan</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span> <span class="n">unit</span><span class="o">.</span><span class="n">workspace_ids</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Outcome</span><span class="p">(</span><span class="n">SKIPPED</span><span class="p">,</span> <span class="s2">"fresh"</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">found</span><span class="o">.</span><span class="n">version</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Outcome</span><span class="p">(</span>
+            <span class="n">SKIPPED</span><span class="p">,</span>
+            <span class="s2">"fresh"</span><span class="p">,</span>
+            <span class="n">version</span><span class="o">=</span><span class="n">found</span><span class="o">.</span><span class="n">version</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">scanned_at</span><span class="o">=</span><span class="n">_scan_started</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="n">batch</span> <span class="o">=</span> <span class="n">batch_key</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">workspace_ids</span><span class="p">)</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">client_for</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span> <span class="n">unit</span><span class="o">.</span><span class="n">account</span><span class="p">)</span>
@@ -3227,7 +3393,9 @@ stopped) is continued, not started again.</p>
             <span class="n">interval</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">scan_interval</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">scan_timeout</span><span class="p">,</span>
             <span class="n">resume</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">job</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">flags</span><span class="p">),</span>
-            <span class="n">on_started</span><span class="o">=</span><span class="k">lambda</span> <span class="n">job</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">set_job</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">flags</span><span class="p">),</span>
+            <span class="n">on_started</span><span class="o">=</span><span class="k">lambda</span> <span class="n">job</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">set_job</span><span class="p">(</span>
+                <span class="n">batch</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">unit</span><span class="o">.</span><span class="n">workspace_ids</span>
+            <span class="p">),</span>
             <span class="n">sleep</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">sleep</span><span class="p">,</span>
             <span class="n">monotonic</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">monotonic</span><span class="p">,</span>
             <span class="n">clock</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">clock</span><span class="p">,</span>
@@ -3254,6 +3422,7 @@ stopped) is continued, not started again.</p>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> workspaces"</span> <span class="o">+</span> <span class="p">(</span><span class="s2">", continued an earlier scan"</span> <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">resumed</span> <span class="k">else</span> <span class="s2">""</span><span class="p">),</span>
         <span class="n">version</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
         <span class="n">requests</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">run</span><span class="o">.</span><span class="n">resumed</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">run</span><span class="o">.</span><span class="n">polls</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">scanned_at</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">started_at</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -3277,10 +3446,7 @@ stopped) is continued, not started again.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/runners.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
@@ -3300,7 +3466,10 @@ stopped) is continued, not started again.</p>
 <span class="normal">115</span>
 <span class="normal">116</span>
 <span class="normal">117</span>
-<span class="normal">118</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_snapshot</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_snapshot</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="n">Unit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Outcome</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Fetch one request into the lake, unless the lake holds it fresh."""</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">client_for</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span> <span class="n">unit</span><span class="o">.</span><span class="n">account</span><span class="p">)</span>
     <span class="n">max_age</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">max_age</span> <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">max_age</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">unit</span><span class="o">.</span><span class="n">ttl</span>

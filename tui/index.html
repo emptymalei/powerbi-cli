@@ -1201,6 +1201,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1209,6 +1236,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1646,10 +1700,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1667,8 +1721,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3013,7 +3067,8 @@ connectors that it calls and what it gives them: <code>Sql.Database("srv", "db")
 file (and the sheet that is taken from it), <code>SharePoint.Files("https://...")</code> the site, <code>Web.Contents</code> the
 address. A name that stands for a text (a parameter of the dataset, or an earlier step of the query) is
 followed; text joined with <code>&amp;</code> is put together, and a part that cannot be followed is shown as <code>{Name}</code>
-and listed as <em>not known</em>. A native query (<code>[Query="select ..."]</code>, or <code>Value.NativeQuery</code>) is shown on
+and listed as <em>not known</em>. A native query (<code>[Query="select ..."]</code>, <code>Value.NativeQuery</code>, or the query of
+<code>Odbc.Query</code>) belongs to the source it is sent to, and is shown on
 one line (the line breaks and tabs that M writes as <code>#(lf)</code>, <code>#(cr,lf)</code> and <code>#(tab)</code> are blanks), and
 the tables after its <code>FROM</code> and <code>JOIN</code>. It is not an M parser: a connector it does not know is not a
 source (the table says so, and the JSON tab has the whole expression), and a calculated table (DAX)
@@ -3060,7 +3115,8 @@ data sources of Finance model</code>).</p>
 <li><em>Built on it</em>: the reports of a dataset, from the lists of the whole tenant, and
   everything else (datasets on a dataflow, dashboards on a report) from the scan of the
   item's <strong>own</strong> workspace. Another workspace may build on the item without the lake
-  knowing; the tab says so.</li>
+  knowing; the tab says so. An item that is built on two others is followed under the
+  first and marked <em>shown above</em> under the second.</li>
 </ul>
 <h3 id="copying-and-saving-what-you-see">Copying and saving what you see<a class="headerlink" href="#copying-and-saving-what-you-see" title="Permanent link">¤</a></h3>
 <p><img alt="The Export dialog: the Users tab of a report, as CSV" src="../images/tui-export.svg" /></p>

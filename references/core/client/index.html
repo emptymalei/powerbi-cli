@@ -899,6 +899,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../auth/" class="md-nav__link">
         
   
@@ -907,6 +934,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1597,10 +1651,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1618,8 +1672,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2762,9 +2816,7 @@ never gets somebody else's cached answer. Tokens are never stored or logged.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
@@ -2773,7 +2825,9 @@ never gets somebody else's cached answer. Tokens are never stored or logged.</p>
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
-<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ApiResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One answer of the API.</span>
 
@@ -3065,9 +3119,7 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">217</span>
-<span class="normal">218</span>
-<span class="normal">219</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
 <span class="normal">220</span>
 <span class="normal">221</span>
 <span class="normal">222</span>
@@ -3595,7 +3647,18 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
 <span class="normal">744</span>
 <span class="normal">745</span>
 <span class="normal">746</span>
-<span class="normal">747</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PowerBIClient</span><span class="p">:</span>
+<span class="normal">747</span>
+<span class="normal">748</span>
+<span class="normal">749</span>
+<span class="normal">750</span>
+<span class="normal">751</span>
+<span class="normal">752</span>
+<span class="normal">753</span>
+<span class="normal">754</span>
+<span class="normal">755</span>
+<span class="normal">756</span>
+<span class="normal">757</span>
+<span class="normal">758</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PowerBIClient</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Talks to the Power BI REST API and keeps what it learns in the lake.</span>
 
 <span class="sd">    The client can be shared by threads.</span>
@@ -3705,6 +3768,12 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
 
     <span class="c1"># -- one request ---------------------------------------------------------------</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fresh_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Credentials</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The current credentials, refused when their token has expired."""</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">()</span>
+        <span class="n">ensure_not_expired</span><span class="p">(</span><span class="n">credentials</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_clock</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">credentials</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Never send the token anywhere but to the API (continuation links come from it)."""</span>
         <span class="n">wanted</span><span class="p">,</span> <span class="n">given</span> <span class="o">=</span> <span class="n">urlsplit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span><span class="p">),</span> <span class="n">urlsplit</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -3740,8 +3809,7 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
 <span class="sd">        :raises ApiError: for any other error answer or a connection problem</span>
 <span class="sd">        """</span>
         <span class="n">endpoint</span> <span class="o">=</span> <span class="n">get_endpoint</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
-        <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">()</span>
-        <span class="n">ensure_not_expired</span><span class="p">(</span><span class="n">credentials</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_clock</span><span class="p">())</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fresh_credentials</span><span class="p">()</span>
         <span class="n">tenant</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant_key</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -3761,8 +3829,9 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
             <span class="n">wait</span> <span class="o">=</span> <span class="n">_parse_retry_after</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clock</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">wait</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">wait</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">2.0</span><span class="o">**</span><span class="n">attempt</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">)</span>
+            <span class="c1"># the block holds back the other threads asking for the same endpoint too</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">block</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">tenant</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">attempt</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_throttle_retries</span> <span class="ow">or</span> <span class="n">wait</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_throttle_wait</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">block</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">tenant</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">RateLimitError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"Power BI is throttling requests to </span><span class="si">{</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (HTTP 429). "</span>
                     <span class="sa">f</span><span class="s2">"Try again in </span><span class="si">{</span><span class="n">format_wait</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
@@ -3772,7 +3841,10 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Throttled on </span><span class="si">{</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, waiting </span><span class="si">{</span><span class="n">format_wait</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_throttle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_on_throttle</span><span class="p">(</span><span class="n">Throttled</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">attempt</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+            <span class="c1"># a stopped sync ends the pause early</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+            <span class="c1"># a token may have expired, or been replaced, during the wait</span>
+            <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fresh_credentials</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_for_status</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">credentials</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ApiResponse</span><span class="p">(</span>
@@ -4202,9 +4274,9 @@ raises <code>RateLimitError</code> (and blocks the endpoint locally)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Close the HTTP session."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4388,18 +4460,7 @@ an unreadable lake is skipped and the API is asked)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">627</span>
-<span class="normal">628</span>
-<span class="normal">629</span>
-<span class="normal">630</span>
-<span class="normal">631</span>
-<span class="normal">632</span>
-<span class="normal">633</span>
-<span class="normal">634</span>
-<span class="normal">635</span>
-<span class="normal">636</span>
-<span class="normal">637</span>
-<span class="normal">638</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">638</span>
 <span class="normal">639</span>
 <span class="normal">640</span>
 <span class="normal">641</span>
@@ -4508,7 +4569,18 @@ an unreadable lake is skipped and the API is asked)</p>
 <span class="normal">744</span>
 <span class="normal">745</span>
 <span class="normal">746</span>
-<span class="normal">747</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span>
+<span class="normal">747</span>
+<span class="normal">748</span>
+<span class="normal">749</span>
+<span class="normal">750</span>
+<span class="normal">751</span>
+<span class="normal">752</span>
+<span class="normal">753</span>
+<span class="normal">754</span>
+<span class="normal">755</span>
+<span class="normal">756</span>
+<span class="normal">757</span>
+<span class="normal">758</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">endpoint_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4652,10 +4724,10 @@ keeps the answers of the operations that depend on who asks apart by.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">312</span>
-<span class="normal">313</span>
-<span class="normal">314</span>
-<span class="normal">315</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identity_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identity_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Who the current credentials are for (see `Credentials.identity`): what the lake</span>
 <span class="sd">    keeps the answers of the operations that depend on who asks apart by."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">identity</span>
@@ -4706,18 +4778,7 @@ keeps the answers of the operations that depend on who asks apart by.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">502</span>
 <span class="normal">503</span>
 <span class="normal">504</span>
 <span class="normal">505</span>
@@ -4742,7 +4803,18 @@ keeps the answers of the operations that depend on who asks apart by.</p>
 <span class="normal">524</span>
 <span class="normal">525</span>
 <span class="normal">526</span>
-<span class="normal">527</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">iter_pages</span><span class="p">(</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">iter_pages</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">endpoint_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4801,9 +4873,9 @@ keeps the answers of the operations that depend on who asks apart by.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">308</span>
-<span class="normal">309</span>
-<span class="normal">310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">profile_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">profile_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The name of the profile the current credentials belong to, if they say."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">profile</span>
 </code></pre></div></td></tr></table></div>
@@ -4968,15 +5040,7 @@ URL built from <code>params</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
-<span class="normal">347</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">347</span>
 <span class="normal">348</span>
 <span class="normal">349</span>
 <span class="normal">350</span>
@@ -5030,7 +5094,18 @@ URL built from <code>params</code></p>
 <span class="normal">398</span>
 <span class="normal">399</span>
 <span class="normal">400</span>
-<span class="normal">401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">endpoint_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5053,8 +5128,7 @@ URL built from <code>params</code></p>
 <span class="sd">    :raises ApiError: for any other error answer or a connection problem</span>
 <span class="sd">    """</span>
     <span class="n">endpoint</span> <span class="o">=</span> <span class="n">get_endpoint</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>
-    <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">()</span>
-    <span class="n">ensure_not_expired</span><span class="p">(</span><span class="n">credentials</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_clock</span><span class="p">())</span>
+    <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fresh_credentials</span><span class="p">()</span>
     <span class="n">tenant</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant_key</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -5074,8 +5148,9 @@ URL built from <code>params</code></p>
         <span class="n">wait</span> <span class="o">=</span> <span class="n">_parse_retry_after</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clock</span><span class="p">())</span>
         <span class="k">if</span> <span class="n">wait</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">wait</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">2.0</span><span class="o">**</span><span class="n">attempt</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">)</span>
+        <span class="c1"># the block holds back the other threads asking for the same endpoint too</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">block</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">tenant</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">attempt</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_throttle_retries</span> <span class="ow">or</span> <span class="n">wait</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_throttle_wait</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">block</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">tenant</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">RateLimitError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"Power BI is throttling requests to </span><span class="si">{</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> (HTTP 429). "</span>
                 <span class="sa">f</span><span class="s2">"Try again in </span><span class="si">{</span><span class="n">format_wait</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
@@ -5085,7 +5160,10 @@ URL built from <code>params</code></p>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Throttled on </span><span class="si">{</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">, waiting </span><span class="si">{</span><span class="n">format_wait</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_throttle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_on_throttle</span><span class="p">(</span><span class="n">Throttled</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">attempt</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sleep</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+        <span class="c1"># a stopped sync ends the pause early</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_limiter</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+        <span class="c1"># a token may have expired, or been replaced, during the wait</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fresh_credentials</span><span class="p">()</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_raise_for_status</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">credentials</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ApiResponse</span><span class="p">(</span>
@@ -5115,9 +5193,9 @@ URL built from <code>params</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">304</span>
-<span class="normal">305</span>
-<span class="normal">306</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">tenant_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">tenant_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The key the lake uses for the current credentials."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span><span class="p">())</span>
 </code></pre></div></td></tr></table></div>
@@ -5144,13 +5222,13 @@ checked.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">317</span>
-<span class="normal">318</span>
-<span class="normal">319</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">319</span>
 <span class="normal">320</span>
 <span class="normal">321</span>
 <span class="normal">322</span>
-<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">token_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenInfo</span><span class="p">:</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">token_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenInfo</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The tenant and expiry the current token states.</span>
 
 <span class="sd">    They are read from the token itself: nothing is sent, and the signature is not</span>
@@ -5301,9 +5379,7 @@ checked.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">130</span>
 <span class="normal">131</span>
 <span class="normal">132</span>
 <span class="normal">133</span>
@@ -5316,7 +5392,9 @@ checked.</p>
 <span class="normal">140</span>
 <span class="normal">141</span>
 <span class="normal">142</span>
-<span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Result</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What `PowerBIClient.fetch` returns.</span>
 
@@ -5449,9 +5527,7 @@ checked.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
 <span class="normal">151</span>
@@ -5460,7 +5536,9 @@ checked.</p>
 <span class="normal">154</span>
 <span class="normal">155</span>
 <span class="normal">156</span>
-<span class="normal">157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Throttled</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Reported to ``on_throttle`` when the API asks to wait (``429``).</span>
 
@@ -5513,14 +5591,14 @@ checked.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">750</span>
-<span class="normal">751</span>
-<span class="normal">752</span>
-<span class="normal">753</span>
-<span class="normal">754</span>
-<span class="normal">755</span>
-<span class="normal">756</span>
-<span class="normal">757</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">body_hash</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">761</span>
+<span class="normal">762</span>
+<span class="normal">763</span>
+<span class="normal">764</span>
+<span class="normal">765</span>
+<span class="normal">766</span>
+<span class="normal">767</span>
+<span class="normal">768</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">body_hash</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""SHA-256 of a request body, for the request record of a manifest."""</span>
     <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -5572,7 +5650,9 @@ without a word, however long. The client handles throttling itself.</p>
 <span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
-<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_session</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_session</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A session that retries connection problems and ``5xx`` answers of reads.</span>
 
 <span class="sd">    ``429`` is *not* left to the retry adapter: it would sleep for any ``Retry-After``</span>
@@ -5585,6 +5665,8 @@ without a word, however long. The client handles throttling itself.</p>
         <span class="n">backoff_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
         <span class="n">status_forcelist</span><span class="o">=</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">),</span>
         <span class="n">respect_retry_after_header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="c1"># the last answer is returned, so that the error says its status and message</span>
+        <span class="n">raise_on_status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">adapter</span> <span class="o">=</span> <span class="n">HTTPAdapter</span><span class="p">(</span>
         <span class="n">max_retries</span><span class="o">=</span><span class="n">retry</span><span class="p">,</span> <span class="n">pool_connections</span><span class="o">=</span><span class="n">POOL_SIZE</span><span class="p">,</span> <span class="n">pool_maxsize</span><span class="o">=</span><span class="n">POOL_SIZE</span>
@@ -5615,15 +5697,15 @@ without a word, however long. The client handles throttling itself.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/client.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">162</span>
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
 <span class="normal">166</span>
 <span class="normal">167</span>
-<span class="normal">168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rows_of</span><span class="p">(</span><span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rows_of</span><span class="p">(</span><span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The list of rows in a response of ``endpoint`` (empty when there is none)."""</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">items_keys</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">data</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>

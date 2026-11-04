@@ -899,6 +899,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../auth/" class="md-nav__link">
         
   
@@ -907,6 +934,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1531,10 +1585,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1552,8 +1606,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2665,15 +2719,7 @@ shows nothing)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">46</span>
 <span class="normal">47</span>
 <span class="normal">48</span>
 <span class="normal">49</span>
@@ -2681,7 +2727,15 @@ shows nothing)</p>
 <span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
-<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Category</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A kind of data in a lake, for deciding what to publish.</span>
 
@@ -2836,20 +2890,20 @@ shows nothing)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">151</span>
 <span class="normal">152</span>
 <span class="normal">153</span>
 <span class="normal">154</span>
 <span class="normal">155</span>
-<span class="normal">156</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CategorySummary</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a category holds in the lake, and whether it is left out.</span>
 
@@ -3044,15 +3098,7 @@ shows nothing)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
 <span class="normal">126</span>
 <span class="normal">127</span>
 <span class="normal">128</span>
@@ -3067,7 +3113,15 @@ shows nothing)</p>
 <span class="normal">137</span>
 <span class="normal">138</span>
 <span class="normal">139</span>
-<span class="normal">140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Leaf</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A folder that is copied whole: a version of a request, or a day of events.</span>
 
@@ -3351,15 +3405,7 @@ shows nothing)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">167</span>
 <span class="normal">168</span>
 <span class="normal">169</span>
 <span class="normal">170</span>
@@ -3388,7 +3434,15 @@ shows nothing)</p>
 <span class="normal">193</span>
 <span class="normal">194</span>
 <span class="normal">195</span>
-<span class="normal">196</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PublishPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a publish would copy, and where. Made without writing anything.</span>
 
@@ -3612,6 +3666,23 @@ shows nothing)</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>removed</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>endpoint folders deleted at the destination because their category is
+now left out</p>
+              </div>
+            </td>
+            <td>
+                  <code>0</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3624,22 +3695,25 @@ shows nothing)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">199</span>
-<span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
-<span class="normal">204</span>
-<span class="normal">205</span>
-<span class="normal">206</span>
-<span class="normal">207</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span>
 <span class="normal">213</span>
-<span class="normal">214</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PublishResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a publish did.</span>
 
@@ -3648,6 +3722,8 @@ shows nothing)</p>
 <span class="sd">    :param size: bytes written</span>
 <span class="sd">    :param pruned: older versions deleted at the destination</span>
 <span class="sd">    :param info: what the marker now says</span>
+<span class="sd">    :param removed: endpoint folders deleted at the destination because their category is</span>
+<span class="sd">        now left out</span>
 <span class="sd">    """</span>
 
     <span class="n">copied</span><span class="p">:</span> <span class="nb">int</span>
@@ -3655,6 +3731,7 @@ shows nothing)</p>
     <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">pruned</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">info</span><span class="p">:</span> <span class="n">PublishInfo</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">removed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3696,9 +3773,9 @@ shows nothing)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">category_of</span><span class="p">(</span><span class="n">endpoint_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">category_of</span><span class="p">(</span><span class="n">endpoint_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The category of an ``endpoint=`` folder value (everything else is a list)."""</span>
     <span class="k">return</span> <span class="n">_BY_FOLDER</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint_folder</span><span class="p">,</span> <span class="s2">"lists"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -3891,36 +3968,7 @@ category that cannot be left out; or when there is nothing to publish</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">306</span>
-<span class="normal">307</span>
-<span class="normal">308</span>
-<span class="normal">309</span>
-<span class="normal">310</span>
-<span class="normal">311</span>
-<span class="normal">312</span>
-<span class="normal">313</span>
-<span class="normal">314</span>
-<span class="normal">315</span>
-<span class="normal">316</span>
-<span class="normal">317</span>
-<span class="normal">318</span>
-<span class="normal">319</span>
-<span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
-<span class="normal">333</span>
-<span class="normal">334</span>
-<span class="normal">335</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">335</span>
 <span class="normal">336</span>
 <span class="normal">337</span>
 <span class="normal">338</span>
@@ -3983,7 +4031,36 @@ category that cannot be left out; or when there is nothing to publish</p>
 <span class="normal">395</span>
 <span class="normal">396</span>
 <span class="normal">397</span>
-<span class="normal">398</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan_publish</span><span class="p">(</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan_publish</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="n">LakeStore</span><span class="p">,</span>
     <span class="n">destination</span><span class="p">:</span> <span class="n">LakeStore</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -4166,36 +4243,7 @@ category that cannot be left out; or when there is nothing to publish</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span>
-<span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">430</span>
 <span class="normal">431</span>
 <span class="normal">432</span>
 <span class="normal">433</span>
@@ -4227,7 +4275,40 @@ category that cannot be left out; or when there is nothing to publish</p>
 <span class="normal">459</span>
 <span class="normal">460</span>
 <span class="normal">461</span>
-<span class="normal">462</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span>
     <span class="n">plan</span><span class="p">:</span> <span class="n">PublishPlan</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">now</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4261,11 +4342,7 @@ category that cannot be left out; or when there is nothing to publish</p>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">leaf</span><span class="o">.</span><span class="n">mutable</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target</span> <span class="o">/</span> <span class="n">MANIFEST</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
             <span class="n">skipped</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">leaf</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>  <span class="c1"># a version never changes: it is there already</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="p">(</span>
-                <span class="n">name</span><span class="p">,</span>
-                <span class="n">_</span><span class="p">,</span>
-            <span class="p">)</span> <span class="ow">in</span> <span class="n">leaf</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>  <span class="c1"># the manifest last: a copy that stops is ignored</span>
-                <span class="n">payload</span> <span class="o">=</span> <span class="p">(</span><span class="n">leaf</span><span class="o">.</span><span class="n">source</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">_payloads</span><span class="p">(</span><span class="n">leaf</span><span class="p">):</span>
                 <span class="n">writer</span><span class="o">.</span><span class="n">write_file</span><span class="p">(</span><span class="n">target</span> <span class="o">/</span> <span class="n">name</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
                 <span class="n">copied</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">size</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
@@ -4273,6 +4350,13 @@ category that cannot be left out; or when there is nothing to publish</p>
             <span class="n">on_leaf</span><span class="p">(</span><span class="n">done</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">leaves</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">tenant</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">writer</span><span class="o">.</span><span class="n">write_state</span><span class="p">(</span><span class="n">tenant</span><span class="p">,</span> <span class="n">STATE_NAME</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    <span class="c1"># what an earlier publish copied of a category that is now left out goes, so that the</span>
+    <span class="c1"># marker does not say "left out" over data that is still there</span>
+    <span class="n">removed</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">tenant</span> <span class="ow">in</span> <span class="n">writer</span><span class="o">.</span><span class="n">tenants</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="n">writer</span><span class="o">.</span><span class="n">endpoint_folders</span><span class="p">(</span><span class="n">tenant</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">category_of</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">excluded</span><span class="p">:</span>
+                <span class="n">removed</span> <span class="o">+=</span> <span class="n">writer</span><span class="o">.</span><span class="n">remove_endpoint</span><span class="p">(</span><span class="n">tenant</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
     <span class="n">pruned</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">if</span> <span class="n">plan</span><span class="o">.</span><span class="n">prune</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">tenant</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">tenants</span><span class="p">:</span>
@@ -4280,7 +4364,8 @@ category that cannot be left out; or when there is nothing to publish</p>
     <span class="n">info</span> <span class="o">=</span> <span class="n">PublishInfo</span><span class="p">(</span>
         <span class="n">published_at</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
         <span class="n">published_by</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">publisher</span><span class="p">,</span>
-        <span class="n">tenants</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">tenants</span><span class="p">),</span>
+        <span class="c1"># tenants of earlier publishes that this one left alone are still there</span>
+        <span class="n">tenants</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">tenants</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">tenants</span><span class="p">())),</span>
         <span class="n">excluded</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">excluded</span><span class="p">),</span>
         <span class="n">history</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">history</span><span class="p">,</span>
         <span class="n">files</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">files</span><span class="p">,</span>
@@ -4288,7 +4373,7 @@ category that cannot be left out; or when there is nothing to publish</p>
         <span class="n">cli_version</span><span class="o">=</span><span class="n">cli_version</span><span class="p">(),</span>
     <span class="p">)</span>
     <span class="n">writer</span><span class="o">.</span><span class="n">write_marker</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>  <span class="c1"># last: it says the copy is complete</span>
-    <span class="k">return</span> <span class="n">PublishResult</span><span class="p">(</span><span class="n">copied</span><span class="p">,</span> <span class="n">skipped</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">pruned</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">PublishResult</span><span class="p">(</span><span class="n">copied</span><span class="p">,</span> <span class="n">skipped</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">pruned</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">removed</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4311,13 +4396,13 @@ category that cannot be left out; or when there is nothing to publish</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/publish.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">publisher_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">publisher_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Who is publishing, for the marker: the user and the machine."""</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">user</span> <span class="o">=</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()</span>

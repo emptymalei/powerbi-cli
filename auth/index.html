@@ -1057,6 +1057,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1065,6 +1092,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1502,10 +1556,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1523,8 +1577,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2550,6 +2604,15 @@ the administrator's list wins. The Info tab of a workspace says which accounts s
 <p>In your system keyring (Keychain, Credential Manager, Secret Service). When no keyring is
 available, or it will not take the token, they go to <code>~/.pbi_cli/credentials.json</code> in your
 profile folder. The profile names and which profile is active are in <code>~/.pbi_cli/config.yaml</code>.</p>
+<p>Each token is kept under its group and profile, such as <code>admin:default</code> and <code>user:default</code>,
+so a profile of the same name in the two groups has two tokens, and deleting one leaves the
+other. Older versions kept tokens under the bare profile name; those are still read, and
+moved to the group and profile the first time they are used (a bare-name token stays as long
+as a profile of that name in the other group still uses it). Profiles stored without a group
+(<code>pbi auth</code> without <code>-g</code>) keep the bare name.</p>
+<p>The credentials file is created readable by you only, and replaced in one step when it
+changes, so it is never seen half written. If it cannot be read, commands say so and name
+the file; fix or delete it, and store the tokens again with <code>pbi auth</code>.</p>
 <p><strong>On Windows the file is the usual place</strong>: the Credential Manager holds about 1,200
 characters at most, and a Power BI token is longer. <code>pbi auth</code> says where the token went:</p>
 <div class="highlight"><pre><span></span><code>✓ Credentials saved in C:\Users\me\.pbi_cli\credentials.json (the system keyring did not hold the token) for profile 'adm' in group 'admin'

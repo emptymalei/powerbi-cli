@@ -1145,6 +1145,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/accessreport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  accessreport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/auth/" class="md-nav__link">
         
   
@@ -1153,6 +1180,33 @@
     
   
   auth
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/core/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  backup
 
     
   </span>
@@ -1590,10 +1644,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_17" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_17" id="__nav_3_2_4_17_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
             
   
   
@@ -1611,8 +1665,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_17_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_17">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_19">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3095,7 +3149,13 @@ which is all the API keeps), oldest day first because those are the ones about t
 <li>Events are told apart by their <code>Id</code>, so reading a day again adds only what is new.</li>
 <li>Today is not over: its window ends at the time of the run, and the day is read again by
   the next runs (when it is older than <code>--max-age</code>, 1 hour by default).</li>
-<li>Events arrive late, so a day is <em>sealed</em>, and never read again, a day after it ended.</li>
+<li>Events arrive late, so a day is <em>sealed</em>, and never read again, a day after it ended, and
+  only once a read that went to its last page covered the day to its end. A read that is
+  continued keeps the window it started with (for today, up to the time it started), so
+  when such a read covered less than the day, the day is read once more, whole, before it
+  is sealed; only the events not stored yet are added. The manifest of a day says how far
+  the reads cover: <code>window_end</code> for the read under way, <code>covered_until</code> for the latest one
+  that finished.</li>
 </ul>
 <p>The logs are in the lake as <code>endpoint=admin_activityevents/dt=&lt;day&gt;/part-NNNN.jsonl</code> (see
 <a href="../lake/">Data lake</a>), and <code>pbi lake show admin.activityevents --day 2026-09-28</code> prints one.</p>
@@ -3122,11 +3182,22 @@ continued from when they had the same options and covered the same workspaces
 (<code>--exclude-personal</code>, <code>--exclude-inactive</code>): a scan without lineage does not tell what a
 scan with lineage would have found. The API only tells what changed in the last 30 days,
 so a longer gap means a full scan too. <code>--full-scan</code> (and <code>--force</code>) scan everything.</p>
+<p>The workspaces of an incremental scan changed after the last scan, so a stored scan of them
+is never taken as fresh, however young it is: they are always scanned again. A full scan
+(<code>--full-scan</code>) skips the batches scanned in the last 24 hours. The next scan then continues
+from the start of this run, or from the start of the oldest scan the run relied on (a batch
+it skipped as fresh, or a scan it continued from an earlier run) when that is earlier: what
+changed after that scan began may be missing from it.</p>
 <p><strong>Scans that do not finish.</strong> A scan that was started and not collected, because the
-token expired or the run was stopped, is remembered in the state. The next run continues
-it; the API keeps a result for 24 hours. A scan that takes longer than <code>--scan-timeout</code>
+token expired or the run was stopped, is remembered in the state, with its workspaces. The
+next run continues it, as the same batch even when the list of workspaces changed in
+between (the other workspaces are cut in batches after it); the API keeps a result for 24
+hours. A scan that takes longer than <code>--scan-timeout</code>
 (10 minutes) is reported as failed, but it may still finish, so the next run looks at it
 again before starting another. A scan that failed is started again.</p>
+<p>A lake in S3 is worth copying before a large run: <code>pbi sync run --backup</code> copies it next
+to itself before the first write (<code>--backup-to PLACE</code> chooses where). See
+<a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</p>
 <h2 id="stopping-and-continuing">Stopping, and continuing<a class="headerlink" href="#stopping-and-continuing" title="Permanent link">¤</a></h2>
 <p>A sync can be stopped at any time, and run again:</p>
 <ul>
