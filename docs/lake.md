@@ -169,6 +169,67 @@ $ pbi lake prune --yes
 
 `pbi cache clear` never touches the lake; see [Cache (legacy)](cache.md).
 
+### Who has access to everything: `pbi lake users`
+
+`pbi lake users KIND` lists the people of every item of a kind at once (`report`,
+`dataset`, `dashboard`, `dataflow`, `app` or `workspace`): one row for each person and item,
+from what the lake holds, with no token and no network.
+
+```text
+$ pbi lake users report
+Kind    Item          Workspace    Name  E-mail or id          Access
+Report  Sales         Finance      Ann   ann@example.com       Owner
+Report  Sales         Finance      Bob   bob@example.com       Viewer
+Report  Stock         Logistics    Ann   ann@example.com       Owner
+
+3 row(s): 2 different people, 2 of 2 report(s) with users.
+```
+
+`-o report-users.xlsx` saves it instead (the ending says the format: `.csv`, `.xlsx`,
+`.json`, `.md` or `.tsv`, or choose with `-f`), and `-w Finance` narrows it to the items of a
+workspace, by name or id (repeat it for more). A file has more columns than the terminal
+shows: the ids of the item and of its workspace, the type of the person (user, group) and
+where the lake has them from. Items whose users the lake does not hold are named after the
+table, so a gap is never mistaken for an item nobody can open. The users come from
+`pbi sync run report-users`, `app-users` or a scan with `--get-artifact-users` (see
+[Sync](sync.md)).
+
+### Back up a lake before writing into it
+
+In a local lake every file is written to a temporary name and then moved over the old one,
+so a file is never seen half written. S3 (and the other clouds) has no such move: a sync, a
+prune or a publish that stops half way, because the connection dropped or the laptop went to
+sleep, leaves some objects new and some old. A copy taken just before is the way back.
+
+`pbi lake backup` copies a whole lake, by default next to it as
+`<lake>-backup-<UTC time>`, or to `--to <empty folder or URL>`. The commands that write into
+a lake take the copy themselves with `--backup` (or `--backup-to PLACE`), before the first
+write:
+
+| Command | What is copied |
+| --- | --- |
+| `pbi sync run --backup` | the work lake |
+| `pbi lake prune --backup` | the work lake |
+| `pbi lake publish DESTINATION --backup` | the destination, when an earlier publish is there |
+
+```text
+$ pbi sync run --backup
+Backing up s3://my-bucket/pbi-lake before the sync ...
+✓ Backed up 4210 file(s) to s3://my-bucket/pbi-lake-backup-20261030T224000Z
+```
+
+Without the flag, these commands give a one-line tip when the lake is in a cloud. A backup
+that cannot be made (the place holds something already, the bucket refuses) stops the
+command before anything is written. Between two places of the same cloud the objects are
+copied by the cloud, not through your machine; the bucket needs room for a second copy.
+
+The copy has the layout of a lake: `pbi tui --lake <copy>` opens it (read only). Its
+`backup.json` is written last and says what was copied and when; a copy without it stopped
+before it was complete. To go back, copy the backup over the lake, for example
+`aws s3 sync s3://my-bucket/pbi-lake-backup-20261030T224000Z s3://my-bucket/pbi-lake --delete`,
+or a folder over the folder. Backups are never deleted by pbi: remove the old ones yourself.
+The terminal UI takes no backup; run `pbi lake backup` before a large sync from it.
+
 Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
 than the one of your cache folder, such as one that a colleague shared, with
 `--lake <folder or s3://bucket/folder>`. A lake opened that way is only read, and `prune`

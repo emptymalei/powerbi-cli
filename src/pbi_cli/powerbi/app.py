@@ -5,7 +5,7 @@ from typing import List, Literal, Optional
 
 from loguru import logger
 
-from pbi_cli.powerbi.base import Base
+from pbi_cli.powerbi.base import ApiResponseError, Base
 
 
 class Apps(Base):
@@ -28,7 +28,7 @@ class Apps(Base):
         if cache_file is None:
             return {}
 
-        with open(cache_file, "r") as fp:
+        with open(cache_file, "r", encoding="utf-8") as fp:
             data = json.load(fp)
 
         return data
@@ -64,7 +64,7 @@ class Apps(Base):
         result = self._data_retriever.get(uri).json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         logger.info(f"Listing {len(result.get('value', []))} results")
 
@@ -134,7 +134,7 @@ class App(Base):
         result = self._data_retriever.get(uri).json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         return result
 
@@ -145,7 +145,7 @@ class App(Base):
         result = self._data_retriever.get(uri).json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         logger.info(f"Listing {len(result.get('value', []))} results")
 
@@ -158,7 +158,7 @@ class App(Base):
         result = self._data_retriever.get(uri).json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         logger.info(f"Listing {len(result.get('value', []))} results")
 

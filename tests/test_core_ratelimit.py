@@ -159,7 +159,9 @@ def test_request_waits_until_the_quota_frees_up():
     for _ in range(15):  # the per-minute window of admin.groups is now full
         with limiter.slot(GROUPS, "t1"):
             pass
-    assert limiter.wait_time(GROUPS, "t1") == pytest.approx(60)
+    assert limiter.tracker.next_slot(
+        Limiter.key(GROUPS, "t1"), GROUPS.limit
+    ) == pytest.approx(60)
     with limiter.slot(GROUPS, "t1"):
         pass
     assert clock.slept == [pytest.approx(60)]
@@ -241,7 +243,7 @@ def test_endpoint_without_quota_is_counted_but_never_waits():
     assert tracker.count("t1/user.apps", HOUR) == 300
     assert limiter.remaining(USER_APPS, "t1") is None
     assert limiter.usage(USER_APPS, "t1") == []
-    assert limiter.wait_time(USER_APPS, "t1") == 0
+    assert limiter.tracker.next_slot(Limiter.key(USER_APPS, "t1"), USER_APPS.limit) == 0
 
 
 def test_a_failed_request_still_counts():
@@ -308,11 +310,13 @@ def test_a_blocked_endpoint_waits_until_the_block_ends():
     clock = FakeClock()
     limiter, _ = make_limiter(clock, max_wait=None)
     limiter.block(GROUPS, "t1", 90)
-    assert limiter.wait_time(GROUPS, "t1") == pytest.approx(90)
+    assert limiter.tracker.next_slot(
+        Limiter.key(GROUPS, "t1"), GROUPS.limit
+    ) == pytest.approx(90)
     with limiter.slot(GROUPS, "t1"):
         pass
     assert clock.slept == [pytest.approx(90)]
-    assert limiter.wait_time(GROUPS, "t1") == 0
+    assert limiter.tracker.next_slot(Limiter.key(GROUPS, "t1"), GROUPS.limit) == 0
 
 
 def test_a_block_applies_to_endpoints_without_a_documented_quota_too():

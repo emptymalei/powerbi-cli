@@ -339,6 +339,18 @@ def test_the_tenant_of_the_token_wins_and_t_switches(world):
     assert tenant == "tenant-2" and tree == ["● Workspaces  1", "  ● Other"]
 
 
+@pytest.mark.parametrize("key", ["a", "t"])
+def test_a_and_t_do_not_open_a_dialog_over_a_dialog(world, key):
+    two_tenants(world)
+
+    async def scenario(ui):
+        await ui.press("t")
+        await ui.press(key)
+        return type(ui.app.screen).__name__, len(ui.app.screen_stack)
+
+    assert run_ui(backend_of(world), scenario) == ("ChoiceModal", 3)
+
+
 def test_a_tenant_can_be_given(world):
     two_tenants(world)
 

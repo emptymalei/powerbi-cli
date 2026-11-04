@@ -199,6 +199,13 @@ def test_missing_path_parameter_is_rejected():
         get_endpoint("admin.reports.users").split_params({})
 
 
+@pytest.mark.parametrize("value", ["", " ", ".", ".."])
+def test_a_path_value_that_would_leave_the_operation_is_rejected(value):
+    # /admin/groups/../users would be sent as /admin/users
+    with pytest.raises(ValueError, match="no usable value"):
+        get_endpoint("admin.reports.users").split_params({"reportId": value})
+
+
 def test_list_for_a_single_value_parameter_is_rejected():
     with pytest.raises(ValueError, match="single value"):
         get_endpoint("admin.groups").canonical_params({"$filter": ["a", "b"]})

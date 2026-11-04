@@ -676,6 +676,54 @@ def test_the_users_of_a_report_come_from_the_scan_otherwise(synced):
     assert users.source == "scan"
 
 
+def test_the_users_are_read_without_working_out_the_other_details(world, monkeypatch):
+    world.run("report-users")
+    catalog = catalog_of(world)
+
+    def no_details(*args, **kwargs):
+        raise AssertionError("the users need no other detail")
+
+    monkeypatch.setattr("pbi_cli.core.catalog.collect", no_details)
+    users = catalog.users(catalog.item("report", "rep-0001"))
+
+    assert users.source == "admin.reports.users" and len(users.rows) == 1
+
+
+def test_users_and_details_are_kept_until_the_lake_is_read_again(world, monkeypatch):
+    world.run("groups", "reports")
+    catalog = catalog_of(world)
+    report = catalog.item("report", "rep-0001")
+    calls = []
+    original = catalog._read_users
+
+    def counted(subject):
+        calls.append(subject.id)
+        return original(subject)
+
+    monkeypatch.setattr(catalog, "_read_users", counted)
+
+    first, details = catalog.users(report), catalog.details(report)
+    world.run("report-users")
+
+    assert catalog.users(report) is first and first.missing
+    assert [d.held for d in catalog.details(report)] == [d.held for d in details]
+    assert calls == ["rep-0001"]
+    catalog.reload()
+    assert catalog.users(report).source == "admin.reports.users"
+    assert any(d.held for d in catalog.details(report) if d.name == "users")
+
+
+def test_unreadable_users_in_the_lake_are_ignored(world):
+    world.run("report-users", "scan", scan_flags=FULL)
+    for found in world.store.parameter_sets(TENANT, "admin.reports.users"):
+        (found.latest.directory / "data.json").write_text("{", encoding="utf-8")
+    catalog = catalog_of(world)
+
+    users = catalog.users(catalog.item("report", "rep-0001"))
+
+    assert users.source == "scan"  # what the scan says instead
+
+
 def test_what_is_missing_about_users_is_said(world):
     world.run()
     catalog = catalog_of(world)
@@ -873,21 +921,129 @@ def test_a_reference_to_an_unknown_item_is_a_node_that_says_so(world):
     )
 
 
-def _scan_with(world, workspace):
-    """Store a scan result made by hand, for shapes the fake service cannot produce."""
+def _scan_with(world, workspace, asked=None, batch=None, describe=True):
+    """Store a scan result made by hand, for shapes the fake service cannot produce.
+
+    :param asked: the workspaces the scan was asked for (the one it returns by default)
+    :param describe: whether the manifest describes the workspaces it holds (older scans
+        did not)
+    """
+    workspaces = [workspace] if workspace else []
+    extra = {
+        "workspace_ids": list(asked or [workspace["id"]]),
+        "flags": FULL.canonical(),
+    }
+    if describe:
+        extra["workspaces"] = {w["id"]: {"name": w["name"]} for w in workspaces}
     world.store.write_snapshot(
         TENANT,
         "admin.scan.result",
-        {"batch": f"by-hand-{workspace['id']}", **FULL.canonical()},
-        {"workspaces": [workspace], "datasourceInstances": []},
+        {"batch": batch or f"by-hand-{workspace['id']}", **FULL.canonical()},
+        {"workspaces": workspaces, "datasourceInstances": []},
         kind="job",
-        extra={
-            "workspace_ids": [workspace["id"]],
-            "flags": FULL.canonical(),
-            "workspaces": {workspace["id"]: {"name": workspace["name"]}},
-        },
+        extra=extra,
         fetched_at=world.clock.now(),
     )
+
+
+def test_a_newer_scan_that_did_not_return_a_workspace_does_not_hide_the_older_one(
+    world,
+):
+    _scan_with(world, {"id": "w1", "name": "One"})
+    world.clock.advance(days=1)
+    _scan_with(world, {"id": "w2", "name": "Two"}, asked=["w1", "w2"], batch="both")
+    catalog = catalog_of(world)
+
+    assert catalog.scan_of("w1").workspace["name"] == "One"
+    assert catalog.scan_of("w2").workspace["name"] == "Two"
+
+
+def test_a_scan_stored_before_its_workspaces_were_described_counts_for_those_asked(
+    world,
+):
+    _scan_with(world, {"id": "w1", "name": "One"}, describe=False)
+
+    assert catalog_of(world).scan_of("w1").workspace["name"] == "One"
+
+
+def test_the_dataset_of_a_report_or_a_tile_is_found_in_the_scan_of_its_workspace(
+    world,
+):
+    _scan_with(
+        world,
+        {
+            "id": "w1",
+            "name": "One",
+            "datasets": [{"id": "d1", "name": "D1"}],
+            "reports": [{"id": "r1", "name": "R1", "datasetId": "d1"}],
+            "dashboards": [
+                {"id": "db1", "displayName": "Dash", "tiles": [{"datasetId": "d1"}]}
+            ],
+        },
+    )
+    catalog = catalog_of(world)
+
+    (of_report,) = catalog.lineage(catalog.item("report", "r1", "w1")).upstream
+    (of_tile,) = catalog.lineage(catalog.item("dashboard", "db1", "w1")).upstream
+
+    assert (of_report.name, of_report.workspace, of_report.note) == ("D1", "", "")
+    assert (of_tile.name, of_tile.workspace, of_tile.note) == ("D1", "", "")
+
+
+def test_a_dataset_that_is_in_no_list_nor_scan_does_not_borrow_a_workspace(world):
+    world.run("groups")
+    _scan_with(
+        world,
+        {
+            "id": "ws-0002",
+            "name": "Two",
+            "reports": [{"id": "r", "name": "R", "datasetId": "gone"}],
+        },
+    )
+    catalog = catalog_of(world)
+
+    (node,) = catalog.lineage(catalog.item("report", "r", "ws-0002")).upstream
+
+    assert (node.name, node.workspace, node.note) == ("gone", "", "not in the lake")
+
+
+def test_a_later_list_places_an_item_that_the_first_list_had_without_a_workspace(
+    world,
+):
+    now = world.clock.now()
+    world.store.write_snapshot(
+        TENANT,
+        "admin.dataflows",
+        {},
+        {"value": [{"objectId": "f1", "name": "Flow"}]},
+        fetched_at=now,
+    )
+    world.store.write_snapshot(
+        TENANT,
+        "admin.reports",
+        {},
+        {"value": [{"id": "r1", "name": "R"}]},
+        fetched_at=now,
+    )
+    world.store.write_snapshot(
+        TENANT,
+        "user.group_dataflows",
+        {"groupId": "w1"},
+        {"value": [{"objectId": "f1", "name": "Flow"}]},
+        fetched_at=now,
+    )
+    world.store.write_snapshot(
+        TENANT,
+        "user.group_reports",
+        {"groupId": "w1"},
+        {"value": [{"id": "r1", "name": "R", "datasetId": "d1"}]},
+        fetched_at=now,
+    )
+    catalog = catalog_of(world)
+
+    assert catalog.item("dataflow", "f1").workspace_id == "w1"
+    assert catalog.counts("w1") == {"dataflow": 1, "report": 1}
+    assert [i.id for i in catalog._s.reports_of_dataset["d1"]] == ["r1"]
 
 
 def test_a_cycle_in_the_lineage_is_cut(world):
@@ -920,6 +1076,72 @@ def test_a_cycle_in_the_lineage_is_cut(world):
     assert again.children == []
     (down,) = lineage.downstream
     assert down.name == "B" and down.children[0].note == "shown above"
+
+
+def test_an_item_built_on_two_others_is_followed_once_downstream(world):
+    def built_on(*ids):
+        return [{"targetDatasetId": i, "groupId": "w"} for i in ids]
+
+    _scan_with(
+        world,
+        {
+            "id": "w",
+            "name": "W",
+            "datasets": [
+                {"id": "a", "name": "A"},
+                {"id": "b", "name": "B", "upstreamDatasets": built_on("a")},
+                {"id": "c", "name": "C", "upstreamDatasets": built_on("a")},
+                {"id": "d", "name": "D", "upstreamDatasets": built_on("b", "c")},
+            ],
+            "reports": [{"id": "r", "name": "R", "datasetId": "d"}],
+        },
+    )
+    catalog = catalog_of(world)
+
+    b, c = catalog.lineage(catalog.item("dataset", "a", "w")).downstream
+
+    (d_under_b,) = b.children
+    assert (d_under_b.name, d_under_b.note, names(d_under_b.children)) == (
+        "D",
+        "",
+        ["R"],
+    )
+    (d_under_c,) = c.children
+    assert (d_under_c.name, d_under_c.note, d_under_c.children) == (
+        "D",
+        "shown above",
+        [],
+    )
+
+
+def test_a_wide_diamond_lineage_is_quick(world):
+    layers = [[f"l{level}n{n}" for n in range(6)] for level in range(7)]
+    datasets = [{"id": i, "name": i.upper()} for i in layers[0]]
+    for below, above in zip(layers, layers[1:]):
+        datasets.extend(
+            {
+                "id": i,
+                "name": i.upper(),
+                "upstreamDatasets": [
+                    {"targetDatasetId": u, "groupId": "w"} for u in below
+                ],
+            }
+            for i in above
+        )
+    _scan_with(world, {"id": "w", "name": "W", "datasets": datasets})
+    catalog = catalog_of(world)
+    expanded = []
+    original = catalog._downstream
+
+    def counting(item, *args, **kwargs):
+        expanded.append(item.id)
+        return original(item, *args, **kwargs)
+
+    catalog._downstream = counting
+
+    catalog.lineage(catalog.item("dataset", "l0n0", "w"))
+
+    assert len(expanded) == len(set(expanded)) <= len(datasets)
 
 
 def test_the_lineage_is_not_followed_without_end(world):
@@ -1006,6 +1228,29 @@ def test_the_events_of_a_day_come_newest_first(world):
     assert len(events) == 5
     stamps = [e["CreationTime"] for e in events]
     assert stamps == sorted(stamps, reverse=True)
+
+
+def test_the_days_of_events_are_read_once_until_the_lake_is_read_again(
+    world, monkeypatch
+):
+    world.run("activity", days=2)
+    catalog = catalog_of(world)
+    reads = []
+    real = type(world.store).event_days
+    monkeypatch.setattr(
+        type(world.store),
+        "event_days",
+        lambda store, *args: reads.append(args) or real(store, *args),
+    )
+
+    first = catalog.event_days()
+    first.clear()  # what a caller does with its list does not change the catalog
+    assert len(catalog.event_days()) == 2
+    assert len(reads) == 1
+
+    catalog.reload()
+    catalog.event_days()
+    assert len(reads) == 2
 
 
 def test_what_the_lake_holds_is_listed_by_target(world):

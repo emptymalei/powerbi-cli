@@ -80,6 +80,11 @@ A scan keeps whatever its options asked for: one made with `--get-artifact-users
 `--dataset-expressions` holds users and queries. Publishing does not take fields out of a
 scan. Leave the scans out, or scan again without those options, if that matters.
 
+Leaving a category out of a later publish takes it out of the published lake too: what an
+earlier publish copied of it is deleted, so the marker never says "left out" over data that
+is still there. Tenants that a publish with `--tenant` left alone stay, and the marker lists
+them.
+
 ### What it never does
 
 - It never overwrites a version: a version of a request does not change, so one that is
@@ -113,6 +118,12 @@ pbi lake publish s3://my-bucket/pbi-lake --yes --exclude activity
 ```
 
 Everyone else opens `s3://my-bucket/pbi-lake` with `pbi tui --lake`.
+
+A publish that stops half way leaves the published lake with some objects of this publish
+and some of the last one. Readers still see a lake (versions never change, and the marker
+still describes the last complete publish), but `--backup` copies the earlier publish first
+(`--backup-to PLACE` chooses where), so you can go back to it exactly. See
+[Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
 
 ## Where a lake can live
 

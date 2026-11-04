@@ -8,7 +8,7 @@ from tui_helpers import backend_of, plain, run_ui
 from pbi_cli.core.catalog import Match
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.errors import AuthError
-from pbi_cli.tui.explorer import NodeRef
+from pbi_cli.tui.explorer import ExplorerScreen, NodeRef
 
 FULL = ScanFlags(lineage=True, datasource_details=True, get_artifact_users=True)
 
@@ -325,6 +325,24 @@ def test_a_day_of_audit_events_is_listed_newest_first(synced):
     assert "2026-09-29" in info and "audit events" in info
 
 
+def test_a_day_of_events_with_a_broken_line_is_said_and_the_app_goes_on(synced):
+    for part in synced.store.root.rglob("part-*.jsonl"):
+        with part.open("a", encoding="utf-8") as file:
+            file.write('{"Id": "cut off')  # a line that a crash left half written
+
+    async def scenario(ui):
+        day = next(
+            ref for ref in ui.explorer._tree_nodes if ref.kind == "activity" and ref.id
+        )
+        await ui.select("activity", day.id)
+        return ui.static("#table-title"), ui.rows(), type(ui.app.screen).__name__
+
+    title, rows, screen = run_ui(backend_of(synced), scenario)
+
+    assert title.startswith("Could not read this: ") and rows == []
+    assert screen == "ExplorerScreen"
+
+
 # ---------------------------------------------------------------------------
 # filtering and going somewhere
 # ---------------------------------------------------------------------------
@@ -373,6 +391,36 @@ def test_the_tree_can_be_filtered(synced):
         "  ● Workspace 12",
     ]
     assert len([line for line in cleared if line.startswith("  ●")]) == 12
+
+
+def test_the_tree_filter_waits_for_the_last_key_and_reads_the_lake_once(
+    synced, monkeypatch
+):
+    monkeypatch.setattr(ExplorerScreen, "filter_delay", 1.0)
+    read = []
+
+    async def scenario(ui):
+        catalog = ui.app.catalog
+        real = catalog.event_days
+        monkeypatch.setattr(catalog, "event_days", lambda: read.append(1) or real())
+        built = []
+        rebuild = ui.explorer.rebuild_tree
+        monkeypatch.setattr(
+            ui.explorer, "rebuild_tree", lambda: built.append(1) or rebuild()
+        )
+        ui.explorer.query_one("#tree", Tree).focus()
+        await ui.press("slash")
+        await ui.type("space 1")
+        typed = len(built)
+        await ui.until(lambda: built)
+        await ui.settle()
+        return typed, len(built), ui.tree()
+
+    typed, built, tree = run_ui(backend_of(synced), scenario)
+
+    assert typed == 0 and built == 1  # once, after the last key
+    assert len([line for line in tree if line.startswith("  ●")]) == 4
+    assert read == []  # the days of events were read with the lake, not again
 
 
 def test_a_row_can_be_filtered_by_its_type(synced):

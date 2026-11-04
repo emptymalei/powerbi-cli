@@ -176,9 +176,17 @@ def clipboard_text(item: Exportable) -> str:
     return to_text(item, TSV if item.is_table else JSON)
 
 
+def _legal(value: str) -> str:
+    """A text without the control characters that a workbook cannot hold (a vertical tab, a
+    form feed, ...): openpyxl refuses them."""
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+    return ILLEGAL_CHARACTERS_RE.sub("", value)
+
+
 def sheet_name(title: str) -> str:
     """A name for the worksheet of a workbook."""
-    name = _UNSAFE_IN_SHEETS.sub(" ", title).strip("' ")
+    name = _UNSAFE_IN_SHEETS.sub(" ", _legal(title)).strip("' ")
     return (name[:_SHEET_LIMIT] or "Export").strip()
 
 
@@ -192,11 +200,11 @@ def _write_workbook(item: Exportable, path: Path) -> None:
     sheet.title = sheet_name(item.title)
     widths = [len(name) for name in item.headers]
     for position, name in enumerate(item.headers, start=1):
-        cell = sheet.cell(row=1, column=position, value=name)
+        cell = sheet.cell(row=1, column=position, value=_legal(name))
         cell.font = Font(bold=True)
     for number, row in enumerate(item.cells, start=2):
         for position, value in enumerate(row, start=1):
-            cell = sheet.cell(row=number, column=position, value=value)
+            cell = sheet.cell(row=number, column=position, value=_legal(value))
             cell.data_type = "s"  # text, even when it starts with "=": never a formula
             widths[position - 1] = max(widths[position - 1], len(value))
     for position, width in enumerate(widths, start=1):

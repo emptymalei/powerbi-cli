@@ -393,7 +393,7 @@ def test_a_token_that_is_typed_in_the_tui_is_stored_like_pbi_auth(
 
     backend.sign_in("abc.def.ghi", "admin-nlm", "admin")
 
-    assert memory_keyring.get_password("pbi-cli", "admin-nlm") == "abc.def.ghi"
+    assert memory_keyring.get_password("pbi-cli", "admin:admin-nlm") == "abc.def.ghi"
     assert backend.active_profile("admin") == "admin-nlm"
     assert backend.active_profile("user") is None
     assert load_auth(group="admin") == {"Authorization": "Bearer abc.def.ghi"}
@@ -564,7 +564,7 @@ def test_a_profile_whose_token_is_gone_is_listed_without_one(
     invoke("tui")
     backend = opened["backend"]
     backend.sign_in(make_token(tenant="tenant-1"), "svc", "user")
-    memory_keyring.delete_password("pbi-cli", "svc")
+    memory_keyring.delete_password("pbi-cli", "user:svc")
 
     (account,) = backend.accounts()
 

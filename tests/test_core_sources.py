@@ -1,5 +1,7 @@
 """Where a table gets its data: the sources named in a Power Query (M) expression."""
 
+import time
+
 import pytest
 
 from pbi_cli.core.sources import (
@@ -365,6 +367,7 @@ def test_the_values_of_parameters_come_from_the_shared_queries():
         },
         {"name": "Plain", "expression": '"text"'},
         {"name": "Joined", "expression": '"a" & "b"'},
+        {"name": "JoinedParameter", "expression": '"x" & "y" meta [Type="Text"]'},
         {"name": "Number", "expression": "5"},
         {"name": "Query", "expression": "let a = 1 in a"},
         {"name": "", "expression": '"nameless"'},
@@ -374,7 +377,22 @@ def test_the_values_of_parameters_come_from_the_shared_queries():
     assert parameter_values(shared) == {
         "ServerName": "srv1",
         "Plain": "text",
-        "Joined": "a",
+        "Joined": "ab",
+        "JoinedParameter": "xy",
+    }
+
+
+def test_a_parameter_joined_with_another_has_the_text_of_both():
+    shared = [
+        {"name": "Host", "expression": '"db.example"'},
+        {"name": "Server", "expression": '"tcp:" & Host & ",1433"'},
+        {"name": "Odd", "expression": '"a" & Unknown'},
+    ]
+
+    assert parameter_values(shared) == {
+        "Host": "db.example",
+        "Server": "tcp:db.example,1433",
+        "Odd": "a{Unknown}",
     }
 
 
@@ -462,6 +480,133 @@ def test_a_query_option_is_the_query_even_when_a_step_sends_another():
     )
 
     assert source.query == "select 1 from t1" and source.tables == ("t1",)
+
+
+def test_a_query_option_joined_with_a_parameter_is_the_whole_query():
+    source = only(
+        'Sql.Database("s", "d", [Query="select * from " & TableName, '
+        "CommandTimeout=#duration(0, 0, 5, 0)])",
+        {"TableName": "dbo.X"},
+    )
+
+    assert source.query == "select * from dbo.X" and source.tables == ("dbo.X",)
+    assert source.unresolved == ()
+
+
+def test_a_query_option_that_names_a_step_or_a_parameter_is_followed():
+    by_step = only(
+        'let Q = "select a from dbo.A", S = Sql.Database("s", "d", [Query=Q]) in S'
+    )
+    by_parameter = only(
+        'Sql.Database("s", "d", [Query=Sql, Database=Db])',
+        {"Sql": "select b from dbo.B", "Db": "Other"},
+    )
+    unknown = only('Sql.Database("s", "d", [Query="select * from " & Missing])')
+
+    assert by_step.tables == ("dbo.A",)
+    assert (by_parameter.tables, by_parameter.database) == (("dbo.B",), "Other")
+    assert unknown.query == "select * from {Missing}"
+    assert unknown.unresolved == ("Missing",)
+
+
+def test_a_constant_of_m_in_an_option_is_not_a_name_that_could_not_be_followed():
+    source = only(
+        'Csv.Document(File.Contents("a.csv"), [Delimiter=",", '
+        "Encoding=TextEncoding.Utf8, QuoteStyle=QuoteStyle.None])"
+    )
+
+    assert source.unresolved == ()
+
+
+def test_a_native_query_is_the_query_of_the_source_it_is_sent_to_only():
+    found = extract_sources(
+        """let
+            Src = Sql.Database("srv", "db"),
+            Q = Value.NativeQuery(Src, "select * from dbo.A"),
+            F = Excel.Workbook(File.Contents("C:\\x.xlsx")),
+            S = F{[Item="Sheet1",Kind="Sheet"]}[Data]
+        in Q"""
+    )
+
+    assert [(s.kind, s.query) for s in found] == [
+        ("SQL Server", "select * from dbo.A"),
+        ("Excel workbook", ""),
+    ]
+
+
+def test_each_native_query_is_the_query_of_its_own_source():
+    found = extract_sources(
+        """let
+            A = Sql.Database("s1", "d1"),
+            QA = Value.NativeQuery(A, "select * from t1"),
+            B = Sql.Database("s2", "d2"),
+            QB = Value.NativeQuery(B, "select * from t2"),
+            C = Sql.Database("s3", "d3")
+        in Table.Combine({QA, QB, C})"""
+    )
+
+    assert [(s.server, s.tables) for s in found] == [
+        ("s1", ("t1",)),
+        ("s2", ("t2",)),
+        ("s3", ()),
+    ]
+
+
+def test_a_native_query_sent_through_a_navigation_or_written_inline_finds_its_source():
+    found = extract_sources(
+        """let
+            A = Sql.Databases("s1"),
+            Db = A{[Name="d1"]}[Data],
+            QA = Value.NativeQuery(Db, "select * from t1"),
+            QB = Value.NativeQuery(Sql.Database("s2", "d2"), "select * from t2"),
+            C = Excel.Workbook(File.Contents("c.xlsx"))
+        in QA"""
+    )
+
+    assert [(s.server or s.location, s.tables) for s in found] == [
+        ("s1", ("t1",)),
+        ("s2", ("t2",)),
+        ("c.xlsx", ()),
+    ]
+
+
+def test_an_odbc_query_has_the_query_it_sends():
+    found = extract_sources(
+        """let
+            A = Odbc.Query("dsn=Warehouse", "select * from sales"),
+            B = Odbc.DataSource("dsn=Other")
+        in A"""
+    )
+
+    assert [(s.location, s.tables) for s in found] == [
+        ("dsn=Warehouse", ("sales",)),
+        ("dsn=Other", ()),
+    ]
+
+
+def _many_csv_files(count: int) -> str:
+    steps = []
+    for i in range(count):
+        steps.append(f'F{i} = File.Contents("C:\\\\f{i}.csv")')
+        steps.append(
+            f'C{i} = Csv.Document(F{i}, [Delimiter=",", Columns=12, Encoding=65001])'
+        )
+        steps.append(f'T{i} = Table.TransformColumnTypes(C{i}, {{{{"a", type text}}}})')
+    combined = ",".join(f"T{i}" for i in range(count))
+    return "let\n" + ",\n".join(steps) + f"\nin Table.Combine({{{combined}}})"
+
+
+def test_a_query_that_combines_many_files_is_read_quickly():
+    expression = _many_csv_files(200)
+
+    started = time.perf_counter()
+    found = extract_sources(expression)
+    took = time.perf_counter() - started
+
+    assert took < 2, took
+    assert [(s.kind, s.location) for s in found] == [
+        ("CSV file", f"C:\\\\f{i}.csv") for i in range(200)
+    ]
 
 
 def test_a_comment_between_the_name_and_the_brackets_does_not_hide_the_call():

@@ -503,7 +503,7 @@ class ExportModal(Dialog[Optional[Exported]]):
                 with RadioSet(id="what"):
                     for index, (where, item) in enumerate(self._choices):
                         yield RadioButton(
-                            f"{where}: {item.describe()}",
+                            Text(f"{where}: {item.describe()}"),
                             value=index == 0,
                             name=str(index),
                         )
@@ -615,7 +615,7 @@ class ExportModal(Dialog[Optional[Exported]]):
             return
         try:
             written = exporting.write(self.item, self._format, path)
-        except (OSError, ValueError) as error:
+        except Exception as error:  # any failure is told: it must not end the UI
             self._say(f"Could not write the file: {error}")
             return
         self._finish(Exported(SAVED, self.item, self._format, written))

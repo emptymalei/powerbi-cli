@@ -12,6 +12,8 @@ The counters are kept in a small JSON file so separate runs of the command line 
 """
 
 import json
+import os
+import tempfile
 import threading
 import time
 from contextlib import contextmanager
@@ -128,9 +130,18 @@ class QuotaTracker:
         state = {"version": 1, "calls": self._calls, "blocked": self._blocked}
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self._path.with_name(self._path.name + ".tmp")
-            tmp.write_text(json.dumps(state, separators=(",", ":")), encoding="utf-8")
-            replace_file(tmp, self._path)
+            # a name of its own, so that two processes saving at once do not trip over
+            # each other's half written file
+            handle, name = tempfile.mkstemp(
+                prefix=self._path.name + ".", suffix=".tmp", dir=self._path.parent
+            )
+            tmp = Path(name)
+            try:
+                with os.fdopen(handle, "w", encoding="utf-8") as out:
+                    out.write(json.dumps(state, separators=(",", ":")))
+                replace_file(tmp, self._path)
+            finally:
+                tmp.unlink(missing_ok=True)
             self._mtime = self._path.stat().st_mtime_ns
         except OSError as error:
             logger.warning(
@@ -268,10 +279,6 @@ class Limiter:
             return None
         return self.tracker.remaining(self.key(endpoint, tenant), endpoint.limit)
 
-    def wait_time(self, endpoint: Endpoint, tenant: str) -> float:
-        """Seconds until the next request is allowed; 0 when it is allowed now."""
-        return self.tracker.next_slot(self.key(endpoint, tenant), endpoint.limit)
-
     def block(self, endpoint: Endpoint, tenant: str, seconds: float) -> None:
         """Refuse requests to an endpoint for ``seconds``: the API asked to wait."""
         self.tracker.block(self.key(endpoint, tenant), seconds)
@@ -313,8 +320,9 @@ class Limiter:
             if semaphore is not None:
                 semaphore.release()
 
-    def _pause(self, seconds: float) -> None:
-        """Wait for quota; a set `interrupt` ends the wait."""
+    def pause(self, seconds: float) -> None:
+        """Wait for quota, or for the time the API asked to wait; a set `interrupt` ends
+        the wait."""
         interrupt = self.interrupt
         if interrupt is None:
             self._sleep(seconds)
@@ -349,5 +357,5 @@ class Limiter:
                 f"Waiting {format_wait(wait)} before calling {endpoint.id} "
                 "(quota used up or throttled)"
             )
-            self._pause(wait)
+            self.pause(wait)
             waited += wait

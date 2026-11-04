@@ -119,7 +119,7 @@ def test_a_token_is_stored_for_a_profile_of_a_group(memory_keyring):
     stored = store_token("abc", "admin-nlm", "admin")
 
     assert stored == StoredToken("admin-nlm", "admin", True)
-    assert memory_keyring.get_password("pbi-cli", "admin-nlm") == "abc"
+    assert memory_keyring.get_password("pbi-cli", "admin:admin-nlm") == "abc"
     assert PBIConfig().get_group_active_profile("admin") == "admin-nlm"
     assert load_auth(group="admin") == {"Authorization": "Bearer abc"}
 
@@ -140,13 +140,13 @@ def test_a_fresh_token_replaces_the_old_one_of_the_profile(memory_keyring):
     stored = store_token("new", "admin-nlm", "admin")
 
     assert stored.active is True
-    assert memory_keyring.get_password("pbi-cli", "admin-nlm") == "new"
+    assert memory_keyring.get_password("pbi-cli", "admin:admin-nlm") == "new"
 
 
 def test_the_bearer_prefix_is_removed(memory_keyring):
     store_token("Bearer abc", "p", "user")
 
-    assert memory_keyring.get_password("pbi-cli", "p") == "abc"
+    assert memory_keyring.get_password("pbi-cli", "user:p") == "abc"
 
 
 def test_a_token_without_a_group_goes_to_the_flat_profiles(memory_keyring):

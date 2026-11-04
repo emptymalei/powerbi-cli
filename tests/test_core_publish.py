@@ -133,6 +133,35 @@ def test_a_category_can_be_left_out(world, tmp_path, category):
     assert left.excluded and left.files > 0
 
 
+def test_a_category_left_out_later_is_taken_out_of_the_published_lake(world, tmp_path):
+    go(world, tmp_path)
+    tenant_dir = tmp_path / "pub" / f"tenant={TENANT}"
+    assert (tenant_dir / FOLDERS["activity"]).is_dir()
+
+    plan, result = go(world, tmp_path, exclude=["activity"])
+
+    # the marker says "left out", and the audit events are really gone
+    assert result.info.excluded == ["activity"]
+    assert not (tenant_dir / FOLDERS["activity"]).exists()
+    assert result.removed == 1
+    assert (tenant_dir / FOLDERS["users"]).is_dir()
+
+
+def test_a_day_of_events_that_grows_during_the_publish_is_copied_whole(
+    world, tmp_path, monkeypatch
+):
+    plan = plan_publish(world.store, LakeStore(tmp_path / "pub"), publisher=ANA)
+    day = world.clock.now().date() - timedelta(days=1)
+    # a sync appends a part after the plan was made (the publish waited for a yes)
+    world.store.append_events(TENANT, "admin.activityevents", day, [{"Id": "late"}])
+
+    publish(plan, now=NOW)
+
+    published = LakeStore(tmp_path / "pub")
+    ids = [e["Id"] for e in published.read_events(TENANT, "admin.activityevents", day)]
+    assert "late" in ids
+
+
 def test_leaving_out_the_scans_leaves_out_their_baseline_too(world, tmp_path):
     kept, _ = go(world, tmp_path, "kept")
     plan, _ = go(world, tmp_path, "left-out", exclude=["scans"])

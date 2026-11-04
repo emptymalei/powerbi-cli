@@ -613,3 +613,27 @@ def test_a_plain_sync_says_which_targets_it_leaves_out(ready):
         "user-dashboard-tiles"
     ) in plain.output
     assert "Not included" not in named.output
+
+
+def test_the_command_to_continue_keeps_the_options_that_were_given(ready):
+    ready.expire_token_after(3)
+
+    result = sync(
+        "run", "groups", "scan", "--lineage", "--days", "7", "--admin-profile", "adm x"
+    )
+
+    assert result.exit_code == 1
+    assert (
+        'run `pbi sync run groups scan --days 7 --lineage --admin-profile "adm x"` again'
+        in result.output
+    )
+
+
+def test_the_command_to_continue_quotes_what_a_shell_would_split():
+    from pbi_cli.cli_sync import _quote
+
+    assert _quote("groups") == "groups"
+    assert _quote("/plans/pbi-plan.yaml") == "/plans/pbi-plan.yaml"
+    assert _quote("C:\\My Plans\\plan.yaml") == '"C:\\My Plans\\plan.yaml"'
+    assert _quote("/my plans/plan.yaml") == '"/my plans/plan.yaml"'
+    assert _quote("a $b") == "'a $b'"

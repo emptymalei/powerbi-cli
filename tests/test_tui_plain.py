@@ -171,6 +171,12 @@ def test_a_description_with_brackets_is_in_the_info_as_it_is(world):
     assert "see [docs] and [/end]" in info
 
 
+def test_a_key_of_the_json_with_brackets_is_in_the_info_as_it_is():
+    grid = plain(render._grid([("[Confidential]key", "a"), ("key [/x]", "b")]))
+
+    assert "[Confidential]key" in grid and "key [/x]" in grid
+
+
 # ---------------------------------------------------------------------------
 # what the app says
 # ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ second while units finish, and always when a run begins or ends.
 
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 from loguru import logger
@@ -40,6 +40,11 @@ FLUSH_EVERY = 1.0
 #: thousands of units must not make the file grow without bound.
 MAX_MARKED = 1000
 
+#: A failed or deferred unit that no run has marked for this long is forgotten: it is no
+#: longer asked for (its target is no longer synced, its item is gone), and it must not
+#: take the place of new ones.
+MARK_MAX_AGE = timedelta(days=30)
+
 FAILED = "failed"
 DEFERRED = "deferred"
 
@@ -51,6 +56,24 @@ def _utcnow() -> datetime:
 def _parse(stamp: str) -> datetime:
     value = datetime.fromisoformat(stamp)
     return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _stale(entry: Any, now: datetime) -> bool:
+    """Whether a mark has not been touched for `MARK_MAX_AGE` (a damaged one is stale)."""
+    try:
+        return now - _parse(entry["updated_at"]) > MARK_MAX_AGE
+    except (KeyError, TypeError, ValueError):
+        return True
+
+
+def _day_of(key: str) -> date:
+    """The day of a unit of events (``admin.activityevents@2026-09-30``); `date.max` for
+    the other units."""
+    _, _, after = key.rpartition("@")
+    try:
+        return date.fromisoformat(after)
+    except ValueError:
+        return date.max
 
 
 class SyncState:
@@ -129,7 +152,14 @@ class SyncState:
         """
         with self._lock:
             started = self._clock()
-            run_id = f"{started:%Y%m%dT%H%M%SZ}"
+            # to the second, as people read it; the steps of a plan file can start within
+            # one second, so a run that would share its id gets a number
+            run_id = base = f"{started:%Y%m%dT%H%M%SZ}"
+            taken = {run.get("id") for run in self.runs}
+            number = 1
+            while run_id in taken:
+                number += 1
+                run_id = f"{base}-{number}"
             for run in self.runs:
                 if run.get("status") == "running":
                     run["status"] = "interrupted"
@@ -146,6 +176,7 @@ class SyncState:
                 }
             )
             self._prune_jobs(started)
+            self._prune_marks(started)
             self.dropped = 0
             self._dirty = True
             self.flush(force=True)
@@ -193,6 +224,8 @@ class SyncState:
         with self._lock:
             previous = self.units.get(key) or {}
             if not previous and len(self.units) >= MAX_MARKED:
+                self._prune_marks(self._clock())
+            if not previous and len(self.units) >= MAX_MARKED:
                 self.dropped += 1
                 self._touch()
                 return
@@ -213,6 +246,20 @@ class SyncState:
             if self.units.pop(key, None) is not None:
                 self._touch()
 
+    def _prune_marks(self, now: datetime) -> None:
+        """Forget the marks no run has touched for `MARK_MAX_AGE`, and those of days of
+        events that are older than the API keeps (they can never be fetched again)."""
+        from pbi_cli.core.sync.plan import MAX_DAYS  # the plan uses the state
+
+        oldest_day = now.date() - timedelta(days=MAX_DAYS)
+        for key in [
+            key
+            for key, entry in self.units.items()
+            if _stale(entry, now) or _day_of(key) < oldest_day
+        ]:
+            del self.units[key]
+            self._dirty = True
+
     def units_with(self, status: str) -> Dict[str, Dict[str, Any]]:
         """The units that failed or were deferred, by key."""
         with self._lock:
@@ -231,8 +278,18 @@ class SyncState:
                 return None
             return None if job.expired(self._clock()) else job
 
-    def set_job(self, batch: str, job: ScanJob, flags: ScanFlags) -> None:
-        """Remember a scan that the API has accepted (written at once: it must not get lost)."""
+    def set_job(
+        self,
+        batch: str,
+        job: ScanJob,
+        flags: ScanFlags,
+        workspace_ids: Sequence[str] = (),
+    ) -> None:
+        """Remember a scan that the API has accepted (written at once: it must not get lost).
+
+        :param workspace_ids: the workspaces of the batch, so that the next run can make
+            the same batch again even when the list of workspaces to scan changed
+        """
         with self._lock:
             jobs = self.scan.setdefault("jobs", {})
             jobs[batch] = {
@@ -240,6 +297,8 @@ class SyncState:
                 "started_at": job.started_at.isoformat(),
                 "flags": flags.canonical(),
             }
+            if workspace_ids:
+                jobs[batch]["workspace_ids"] = sorted(str(i) for i in workspace_ids)
             self._dirty = True
             self.flush(force=True)
 
@@ -264,6 +323,26 @@ class SyncState:
             if (job := self._job_of(entry)) is None or job.expired(now)
         ]:
             del jobs[batch]
+
+    def pending_batches(self, flags: ScanFlags) -> List[List[str]]:
+        """The workspaces of each scan with these flags that was started and not collected
+        and that the API still has (those started by an older version are not known)."""
+        with self._lock:
+            now = self._clock()
+            found = []
+            for entry in (self.scan.get("jobs") or {}).values():
+                job = self._job_of(entry)
+                ids = entry.get("workspace_ids") if isinstance(entry, dict) else None
+                if (
+                    job is None
+                    or job.expired(now)
+                    or entry.get("flags") != flags.canonical()
+                    or not isinstance(ids, list)
+                    or not ids
+                ):
+                    continue
+                found.append([str(i) for i in ids])
+            return sorted(found)
 
     @property
     def pending_jobs(self) -> int:

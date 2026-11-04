@@ -524,6 +524,42 @@ def test_a_dialog_that_is_answered_twice_acts_once(
     assert len(clipboard_of_the_test) == 1
 
 
+def test_names_with_brackets_are_offered_as_they_are(world, tmp_path):
+    first = Exportable("Items of [Confidential]Sales", ("a",), (("1",),))
+    second = Exportable("Users of Finance [/EU]", ("a",), (("1",),))
+
+    async def scenario(ui):
+        ui.app.push_screen(
+            ExportModal([("The table", first), ("The tab", second)], str(tmp_path))
+        )
+        await ui.settle()
+        return [str(b.label) for b in dialog(ui).query_one("#what").query(RadioButton)]
+
+    assert run_ui(backend_of(world), scenario) == [
+        "The table: Items of [Confidential]Sales (1 row)",
+        "The tab: Users of Finance [/EU] (1 row)",
+    ]
+
+
+def test_any_failure_to_write_is_said_and_the_dialog_stays(world, folder, monkeypatch):
+    def broken(item, fmt, path):
+        raise RuntimeError("the library broke")
+
+    monkeypatch.setattr("pbi_cli.tui.exporting.write", broken)
+
+    async def scenario(ui):
+        await on_the_users_of_a_report(ui)
+        await ui.press("x")
+        await set_path(ui, folder / "out.csv")
+        await ui.click("#save")
+        return error_of(ui), type(ui.app.screen).__name__
+
+    assert run_ui(backend_of(world), scenario) == (
+        "Could not write the file: the library broke",
+        "ExportModal",
+    )
+
+
 def test_the_format_becomes_one_that_the_other_export_can_have(world, tmp_path):
     table = Exportable("A table", ("a",), (("1",),))
     data = Exportable("Some data", data={"x": 1})

@@ -2,6 +2,7 @@
 
 import json
 import re
+import threading
 from datetime import datetime, timedelta
 
 import pytest
@@ -29,6 +30,7 @@ from pbi_cli.errors import (
     OfflineCacheMiss,
     PBIError,
     RateLimitError,
+    Stopped,
     TokenExpiredError,
 )
 
@@ -290,6 +292,59 @@ def test_429_is_retried_after_the_time_the_api_asks_for():
     assert clock.slept == [7.0]
     assert events == [Throttled("admin.apps", 7.0, 1)]
     assert len(adapter.requests) == 2
+
+
+def test_a_429_holds_back_every_caller_of_the_endpoint_while_it_waits():
+    adapter = FakeAdapter().add(
+        "GET",
+        "/admin/apps",
+        make_response(429, headers={"Retry-After": "7"}),
+        ok({"value": []}),
+    )
+    seen = []
+    client, clock = make_client(adapter)
+
+    def other_thread_asks(event):
+        # what any other thread of the same tenant sees during the wait
+        key = Limiter.key(get_endpoint("admin.apps"), client.tenant_key())
+        seen.append(client.limiter.tracker.next_slot(key, None))
+
+    client._on_throttle = other_thread_asks
+    client.request("admin.apps")
+    assert seen == [pytest.approx(7)]
+
+
+def test_a_stop_ends_the_wait_of_a_429():
+    adapter = FakeAdapter().add(
+        "GET", "/admin/apps", make_response(429, headers={"Retry-After": "200"})
+    )
+    client, clock = make_client(adapter)
+    client.limiter.interrupt = threading.Event()
+    client.limiter.interrupt.set()
+    with pytest.raises(Stopped):
+        client.request("admin.apps")
+    assert clock.slept == []
+    assert len(adapter.requests) == 1
+
+
+def test_the_retry_after_a_429_sends_the_token_of_now():
+    adapter = FakeAdapter().add(
+        "GET",
+        "/admin/apps",
+        make_response(429, headers={"Retry-After": "7"}),
+        ok({"value": []}),
+    )
+    client, clock = make_client(adapter)
+    tokens = iter(["first", "second"])
+    new = {
+        name: Credentials(make_token(expires_in=timedelta(days=1), oid=name), "p")
+        for name in ("first", "second")
+    }
+    client._credentials = lambda: new[next(tokens, "second")]
+    client.request("admin.apps")
+    sent = [r.headers["Authorization"] for r in adapter.requests]
+    assert sent[0] != sent[1]
+    assert sent[1] == new["second"].headers["Authorization"]
 
 
 def test_retry_after_may_be_a_date():

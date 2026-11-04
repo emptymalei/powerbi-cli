@@ -307,6 +307,23 @@ def test_a_parameter_is_told_from_a_shared_query():
     ]
 
 
+@pytest.mark.parametrize(
+    "expression, parameter",
+    [
+        ('"x" meta [IsParameterQuery=true, Type="Text"]', True),
+        ('"x" meta [Type="Text", IsParameterQuery = true]', True),
+        ('"x" meta [IsParameterQuery=false]', False),
+        ('"x" meta [Type="Text"]', False),
+        ('"IsParameterQuery=true"', False),
+        ("let a = 1 // IsParameterQuery=true\nin a", False),
+    ],
+)
+def test_only_a_value_marked_as_a_parameter_query_is_a_parameter(expression, parameter):
+    model = dataset_model({"expressions": [{"name": "P", "expression": expression}]})
+
+    assert model.shared[0].parameter is parameter
+
+
 def test_the_last_expression_of_a_table_is_the_one_that_loads_it():
     model = dataset_model(
         {

@@ -68,6 +68,8 @@ def test_the_page_names_every_option_of_publish_and_the_environment_variable():
         "--yes",
         "--force",
         "--lake",
+        "--backup",
+        "--backup-to",
     }
     for name in options - {"--tenant"}:
         assert name in TEXT, f"docs/sharing.md never mentions {name}"

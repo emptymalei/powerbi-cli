@@ -4,7 +4,7 @@ from typing import List, Literal, Optional
 import pandas as pd
 from loguru import logger
 
-from pbi_cli.powerbi.base import Base
+from pbi_cli.powerbi.base import ApiResponseError, Base
 from pbi_cli.web import DataRetriever
 
 
@@ -65,16 +65,15 @@ class Workspaces:
         return flattened
 
     def flatten_workspaces(self, data_all_workspaces: list[dict]):
-        all_workspaces = []
-        for w in data_all_workspaces:
-            all_workspaces.append(self._flatten_workspace(w))
+        """One list per kind of item (users, reports, ..., workspace) of all workspaces.
 
-        all_workspaces = {
-            k: sum([w.get(k, []) for w in all_workspaces], [])
-            for k in all_workspaces[0]
-        }
+        :param data_all_workspaces: the workspaces, as the API lists them
+        :return: the lists, empty when there are no workspaces
+        """
+        flattened = [self._flatten_workspace(w) for w in data_all_workspaces]
+        keys = list(flattened[0]) if flattened else list(self._flatten_workspace({}))
 
-        return all_workspaces
+        return {k: sum([w.get(k, []) for w in flattened], []) for k in keys}
 
     def __call__(
         self,
@@ -171,7 +170,7 @@ class User:
             current_page = self._data_retriever.get(continueation_uri).json()
 
         if current_page.get("error"):
-            raise ValueError(f"Error: {current_page}")
+            raise ApiResponseError(current_page)
 
         current_data = current_page.get("ArtifactAccessEntities", [])
         logger.info(f"Downloaded {len(current_data)} results")
@@ -221,7 +220,7 @@ class Apps(Base):
         result = self._data_retriever.get(uri).json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         logger.info(f"Listing {len(result.get('value', []))} results")
 
@@ -284,10 +283,12 @@ class WorkspaceInfo(Base):
         logger.info(f"Using API Endpoint: {uri}")
 
         payload = {"workspaces": workspace_ids}
-        result = self._data_retriever.post(uri, body=payload).json()
+        response = self._data_retriever.post(uri, body=payload)
+        response.raise_for_status()
+        result = response.json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         return result
 
@@ -309,7 +310,7 @@ class WorkspaceInfo(Base):
         result = response.json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         return result
 
@@ -334,6 +335,6 @@ class WorkspaceInfo(Base):
         result = response.json()
 
         if result.get("error"):
-            raise ValueError(f"Error: {result}")
+            raise ApiResponseError(result)
 
         return result

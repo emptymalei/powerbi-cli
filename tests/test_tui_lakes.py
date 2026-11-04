@@ -1,5 +1,7 @@
 """The TUI on a lake that is only looked at, and the dialog that opens another lake."""
 
+import asyncio
+import threading
 from datetime import datetime, timezone
 
 import pytest
@@ -7,6 +9,7 @@ from sync_helpers import World
 from textual.widgets import Button, OptionList
 from tui_helpers import backend_of, run_ui
 
+from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.scan import ScanFlags
 from pbi_cli.core.store import LakeStore, PublishInfo
 from pbi_cli.core.sync.plan import SyncOptions
@@ -220,6 +223,74 @@ def two_lakes(tmp_path):
         work_lake=str(mine.store.root),
     )
     return backend, shared, opened
+
+
+def test_a_slow_read_of_the_lake_before_does_not_replace_the_lake_opened_since(
+    two_lakes, monkeypatch
+):
+    backend, shared, _ = two_lakes
+    work = backend.store.root
+    slow, entered, release = threading.Event(), threading.Event(), threading.Event()
+
+    class SlowCatalog(Catalog):
+        def __init__(self, store, tenant, **kwargs):
+            if slow.is_set() and store.root == work:
+                entered.set()
+                release.wait(10)
+            super().__init__(store, tenant, **kwargs)
+
+    monkeypatch.setattr("pbi_cli.tui.app.Catalog", SlowCatalog)
+
+    async def scenario(ui):
+        slow.set()
+        ui.app.reload_catalog()  # of the work lake: it is held up
+        await ui.until(entered.is_set)
+        ui.app.open_lake_at(str(shared))
+        await ui.until(lambda: ui.tree() and ui.tree()[0] == "● Workspaces  3")
+        release.set()
+        await ui.settle()
+        await asyncio.sleep(0.1)
+        await ui.settle()
+        return ui.tree()[0], ui.app.catalog._store.root
+
+    first, root = run_ui(backend, scenario)
+
+    assert first == "● Workspaces  3" and root == shared
+
+
+def test_a_lake_that_opens_slowly_does_not_replace_the_one_asked_for_after_it(
+    tmp_path,
+):
+    mine = World(tmp_path / "mine")
+    mine.run("groups")
+    theirs = World(tmp_path / "theirs", workspaces=3)
+    theirs.run("groups")
+    entered, release = threading.Event(), threading.Event()
+
+    def open_lake(location):
+        if location == "slow":
+            entered.set()
+            release.wait(10)
+            return read_only(theirs.store.root)
+        return LakeStore(mine.store.root)
+
+    backend = backend_of(mine, open_lake=open_lake, work_lake=str(mine.store.root))
+
+    async def scenario(ui):
+        before = backend.store
+        ui.app.open_lake_at("slow")
+        await ui.until(entered.is_set)
+        ui.app.open_lake_at(str(mine.store.root))
+        await ui.until(lambda: ui.app.backend.store is not before)
+        release.set()
+        await ui.settle()
+        await asyncio.sleep(0.1)
+        await ui.settle()
+        return ui.app.backend.store.root, ui.tree()[0]
+
+    root, first = run_ui(backend, scenario)
+
+    assert root == mine.store.root and first == "● Workspaces  12"
 
 
 def test_the_dialog_offers_the_work_lake_and_the_recent_ones(two_lakes):

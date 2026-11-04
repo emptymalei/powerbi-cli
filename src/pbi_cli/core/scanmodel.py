@@ -27,7 +27,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from pbi_cli.core.scan import ScanFlags
-from pbi_cli.core.sources import Source, extract_sources, language_of, parameter_values
+from pbi_cli.core.sources import (
+    Source,
+    extract_sources,
+    is_parameter,
+    language_of,
+    parameter_values,
+)
 
 #: The fields of the connection details of a data source that say where it is, in the order
 #: they are shown.
@@ -337,7 +343,7 @@ def _shared(row: Mapping[str, Any]) -> List[SharedQuery]:
             expression=_text(q.get("expression")),
             description=_text(q.get("description")),
             value=values.get(_text(q.get("name")), ""),
-            parameter="IsParameterQuery" in _text(q.get("expression")),
+            parameter=is_parameter(_text(q.get("expression"))),
         )
         for q in queries
     ]

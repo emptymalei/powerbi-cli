@@ -19,13 +19,21 @@ result = publish(plan)
 """
 
 import getpass
+import json
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from pbi_cli.core.fsutil import inside_place, same_place
-from pbi_cli.core.store import MANIFEST, LakeStore, PublishInfo, cli_version, safe_name
+from pbi_cli.core.store import (
+    MANIFEST,
+    LakeStore,
+    PublishInfo,
+    cli_version,
+    plain_name,
+    safe_name,
+)
 from pbi_cli.core.sync.state import SCHEMA as STATE_SCHEMA
 from pbi_cli.core.sync.state import STATE_NAME
 from pbi_cli.core.sync.targets import get_target
@@ -205,6 +213,8 @@ class PublishResult:
     :param size: bytes written
     :param pruned: older versions deleted at the destination
     :param info: what the marker now says
+    :param removed: endpoint folders deleted at the destination because their category is
+        now left out
     """
 
     copied: int
@@ -212,6 +222,7 @@ class PublishResult:
     size: int
     pruned: int
     info: PublishInfo = field(repr=False)
+    removed: int = 0
 
 
 def _check_excluded(exclude: Iterable[str]) -> List[str]:
@@ -276,6 +287,24 @@ def _files_of(directory: Any) -> Tuple[Tuple[str, int], ...]:
         if child.is_file() and not child.name.endswith(".tmp")
     ]
     return tuple(sorted(found, key=lambda f: (f[0] == MANIFEST, f[0])))  # manifest last
+
+
+def _payloads(leaf: Leaf) -> Iterator[Tuple[str, bytes]]:
+    """The files of a leaf with their content, the manifest last (a copy that stops half
+    way is ignored).
+
+    A day of events can grow while the publish runs: its manifest is read once, and the
+    parts it lists are copied with it, so the copy never lists a part it does not hold.
+    """
+    if not leaf.mutable:
+        for name, _ in leaf.files:
+            yield name, (leaf.source / name).read_bytes()
+        return
+    manifest = (leaf.source / MANIFEST).read_bytes()
+    for part in json.loads(manifest).get("parts", []):
+        name = plain_name(part)
+        yield name, (leaf.source / name).read_bytes()
+    yield MANIFEST, manifest
 
 
 def _parts(root: Any, path: Any) -> Tuple[str, ...]:
@@ -432,11 +461,7 @@ def publish(
         if not leaf.mutable and (target / MANIFEST).exists():
             skipped += len(leaf.files)  # a version never changes: it is there already
         else:
-            for (
-                name,
-                _,
-            ) in leaf.files:  # the manifest last: a copy that stops is ignored
-                payload = (leaf.source / name).read_bytes()
+            for name, payload in _payloads(leaf):
                 writer.write_file(target / name, payload)
                 copied += 1
                 size += len(payload)
@@ -444,6 +469,13 @@ def publish(
             on_leaf(done, len(plan.leaves))
     for tenant, state in plan.states.items():
         writer.write_state(tenant, STATE_NAME, state)
+    # what an earlier publish copied of a category that is now left out goes, so that the
+    # marker does not say "left out" over data that is still there
+    removed = 0
+    for tenant in writer.tenants():
+        for endpoint in writer.endpoint_folders(tenant):
+            if category_of(endpoint) in plan.excluded:
+                removed += writer.remove_endpoint(tenant, endpoint)
     pruned = 0
     if plan.prune:
         for tenant in plan.tenants:
@@ -451,7 +483,8 @@ def publish(
     info = PublishInfo(
         published_at=when,
         published_by=plan.publisher,
-        tenants=sorted(plan.tenants),
+        # tenants of earlier publishes that this one left alone are still there
+        tenants=sorted(set(plan.tenants) | set(writer.tenants())),
         excluded=sorted(plan.excluded),
         history=plan.history,
         files=plan.files,
@@ -459,4 +492,4 @@ def publish(
         cli_version=cli_version(),
     )
     writer.write_marker(info)  # last: it says the copy is complete
-    return PublishResult(copied, skipped, size, pruned, info)
+    return PublishResult(copied, skipped, size, pruned, info, removed)

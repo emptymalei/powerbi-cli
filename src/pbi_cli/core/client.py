@@ -101,6 +101,8 @@ def make_session() -> requests.Session:
         backoff_factor=0.5,
         status_forcelist=(500, 502, 503, 504),
         respect_retry_after_header=False,
+        # the last answer is returned, so that the error says its status and message
+        raise_on_status=False,
     )
     adapter = HTTPAdapter(
         max_retries=retry, pool_connections=POOL_SIZE, pool_maxsize=POOL_SIZE
@@ -324,6 +326,12 @@ class PowerBIClient:
 
     # -- one request ---------------------------------------------------------------
 
+    def _fresh_credentials(self) -> Credentials:
+        """The current credentials, refused when their token has expired."""
+        credentials = self._credentials()
+        ensure_not_expired(credentials, now=self._clock())
+        return credentials
+
     def _check_origin(self, url: str) -> None:
         """Never send the token anywhere but to the API (continuation links come from it)."""
         wanted, given = urlsplit(self._base_url), urlsplit(url)
@@ -359,8 +367,7 @@ class PowerBIClient:
         :raises ApiError: for any other error answer or a connection problem
         """
         endpoint = get_endpoint(endpoint_id)
-        credentials = self._credentials()
-        ensure_not_expired(credentials, now=self._clock())
+        credentials = self._fresh_credentials()
         tenant = self._tenant_key(credentials)
 
         if url is None:
@@ -380,8 +387,9 @@ class PowerBIClient:
             wait = _parse_retry_after(response, self._clock())
             if wait is None:
                 wait = min(2.0**attempt, 60.0)
+            # the block holds back the other threads asking for the same endpoint too
+            self._limiter.block(endpoint, tenant, wait)
             if attempt > self._max_throttle_retries or wait > self._max_throttle_wait:
-                self._limiter.block(endpoint, tenant, wait)
                 raise RateLimitError(
                     f"Power BI is throttling requests to {endpoint.id} (HTTP 429). "
                     f"Try again in {format_wait(wait)}.",
@@ -391,7 +399,10 @@ class PowerBIClient:
             logger.info(f"Throttled on {endpoint.id}, waiting {format_wait(wait)}")
             if self._on_throttle is not None:
                 self._on_throttle(Throttled(endpoint.id, wait, attempt))
-            self._sleep(wait)
+            # a stopped sync ends the pause early
+            self._limiter.pause(wait)
+            # a token may have expired, or been replaced, during the wait
+            credentials = self._fresh_credentials()
 
         self._raise_for_status(endpoint, credentials, response)
         return ApiResponse(
