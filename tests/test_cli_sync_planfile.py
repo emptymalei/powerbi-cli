@@ -11,6 +11,7 @@ from fake_powerbi import FakePowerBI
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app, store_token
+from pbi_cli.cli_sync import _quote
 from pbi_cli.core.store import LakeStore
 
 
@@ -319,7 +320,9 @@ def test_an_expired_token_ends_the_run_and_says_how_to_continue(accounts, tmp_pa
 
     assert result.exit_code == 1
     assert "What is done is kept" in result.output
-    assert f"run `pbi sync run --config {path}` again to continue" in result.output
+    # a Windows path has backslashes, so it is quoted to be pasted into a shell
+    again = f"pbi sync run --config {_quote(str(path))}"
+    assert f"run `{again}` again to continue" in result.output
 
 
 def test_the_scan_of_chosen_workspaces_is_the_scan_of_those(accounts, tmp_path):
@@ -610,13 +613,14 @@ def test_a_session_lake_without_a_lake_is_told_to_open_the_work_lake_instead(
     )
 
     result = sync(command, "--config", path)
+    elsewhere = str(Path("/somewhere/else").absolute())  # C:\somewhere\else on Windows
 
     assert result.exit_code == 0, result.output
     assert f"Data lake: {cache_folder / 'lake'}" in result.output
     assert (
-        "Note: session.lake (/somewhere/else) holds no lake, so `pbi tui --config` opens "
+        f"Note: session.lake ({elsewhere}) holds no lake, so `pbi tui --config` opens "
         f"your work lake instead ({cache_folder / 'lake'}). A sync writes to the work "
-        "lake only: `pbi config set-cache-folder /somewhere/else` makes that folder your "
+        f"lake only: `pbi config set-cache-folder {elsewhere}` makes that folder your "
         "work lake, or leave session.lake out of the plan file."
     ) in result.output
     if command == "run":

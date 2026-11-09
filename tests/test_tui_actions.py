@@ -108,7 +108,9 @@ def test_a_lake_that_is_only_looked_at_is_not_backed_up(world):
 
 def test_a_running_sync_is_not_copied_in_the_middle(world):
     async def scenario(ui):
-        ui.app.run_state = SimpleNamespace(running=True, stopping=False)
+        ui.app.run_state = SimpleNamespace(  # what the status bar reads while it runs
+            running=True, stopping=False, summary=lambda clock: "syncing"
+        )
         command(ui, "Back up the lake").run()
         await ui.settle()
         ui.app.run_state = None

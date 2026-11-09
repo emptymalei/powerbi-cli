@@ -537,7 +537,7 @@ def test_what_a_worker_hands_over_is_dropped_while_the_app_is_shutting_down(worl
 
 
 def test_the_lake_in_the_home_folder_is_shortened_to_a_tilde():
-    assert lake_label(Path.home() / "pbi" / "lake") == "~/pbi/lake"
+    assert lake_label(Path.home() / "pbi" / "lake") == str(Path("~/pbi/lake"))
     assert lake_label("/data/lake") == "/data/lake"
     assert lake_label("/a/" + "very-long-" * 10 + "lake", 20).startswith("…")
     assert len(lake_label("/a/" + "very-long-" * 10 + "lake", 20)) == 20
