@@ -1,0 +1,45 @@
+# A plan that keeps EVERYTHING pbi can read about the tenant in the data lake.
+#
+#     pbi sync plan --config pbi-plan.everything.yaml   # what it does and costs; sends nothing
+#     pbi sync run  --config pbi-plan.everything.yaml   # does it
+#     pbi tui       --config pbi-plan.everything.yaml   # looks at it
+#
+# What it costs. The lists of the tenant are a few requests. The scan of every workspace is a
+# few requests for each 100 workspaces. But the details of every item (who can open every
+# report, dataset, dashboard, dataflow, app and workspace; the data sources of every dataset
+# and dataflow) are ONE REQUEST PER ITEM, and Power BI allows 200 an hour for the users and
+# 300 for the data sources. A tenant with 2,000 reports needs 10 hours for their users alone.
+# The plan shows this before anything is sent; a run does what fits the quota, keeps it, and
+# says how much is held back: run it again (every hour, or nightly) and it carries on where it
+# stopped, fetching only what the lake does not hold fresh.
+#
+# What it copies. Names and e-mail addresses of everybody with access, IP addresses in the
+# audit events, connection details of the data sources, and the DAX and Power Query of the
+# datasets. Keep the lake private (see "Sensitive data" in docs/lake.md).
+
+version: 1
+
+# The accounts, by the names of their `pbi auth` profiles (`pbi profile list`). Without this
+# section the active profile of each group is used. A named profile must have a token stored.
+# The user accounts read what only a user can: the pages of reports, the tiles of dashboards,
+# the parameters and the refresh history of datasets, for the workspaces each one is in.
+# accounts:
+#   admin: my-admin
+#   user: [my-user]
+
+tenant:
+  # `all` is every target of `pbi sync plan --help`: the lists of the tenant, the users and the
+  # data sources of every item, how every dataset refreshes, the audit events, and with a user
+  # account the workspaces, items, pages, tiles, parameters and refresh history it can see.
+  targets: [all]
+  activity_days: 28 # every day Power BI still keeps (it keeps 28)
+  # A metadata scan of every workspace, with every option: lineage, data source details, the
+  # tables, columns and measures of the datasets, their DAX and Power Query, and the users of
+  # every item. The schema and the queries need the tenant settings "Enhance admin APIs
+  # responses with detailed metadata" and "... with DAX and mashup expressions".
+  scan: all
+  exclude_personal: true # leave out the personal workspaces ("My workspace"); false keeps them
+
+session:
+  workspaces: all # the Explorer lists every workspace of the lake
+  lazy: ask # a detail the lake lacks is fetched when you press f

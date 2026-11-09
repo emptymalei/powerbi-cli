@@ -34,6 +34,13 @@ StatusBar #who {
 StatusBar #busy {
     width: auto;
 }
+/* a running sync: one width and one line, whatever the stage says (the Sync screen has it all) */
+StatusBar.-running #busy {
+    width: 40%;
+    height: 1;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
 StatusBar #hint {
     width: auto;
     padding: 0 1;

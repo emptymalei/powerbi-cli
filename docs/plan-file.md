@@ -31,6 +31,12 @@ pbi sync plan --config pbi-plan.yaml   # reads the lake, calls nothing
 pbi sync run  --config pbi-plan.yaml   # does it
 ```
 
+To keep **everything** pbi can read (every target, a scan of every workspace with every
+option, 28 days of audit events), start from
+[`examples/pbi-plan.everything.yaml`](https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.everything.yaml).
+Its details cost a request per item, so on a big tenant a run does what fits the quota and
+the next run carries on: read what `pbi sync plan` says it costs first.
+
 The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
 writes by default (`Out-File`, `>`), so a file made there needs no conversion.
 
