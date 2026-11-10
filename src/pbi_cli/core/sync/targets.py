@@ -13,6 +13,11 @@ of every report. Each one is made of requests to a read-only operation of the re
 Targets that copy personal or confidential data are not part of a plain sync: they run
 only when they are named, so that nobody collects e-mail addresses or queries by accident.
 Naming ``default`` adds the plain ones, ``all`` adds everything.
+
+A scan with the users of the items (``get_artifact_users``) or the details of the data
+sources (``datasource_details``) holds what several fan-outs fetch one item at a time, for
+about 100 workspaces per request. A sync that *prefers the scan* leaves those fan-outs to it
+(`SCAN_ANSWERS`), and says so.
 """
 
 from dataclasses import dataclass, field
@@ -396,6 +401,22 @@ TARGETS: Tuple[Target, ...] = (
 _BY_NAME: Dict[str, Target] = {target.name: target for target in TARGETS}
 
 
+#: The fan-outs whose answers a scan holds too, with the option of the scan that makes it hold
+#: them. Microsoft documents the ``users`` of a workspace, report, dataset, dashboard and
+#: dataflow (with ``getArtifactUsers``) and the ``datasourceUsages`` of a dataset and a
+#: dataflow, with the details of each data source (``datasourceDetails``), in the result of
+#: a scan. The people of an app are not in it.
+SCAN_ANSWERS: Dict[str, str] = {
+    "group-users": "get_artifact_users",
+    "report-users": "get_artifact_users",
+    "dataset-users": "get_artifact_users",
+    "dashboard-users": "get_artifact_users",
+    "dataflow-users": "get_artifact_users",
+    "datasources": "datasource_details",
+    "dataflow-datasources": "datasource_details",
+}
+
+
 def get_target(name: str) -> Target:
     """The target with this name.
 
@@ -422,10 +443,34 @@ class Selection:
     :param targets: what will be synced, parents before the targets that need them
     :param implied: names of the targets that were added only because another one
         needs their rows
+    :param left_to_scan: the fan-outs that were asked for and are left to the scan, because
+        the sync prefers it (`SCAN_ANSWERS`)
+    :param not_in_scan: the fan-outs that the sync would leave to the scan but still fetches
+        one item at a time, because the scan is made without the option that holds their
+        answers: each with the name of that option
     """
 
     targets: Tuple[Target, ...]
     implied: frozenset
+    left_to_scan: Tuple[str, ...] = ()
+    not_in_scan: Tuple[Tuple[str, str], ...] = ()
+
+    def notes(self) -> List[str]:
+        """What a plan and a run say about preferring the scan."""
+        found = []
+        if self.left_to_scan:
+            found.append(
+                f"Left to the scan (prefer_scan): {', '.join(self.left_to_scan)}. Their "
+                "users and data sources come from the scan, one request for up to 100 "
+                "workspaces, not one request per item; a workspace the scan leaves out "
+                "(a personal or inactive one, when they are excluded) has none."
+            )
+        for name, option in self.not_in_scan:
+            found.append(
+                f"{name} is still fetched one item at a time: prefer_scan leaves it to the "
+                f"scan only when the scan is made with {option}."
+            )
+        return found
 
     @property
     def names(self) -> List[str]:
@@ -463,7 +508,9 @@ def _plain(available: Optional[AbstractSet[Scope]]) -> List[str]:
 
 
 def select_targets(
-    names: Sequence[str] = (), available: Optional[AbstractSet[Scope]] = None
+    names: Sequence[str] = (),
+    available: Optional[AbstractSet[Scope]] = None,
+    scan_options: Optional[AbstractSet[str]] = None,
 ) -> Selection:
     """Turn what the user named into the targets to sync.
 
@@ -475,8 +522,13 @@ def select_targets(
         plain sync is depends on it: the administrator's lists when there is an
         administrator account, else what a user can see. ``all`` is every target the
         accounts can run, and naming one they cannot is an error.
-    :raises PBIError: for a name that is not a target, or a target that needs an account
-        that is not stored
+    :param scan_options: when the sync prefers the scan: the options of the scan that are on
+        (names of `pbi_cli.core.scan.ScanFlags`). The fan-outs that such a scan answers
+        (`SCAN_ANSWERS`) are left out, whether they were named or came with ``all``; the
+        others stay, listed in `Selection.not_in_scan`. ``None`` leaves nothing to the scan.
+    :raises PBIError: for a name that is not a target, a target that needs an account that
+        is not stored, or a sync that prefers the scan, has no scan, and has fan-outs that
+        a scan would answer
     """
     wanted: Set[str] = set()
     for name in names or (DEFAULT,):
@@ -491,6 +543,25 @@ def select_targets(
             _require(target, available)
             wanted.add(target.name)
 
+    left: List[str] = []
+    kept: List[Tuple[str, str]] = []
+    if scan_options is not None:
+        covered = [
+            t.name for t in TARGETS if t.name in wanted and t.name in SCAN_ANSWERS
+        ]
+        if covered and "scan" not in wanted:
+            raise PBIError(
+                f"prefer_scan takes {', '.join(covered)} from the scan, and no scan is among "
+                "the targets: add `scan` (in a plan file, a `scan:` section of the tenant), "
+                "or leave prefer_scan out."
+            )
+        for name in covered:
+            if SCAN_ANSWERS[name] in scan_options:
+                left.append(name)
+                wanted.discard(name)
+            else:
+                kept.append((name, SCAN_ANSWERS[name]))
+
     implied: Set[str] = set()
     pending = list(wanted)
     while pending:
@@ -501,4 +572,9 @@ def select_targets(
             pending.append(parent)
 
     ordered = tuple(target for target in TARGETS if target.name in wanted)
-    return Selection(targets=ordered, implied=frozenset(implied))
+    return Selection(
+        targets=ordered,
+        implied=frozenset(implied),
+        left_to_scan=tuple(left),
+        not_in_scan=tuple(kept),
+    )

@@ -62,6 +62,17 @@
 
 ### Added
 
+- **`prefer_scan`** (`tenant: {prefer_scan: true}` in a plan file, `--prefer-scan` on `pbi sync
+  plan` and `pbi sync run`) takes the users and the data sources of the items from the scan
+  instead of one request per item. A scan with `get_artifact_users` holds the users of every
+  workspace, report, dataset, dashboard and dataflow, and one with `datasource_details` the data
+  sources of every dataset and dataflow, for up to 100 workspaces per request; so
+  `group-users`, `report-users`, `dataset-users`, `dashboard-users`, `dataflow-users`,
+  `datasources` and `dataflow-datasources` are left to it, which with `targets: [all]` is most of
+  the requests. It is off unless asked for, and the plan and the run list what was left to the
+  scan, and what is still fetched per item because the scan lacks the option. `app-users` stays:
+  a scan does not list the people of an app. The everything example has it on. See
+  [Taking the details from the scan](sync.md#taking-the-details-from-the-scan).
 - `pbi reports export` (and `pbi export`) can save a report as more than a `.pbix`: `-f pdf`,
   `pptx` or `png` (made by Power BI as a job that the command waits for, with `--timeout`), and
   for a paginated report `xlsx`, `docx`, `csv`, `xml`, `mhtml` or `accessiblepdf`. `-p` chooses

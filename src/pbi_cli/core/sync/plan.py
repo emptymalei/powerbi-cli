@@ -15,14 +15,31 @@ the lake holds, however old, and says so when it has none.
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from math import ceil
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 from pbi_cli.core.client import rows_of
 from pbi_cli.core.registry import IDENTITY_PARAM, Scope, get_endpoint
 from pbi_cli.core.scan import MAX_WORKSPACES, ScanFlags, batch_key, chunked, latest_scan
 from pbi_cli.core.store import LakeStore
 from pbi_cli.core.sync.state import SyncState
-from pbi_cli.core.sync.targets import Mode, Selection, Target, children_of, get_target
+from pbi_cli.core.sync.targets import (
+    Mode,
+    Selection,
+    Target,
+    children_of,
+    get_target,
+    select_targets,
+)
 from pbi_cli.errors import PBIError
 
 #: Most threads a sync may use (a scan job is one thread, and 16 scans may run at once).
@@ -75,6 +92,10 @@ class SyncOptions:
         (``force`` does so too)
     :param exclude_personal: leave the personal workspaces out of the scans
     :param exclude_inactive: leave the inactive workspaces out of the scans
+    :param prefer_scan: leave to the scan the fan-outs whose answers it holds (the users of
+        the items with ``get_artifact_users``, the data sources with ``datasource_details``),
+        instead of asking for them one item at a time; see
+        `pbi_cli.core.sync.targets.SCAN_ANSWERS`
     :param scan_interval: seconds between two status checks of a scan
     :param scan_timeout: seconds to wait for one scan to succeed
     :param workspace_ids: only these workspaces. The scan target scans just them, whatever
@@ -103,6 +124,7 @@ class SyncOptions:
     full_scan: bool = False
     exclude_personal: bool = False
     exclude_inactive: bool = False
+    prefer_scan: bool = False
     scan_interval: float = 5.0
     scan_timeout: float = 600.0
     workspace_ids: Tuple[str, ...] = ()
@@ -121,6 +143,18 @@ class SyncOptions:
             return False
         wanted = self.only.get(placeholder)
         return wanted is None or str(value) in wanted
+
+    def select(self, available: Optional[AbstractSet[Scope]] = None) -> Selection:
+        """The targets of a sync with these options (see
+        `pbi_cli.core.sync.targets.select_targets`).
+
+        :param available: the kinds of account that are stored (default: all of them)
+        """
+        scan_options = None
+        if self.prefer_scan:
+            flags = self.scan_flags
+            scan_options = {name for name in flags.names() if getattr(flags, name)}
+        return select_targets(self.targets, available, scan_options)
 
     def profile_of(self, scope: Scope) -> Optional[str]:
         """The profile to use for a kind of account: the one asked for, else ``None`` (the
@@ -163,6 +197,7 @@ class SyncOptions:
             "full_scan": self.full_scan,
             "exclude_personal": self.exclude_personal,
             "exclude_inactive": self.exclude_inactive,
+            "prefer_scan": self.prefer_scan,
             "only_workspaces": len(self.workspace_ids),
             "admin_profile": self.admin_profile,
             "user_profile": self.user_profile,

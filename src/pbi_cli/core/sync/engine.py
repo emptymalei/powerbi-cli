@@ -50,7 +50,7 @@ from pbi_cli.core.sync.runners import (
 from pbi_cli.core.sync.state import DEFERRED as MARK_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARK_FAILED
 from pbi_cli.core.sync.state import SyncState
-from pbi_cli.core.sync.targets import Selection, select_targets
+from pbi_cli.core.sync.targets import Selection
 from pbi_cli.errors import (
     ApiError,
     AuthError,
@@ -259,7 +259,7 @@ class SyncEngine:
         available = self.available_scopes(options)
         if not available:
             return []
-        selection = select_targets(options.targets, available)
+        selection = options.select(available)
         return [
             _label(scope, self._client(scope, options.profile_of(scope)))
             for scope in sorted(
@@ -276,7 +276,7 @@ class SyncEngine:
                 "No account is stored. Store a token with `pbi auth -t <token> -g admin` "
                 "(an administrator's) or `pbi auth -t <token> -g user` (a user's)."
             )
-        selection = select_targets(options.targets, available)
+        selection = options.select(available)
         if not selection.targets:
             raise PBIError(
                 "There is nothing to sync with the accounts that are stored."
@@ -366,6 +366,7 @@ class SyncEngine:
             tenant=session.tenant,
             targets=targets,
             quota=lines,
+            notes=session.selection.notes(),
             accounts=[
                 _label(scope, client) for (scope, _), client in session.clients.items()
             ],
@@ -612,6 +613,7 @@ class SyncEngine:
                 COMPLETED_WITH_FAILURES if report.counts[FAILED] else COMPLETED
             )
 
+        report.notes.extend(session.selection.notes())
         report.notes.extend(session.planner.unplaced_notes().values())
 
         for target in session.selection.targets:

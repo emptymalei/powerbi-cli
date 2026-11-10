@@ -5,13 +5,15 @@
 #     pbi tui       --config pbi-plan.everything.yaml   # looks at it
 #
 # What it costs. The lists of the tenant are a few requests. The scan of every workspace is a
-# few requests for each 100 workspaces. But the details of every item (who can open every
-# report, dataset, dashboard, dataflow, app and workspace; the data sources of every dataset
-# and dataflow) are ONE REQUEST PER ITEM, and Power BI allows 200 an hour for the users and
-# 300 for the data sources. A tenant with 2,000 reports needs 10 hours for their users alone.
-# The plan shows this before anything is sent; a run does what fits the quota, keeps it, and
-# says how much is held back: run it again (every hour, or nightly) and it carries on where it
-# stopped, fetching only what the lake does not hold fresh.
+# few requests for each 100 workspaces, and it holds the users and the data sources of the
+# items too, so `prefer_scan: true` (below) takes them from it. Without it, the details of
+# every item (who can open every report, dataset, dashboard, dataflow and workspace; the data
+# sources of every dataset and dataflow) are ONE REQUEST PER ITEM, and Power BI allows 200 an
+# hour for the users: a tenant with 2,000 reports needs 10 hours for their users alone. The
+# people of an app are not in a scan, so `app-users` is still a request per app. The plan
+# shows this before anything is sent; a run does what fits the quota, keeps it, and says how
+# much is held back: run it again and it carries on where it stopped, fetching only what the
+# lake does not hold fresh.
 #
 # What it copies. Names and e-mail addresses of everybody with access, IP addresses in the
 # audit events, connection details of the data sources, and the DAX and Power Query of the
@@ -39,6 +41,10 @@ tenant:
   # responses with detailed metadata" and "... with DAX and mashup expressions".
   scan: all
   exclude_personal: true # leave out the personal workspaces ("My workspace"); false keeps them
+  # Take the users and the data sources of the items from the scan above, not one request per
+  # item. The plan lists what it leaves to the scan. false asks for each item, as Power BI's
+  # per-item operations answer, at the cost described at the top.
+  prefer_scan: true
 
 session:
   workspaces: all # the Explorer lists every workspace of the lake

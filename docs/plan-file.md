@@ -96,6 +96,7 @@ tenant:
 | `activity_days` | Days of audit events, today included, 1 to 28 (default 28). Only with `activity` among the targets. |
 | `scan` | **Scan every workspace of the tenant**, with these options: [the scan options](#the-scan-options) below, as a mapping, a list of names or `all`; `true` or `[]` is a scan with none. It asks for the scan, so `scan` need not be among the targets as well. (To scan only some workspaces, put `scan:` in an entry of `workspaces` instead.) |
 | `full_scan`, `exclude_personal`, `exclude_inactive` | As the options of `pbi sync run` of the same names. They need a scan: a `scan:` section here, or `scan` among the targets. |
+| `prefer_scan` | As `--prefer-scan` of `pbi sync run`: `true` takes the users and the data sources of the items from the scan instead of one request per item: `report-users` and the other user targets when the scan has `get_artifact_users`, `datasources` and `dataflow-datasources` when it has `datasource_details`. Off by default; the plan says what it leaves to the scan. It needs a scan, as the keys above do. See [Taking the details from the scan](sync.md#taking-the-details-from-the-scan). |
 
 The administrator's targets run once, with the administrator's account. A target of a
 user's account (`user-groups`, ...) runs **once for each user profile** of the file, each

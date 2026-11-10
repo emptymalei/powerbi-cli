@@ -1224,6 +1224,7 @@ def plan_notes(plan: Plan) -> List[str]:
         notes.append("* only here because another target needs its rows")
     for item in plan.targets:
         notes.extend(f"{item.target.name}: {note}" for note in item.notes)
+    notes.extend(plan.notes)
     if not plan.quota:
         notes.append("Nothing to fetch: the lake holds everything fresh.")
     for line in plan.quota:
@@ -1272,6 +1273,7 @@ def sequence_notes(sequence: SequencePlan) -> List[str]:
             for item in made.targets
             for note in item.notes
         )
+        notes.extend(f"step {number}: {note}" for note in made.notes)
     if not sequence.steps:
         notes.append("No step is planned yet.")
     elif not sequence.quota:

@@ -118,6 +118,7 @@ _TENANT_KEYS = (
     "full_scan",
     "exclude_personal",
     "exclude_inactive",
+    "prefer_scan",
 )
 _WORKSPACE_KEYS = ("id", "name", "scan", "details", "via")
 _SESSION_KEYS = ("lake", "open", "lazy", "workspaces")
@@ -329,6 +330,8 @@ class TenantPlan:
     :param full_scan: scan every workspace, not only those that changed
     :param exclude_personal: leave personal workspaces out of the scan
     :param exclude_inactive: leave inactive workspaces out of the scan
+    :param prefer_scan: take the users and data sources of the items from the scan instead
+        of one request per item (`pbi_cli.core.sync.plan.SyncOptions.prefer_scan`)
     """
 
     targets: Tuple[str, ...] = ()
@@ -337,6 +340,7 @@ class TenantPlan:
     full_scan: bool = False
     exclude_personal: bool = False
     exclude_inactive: bool = False
+    prefer_scan: bool = False
 
 
 @dataclass(frozen=True)
@@ -711,7 +715,7 @@ class PlanFile:
             "Add `activity` to tenant.targets to keep the audit events (they hold "
             "e-mail addresses and IP addresses), or remove this key.",
         )
-        for key in ("full_scan", "exclude_personal", "exclude_inactive"):
+        for key in ("full_scan", "exclude_personal", "exclude_inactive", "prefer_scan"):
             needs(
                 key,
                 "scan",
@@ -725,6 +729,7 @@ class PlanFile:
             full_scan=reader.boolean(box, "full_scan", "tenant"),
             exclude_personal=reader.boolean(box, "exclude_personal", "tenant"),
             exclude_inactive=reader.boolean(box, "exclude_inactive", "tenant"),
+            prefer_scan=reader.boolean(box, "prefer_scan", "tenant"),
         )
 
     @classmethod
@@ -945,6 +950,8 @@ class PlanFile:
                             full_scan=tenant.full_scan,
                             exclude_personal=tenant.exclude_personal,
                             exclude_inactive=tenant.exclude_inactive,
+                            # the scan is an administrator's: so is what it answers
+                            prefer_scan=tenant.prefer_scan and scope is Scope.ADMIN,
                             admin_profile=profile if scope is Scope.ADMIN else None,
                             user_profile=profile if scope is Scope.USER else None,
                         ),

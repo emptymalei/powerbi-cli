@@ -54,7 +54,7 @@ from pbi_cli.core.sync.runners import DEFERRED, DONE, FAILED, SKIPPED
 from pbi_cli.core.sync.state import DEFERRED as MARKED_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARKED_FAILED
 from pbi_cli.core.sync.state import STATE_NAME, SyncState
-from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS, select_targets
+from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS
 from pbi_cli.errors import PBIError
 from pbi_cli.session import (
     lake_hint,
@@ -162,6 +162,19 @@ ExcludeInactiveOption = Annotated[
     bool,
     typer.Option("--exclude-inactive", help="Leave inactive workspaces out of scans"),
 ]
+PreferScanOption = Annotated[
+    bool,
+    typer.Option(
+        "--prefer-scan",
+        help=(
+            "Take the users and data sources of the items from the scan instead of one "
+            "request per item: report-users, dataset-users, dashboard-users, "
+            "dataflow-users and group-users with --get-artifact-users, datasources and "
+            "dataflow-datasources with --datasource-details. Needs the scan target; the "
+            "plan and the run list what is left to the scan"
+        ),
+    ),
+]
 ScanIntervalOption = Annotated[
     float,
     typer.Option(
@@ -229,6 +242,7 @@ def _options(
     wait: float = 120.0,
     admin_profile: Optional[str] = None,
     user_profile: Optional[str] = None,
+    prefer_scan: bool = False,
 ) -> SyncOptions:
     return SyncOptions(
         targets=tuple(targets or ()),
@@ -247,6 +261,7 @@ def _options(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         admin_profile=admin_profile,
@@ -266,21 +281,23 @@ def _lake() -> LakeStore:
 
 
 def _print_targets(
-    names: List[str],
+    options: SyncOptions,
     store: LakeStore,
     available: Optional[AbstractSet[Scope]] = None,
     accounts: Sequence[str] = (),
 ) -> None:
     """Say what is synced.
 
+    :param options: what the sync does (its targets, and whether it prefers the scan)
     :param available: the kinds of account that are stored; what the plain sync is, and
         what can be named, depends on them
     :param accounts: the accounts the sync uses, each as ``profile (kind)``
     """
+    names = list(options.targets)
     typer.echo(f"Data lake: {store.root}")
     if available is not None and not available:
         return  # no account: the engine says so, with what to do
-    selection = select_targets(names, available)
+    selection = options.select(available)
     if accounts:
         typer.echo(f"Accounts: {', '.join(accounts)}")
     typer.echo(f"Targets: {', '.join(selection.names)}")
@@ -320,6 +337,7 @@ _IN_THE_FILE = {
     "full_scan": ("--full-scan", "tenant: {full_scan: true}"),
     "exclude_personal": ("--exclude-personal", "tenant: {exclude_personal: true}"),
     "exclude_inactive": ("--exclude-inactive", "tenant: {exclude_inactive: true}"),
+    "prefer_scan": ("--prefer-scan", "tenant: {prefer_scan: true}"),
     "admin_profile": ("--admin-profile", "accounts: {admin: <profile>}"),
     "user_profile": ("--user-profile", "accounts: {user: [<profile>]}"),
 }
@@ -595,6 +613,8 @@ def _print_quota(quota: Sequence[QuotaLine]) -> None:
 def _print_plan(plan: Plan) -> None:
     typer.echo(f"Tenant: {plan.tenant}\n")
     _print_target_rows(plan)
+    for note in plan.notes:
+        typer.secho(f"  {note}", fg="yellow")
     _print_quota(plan.quota)
 
 
@@ -609,6 +629,8 @@ def _print_sequence(sequence: SequencePlan) -> None:
                     f"  {item.target.name} copies {item.target.sensitive}", fg="yellow"
                 )
         _print_target_rows(made)
+        for note in made.notes:
+            typer.secho(f"  {note}", fg="yellow")
     if not sequence.steps:
         typer.echo("\nNo step is planned yet.")
     for where, problem in sequence.unmatched:
@@ -634,6 +656,7 @@ def sync_plan(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
+    prefer_scan: PreferScanOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
@@ -703,6 +726,7 @@ def sync_plan(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         admin_profile=admin_profile,
@@ -712,7 +736,7 @@ def sync_plan(
     with ClientPool() as clients:
         engine = SyncEngine(clients, store)
         _print_targets(
-            list(options.targets),
+            options,
             store,
             engine.available_scopes(options),
             engine.accounts(options),
@@ -814,6 +838,7 @@ def sync_run(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
+    prefer_scan: PreferScanOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
@@ -904,6 +929,7 @@ def sync_run(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         workers=workers,
@@ -916,7 +942,7 @@ def sync_run(
     with ClientPool() as clients:
         engine = SyncEngine(clients, store)
         _print_targets(
-            list(options.targets),
+            options,
             store,
             engine.available_scopes(options),
             engine.accounts(options),

@@ -1306,6 +1306,7 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 * `--full-scan`: Scan every workspace, not only those that changed since the last scan
 * `--exclude-personal`: Leave personal workspaces out of scans
 * `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--prefer-scan`: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
@@ -1389,6 +1390,7 @@ $ pbi sync run [OPTIONS] [TARGET]...
 * `--full-scan`: Scan every workspace, not only those that changed since the last scan
 * `--exclude-personal`: Leave personal workspaces out of scans
 * `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--prefer-scan`: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
