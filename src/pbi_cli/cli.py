@@ -46,6 +46,7 @@ from pbi_cli.cli_support import (
 from pbi_cli.cli_sync import sync_app
 from pbi_cli.cli_tui import launch, should_launch, tui
 from pbi_cli.config import (
+    SYSTEM_CERTIFICATES,
     VALID_GROUPS,
     PBIConfig,
     migrate_legacy_config,
@@ -68,7 +69,7 @@ from pbi_cli.core.scan import (
 from pbi_cli.errors import ApiError, AuthError, PBIError, RateLimitError
 from pbi_cli.powerbi.admin import Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
-from pbi_cli.session import lake_hint, lake_path, open_client
+from pbi_cli.session import lake_hint, lake_path, open_client, requests_verify
 
 try:
     import keyring
@@ -109,11 +110,15 @@ def _get_auth_config_file() -> Path:
 
 
 def _verify_certificates():
-    """How API requests verify TLS certificates, from the config.
+    """How API requests verify TLS certificates, from the config, as ``requests`` takes it.
+
+    ``system`` is made to mean the certificate store of the operating system here (see
+    `pbi_cli.session.requests_verify`), so the commands that do not go through
+    `open_client` trust it as well.
 
     :return: True, False, or the path to a CA bundle file
     """
-    return PBIConfig().verify_certificates
+    return requests_verify(PBIConfig().verify_certificates)
 
 
 def _display_table(
@@ -1449,19 +1454,25 @@ def set_verify_certificates(
         str,
         typer.Argument(
             metavar="VALUE",
-            help="true, false, or the path to a CA bundle file",
+            help="true, system, false, or the path to a CA bundle file",
         ),
     ],
 ):
     """Set how API requests verify TLS certificates
 
-    VALUE is `true` (verify against the system CA bundle, the default),
-    `false` (do not verify), or the path to a CA bundle file, for example
-    when a corporate proxy re-signs TLS traffic.
+    VALUE is `true` (verify against the certificates that come with Python's
+    requests, the default), `system` (verify against the certificate store of
+    Windows or macOS), `false` (do not verify), or the path to a CA bundle file.
+
+    Behind a company proxy that re-signs TLS traffic, the requests fail with
+    CERTIFICATE_VERIFY_FAILED: `system` trusts the proxy's root certificate
+    when it is installed in the operating system, which is where IT puts it,
+    and keeps the verification on.
 
     ```
-    pbi config set-verify-certificates true
+    pbi config set-verify-certificates system
     pbi config set-verify-certificates ~/certs/corporate-ca.pem
+    pbi config set-verify-certificates true
     pbi config set-verify-certificates false
     ```
     """
@@ -1471,11 +1482,13 @@ def set_verify_certificates(
         setting = True
     elif lowered == "false":
         setting = False
+    elif lowered == SYSTEM_CERTIFICATES:
+        setting = SYSTEM_CERTIFICATES
     else:
         path = Path(value).expanduser()
         if not path.is_file():
             raise PBIError(
-                f"'{value}' is not true, false or an existing CA bundle file"
+                f"'{value}' is not true, system, false or an existing CA bundle file"
             )
         setting = str(path)
 

@@ -103,3 +103,73 @@ def test_the_commands_that_use_the_lake_verify_as_the_setting_says(
 
     assert result.exit_code == 0, result.output
     assert fake_api.verifies == [str(bundle) if expected == "<bundle>" else expected]
+
+
+# ---------------------------------------------------------------------------
+# system: the certificate store of the operating system
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def injected(monkeypatch):
+    """Record the calls that would make ``ssl`` trust the operating system: the real one
+    would change ``ssl`` for the whole test run."""
+    import truststore
+
+    calls = []
+    monkeypatch.setattr(truststore, "inject_into_ssl", lambda: calls.append(True))
+    return calls
+
+
+def test_system_is_kept_as_a_word_not_as_a_path(tmp_path, monkeypatch):
+    runner = _isolated_runner(tmp_path, monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["config", "set-verify-certificates", "System"])
+
+    assert result.exit_code == 0, result.output
+    assert PBIConfig().verify_certificates == "system"
+    shown = runner.invoke(app, ["config", "get-verify-certificates"])
+    assert "Verify certificates: system" in shown.output
+
+
+def test_system_makes_ssl_trust_the_operating_system_and_verifies(injected):
+    from pbi_cli.session import requests_verify
+
+    assert requests_verify("system") is True
+    assert injected == [True]
+
+
+@pytest.mark.parametrize("setting", [True, False, "/certs/ca.pem"])
+def test_the_other_settings_leave_ssl_alone(injected, setting):
+    from pbi_cli.session import requests_verify
+
+    assert requests_verify(setting) == setting
+    assert injected == []
+
+
+def test_the_commands_that_use_the_lake_trust_the_system_when_told(
+    fake_api, signed_in, tmp_path, monkeypatch, injected
+):
+    runner = _isolated_runner(tmp_path, monkeypatch)
+    runner.invoke(app, ["config", "set-verify-certificates", "system"])
+    fake_api.add("GET", "/admin/groups", make_response(200, {"value": []}))
+
+    result = runner.invoke(app, ["workspaces", "list"])
+
+    assert result.exit_code == 0, result.output
+    assert injected and fake_api.verifies == [True]
+
+
+def test_an_unverified_certificate_says_what_to_set():
+    import requests
+
+    from pbi_cli.core.client import _tls_hint
+
+    failed = requests.exceptions.SSLError(
+        "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+        "self-signed certificate in certificate chain"
+    )
+    assert "pbi config set-verify-certificates system" in _tls_hint(failed)
+    assert _tls_hint(requests.exceptions.SSLError("handshake timed out")) == ""
+    assert _tls_hint(requests.exceptions.ConnectionError("refused")) == ""

@@ -26,6 +26,8 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi auth/params/bearer_token/help": "'-' reads the token from standard input",
     "pbi auth/params/bearer_token/required": "the token may come from stdin or --login",
     "pbi auth/params/login": "new: pbi auth --login (PowerShell sign-in)",
+    # Certificates can be checked against the store of Windows or macOS.
+    "pbi config set-verify-certificates/help": "documents `system`",
     # Typer adds shell completion to the root command.
     "pbi/param_order": "root gains --install-completion and --show-completion",
     "pbi/params/install_completion": "new: pbi --install-completion",
@@ -98,7 +100,9 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
 }
 
 # Key format: "<command path> --help" or "<command path> (no subcommand)". Value = reason.
-ACCEPTED_HELP_CHANGES: Dict[str, str] = {}
+ACCEPTED_HELP_CHANGES: Dict[str, str] = {
+    "pbi config set-verify-certificates --help": "documents `system`",
+}
 
 REGENERATE_HINT = (
     "If this change is intentional, record it in ACCEPTED_*_CHANGES with a reason "

@@ -23,7 +23,7 @@ from cloudpathlib import AnyPath, CloudPath
 from urllib3.exceptions import InsecureRequestWarning
 
 from pbi_cli.cache import LAKE_FOLDER
-from pbi_cli.config import PBIConfig
+from pbi_cli.config import SYSTEM_CERTIFICATES, PBIConfig
 from pbi_cli.core.auth import CredentialsProvider
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.fsutil import same_place
@@ -72,6 +72,26 @@ def lake_hint(config: Optional[PBIConfig] = None) -> str:
     return "The data lake is available."
 
 
+def requests_verify(setting: Any) -> Any:
+    """What ``requests`` is to be given as ``verify`` for a setting of
+    ``pbi config set-verify-certificates``.
+
+    ``"system"`` makes Python's ``ssl`` trust the certificate store of the operating system
+    (with `truststore`), for this process and every library in it (S3 included), and then
+    verifies as usual. That is what a proxy that re-signs TLS traffic needs when its root
+    certificate is installed in Windows or macOS but is not among the certificates that come
+    with ``requests``. The other settings are passed on as they are.
+
+    :param setting: True, False, ``"system"`` or the path to a CA bundle file
+    """
+    if setting != SYSTEM_CERTIFICATES:
+        return setting
+    import truststore
+
+    truststore.inject_into_ssl()  # idempotent: it only swaps classes
+    return True
+
+
 def open_client(
     credentials: CredentialsProvider,
     config: Optional[PBIConfig] = None,
@@ -82,10 +102,12 @@ def open_client(
 
     :param credentials: returns the current credentials; called before each request
     :param config: the settings to read (default: the stored ones)
-    :param verify: TLS verification, as for ``requests``. ``False`` also silences the
-        warning ``requests`` prints about it, which is what the commands always did.
+    :param verify: TLS verification, as for ``requests``, or ``"system"`` (see
+        `requests_verify`). ``False`` also silences the warning ``requests`` prints about it,
+        which is what the commands always did.
     """
     config = config or PBIConfig()
+    verify = requests_verify(verify)
     if verify is False:
         warnings.filterwarnings("ignore", category=InsecureRequestWarning)
     return PowerBIClient(

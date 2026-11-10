@@ -492,13 +492,19 @@ $ pbi config set-plan-file [OPTIONS] {PATH}
 
 Set how API requests verify TLS certificates
 
-VALUE is `true` (verify against the system CA bundle, the default),
-`false` (do not verify), or the path to a CA bundle file, for example
-when a corporate proxy re-signs TLS traffic.
+VALUE is `true` (verify against the certificates that come with Python's
+requests, the default), `system` (verify against the certificate store of
+Windows or macOS), `false` (do not verify), or the path to a CA bundle file.
+
+Behind a company proxy that re-signs TLS traffic, the requests fail with
+CERTIFICATE_VERIFY_FAILED: `system` trusts the proxy's root certificate
+when it is installed in the operating system, which is where IT puts it,
+and keeps the verification on.
 
 ```
-pbi config set-verify-certificates true
+pbi config set-verify-certificates system
 pbi config set-verify-certificates ~/certs/corporate-ca.pem
+pbi config set-verify-certificates true
 pbi config set-verify-certificates false
 ```
 
@@ -510,7 +516,7 @@ $ pbi config set-verify-certificates [OPTIONS] {VALUE}
 
 **Arguments**:
 
-* `VALUE`: true, false, or the path to a CA bundle file  [required]
+* `VALUE`: true, system, false, or the path to a CA bundle file  [required]
 
 **Options**:
 

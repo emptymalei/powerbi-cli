@@ -300,9 +300,13 @@
   scans only the chosen workspaces without moving the point the next incremental scan
   continues from, and a stop also cuts short a wait for quota.
 - `pbi config set-verify-certificates` and `pbi config get-verify-certificates` choose how API
-  requests verify TLS certificates: `true` (the default), `false` (prints a warning), or the path
-  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
-  longer skip the verification unconditionally.
+  requests verify TLS certificates: `true` (the default: the certificates that come with
+  `requests`), `system` (the certificate store of Windows or macOS, with
+  [truststore](https://truststore.readthedocs.io), which is what a company proxy that re-signs
+  TLS traffic needs), `false` (prints a warning), or the path to a CA bundle file. Requests no
+  longer skip the verification unconditionally. A request that fails with
+  `CERTIFICATE_VERIFY_FAILED` says which setting to use. See
+  [Behind a company proxy](auth.md#behind-a-company-proxy).
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
 - `pbi sync plan`, `pbi sync run` and `pbi sync status` keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
