@@ -35,7 +35,18 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _package_version
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 from cloudpathlib import AnyPath, CloudPath
 from loguru import logger
@@ -50,6 +61,13 @@ DATA = "data.json"
 
 #: The file at the root of a lake that marks it as published (and so as protected).
 PUBLISH_FILE = "publish.json"
+
+#: The folder of a tenant that holds tables worked out from its snapshots (such as who has
+#: access to what), so that a question does not read thousands of files.
+TABLES = "_tables"
+#: The file in `TABLES` that says the tables are older than a snapshot: written when a
+#: snapshot is, removed when the tables are built again.
+STALE = "STALE"
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9_-]")
 _FORBIDDEN_REQUEST_KEYS = {"headers", "authorization", "token", "cookies"}
@@ -287,6 +305,9 @@ class LakeStore:
         self._marker_lock = threading.Lock()
         self._marker: Optional[PublishInfo] = None
         self._marker_read = False
+        #: tenants whose tables this store said are stale (asked once in a cloud store)
+        self._staled: Set[str] = set()
+        self._stale_lock = threading.Lock()
 
     # -- published lakes, and lakes that are only read -----------------------------
 
@@ -527,8 +548,68 @@ class LakeStore:
 
         self._write_bytes(directory / DATA, payload)
         self._write_bytes(directory / MANIFEST, _dump(manifest, indent=2))
+        self._mark_tables_stale(tenant)
         logger.debug(f"Stored {endpoint_id} in {directory}")
         return Snapshot(manifest, directory)
+
+    # -- tables worked out from the snapshots ----------------------------------------
+
+    def _tables_dir(self, tenant: str) -> Any:
+        return self._tenant_dir(tenant) / TABLES
+
+    def _mark_tables_stale(self, tenant: str) -> None:
+        """Say that the tables of a tenant may be older than its snapshots.
+
+        A local lake looks for the mark at every write, so that a table built while a sync
+        runs is never taken as up to date; a cloud lake marks once per store.
+        """
+        marker = self._tables_dir(tenant) / STALE
+        if isinstance(marker, CloudPath):
+            with self._stale_lock:
+                if tenant not in self._staled:
+                    self._write_bytes(marker, b"")
+                    self._staled.add(tenant)
+            return
+        if marker.exists():
+            return
+        # an empty file needs no atomic write, and touching it is safe when several writers
+        # (the threads of a sync, or another process) mark it at the same moment
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch(mode=0o600, exist_ok=True)
+
+    def tables_stale(self, tenant: str) -> bool:
+        """Whether a snapshot was written after the tables of a tenant were built."""
+        try:
+            return (self._tables_dir(tenant) / STALE).exists()
+        except Exception:  # noqa: BLE001 - a cloud store raises its own errors
+            return True
+
+    def begin_tables(self, tenant: str) -> None:
+        """Start building the tables of a tenant: remove the stale mark first, so that a
+        snapshot written while they are built marks them stale again."""
+        self._check_writable()
+        marker = self._tables_dir(tenant) / STALE
+        with self._stale_lock:
+            self._staled.discard(tenant)
+        try:
+            marker.unlink()
+        except FileNotFoundError:
+            pass
+
+    def write_table(self, tenant: str, name: str, payload: bytes) -> None:
+        """Write a file of the tables of a tenant (atomically)."""
+        self._write_bytes(self._tables_dir(tenant) / name, payload)
+
+    def read_table(self, tenant: str, name: str) -> Optional[bytes]:
+        """A file of the tables of a tenant, or ``None`` when there is none."""
+        path = self._tables_dir(tenant) / name
+        try:
+            return path.read_bytes()
+        except FileNotFoundError:
+            return None
+        except Exception as error:  # noqa: BLE001 - a cloud store raises its own errors
+            logger.warning(f"Ignoring unreadable table {path}: {error}")
+            return None
 
     # -- reading snapshots ---------------------------------------------------------
 

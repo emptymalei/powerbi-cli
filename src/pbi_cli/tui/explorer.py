@@ -707,8 +707,16 @@ class ExplorerScreen(Screen):
         catalog = self.catalog
         if catalog is None:
             return
+
+        def building() -> None:
+            self.app.call_from_thread(
+                self.notify,
+                "Working out who has access to what from the lake (once after it "
+                "changed; a big lake takes a while) …",
+            )
+
         try:
-            found = access_of(catalog, who)
+            found = access_of(catalog, who, on_build=building)
             partial = False
             if not found.rows:  # a part of a name or an address finds people too
                 found = access_of(catalog, who, partial=True)

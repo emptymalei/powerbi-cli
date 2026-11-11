@@ -769,11 +769,11 @@ def lake_users(
     tenant_name = _one_tenant(store, tenant)
     catalog = Catalog(store, tenant_name)
     try:
-        found = access_report(catalog, kind, workspace)
+        found = access_report(catalog, kind, workspace, _building)
         if fetch and (found.missing or not found.items):
             _fetch_users(store, catalog, [kind], workspace, yes)
             catalog = Catalog(store, tenant_name)  # reads what was just fetched
-            found = access_report(catalog, kind, workspace)
+            found = access_report(catalog, kind, workspace, _building)
     except ValueError as error:
         raise PBIError(str(error)) from error
 
@@ -850,6 +850,15 @@ def _nobody(kind: str, found: AccessReport) -> str:
 #: The columns of ``pbi lake access`` on the terminal, without and with the person.
 _SHOWN_ITEMS = (0, 1, 3, 7, 9)
 _SHOWN_PEOPLE = (0, 1, 3, 5, 6, 7)
+
+
+def _building() -> None:
+    """Say that the table of who has access is worked out: it reads every user of the lake."""
+    typer.echo(
+        "Working out who has access to what from the lake (once after it changed; "
+        "a big lake takes a while) …",
+        err=True,
+    )
 
 
 @command(lake_app, "access")
@@ -939,13 +948,23 @@ def lake_access(
     catalog = Catalog(store, tenant_name)
     try:
         found = access_of(
-            catalog, who, kinds=kind, workspaces=workspace, partial=partial
+            catalog,
+            who,
+            kinds=kind,
+            workspaces=workspace,
+            partial=partial,
+            on_build=_building,
         )
         if fetch and (found.missing or not found.items):
             _fetch_users(store, catalog, kind or ACCESS_KINDS, workspace, yes)
             catalog = Catalog(store, tenant_name)  # reads what was just fetched
             found = access_of(
-                catalog, who, kinds=kind, workspaces=workspace, partial=partial
+                catalog,
+                who,
+                kinds=kind,
+                workspaces=workspace,
+                partial=partial,
+                on_build=_building,
             )
     except ValueError as error:
         raise PBIError(str(error)) from error

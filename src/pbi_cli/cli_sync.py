@@ -8,6 +8,7 @@ went and what the lake holds (it reads the lake only, so it needs no token).
 
 import re
 import shlex
+import time
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -34,7 +35,8 @@ from pbi_cli.cli_support import (
     stored_plan_file,
 )
 from pbi_cli.config import PBIConfig
-from pbi_cli.core.catalog import holding
+from pbi_cli.core.accessreport import refresh_access_table
+from pbi_cli.core.catalog import Catalog, holding
 from pbi_cli.core.planfile import Overrides, PlanFile, Step
 from pbi_cli.core.planrun import PlanRun, SequencePlan
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
@@ -948,6 +950,7 @@ def sync_run(
             engine.accounts(options),
         )
         report = engine.run(options, on_event=_Progress())
+    _update_tables(store)
     _finish_run(report, _again(ctx))
 
 
@@ -974,7 +977,32 @@ def _plan_file_run(
         def announce(number: int, step: Step) -> None:
             typer.secho(f"\nStep {number}: {step.title}", bold=True)
 
-        return run.run(on_event=_Progress(), on_step=announce)
+        report = run.run(on_event=_Progress(), on_step=announce)
+    _update_tables(store)
+    return report
+
+
+def _update_tables(store: LakeStore) -> None:
+    """Work out again the table of who has access to what, for each tenant a run changed,
+    so that `pbi lake access` and the terminal UI answer at once (`pbi_cli.core.accessreport`).
+    Failing here does not fail the sync: the next question works the table out instead.
+    """
+    for tenant in store.tenants():
+        if not store.tables_stale(tenant):
+            continue
+        started = time.monotonic()
+        try:
+            table = refresh_access_table(Catalog(store, tenant))
+        except Exception as error:  # noqa: BLE001 - the sync itself went well
+            typer.secho(
+                f"Could not update who has access to what in the lake: {error}",
+                fg="yellow",
+            )
+            continue
+        typer.echo(
+            f"Updated who has access to what in the lake: {len(table.rows)} row(s), "
+            f"{time.monotonic() - started:.1f}s."
+        )
 
 
 def _finish_run(report: RunReport, again: str) -> None:

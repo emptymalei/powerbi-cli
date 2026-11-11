@@ -62,6 +62,13 @@
 
 ### Added
 
+- **The access table**: `pbi lake access`, `pbi lake users` and the terminal UI's "Who has
+  access to…" answer from one table that the lake keeps (`_tables/access.csv`) instead of
+  reading the users of every item each time. On a lake of 9,500 items, a question took 3 to
+  4 seconds, and 87 seconds the first time after a sync on Windows; with the table it takes
+  under a tenth of a second. `pbi sync run` works the table out at its end; a snapshot written
+  after it marks it stale, and the next question works it out again. See
+  [The access table](lake.md#the-access-table).
 - **`prefer_scan`** (`tenant: {prefer_scan: true}` in a plan file, `--prefer-scan` on `pbi sync
   plan` and `pbi sync run`) takes the users and the data sources of the items from the scan
   instead of one request per item. A scan with `get_artifact_users` holds the users of every
@@ -353,6 +360,10 @@
 
 ### Fixed
 
+- `pbi lake access`, `pbi lake users` and the terminal UI's "Who has access to…" now find the
+  users that only a scan holds (`--get-artifact-users`, or `prefer_scan`). They looked only at
+  each item's own list of users and named every other item as one whose users the lake lacks;
+  items that only a scan knows are now included too.
 - When Power BI throttles a request (HTTP 429), every request of the tenant to that
   operation waits, not only the one that was throttled; a stopped sync no longer waits for
   the throttle to end; and the request that is tried again carries the token of that moment

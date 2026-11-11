@@ -30,11 +30,13 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import (
+    AbstractSet,
     Any,
     Callable,
     Dict,
     FrozenSet,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -580,6 +582,8 @@ class _State:
     user_apps: Optional[datetime]
     accounts_listing: FrozenSet[str] = frozenset()
     troubles: Dict[str, Tuple[str, str]] = field(default_factory=dict)
+    #: what was worked out from all of this, by name (see `Catalog.derived`)
+    derived: Dict[str, Any] = field(default_factory=dict)
 
 
 class Catalog:
@@ -630,6 +634,22 @@ class Catalog:
     def location(self) -> Any:
         """The folder of the lake (a path on disk or in the cloud)."""
         return self._store.root
+
+    @property
+    def store(self) -> LakeStore:
+        """The lake."""
+        return self._store
+
+    def derived(self, name: str, make: Callable[[], Any]) -> Any:
+        """Something worked out from the whole lake, such as the table of who has access to
+        what: made once with ``make`` and kept until `reload`."""
+        state = self._s
+        with self._lock:
+            if name in state.derived:
+                return state.derived[name]
+        value = make()
+        with self._lock:
+            return state.derived.setdefault(name, value)
 
     def _listing(self, endpoint_id: str) -> Optional[Listing]:
         """The newest complete list of an operation, else the newest partial one."""
@@ -1078,6 +1098,55 @@ class Catalog:
                         )
         order = {kind: n for n, kind in enumerate(KINDS)}
         return sorted(found, key=lambda i: (order[i.kind], i.name.casefold(), i.id))
+
+    def scan_order(self, workspace_ids: Iterable[str]) -> List[str]:
+        """Workspaces in the order of the stored scans that hold them, so that a walk over
+        them reads each stored scan (up to 100 workspaces, and big with every option) once;
+        the workspaces without a scan come last."""
+
+        def key(workspace_id: str) -> Tuple[int, str, str]:
+            ref = self._s.scans.get(workspace_id)
+            if ref is None:
+                return (1, "", workspace_id)
+            return (0, str(ref.snapshot.directory), workspace_id)
+
+        return sorted(workspace_ids, key=key)
+
+    def walk_items(
+        self, kind: str, workspace_ids: Optional[AbstractSet[str]] = None
+    ) -> Iterator[Item]:
+        """Every item of a kind, each with its scan: those the lists have and those only a
+        scan knows, as `items` gives them for one workspace.
+
+        They come workspace by workspace in `scan_order`, then the items that are in no
+        workspace the lake knows (an app). Work on each item as it comes, rather than
+        collecting them first: the scan of its workspace is then still at hand.
+
+        :param workspace_ids: only the items of these workspaces (and none of those in no
+            workspace); ``None`` for all
+        """
+        known = set(self._s.by_workspace) | set(self._s.scans)
+        if workspace_ids is not None:
+            known &= set(workspace_ids)
+        for workspace_id in self.scan_order(known):
+            view = self.scan_of(workspace_id) if kind in SCAN_KEYS else None
+            seen: Set[str] = set()
+            for item in self._s.by_workspace.get(workspace_id, {}).get(kind, []):
+                scanned = view.find(kind, item.id) if view else None
+                seen.add(item.id)
+                yield replace(item, scan=scanned) if scanned else item
+            if view:
+                for row in view.items(kind):
+                    item_id = id_of(kind, row)
+                    if item_id and item_id not in seen:
+                        seen.add(item_id)
+                        yield Item(
+                            kind, item_id, name_of(kind, row), workspace_id, {}, row
+                        )
+        if workspace_ids is None:
+            for item in self._s.items.get(kind, {}).values():
+                if (item.workspace_id or "") not in known:
+                    yield item
 
     def item(
         self, kind: str, item_id: str, workspace_id: Optional[str] = None

@@ -215,7 +215,8 @@ Report     Stock     Logistics  Viewer  admin.reports.users
 `-k report -k dashboard` limits it to some kinds, `-w Finance` to the items of a workspace,
 and `-o ann.xlsx` saves it (`.csv`, `.xlsx`, `.json`, `.md`, `.tsv`). It sends nothing to
 Power BI, so it is only as complete as the lake: the items whose users the lake does not hold
-are counted and named under the table, because they might list the person too. Access through
+are counted and named under the table, because they might list the person too. It answers
+from [the access table](#the-access-table), so it is quick once that is worked out. Access through
 a group shows as the group, since the lake does not hold who is in it. For Power BI's own
 answer, with an admin account, use `pbi users user-access -u <user id>`; it costs one request
 of the quota of 200 an hour.
@@ -347,6 +348,11 @@ fresh each part is, all read from the lake.
         dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
     _state/
       sync.json                             what `pbi sync` remembers between runs
+    _tables/
+      access.csv                            who has access to what, worked out from the above
+      access-gaps.csv                       the items whose users the lake does not hold
+      access.json                           when it was worked out
+      STALE                                 only when a snapshot is newer than the table
   publish.json                              only in a published lake: who, when, what was left out
 ```
 
@@ -366,6 +372,31 @@ ignored.
 
 A lake with a `publish.json` at its root has been [published](sharing.md#publish-a-lake). It
 is protected: only `pbi lake publish` writes to it.
+
+### The access table
+
+Who has access to an item is in many places: the answer of the item's own request
+(`admin.reports.users` and the like, one folder per item), the users of a workspace in the list
+of workspaces, and the users of every item in the scans. Reading all of them takes seconds on a
+lake of thousands of items, and minutes when the files are read for the first time (on Windows
+the virus scanner looks at each one). So `pbi lake access`, `pbi lake users` and the terminal
+UI read them **once** into one table, `_tables/access.csv`, and answer from that.
+
+- **When it is worked out:** `pbi sync run` does it at its end when it stored anything
+  (`Updated who has access to what in the lake: … row(s)`); otherwise the first question after
+  the lake changed does, and says so (`Working out who has access to what …`).
+- **When it is stale:** every snapshot written marks it so (`_tables/STALE`), so a table is
+  never older than the lake it answers from; it is worked out again, whole, the next time.
+- **What it holds:** one row per person and item, with the same columns as `pbi lake users -o`
+  (kind, item, workspace, name, e-mail, access, type, source), in UTF-8. Being a plain CSV,
+  it opens in a spreadsheet, DuckDB and pandas as it is. The `source` says whether a row came
+  from the item's own request, the list of workspaces, or a `scan`.
+- **A lake that is only read** (`--lake`, a published lake) uses a table that is there and
+  otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish` does
+  not copy the table yet.
+
+It holds the names and e-mail addresses of everybody with access: keep it as private as the
+rest of the lake.
 
 ### The manifest of a snapshot
 
