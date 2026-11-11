@@ -717,6 +717,14 @@ def test_the_example_of_core_workspaces_keeps_everything_about_them_only(
     )
     chosen = ["ws-0002", "ws-0003", "ws-0010", "ws-0011", "ws-0012"]
     assert ids("admin.groups.users", "groupId") == chosen
+    # who can open each report, dataset and app of them, read item by item
+    reports = [r["id"] for r in accounts.reports if r["workspaceId"] in chosen]
+    datasets = [d["id"] for d in accounts.datasets if d["workspaceId"] in chosen]
+    apps = [a["id"] for a in accounts.apps if a["workspaceId"] in chosen]
+    assert reports and datasets and apps
+    assert ids("admin.reports.users", "reportId") == sorted(reports)
+    assert ids("admin.datasets.users", "datasetId") == sorted(datasets)
+    assert ids("admin.apps.users", "appId") == sorted(apps)
     [scan] = accounts.calls_to(r"/admin/workspaces/getInfo$")
     assert sorted(scan.body["workspaces"]) == chosen  # one scan, of those only
     assert scan.query["getArtifactUsers"] == "true"
