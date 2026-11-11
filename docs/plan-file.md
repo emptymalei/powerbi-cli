@@ -222,9 +222,12 @@ session:
   workspaces: plan
 ```
 
+With `with_work_lake: true` beside `lake`, the lake the file names is looked at with your work lake on top.
+
 | Key | What it is |
 | --- | --- |
 | `lake` | The lake that `pbi tui --config` opens: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. `--lake` and `PBI_LAKE` come first; without any, your work lake (the cache folder). Any lake but your work lake is [opened read-only](sharing.md). A local folder that holds no lake is not an error: your work lake is opened instead and the UI says so (with the `pbi config set-cache-folder` command that would make that folder your work lake); a bucket that holds none is an error. Leave `lake` out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another. |
+| `with_work_lake` | `true` opens `lake` with your work lake on top, as `--with-work-lake` does: both are shown as one, the newest answer of each request is taken, and what you fetch or sync goes to your work lake (see [Look further with your own account](sharing.md#look-further-with-your-own-account)). Needs `lake`. |
 | `open` | A workspace to select at the start: an id, or a name pattern (the first match). |
 | `workspaces` | Which workspaces the Explorer lists at the start: `plan` (the default) lists only the ones that `workspaces` of the file names, by id or by name pattern, when it names any; `all` lists every workspace of the lake. `w` switches in the UI, see [Only the workspaces of the plan file](tui.md#only-the-workspaces-of-the-plan-file). |
 | `lazy` | What to do about a detail the lake lacks: `ask` (press `f`, the default), `auto` (fetch the harmless ones by itself) or `off` (do nothing). Write `off` as it is: it is not read as a yes or a no. |

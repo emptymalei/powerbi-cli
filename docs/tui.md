@@ -412,7 +412,7 @@ file instead of the targets and the options:
   expires stops it, the dialog asks for the token of **the account that expired** (the kind and
   the profile, which the plan can use several of) and the plan goes on from the step it was in.
 
-The `session` section of the file sets four things:
+The `session` section of the file sets these things:
 
 - `lake`: the lake to open. `--lake` and `PBI_LAKE` come first, then the file, then your work
   lake. Any lake but your work lake is [opened read-only](#other-lakes-and-view-only), and
@@ -420,6 +420,9 @@ The `session` section of the file sets four things:
   lake is opened instead, and a notice says so, with the command that would make that folder your
   work lake (`pbi config set-cache-folder <folder>`; a sync writes to the work lake only, so this
   is how a sync fills the lake the file names). A bucket that holds no lake is an error.
+- `with_work_lake`: `true` opens `lake` with your work lake on top, as `--with-work-lake` does:
+  both lakes are shown as one, and the plan runs and fetches into your work lake. See
+  [Look further with your own account](sharing.md#look-further-with-your-own-account).
 - `open`: a workspace to select at the start, by id or by a pattern for its name (the first
   match). It is selected once, not again when the lake is read again.
 - `workspaces`: which workspaces the Explorer lists at the start: `plan` (the default: only the ones

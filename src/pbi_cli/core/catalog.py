@@ -640,6 +640,13 @@ class Catalog:
         """The lake."""
         return self._store
 
+    def lake_of(self, place: Any) -> Optional[str]:
+        """Which lake a snapshot (or a day of events) is from, when a shared lake is looked
+        at with the work lake on top (`pbi_cli.core.layers`): ``"shared"`` or ``"work"``;
+        ``None`` for a lake of its own."""
+        layer_of = getattr(self._store, "layer_of", None)
+        return layer_of(place) if layer_of is not None else None
+
     def derived(self, name: str, make: Callable[[], Any]) -> Any:
         """Something worked out from the whole lake, such as the table of who has access to
         what: made once with ``make`` and kept until `reload`."""

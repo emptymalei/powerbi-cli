@@ -6,9 +6,10 @@ them in as a `Backend`, so that tests can hand in a fake service and an empty la
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Set, Tuple, Union
 
 from pbi_cli.core.client import PowerBIClient
+from pbi_cli.core.layers import LayeredStore, work_store
 from pbi_cli.core.planfile import PlanFile
 from pbi_cli.core.planrun import PlanRun
 from pbi_cli.core.registry import Endpoint, Scope
@@ -71,7 +72,8 @@ class AccountInfo:
 class Backend:
     """The world around the TUI.
 
-    :param store: the data lake
+    :param store: the data lake; a `LayeredStore` is a shared lake with the work lake on
+        top, and then syncs read and write the work lake alone
     :param client_for: the API client that signs in for a kind of token, as a profile when
         it is given one (made on first use; it may raise `~pbi_cli.errors.PBIError` when
         there is no token)
@@ -80,7 +82,8 @@ class Backend:
     :param active_profile: the name of the active profile of a group, if there is one
     :param make_engine: builds the sync engine (default: one that uses `client_for`)
     :param clock: the current time (aware, UTC)
-    :param open_lake: opens another lake to look at, from a folder or URL; it raises
+    :param open_lake: opens another lake to look at, from a folder or URL, with the work
+        lake on top when it is given ``with_work_lake=True``; it raises
         `~pbi_cli.errors.PBIError` when that is not possible (default: no other lake)
     :param recent_lakes: the lakes opened lately, newest first
     :param work_lake: where the work lake is (the lake of the cache folder), if there is one
@@ -94,13 +97,13 @@ class Backend:
         that the place a plan file names holds no lake and the work lake is open instead
     """
 
-    store: LakeStore
+    store: Union[LakeStore, LayeredStore]
     client_for: Callable[..., PowerBIClient]
     sign_in: Callable[[str, str, str], None]
     active_profile: Callable[[str], Optional[str]] = lambda group: None
     make_engine: Optional[Callable[[], SyncEngine]] = None
     clock: Callable[[], datetime] = _utcnow
-    open_lake: Optional[Callable[[str], LakeStore]] = None
+    open_lake: Optional[Callable[..., Any]] = None
     recent_lakes: Callable[[], List[str]] = lambda: []
     work_lake: Optional[str] = None
     accounts: Callable[[], List[AccountInfo]] = lambda: []
@@ -117,11 +120,22 @@ class Backend:
         """
         return self.store.why_read_only()
 
+    @property
+    def layered(self) -> bool:
+        """Whether a shared lake is looked at with the work lake on top."""
+        return isinstance(self.store, LayeredStore)
+
+    @property
+    def written(self) -> LakeStore:
+        """The lake that syncs read their progress from and write to: the work lake when
+        a shared lake is looked at with it on top, else the lake itself."""
+        return work_store(self.store)
+
     def engine(self) -> SyncEngine:
-        """A sync engine for the lake."""
+        """A sync engine for the lake (the work lake, when it is on top of a shared one)."""
         if self.make_engine is not None:
             return self.make_engine()
-        return SyncEngine(self.client_for, self.store, clock=self.clock)
+        return SyncEngine(self.client_for, self.written, clock=self.clock)
 
     def plan_run(self) -> PlanRun:
         """The plan file of the session, ready to be planned and run.
@@ -130,7 +144,7 @@ class Backend:
         """
         if self.plan is None:
             raise PBIError("This session has no plan file.")
-        return PlanRun(self.engine(), self.store, self.plan, clock=self.clock)
+        return PlanRun(self.engine(), self.written, self.plan, clock=self.clock)
 
     def read_plan_again(self) -> PlanFile:
         """Read the plan file again, and use it from now on; the one in use stays when the

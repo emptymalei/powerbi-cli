@@ -353,6 +353,9 @@ fresh each part is, all read from the lake.
       access-gaps.csv                       the items whose users the lake does not hold
       access.json                           when it was worked out
       STALE                                 only when a snapshot is newer than the table
+  _layers/<shared lake>/tenant=<tenant id>/
+    _tables/                                the access table of a shared lake with this one on
+                                            top (`--with-work-lake`), and what it was built from
   publish.json                              only in a published lake: who, when, what was left out
 ```
 
@@ -394,6 +397,10 @@ UI read them **once** into one table, `_tables/access.csv`, and answer from that
 - **A lake that is only read** (`--lake`, a published lake) uses a table that is there and
   otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish`
   publishes the table with the lake, unless the users or the scans are left out.
+- **A shared lake with your work lake on top** (`--with-work-lake`, see
+  [Look further with your own account](sharing.md#look-further-with-your-own-account)) has a
+  table of both, kept in your work lake under `_layers/`. It is worked out again when your work
+  lake changes or the shared lake is published again.
 
 It holds the names and e-mail addresses of everybody with access: keep it as private as the
 rest of the lake.

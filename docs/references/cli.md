@@ -614,6 +614,9 @@ pbi lake access ann@example.com -k report -k dashboard -o ann.xlsx
 
 # Everybody of one domain
 pbi lake access --partial @contractor.com -o contractors.csv
+
+# In a lake someone shared, with what your own account fetched on top
+pbi lake access ann@example.com --lake s3://my-bucket/pbi-lake --with-work-lake
 ```
 
 The answer is as complete as the lake: items whose users the lake does not hold are
@@ -643,6 +646,7 @@ $ pbi lake access [OPTIONS] {USER}
 * `-f, --format <str>`: csv, xlsx, json, md or tsv (default: from the file name, else csv)
 * `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
 * `--yes`: With --fetch: do not ask before fetching
 * `--help`: Show this message and exit.
@@ -725,6 +729,7 @@ $ pbi lake duckdb [OPTIONS] [DATABASE]
 
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake ls`
@@ -744,6 +749,9 @@ pbi lake ls -e admin.groups --all-versions
 
 # What someone shared, without any token
 pbi lake ls --lake s3://my-bucket/pbi-lake
+
+# ... with what you fetched yourself on top (column LAKE says which is which)
+pbi lake ls --lake s3://my-bucket/pbi-lake --with-work-lake
 ```
 
 **Usage**:
@@ -758,6 +766,7 @@ $ pbi lake ls [OPTIONS]
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--all-versions`: List every stored version, not only the newest of each request
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake prune`
@@ -931,6 +940,7 @@ $ pbi lake show [OPTIONS] {ENDPOINT}
 * `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
 * `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake users`
@@ -974,6 +984,7 @@ $ pbi lake users [OPTIONS] {KIND}
 * `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
 * `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
 * `--yes`: With --fetch: do not ask before fetching
 * `--help`: Show this message and exit.
@@ -1447,6 +1458,9 @@ pbi tui
 # Look at a lake that someone shared: no token, no network to Power BI, read-only
 pbi tui --lake s3://my-bucket/pbi-lake
 
+# ... and look further with your own account: what you fetch goes to your work lake
+pbi tui --lake s3://my-bucket/pbi-lake --with-work-lake
+
 # With a plan file: its steps on the Sync screen, and its session settings
 pbi tui --config pbi-plan.yaml
 ```
@@ -1455,7 +1469,10 @@ A plan file named once (`pbi config set-plan-file PATH`, or `PBI_PLAN`) is used 
 `--config` is not given.
 
 A lake given with `--lake` is only read: nothing can be fetched into it, and no account
-is needed. Only the lake of the cache folder is written by a sync. With `--config` the
+is needed. Only the lake of the cache folder is written by a sync. With
+`--with-work-lake` (or `session.with_work_lake` in the plan file) both are shown as one,
+the newest answer of each request is taken, and what you fetch or sync goes to your work
+lake; the other lake is still never written. With `--config` the
 lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
 else the lake of the cache folder.
 
@@ -1469,6 +1486,7 @@ $ pbi tui [OPTIONS]
 
 * `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `-c, --config <file>`: A plan file (YAML): the Sync screen plans and runs its steps, and its session section says which lake to open, which workspace to select and what to do about a detail the lake lacks
 * `--help`: Show this message and exit.
 

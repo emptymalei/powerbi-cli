@@ -62,6 +62,16 @@
 
 ### Added
 
+- **A shared lake with your work lake on top** (`--with-work-lake` on `pbi tui` and on
+  `pbi lake ls`, `show`, `users`, `access` and `duckdb`; `session.with_work_lake` in a plan
+  file; **Put the work lake on top** in the TUI's palette). Someone who opens a lake a
+  colleague shared and has an account of their own, a service account say, can look further
+  without copying anything. Both lakes are read as one, and the answer fetched last is taken.
+  What they fetch or sync goes to their work lake, and the shared lake is never written.
+  Answers that depend on who asked are kept per account. The TUI, the Explorer and
+  `pbi lake ls` say which lake each answer came from. Who has access to what is worked out
+  from both and kept in the work lake. `pbi lake publish` reads the work lake alone. See
+  [Look further with your own account](sharing.md#look-further-with-your-own-account).
 - **The access table**: `pbi lake access`, `pbi lake users` and the terminal UI's "Who has
   access to…" answer from one table that the lake keeps (`_tables/access.csv`) instead of
   reading the users of every item each time. On a lake of 9,500 items, a question took 3 to

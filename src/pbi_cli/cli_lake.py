@@ -16,6 +16,7 @@ from pbi_cli.cli_support import (
     BackupOption,
     BackupToOption,
     LakeOption,
+    WithWorkLakeOption,
     back_up,
     command,
     format_age,
@@ -35,6 +36,7 @@ from pbi_cli.core.accessreport import (
 from pbi_cli.core.backup import SAFETY_SUFFIX, backup_lake, plan_restore, restore_lake
 from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.lakesql import describe, load_lake
+from pbi_cli.core.layers import LayeredStore
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
@@ -55,15 +57,23 @@ def lake_group(ctx: typer.Context):
 # -- helpers -----------------------------------------------------------------------
 
 
-def _store(location: Optional[str] = None) -> LakeStore:
-    """The lake to look at: the one given with ``--lake``, else that of the cache folder.
+def _store(location: Optional[str] = None, with_work_lake: bool = False) -> Any:
+    """The lake to look at: the one given with ``--lake``, else that of the cache folder;
+    with ``--with-work-lake`` the one given with the work lake on top (`LayeredStore`).
 
     Only the lake of the cache folder can be written (and cleaned up with ``prune``).
     """
-    opened = resolve_lake(location)
+    opened = resolve_lake(location, with_work_lake=with_work_lake)
     if opened is None:
         raise PBIError(f"There is no data lake yet. {lake_hint()}")
     return opened.store
+
+
+def _where(store: Any) -> str:
+    """The lake that is looked at, for the first line of a command."""
+    if isinstance(store, LayeredStore):
+        return f"{store.root}, with your work lake on top ({store.work.root})"
+    return str(store.root)
 
 
 def _tenants(store: LakeStore, wanted: Optional[str]) -> List[str]:
@@ -165,6 +175,7 @@ def lake_ls(
         ),
     ] = False,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
 ):
     """List what the data lake holds
 
@@ -181,10 +192,13 @@ def lake_ls(
 
     # What someone shared, without any token
     pbi lake ls --lake s3://my-bucket/pbi-lake
+
+    # ... with what you fetched yourself on top (column LAKE says which is which)
+    pbi lake ls --lake s3://my-bucket/pbi-lake --with-work-lake
     ```
     """
-    store = _store(lake)
-    typer.echo(f"Data lake: {store.root}")
+    store = _store(lake, with_work_lake)
+    typer.echo(f"Data lake: {_where(store)}")
     tenants = _tenants(store, tenant)
     if not tenants:
         typer.echo("The lake is empty. Commands such as `pbi workspaces list` fill it.")
@@ -195,7 +209,14 @@ def lake_ls(
         ["ENDPOINT", "REF", "VERSION", "FETCHED (UTC)", "AGE", "ROWS", "SIZE"]
         if all_versions
         else ["ENDPOINT", "REF", "FETCHED (UTC)", "AGE", "ROWS", "SIZE", "VERSIONS"]
-    ) + ["PARAMETERS"]
+    )
+    layered = isinstance(store, LayeredStore)
+    if layered:
+        header.append("LAKE")  # where each answer is: the shared lake or the work lake
+    header.append("PARAMETERS")
+
+    def lake_of(place: Any) -> List[str]:
+        return [store.layer_of(place)] if layered else []
 
     shown = 0
     for tenant_name in tenants:
@@ -216,6 +237,7 @@ def lake_ls(
                         "-" if manifest.get("rows") is None else manifest["rows"],
                         _size(int(manifest.get("bytes", 0))),
                         *([] if all_versions else [len(versions)]),
+                        *lake_of(snapshot),
                         _params_text(pset.params),
                     ]
                     rows.append(row)
@@ -234,6 +256,7 @@ def lake_ls(
                         stored.rows if all_versions else sum(d.rows for d in days),
                         "-",
                         *([] if all_versions else [f"{len(days)} day(s)"]),
+                        *lake_of(stored),
                         state if all_versions else f"newest day {stored.day} ({state})",
                     ]
                 )
@@ -293,6 +316,7 @@ def lake_show(
         ),
     ] = False,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
 ):
     """Print a stored response (or its manifest) as JSON
 
@@ -314,7 +338,7 @@ def lake_show(
     pbi lake show admin.activityevents --day 2026-09-29
     ```
     """
-    store = _store(lake)
+    store = _store(lake, with_work_lake)
     tenant_name = _one_tenant(store, tenant)
     known = store.endpoints(tenant_name)
     endpoint_id = next((e for e in known if _matches(e, endpoint)), None)
@@ -750,6 +774,7 @@ def lake_users(
         ),
     ] = None,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
     fetch: FetchOption = False,
     yes: FetchYesOption = False,
 ):
@@ -780,7 +805,7 @@ def lake_users(
             f"'{kind}' is not a kind. Choose one of: {', '.join(ACCESS_KINDS)}.",
             param_hint="KIND",
         )
-    store = _store(lake)
+    store = _store(lake, with_work_lake)
     tenant_name = _one_tenant(store, tenant)
     catalog = Catalog(store, tenant_name)
     try:
@@ -931,6 +956,7 @@ def lake_access(
         ),
     ] = None,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
     fetch: FetchOption = False,
     yes: FetchYesOption = False,
 ):
@@ -948,6 +974,9 @@ def lake_access(
 
     # Everybody of one domain
     pbi lake access --partial @contractor.com -o contractors.csv
+
+    # In a lake someone shared, with what your own account fetched on top
+    pbi lake access ann@example.com --lake s3://my-bucket/pbi-lake --with-work-lake
     ```
 
     The answer is as complete as the lake: items whose users the lake does not hold are
@@ -958,7 +987,7 @@ def lake_access(
     the lake does not hold who is in it. For the answer of Power BI itself, with an admin
     account, use `pbi users user-access -u <user id>`.
     """
-    store = _store(lake)
+    store = _store(lake, with_work_lake)
     tenant_name = _one_tenant(store, tenant)
     catalog = Catalog(store, tenant_name)
     try:
@@ -1026,6 +1055,7 @@ def lake_duckdb(
         typer.Option("--tenant", "-t", help="Only this tenant (default: all)"),
     ] = None,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
 ):
     """Load the lake into a DuckDB database, to question it with SQL
 
@@ -1053,8 +1083,8 @@ def lake_duckdb(
 
     See the data model in the documentation of the data lake.
     """
-    store = _store(lake)
-    typer.echo(f"Loading {store.root} ...")
+    store = _store(lake, with_work_lake)
+    typer.echo(f"Loading {_where(store)} ...")
     con = load_lake(store, str(database), tenant)
     try:
         tables = describe(con)

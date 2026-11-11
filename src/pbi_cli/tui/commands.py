@@ -291,13 +291,34 @@ def _lakes(app: Any) -> List[Command]:
         )
     ]
     here = str(backend.store.root)
-    if backend.readonly and backend.work_lake:
+    if (backend.readonly or backend.layered) and backend.work_lake:
         found.append(
             Command(
                 "Open the work lake",
                 _help("The lake of your cache folder, the one you can fetch into"),
                 partial(app.open_lake_at, WORK_LAKE),
                 "cache folder own",
+            )
+        )
+    if backend.layered:
+        found.append(
+            Command(
+                "Take the work lake off",
+                _help("Look at the shared lake alone again (view only)"),
+                app.action_work_lake_on_top,
+                "layers shared alone view only",
+            )
+        )
+    elif backend.readonly and backend.work_lake and backend.open_lake is not None:
+        found.append(
+            Command(
+                "Put the work lake on top",
+                _help(
+                    "Look at this lake and your work lake as one: what you fetch with "
+                    "your own account goes to the work lake, never to this one"
+                ),
+                app.action_work_lake_on_top,
+                "layers shared both fetch service account investigate",
             )
         )
     lately = [

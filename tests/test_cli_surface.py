@@ -104,6 +104,12 @@ ACCEPTED_HELP_CHANGES: Dict[str, str] = {
     "pbi config set-verify-certificates --help": "documents `system`",
     "pbi sync plan --help": "gains --prefer-scan",
     "pbi sync run --help": "gains --prefer-scan",
+    "pbi lake access --help": "gains --with-work-lake",
+    "pbi lake duckdb --help": "gains --with-work-lake",
+    "pbi lake ls --help": "gains --with-work-lake",
+    "pbi lake show --help": "gains --with-work-lake",
+    "pbi lake users --help": "gains --with-work-lake",
+    "pbi tui --help": "gains --with-work-lake",
 }
 
 REGENERATE_HINT = (

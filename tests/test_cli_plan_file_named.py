@@ -220,7 +220,7 @@ def test_the_command_that_continues_a_run_of_a_named_plan_is_the_same_command(
 def opened(monkeypatch):
     seen = {}
 
-    def fake_launch(tenant, lake, config):
+    def fake_launch(tenant, lake, config, with_work_lake=False):
         seen["config"] = config
 
     monkeypatch.setattr(cli_tui, "launch", fake_launch)

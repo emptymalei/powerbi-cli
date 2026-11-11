@@ -245,6 +245,19 @@ LakeOption = Annotated[
 ]
 
 
+WithWorkLakeOption = Annotated[
+    bool,
+    typer.Option(
+        "--with-work-lake",
+        help=(
+            "Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are "
+            "shown as one, the newest answer of each request is taken, and what you fetch "
+            "goes to your work lake. The lake of --lake is still never written"
+        ),
+    ),
+]
+
+
 # -- the plan file that is used when none is given ---------------------------------------
 
 #: The environment variable that names a plan file, like ``--config`` does.

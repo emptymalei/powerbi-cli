@@ -477,7 +477,7 @@ class SyncScreen(Screen):
         summary: Any = None
         problem = ""
         try:
-            summary = summarize(backend.store, tenant, backend.clock(), limiter)
+            summary = summarize(backend.written, tenant, backend.clock(), limiter)
         except Exception as error:  # an unreadable lake file must not end the UI
             problem = f"{type(error).__name__}: {error}"
         if not worker.is_cancelled:

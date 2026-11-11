@@ -122,6 +122,18 @@ def ago(catalog: Catalog, when: Optional[datetime]) -> str:
     return "never" if age is None else f"{format_age(age)} ago"
 
 
+#: How a snapshot's lake is named, when a shared lake has the work lake on top.
+_LAKES = {"shared": "shared lake", "work": "your work lake"}
+
+
+def from_lake(catalog: Catalog, place: Any) -> str:
+    """`` · shared lake`` or `` · your work lake`` after when something was fetched, when a
+    shared lake is looked at with the work lake on top; nothing for a lake of its own.
+    """
+    lake = catalog.lake_of(place)
+    return f" · {_LAKES[lake]}" if lake else ""
+
+
 def short_time(stamp: str) -> str:
     """A time as the API wrote it, for a table: ``2026-09-30 12:00``."""
     return stamp.replace("T", " ")[:16]
@@ -400,7 +412,12 @@ def overview_entries(catalog: Catalog) -> List[Entry]:
                     dot(catalog.listing_freshness(kind)),
                     label(kind, True),
                     str(len(found.rows)) if found else "-",
-                    ago(catalog, found.fetched_at) if found else "not in the lake",
+                    (
+                        ago(catalog, found.fetched_at)
+                        + from_lake(catalog, found.snapshot)
+                        if found
+                        else "not in the lake"
+                    ),
                 ),
                 Plain(
                     "section",
@@ -408,7 +425,12 @@ def overview_entries(catalog: Catalog) -> List[Entry]:
                     {
                         "Operation": found.endpoint if found else "-",
                         "Rows": len(found.rows) if found else 0,
-                        "Fetched": ago(catalog, found.fetched_at) if found else "never",
+                        "Fetched": (
+                            ago(catalog, found.fetched_at)
+                            + from_lake(catalog, found.snapshot)
+                            if found
+                            else "never"
+                        ),
                         "Partial": (
                             "yes: fetched with a filter or a limit"
                             if found and found.partial
@@ -602,7 +624,8 @@ def provenance(
             rows.append(
                 (
                     "List",
-                    f"{found.endpoint}, fetched {ago(catalog, found.fetched_at)}{note}",
+                    f"{found.endpoint}, fetched {ago(catalog, found.fetched_at)}"
+                    f"{from_lake(catalog, found.snapshot)}{note}",
                 )
             )
         if found is None and isinstance(subject, Item) and subject.workspace_id:
@@ -612,7 +635,8 @@ def provenance(
                     (
                         "List",
                         f"{made.manifest.get('endpoint', 'a list')} of the workspace, "
-                        f"fetched {ago(catalog, made.fetched_at)}",
+                        f"fetched {ago(catalog, made.fetched_at)}"
+                        f"{from_lake(catalog, made)}",
                     )
                 )
         if isinstance(subject, Workspace) and subject.visible_to:

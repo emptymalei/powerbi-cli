@@ -10,14 +10,16 @@ against the same quota:
 
 Commands that only look at a lake (the TUI, ``pbi lake``, ``pbi sync status``) can look at
 another one with ``--lake``. Only the *work lake*, the lake of the cache folder, is ever
-written: any other lake is opened read-only (`resolve_lake`).
+written: any other lake is opened read-only (`resolve_lake`). With ``--with-work-lake`` the
+other lake is looked at with the work lake on top (`pbi_cli.core.layers`): both are shown as
+one, and what is fetched goes to the work lake.
 """
 
 import os
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Union
 
 from cloudpathlib import AnyPath, CloudPath
 from urllib3.exceptions import InsecureRequestWarning
@@ -27,6 +29,7 @@ from pbi_cli.config import SYSTEM_CERTIFICATES, PBIConfig
 from pbi_cli.core.auth import CredentialsProvider
 from pbi_cli.core.client import PowerBIClient
 from pbi_cli.core.fsutil import same_place
+from pbi_cli.core.layers import LayeredStore
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker
 from pbi_cli.core.store import PUBLISH_FILE, LakeStore
 from pbi_cli.errors import PBIError
@@ -133,10 +136,15 @@ class OpenedLake:
         lake, so the work lake was opened instead
     """
 
-    store: LakeStore
+    store: Union[LakeStore, LayeredStore]
     work: bool
     source: str
     note: str = ""
+
+    @property
+    def layered(self) -> bool:
+        """Whether the lake is looked at with the work lake on top (``--with-work-lake``)."""
+        return isinstance(self.store, LayeredStore)
 
     @property
     def readonly(self) -> bool:
@@ -251,21 +259,26 @@ def resolve_lake(
     config: Optional[PBIConfig] = None,
     environ: Optional[Mapping[str, str]] = None,
     plan_lake: Optional[str] = None,
+    with_work_lake: bool = False,
 ) -> Optional[OpenedLake]:
     """The lake to look at: the one asked for, else ``PBI_LAKE``, else the one a plan file
     names, else the work lake.
 
     A location is a folder or a URL such as ``s3://bucket/folder``. It may also be a cache
     folder, whose ``lake`` folder is then the lake. Only the work lake is writable (and only
-    while it is not a published lake): any other one is opened read-only.
+    while it is not a published lake): any other one is opened read-only, and with
+    ``with_work_lake`` looked at with the work lake on top (`LayeredStore`).
 
     :param location: what ``--lake`` or the dialog of the TUI gave
     :param config: the settings (default: the stored ones)
     :param environ: the environment (default: the real one)
     :param plan_lake: the lake that the plan file of the session names (``session.lake``),
         which an explicit ``--lake`` and ``PBI_LAKE`` overrule
+    :param with_work_lake: look at the lake asked for with the work lake on top; nothing
+        changes when no other lake is asked for, or it is the work lake
     :return: the lake, or ``None`` when none was asked for and no cache folder is set
-    :raises PBIError: when the location cannot be read, or holds no lake
+    :raises PBIError: when the location cannot be read, or holds no lake, or the work lake
+        is to be on top and there is none
     """
     config = config or PBIConfig()
     environment = os.environ if environ is None else environ
@@ -306,4 +319,12 @@ def resolve_lake(
         f"The lake {path} was opened with {source}, which only reads. Only the work lake "
         "(the cache folder, see `pbi config set-cache-folder`) is ever written."
     )
-    return OpenedLake(LakeStore(path, readonly=True, reason=reason), False, source)
+    shared = LakeStore(path, readonly=True, reason=reason)
+    if not with_work_lake:
+        return OpenedLake(shared, False, source)
+    if work is None:
+        raise PBIError(
+            f"--with-work-lake puts your work lake on top of {wanted}, and there is none: "
+            "set a cache folder first (pbi config set-cache-folder <folder>)."
+        )
+    return OpenedLake(LayeredStore(LakeStore(work), shared), False, source)

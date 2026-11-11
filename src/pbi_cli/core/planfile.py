@@ -121,7 +121,7 @@ _TENANT_KEYS = (
     "prefer_scan",
 )
 _WORKSPACE_KEYS = ("id", "name", "scan", "details", "via")
-_SESSION_KEYS = ("lake", "open", "lazy", "workspaces")
+_SESSION_KEYS = ("lake", "with_work_lake", "open", "lazy", "workspaces")
 
 _URL = re.compile(r"^\w[\w+.-]*://")
 
@@ -392,12 +392,15 @@ class SessionPlan:
         ``auto`` (fetch the harmless ones after you stay on an item) or ``off``
     :param workspaces: which workspaces the Explorer shows at the start: ``plan`` (only the
         ones the file names, when it names any) or ``all``; a key switches between them
+    :param with_work_lake: look at `lake` with the work lake on top (``--with-work-lake``):
+        both are shown as one, and what is fetched goes to the work lake
     """
 
     lake: Optional[str] = None
     open: Optional[str] = None
     lazy: str = LAZY_ASK
     workspaces: str = SHOW_PLAN
+    with_work_lake: bool = False
 
 
 @dataclass(frozen=True)
@@ -825,11 +828,21 @@ class PlanFile:
                 f"'{shown}' is not a choice. The choices are: {', '.join(SHOW_MODES)}.",
                 _line(box, "workspaces"),
             )
+        lake = reader.text(box, "lake", "session")
+        with_work_lake = reader.boolean(box, "with_work_lake", "session")
+        if with_work_lake and not lake:
+            reader.fail(
+                "session.with_work_lake",
+                "puts your work lake on top of session.lake, and there is none: name the "
+                "lake to look at (for example a shared one) in session.lake.",
+                _line(box, "with_work_lake"),
+            )
         return SessionPlan(
-            lake=reader.text(box, "lake", "session"),
+            lake=lake,
             open=reader.text(box, "open", "session"),
             lazy=lazy,
             workspaces=shown,
+            with_work_lake=with_work_lake,
         )
 
     # -- what the file says about itself ------------------------------------------------------
