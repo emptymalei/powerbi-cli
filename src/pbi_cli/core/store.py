@@ -596,6 +596,18 @@ class LakeStore:
         except FileNotFoundError:
             pass
 
+    def remove_tables(self, tenant: str) -> bool:
+        """Delete the tables of a tenant (they are worked out again when needed).
+
+        :return: whether there were any
+        """
+        self._check_writable()
+        directory = self._tables_dir(tenant)
+        if not directory.exists():
+            return False
+        self._rmtree(directory)
+        return True
+
     def write_table(self, tenant: str, name: str, payload: bytes) -> None:
         """Write a file of the tables of a tenant (atomically)."""
         self._write_bytes(self._tables_dir(tenant) / name, payload)

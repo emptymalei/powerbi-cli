@@ -471,6 +471,21 @@ def _show_publish_plan(plan: PublishPlan) -> None:
     )
     if plan.prune:
         typer.echo("Older versions in the destination will be deleted afterwards.")
+    if "users" in plan.excluded:
+        typer.echo(
+            "The users are left out: they are also taken out of the lists and the scans "
+            "that are published, and the table of who has access is not published."
+        )
+    elif plan.access_table:
+        typer.echo(
+            "The table of who has access to what is published too, so the published lake "
+            "answers at once."
+        )
+    else:
+        typer.echo(
+            "The table of who has access is not published without the scans: whoever "
+            "opens the lake works it out from what is published."
+        )
     typer.echo(
         "Whoever opens the published lake sees all of it. Leave a category out with "
         "--exclude."

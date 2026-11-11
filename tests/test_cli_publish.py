@@ -42,7 +42,8 @@ def test_a_dry_run_shows_what_would_be_published_and_writes_nothing(work, destin
     assert "Tenants: tenant-1" in result.output
     for category in ("lists", "scans", "users", "activity"):
         assert category in result.output
-    assert "⚠ the people who can open each report" in result.output
+    assert "⚠ the people who have access to each workspace, report" in result.output
+    assert "The table of who has access to what is published too" in result.output
     assert "IP addresses" in result.output
     assert "Dry run: nothing was written." in result.output
     assert not destination.exists()

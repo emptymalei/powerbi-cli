@@ -37,6 +37,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tupl
 from loguru import logger
 
 from pbi_cli.core.catalog import KINDS, Access, Catalog, Item, Workspace, label
+from pbi_cli.core.store import LakeStore
 
 #: The kinds that can be asked for: a workspace, or one of `pbi_cli.core.catalog.KINDS`.
 ACCESS_KINDS: Tuple[str, ...] = ("workspace",) + KINDS
@@ -317,7 +318,12 @@ def _read_csv(payload: bytes) -> List[Dict[str, str]]:
 def save_access_table(catalog: Catalog, table: AccessTable) -> None:
     """Keep the table in the lake (the stale mark must have been removed before it was
     worked out: see `refresh_access_table`)."""
-    store, tenant = catalog.store, catalog.tenant
+    write_access_table(catalog.store, catalog.tenant, table)
+
+
+def write_access_table(store: LakeStore, tenant: str, table: AccessTable) -> None:
+    """Write the files of the table into the tables of a tenant of a lake (this one, or
+    the place it is published to)."""
     store.write_table(
         tenant,
         _ROWS,

@@ -392,8 +392,8 @@ UI read them **once** into one table, `_tables/access.csv`, and answer from that
   it opens in a spreadsheet, DuckDB and pandas as it is. The `source` says whether a row came
   from the item's own request, the list of workspaces, or a `scan`.
 - **A lake that is only read** (`--lake`, a published lake) uses a table that is there and
-  otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish` does
-  not copy the table yet.
+  otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish`
+  publishes the table with the lake, unless the users or the scans are left out.
 
 It holds the names and e-mail addresses of everybody with access: keep it as private as the
 rest of the lake.

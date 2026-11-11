@@ -1,11 +1,14 @@
 """Publishing a lake: what is copied, what is protected, and what is refused."""
 
+import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sync_helpers import TENANT, World
 
+from pbi_cli.core import accessreport
+from pbi_cli.core.accessreport import access_report
 from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.publish import (
     CATEGORIES,
@@ -92,7 +95,11 @@ def test_the_published_lake_has_the_layout_of_the_lake_and_a_marker(world, tmp_p
         f"{'/'.join(leaf.parts)}/{name}"
         for leaf in plan.leaves
         for name, _ in leaf.files
-    } | {f"tenant={TENANT}/_state/sync.json"}
+    } | {f"tenant={TENANT}/_state/sync.json"} | {
+        f"tenant={TENANT}/_tables/{name}"
+        for name in ("access.csv", "access-gaps.csv", "access.json")
+    }
+    assert result.tables == [TENANT]
     marker = json.loads((tmp_path / "pub" / PUBLISH_FILE).read_text(encoding="utf-8"))
     assert marker["protected"] is True and marker["complete"] is True
     assert marker["published_at"].startswith("2026-10-02T07:20")
@@ -483,3 +490,202 @@ def test_a_lake_in_s3_can_be_published_to_a_folder(world, local_s3, tmp_path):
     assert [
         w.id for w in Catalog(LakeStore(tmp_path / "pub"), TENANT).workspaces()
     ] == [w.id for w in Catalog(world.store, TENANT).workspaces()]
+
+
+# ---------------------------------------------------------------------------
+# leaving out the users, and the table of who has access
+# ---------------------------------------------------------------------------
+
+
+def people_in(value):
+    """Whether an answer names people anywhere (a ``users`` or ``Users`` key)."""
+    if isinstance(value, dict):
+        return bool({"users", "Users"} & set(value)) or any(
+            people_in(v) for v in value.values()
+        )
+    if isinstance(value, list):
+        return any(people_in(v) for v in value)
+    return False
+
+
+def answers(root, endpoint_folder):
+    """The data of every stored version of an endpoint, with its manifest."""
+    found = []
+    for manifest in (root / f"tenant={TENANT}" / endpoint_folder).rglob(
+        "manifest.json"
+    ):
+        found.append(
+            (json.loads(manifest.read_text(encoding="utf-8")), manifest.parent)
+        )
+    return found
+
+
+@pytest.fixture
+def every_user(world):
+    """Users of workspaces, datasets and apps too, and workspaces listed with their users."""
+    world.run("group-users", "dataset-users", "app-users", "dataflow-datasources")
+    world.store.write_snapshot(  # as `pbi workspaces list -e users` keeps it
+        TENANT,
+        "admin.groups",
+        {"$expand": "users"},
+        {
+            "value": [
+                {
+                    "id": w["id"],
+                    "name": w["name"],
+                    "type": "Workspace",
+                    "state": "Active",
+                    "users": [
+                        {
+                            "emailAddress": "ann@example.com",
+                            "groupUserAccessRight": "Admin",
+                        }
+                    ],
+                }
+                for w in world.fake.workspaces
+            ]
+        },
+        fetched_at=world.clock.now() + timedelta(minutes=1),
+    )
+    return world
+
+
+def test_every_kind_of_user_list_is_in_the_users_category():
+    for folder in (
+        "admin_groups_users",
+        "admin_reports_users",
+        "admin_datasets_users",
+        "admin_dashboards_users",
+        "admin_dataflows_users",
+        "admin_apps_users",
+        "user_group_users",
+        "user_dataset_users",
+        "admin_users_artifact_access",
+    ):
+        assert category_of(folder) == "users", folder
+    for folder in (
+        "admin_datasets_datasources",
+        "admin_dataflows_datasources",
+        "user_dataset_datasources",
+        "user_dataflow_datasources",
+    ):
+        assert category_of(folder) == "datasources", folder
+
+
+def test_leaving_out_the_users_leaves_out_every_list_of_them(every_user, tmp_path):
+    plan, result = go(every_user, tmp_path, exclude=["users"])
+
+    tenant_dir = tmp_path / "pub" / f"tenant={TENANT}"
+    published = {p.name for p in tenant_dir.iterdir()}
+    assert (
+        not {
+            "endpoint=admin_groups_users",
+            "endpoint=admin_reports_users",
+            "endpoint=admin_datasets_users",
+            "endpoint=admin_apps_users",
+        }
+        & published
+    )
+    assert "endpoint=admin_dataflows_datasources" in published
+
+
+def test_leaving_out_the_users_takes_them_out_of_the_scans_and_the_lists(
+    every_user, tmp_path
+):
+    source = every_user.store.root
+    assert any(
+        people_in(json.loads((d / "data.json").read_bytes()))
+        for _, d in answers(source, "endpoint=admin_scan_result")
+    )
+    assert any(
+        people_in(json.loads((d / "data.json").read_bytes()))
+        for _, d in answers(source, "endpoint=admin_groups")
+    )
+
+    go(every_user, tmp_path, exclude=["users"])
+
+    root = tmp_path / "pub"
+    for folder in ("endpoint=admin_scan_result", "endpoint=admin_groups"):
+        found = answers(root, folder)
+        assert found, folder
+        for manifest, directory in found:
+            payload = (directory / "data.json").read_bytes()
+            assert not people_in(json.loads(payload)), folder
+            # the manifest describes what was copied, and says what was taken out
+            assert manifest["bytes"] == len(payload)
+            assert manifest["sha256"] == hashlib.sha256(payload).hexdigest()
+            assert manifest["published_without"] == ["Users", "users"]
+    # the rest of a scan is still there
+    [(_, directory)] = answers(root, "endpoint=admin_scan_result")
+    scan = json.loads((directory / "data.json").read_bytes())
+    assert scan["workspaces"] and scan["workspaces"][0]["reports"]
+
+
+def test_a_published_lake_without_users_has_no_access_table(every_user, tmp_path):
+    plan, result = go(every_user, tmp_path, exclude=["users"])
+
+    assert not plan.access_table and result.tables == []
+    assert not (tmp_path / "pub" / f"tenant={TENANT}" / "_tables").exists()
+    published = LakeStore(tmp_path / "pub")
+    found = access_report(Catalog(published, TENANT), "report")
+    assert found.rows == [] and found.missing  # nobody, and it says why
+
+
+def test_the_published_lake_answers_from_the_published_table(
+    every_user, tmp_path, monkeypatch
+):
+    go(every_user, tmp_path)
+    expected = access_report(Catalog(every_user.store, TENANT), "report")
+
+    def never(catalog):
+        raise AssertionError("the published table was not used")
+
+    monkeypatch.setattr(accessreport, "build_access_table", never)
+    published = LakeStore(tmp_path / "pub")
+    assert published.writable is False  # a published lake is only read
+
+    found = access_report(Catalog(published, TENANT), "report")
+
+    assert found.rows == expected.rows and found.missing == expected.missing
+
+
+def test_without_the_scans_the_table_is_not_published(every_user, tmp_path):
+    plan, result = go(every_user, tmp_path, exclude=["scans"])
+
+    assert not plan.access_table and result.tables == []
+    assert not (tmp_path / "pub" / f"tenant={TENANT}" / "_tables").exists()
+
+
+def test_leaving_the_users_out_later_takes_them_out_of_what_was_published(
+    every_user, tmp_path
+):
+    go(every_user, tmp_path)
+    tables = tmp_path / "pub" / f"tenant={TENANT}" / "_tables"
+    assert tables.is_dir()
+
+    plan, _ = go(every_user, tmp_path, exclude=["users"])
+
+    assert any(leaf.redo for leaf in plan.leaves)
+    assert not tables.exists()
+    for folder in ("endpoint=admin_scan_result", "endpoint=admin_groups"):
+        for _, directory in answers(tmp_path / "pub", folder):
+            assert not people_in(json.loads((directory / "data.json").read_bytes()))
+
+
+def test_taking_the_users_back_in_puts_them_back(every_user, tmp_path):
+    go(every_user, tmp_path, exclude=["users"])
+
+    go(every_user, tmp_path)
+
+    [(_, directory)] = answers(tmp_path / "pub", "endpoint=admin_scan_result")
+    assert people_in(json.loads((directory / "data.json").read_bytes()))
+    assert (tmp_path / "pub" / f"tenant={TENANT}" / "_tables" / "access.csv").exists()
+
+
+def test_publishing_again_the_same_way_copies_no_version_again(every_user, tmp_path):
+    go(every_user, tmp_path, exclude=["users"])
+
+    plan, result = go(every_user, tmp_path, exclude=["users"])
+
+    assert not any(leaf.redo for leaf in plan.leaves)
+    assert result.skipped > 0

@@ -67,7 +67,8 @@
   reading the users of every item each time. On a lake of 9,500 items, a question took 3 to
   4 seconds, and 87 seconds the first time after a sync on Windows; with the table it takes
   under a tenth of a second. `pbi sync run` works the table out at its end; a snapshot written
-  after it marks it stale, and the next question works it out again. See
+  after it marks it stale, and the next question works it out again. `pbi lake publish`
+  publishes the table too, so a published lake answers at once. See
   [The access table](lake.md#the-access-table).
 - **`prefer_scan`** (`tenant: {prefer_scan: true}` in a plan file, `--prefer-scan` on `pbi sync
   plan` and `pbi sync run`) takes the users and the data sources of the items from the scan
@@ -360,6 +361,13 @@
 
 ### Fixed
 
+- `pbi lake publish --exclude users` left out only the users of reports and what a person can
+  open. It now leaves out every list of users (of workspaces, datasets, dashboards, dataflows
+  and apps, by an administrator or a user account), and takes the people out of the lists of
+  workspaces and the scans that are published (their `users`). `--exclude datasources` now
+  also leaves out the data sources of dataflows and those a user account fetched. A later
+  publish that leaves the users out (or takes them back in) copies the lists and scans again.
+  See [Publish a lake](sharing.md#publish-a-lake).
 - `pbi lake access`, `pbi lake users` and the terminal UI's "Who has access to…" now find the
   users that only a scan holds (`--get-artifact-users`, or `prefer_scan`). They looked only at
   each item's own list of users and named every other item as one whose users the lake lacks;

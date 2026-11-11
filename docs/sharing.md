@@ -58,7 +58,11 @@ The copy has the layout of the lake, so `pbi tui --lake` reads it as it is. It h
 - the scans;
 - how the last five syncs went, and when the last complete scan started (what the freshness
   dots of the Explorer need). Not the units that failed, and not the ids of scans that were
-  started and not collected.
+  started and not collected;
+- the [table of who has access to what](lake.md#the-access-table), so that `pbi lake access`
+  and the terminal UI answer at once from the published lake. It is not published when the
+  users or the scans are left out: whoever opens the lake then works it out from what is
+  there.
 
 It does not hold your token, your settings or anything that is not in the lake.
 
@@ -72,17 +76,27 @@ opens the published lake sees all of it:
 | --- | --- | --- |
 | `lists` | (cannot be left out) | the names of workspaces and items, and the people who own or last changed them (e-mail addresses) |
 | `scans` | `--exclude scans` | the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item |
-| `users` | `--exclude users` | the people who can open each report, with their e-mail addresses |
+| `users` | `--exclude users` | the people who have access to each workspace, report, dataset, dashboard, dataflow and app, with their e-mail addresses |
 | `datasources` | `--exclude datasources` | connection details of the data sources: servers, databases, paths |
 | `activity` | `--exclude activity` | what each person did and when: e-mail addresses, IP addresses, devices |
 
-A scan keeps whatever its options asked for: one made with `--get-artifact-users` or
-`--dataset-expressions` holds users and queries. Publishing does not take fields out of a
-scan. Leave the scans out, or scan again without those options, if that matters.
+**Leaving out the users** leaves out every list of them (the users of workspaces, reports,
+datasets, dashboards, dataflows and apps, whichever account fetched them, and what a person
+can open), and also takes the people out of what is published of the other categories: the
+`users` of a workspace in a list of workspaces (`pbi workspaces list -e users`), and of every
+workspace and item in a scan (`--get-artifact-users`). The manifest of such a version says
+`published_without`, and its size and checksum are those of what was published. The table
+of who has access is then not published either.
+
+Otherwise a scan keeps whatever its options asked for: one made with `--dataset-expressions`
+holds queries, and one made with `--datasource-details` the connection details of the data
+sources even when `--exclude datasources` leaves out the other answers about them. Leave the
+scans out, or scan again without those options, if that matters.
 
 Leaving a category out of a later publish takes it out of the published lake too: what an
 earlier publish copied of it is deleted, so the marker never says "left out" over data that
-is still there. Tenants that a publish with `--tenant` left alone stay, and the marker lists
+is still there. Leaving the users out later copies the lists and scans again without the
+people (and taking them back in later copies them again with the people). Tenants that a publish with `--tenant` left alone stay, and the marker lists
 them.
 
 ### What it never does
