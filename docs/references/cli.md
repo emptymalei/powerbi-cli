@@ -20,7 +20,7 @@ $ pbi [OPTIONS] COMMAND [ARGS]...
 * `auth`: Store authentication bearer token securely
 * `cache`: Manage the legacy cache (the data lake is...
 * `config`: Manage pbi-cli configuration settings
-* `export`: export report based on id
+* `export`: export report based on id, as a .pbix or...
 * `lake`: Browse the data lake of fetched API results
 * `profile`: Manage authentication profiles
 * `reports`: Reports Command Group
@@ -257,15 +257,36 @@ $ pbi config [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
+* `clear-plan-file`: Forget the plan file that was named with...
 * `disable-cache`: Disable caching of API call results
 * `enable-cache`: Enable caching of API call results
 * `get-cache-folder`: Get the currently configured cache folder
 * `get-output-folder`: Get the currently configured default...
+* `get-plan-file`: Show which plan file is used when none is...
 * `get-verify-certificates`: Show how API requests verify TLS certificates
 * `set-cache-folder`: Set the cache folder for storing API call...
 * `set-output-folder`: Set the default parent folder for all...
+* `set-plan-file`: Name the plan file that `pbi sync` and...
 * `set-verify-certificates`: Set how API requests verify TLS certificates
 * `show`: Show all configuration settings
+
+### `pbi config clear-plan-file`
+
+Forget the plan file that was named with `pbi config set-plan-file`
+
+```
+pbi config clear-plan-file
+```
+
+**Usage**:
+
+```console
+$ pbi config clear-plan-file [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
 
 ### `pbi config disable-cache`
 
@@ -333,6 +354,24 @@ pbi config get-output-folder
 
 ```console
 $ pbi config get-output-folder [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `pbi config get-plan-file`
+
+Show which plan file is used when none is given
+
+```
+pbi config get-plan-file
+```
+
+**Usage**:
+
+```console
+$ pbi config get-plan-file [OPTIONS]
 ```
 
 **Options**:
@@ -421,17 +460,51 @@ $ pbi config set-output-folder [OPTIONS] {FOLDER_PATH}
 
 * `--help`: Show this message and exit.
 
+### `pbi config set-plan-file`
+
+Name the plan file that `pbi sync` and `pbi tui` use when none is given
+
+Instead of `--config PATH` on every command. The file is checked now, and its absolute
+path is kept, so it means the same from any folder. The environment variable `PBI_PLAN`
+does the same for one shell and wins over this setting. Naming targets
+(`pbi sync run groups`) or giving `--config` still overrides it.
+
+```
+pbi config set-plan-file ~/PowerBI/pbi-plan.yaml
+pbi sync run
+```
+
+**Usage**:
+
+```console
+$ pbi config set-plan-file [OPTIONS] {PATH}
+```
+
+**Arguments**:
+
+* `PATH`: The plan file (YAML) to use when --config is not given  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
 ### `pbi config set-verify-certificates`
 
 Set how API requests verify TLS certificates
 
-VALUE is `true` (verify against the system CA bundle, the default),
-`false` (do not verify), or the path to a CA bundle file, for example
-when a corporate proxy re-signs TLS traffic.
+VALUE is `true` (verify against the certificates that come with Python's
+requests, the default), `system` (verify against the certificate store of
+Windows or macOS), `false` (do not verify), or the path to a CA bundle file.
+
+Behind a company proxy that re-signs TLS traffic, the requests fail with
+CERTIFICATE_VERIFY_FAILED: `system` trusts the proxy's root certificate
+when it is installed in the operating system, which is where IT puts it,
+and keeps the verification on.
 
 ```
-pbi config set-verify-certificates true
+pbi config set-verify-certificates system
 pbi config set-verify-certificates ~/certs/corporate-ca.pem
+pbi config set-verify-certificates true
 pbi config set-verify-certificates false
 ```
 
@@ -443,7 +516,7 @@ $ pbi config set-verify-certificates [OPTIONS] {VALUE}
 
 **Arguments**:
 
-* `VALUE`: true, false, or the path to a CA bundle file  [required]
+* `VALUE`: true, system, false, or the path to a CA bundle file  [required]
 
 **Options**:
 
@@ -469,7 +542,14 @@ $ pbi config show [OPTIONS]
 
 ## `pbi export`
 
-export report based on id
+export report based on id, as a .pbix or another format
+
+The same as `pbi reports export`.
+
+```
+pbi export -g GROUP -r REPORT -t sales.pbix
+pbi export -g GROUP -r REPORT -f pdf -t sales.pdf
+```
 
 **Usage**:
 
@@ -481,7 +561,15 @@ $ pbi export [OPTIONS]
 
 * `-g, --group-id <str>`: Group ID  [required]
 * `-r, --report-id <str>`: Report ID  [required]
-* `-t, --target <path>`: target file (if omitted, prints info to console)
+* `-t, --target <path>`: target file or folder (if omitted, prints info to console); a name without an ending gets the one of the format
+* `-f, --format <str>`: pbix (the report for Power BI Desktop), pdf, pptx, png, or for a paginated report xlsx, docx, csv, xml, mhtml, accessiblepdf. All but pbix need a workspace on a Premium, Embedded or Fabric capacity  [default: pbix]
+* `-p, --page <str>`: Only this page, by name as `pbi reports pages` lists it (repeat for more)
+* `--filter <str>`: A report filter such as "Store/Territory eq 'NC'" (pdf, pptx, png)
+* `--locale <str>`: How numbers and dates are written, such as en-us
+* `--include-hidden-pages`: Also the pages that are hidden (pdf, pptx, png)
+* `--param <str>`: NAME=VALUE for a parameter of a paginated report (repeat for more)
+* `--live-connection`: For pbix: keep the connection to the dataset instead of including the model
+* `--timeout <float range>`: Seconds to wait for Power BI to make a pdf, pptx or png  [default: 600.0; x>=1]
 * `--help`: Show this message and exit.
 
 ## `pbi lake`
@@ -500,12 +588,68 @@ $ pbi lake [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
+* `access`: What one person has access to: workspaces,...
 * `backup`: Copy a whole data lake, to have a way back
+* `duckdb`: Load the lake into a DuckDB database, to...
 * `ls`: List what the data lake holds
 * `prune`: Delete old versions, keeping the newest of...
 * `publish`: Publish the lake: a complete copy that...
+* `restore`: Put a backup back over the data lake of...
 * `show`: Print a stored response (or its manifest)...
 * `users`: Who has access to every item of a kind, as...
+
+### `pbi lake access`
+
+What one person has access to: workspaces, reports, datasets, apps ...
+
+The other way round from `pbi lake users`: it looks through the users of every item the
+lake holds, and lists the ones where the person is. Nothing is sent to Power BI.
+
+```
+# Everything that one person can open
+pbi lake access ann@example.com
+
+# ... only reports and dashboards, in a spreadsheet
+pbi lake access ann@example.com -k report -k dashboard -o ann.xlsx
+
+# Everybody of one domain
+pbi lake access --partial @contractor.com -o contractors.csv
+
+# In a lake someone shared, with what your own account fetched on top
+pbi lake access ann@example.com --lake s3://my-bucket/pbi-lake --with-work-lake
+```
+
+The answer is as complete as the lake: items whose users the lake does not hold are
+named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
+scan with `--get-artifact-users`, or let `--fetch` do it: it shows the cost against the
+quotas and asks first, `--yes` skips that; every kind of item costs a request each, so
+narrow it with `-k` and `-w`). Access through a group shows as the group, because
+the lake does not hold who is in it. For the answer of Power BI itself, with an admin
+account, use `pbi users user-access -u <user id>`.
+
+**Usage**:
+
+```console
+$ pbi lake access [OPTIONS] {USER}
+```
+
+**Arguments**:
+
+* `USER`: An e-mail address or a name (ignoring case)  [required]
+
+**Options**:
+
+* `-k, --kind <str>`: Only this kind (repeat for more): workspace, report, dataset, dashboard, dataflow, app
+* `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
+* `--partial`: Match a part of the e-mail address or name (for example a domain)
+* `-o, --output <str>`: Save to this file instead of printing: .csv, .xlsx, .json, .md or .tsv
+* `-f, --format <str>`: csv, xlsx, json, md or tsv (default: from the file name, else csv)
+* `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
+* `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
+* `--yes`: With --fetch: do not ask before fetching
+* `--help`: Show this message and exit.
 
 ### `pbi lake backup`
 
@@ -543,6 +687,51 @@ $ pbi lake backup [OPTIONS]
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
 * `--help`: Show this message and exit.
 
+### `pbi lake duckdb`
+
+Load the lake into a DuckDB database, to question it with SQL
+
+Makes a table of each list (`workspaces`, `reports`, `datasets`, ...), of who has access
+to what (`access`), of what a scan found (`scan_items`, `scan_edges` for the lineage,
+`scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), of the audit events
+(`events`), and of the requests the lake holds (`requests`). Each table has the ids that
+join it to the others. Needs `pip install "pbi-cli[duckdb]"`. The database is a copy of
+the newest answers: load again after a sync. Reads the lake only.
+
+```
+pbi lake duckdb
+duckdb pbi-lake.duckdb "select workspace, report, dataset from report_overview"
+
+# Who can open a report that reads from one server?
+duckdb pbi-lake.duckdb "
+  select distinct a.email, r.report
+  from scan_datasources s
+  join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+  join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+  join report_overview r on r.report_id = b.from_id
+  join access a on a.item_id = r.report_id and a.kind = 'report'
+  where s.server = 'sql.example'"
+```
+
+See the data model in the documentation of the data lake.
+
+**Usage**:
+
+```console
+$ pbi lake duckdb [OPTIONS] [DATABASE]
+```
+
+**Arguments**:
+
+* `DATABASE`: The DuckDB file to make (an existing one is replaced)  [default: pbi-lake.duckdb]
+
+**Options**:
+
+* `-t, --tenant <str>`: Only this tenant (default: all)
+* `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
+* `--help`: Show this message and exit.
+
 ### `pbi lake ls`
 
 List what the data lake holds
@@ -560,6 +749,9 @@ pbi lake ls -e admin.groups --all-versions
 
 # What someone shared, without any token
 pbi lake ls --lake s3://my-bucket/pbi-lake
+
+# ... with what you fetched yourself on top (column LAKE says which is which)
+pbi lake ls --lake s3://my-bucket/pbi-lake --with-work-lake
 ```
 
 **Usage**:
@@ -574,6 +766,7 @@ $ pbi lake ls [OPTIONS]
 * `-t, --tenant <str>`: Only this tenant (default: all)
 * `--all-versions`: List every stored version, not only the newest of each request
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake prune`
@@ -668,6 +861,44 @@ $ pbi lake publish [OPTIONS] {DESTINATION}
 * `--backup-to <str>`: Where the backup goes: an empty folder or URL (implies --backup)
 * `--help`: Show this message and exit.
 
+### `pbi lake restore`
+
+Put a backup back over the data lake of the cache folder
+
+The lake becomes what the backup holds: the files of the backup are copied back, and the
+files that it does not have are deleted (`--keep-extra` keeps them). Everything is copied
+before anything is deleted, so a restore that stops half way has lost nothing; run it
+again. Unless you say `--no-safety-copy`, the lake as it is now is copied first, next to it
+as `<lake>-before-restore-<time>`, so that a restore can be undone too. A backup that has
+no `backup.json` stopped before it was complete and is refused.
+
+```
+pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+pbi lake restore ~/PowerBI/cache/lake-backup-20261030T224000Z --yes
+```
+
+Close the terminal UI and stop any sync first: nothing should write to the lake while it
+is replaced. Only the lake of the cache folder can be restored; a published lake is
+protected.
+
+**Usage**:
+
+```console
+$ pbi lake restore [OPTIONS] {BACKUP}
+```
+
+**Arguments**:
+
+* `BACKUP`: The backup made by `pbi lake backup`: a folder or a URL such as s3://...  [required]
+
+**Options**:
+
+* `--yes`: Restore without asking
+* `--no-safety-copy`: Do not copy the lake as it is now before replacing it
+* `--keep-extra`: Keep the files of the lake that the backup does not have
+* `--allow-incomplete`: Also restore a copy that has no backup.json (it stopped half way)
+* `--help`: Show this message and exit.
+
 ### `pbi lake show`
 
 Print a stored response (or its manifest) as JSON
@@ -709,6 +940,7 @@ $ pbi lake show [OPTIONS] {ENDPOINT}
 * `-d, --day <str>`: For event logs: the UTC day to show (YYYY-MM-DD)
 * `-m, --manifest`: Show the manifest (what was asked, when, checksum) instead of the data
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `--help`: Show this message and exit.
 
 ### `pbi lake users`
@@ -731,8 +963,9 @@ pbi lake users workspace -w Finance -o finance.csv
 ```
 
 The users come from `pbi sync run report-users`, `app-users` or a scan with
-`--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
-exports the same for the item or the workspace that you are looking at (`x`).
+`--get-artifact-users`; `pbi lake ls` shows what the lake holds. `--fetch` fetches the
+ones the lake lacks first (it shows the cost and asks, `--yes` skips that). The terminal
+UI exports the same for the item or the workspace that you are looking at (`x`).
 
 **Usage**:
 
@@ -751,6 +984,9 @@ $ pbi lake users [OPTIONS] {KIND}
 * `-w, --workspace <str>`: Only the items of this workspace, by id or name (repeat for more)
 * `-t, --tenant <str>`: Tenant (only needed if the lake holds several)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
+* `--fetch`: Fetch the users that the lake lacks first (as `pbi sync run report-users` and its kin do), after showing what it costs against the quotas. Needs an admin account, and writes into the lake of the cache folder
+* `--yes`: With --fetch: do not ask before fetching
 * `--help`: Show this message and exit.
 
 ## `pbi profile`
@@ -879,14 +1115,35 @@ $ pbi reports [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `export`: Export report as file
+* `export`: Export a report as a .pbix file, or as a...
 * `list`: List all reports in a workspace group.
 * `pages`: Get pages of a report (or all reports) in...
 * `users`: Augment Power BI Apps data from a source...
 
 ### `pbi reports export`
 
-Export report as file
+Export a report as a .pbix file, or as a PDF, PowerPoint, images ...
+
+A `.pbix` opens in Power BI Desktop. The other formats are made by Power BI as a job
+that this command waits for (`--timeout`); they need the report in a workspace on a
+Premium, Embedded or Fabric capacity (not Premium Per User), and `png` has to be
+allowed in the tenant settings. A report of several pages comes as a `.zip` of images
+in `png`. Pages are named as `pbi reports pages` lists them.
+
+```
+# The report for Power BI Desktop
+pbi reports export -g GROUP -r REPORT -t sales.pbix
+
+# Two pages as a PDF, for one territory
+pbi reports export -g GROUP -r REPORT -f pdf -p ReportSection1 -p ReportSection3 \
+    --filter "Store/Territory eq 'NC'" -t sales.pdf
+
+# A PowerPoint presentation into a folder, named after the report
+pbi reports export -g GROUP -r REPORT -f pptx -t ~/Reports
+```
+
+The account needs access to the report; a `.pbix` also needs the permission to
+download it. Nothing is stored in the data lake.
 
 **Usage**:
 
@@ -898,7 +1155,15 @@ $ pbi reports export [OPTIONS]
 
 * `-g, --group-id <str>`: Group ID  [required]
 * `-r, --report-id <str>`: Report ID  [required]
-* `-t, --target <path>`: target file (if omitted, prints info to console)
+* `-t, --target <path>`: target file or folder (if omitted, prints info to console); a name without an ending gets the one of the format
+* `-f, --format <str>`: pbix (the report for Power BI Desktop), pdf, pptx, png, or for a paginated report xlsx, docx, csv, xml, mhtml, accessiblepdf. All but pbix need a workspace on a Premium, Embedded or Fabric capacity  [default: pbix]
+* `-p, --page <str>`: Only this page, by name as `pbi reports pages` lists it (repeat for more)
+* `--filter <str>`: A report filter such as "Store/Territory eq 'NC'" (pdf, pptx, png)
+* `--locale <str>`: How numbers and dates are written, such as en-us
+* `--include-hidden-pages`: Also the pages that are hidden (pdf, pptx, png)
+* `--param <str>`: NAME=VALUE for a parameter of a paginated report (repeat for more)
+* `--live-connection`: For pbix: keep the connection to the dataset instead of including the model
+* `--timeout <float range>`: Seconds to wait for Power BI to make a pdf, pptx or png  [default: 600.0; x>=1]
 * `--help`: Show this message and exit.
 
 ### `pbi reports list`
@@ -1013,6 +1278,11 @@ pbi sync plan default activity scan --days 7 --lineage
 pbi sync plan --config pbi-plan.yaml
 ```
 
+The plan file can be named once instead of on every command: `pbi config
+set-plan-file PATH`, or the environment variable `PBI_PLAN`. Then a plain `pbi sync run`
+runs it; naming targets, or an option that a plan file takes over, runs those instead.
+Nothing is looked for by its place (such as the current folder).
+
 With `--config` the plan file says what to sync, so no target names and none of the
 options that it takes over (the scan options, the profiles) can be given; `--force`,
 `--max-age`, `--days` and the like still apply to every step of it.
@@ -1047,6 +1317,7 @@ $ pbi sync plan [OPTIONS] [TARGET]...
 * `--full-scan`: Scan every workspace, not only those that changed since the last scan
 * `--exclude-personal`: Leave personal workspaces out of scans
 * `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--prefer-scan`: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
@@ -1130,6 +1401,7 @@ $ pbi sync run [OPTIONS] [TARGET]...
 * `--full-scan`: Scan every workspace, not only those that changed since the last scan
 * `--exclude-personal`: Leave personal workspaces out of scans
 * `--exclude-inactive`: Leave inactive workspaces out of scans
+* `--prefer-scan`: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan
 * `--scan-interval <float range>`: Seconds between status checks of a scan  [default: 5.0; x>=0.1]
 * `--scan-timeout <float range>`: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x>=1]
 * `--admin-profile <str>`: The profile of the administrator account to use (default: the active profile of the group admin)
@@ -1186,12 +1458,21 @@ pbi tui
 # Look at a lake that someone shared: no token, no network to Power BI, read-only
 pbi tui --lake s3://my-bucket/pbi-lake
 
+# ... and look further with your own account: what you fetch goes to your work lake
+pbi tui --lake s3://my-bucket/pbi-lake --with-work-lake
+
 # With a plan file: its steps on the Sync screen, and its session settings
 pbi tui --config pbi-plan.yaml
 ```
 
+A plan file named once (`pbi config set-plan-file PATH`, or `PBI_PLAN`) is used when
+`--config` is not given.
+
 A lake given with `--lake` is only read: nothing can be fetched into it, and no account
-is needed. Only the lake of the cache folder is written by a sync. With `--config` the
+is needed. Only the lake of the cache folder is written by a sync. With
+`--with-work-lake` (or `session.with_work_lake` in the plan file) both are shown as one,
+the newest answer of each request is taken, and what you fetch or sync goes to your work
+lake; the other lake is still never written. With `--config` the
 lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
 else the lake of the cache folder.
 
@@ -1205,6 +1486,7 @@ $ pbi tui [OPTIONS]
 
 * `-t, --tenant <str>`: Tenant of the lake to browse (default: that of the token)
 * `--lake <str>`: The data lake to look at: a folder, or a URL such as s3://bucket/folder (default: the lake of the cache folder; the environment variable PBI_LAKE names one too). A lake given here is only read, never written
+* `--with-work-lake`: Look at the lake of --lake (or PBI_LAKE) with your work lake on top: both are shown as one, the newest answer of each request is taken, and what you fetch goes to your work lake. The lake of --lake is still never written
 * `-c, --config <file>`: A plan file (YAML): the Sync screen plans and runs its steps, and its session section says which lake to open, which workspace to select and what to do about a detail the lake lacks
 * `--help`: Show this message and exit.
 

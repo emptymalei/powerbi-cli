@@ -216,6 +216,19 @@ def _error_details(response: requests.Response) -> Tuple[Optional[str], str]:
     return code, str(message)
 
 
+def _tls_hint(error: Exception) -> str:
+    """What to do about a certificate that could not be verified, or nothing."""
+    if not isinstance(error, requests.exceptions.SSLError):
+        return ""
+    if "CERTIFICATE_VERIFY_FAILED" not in str(error):
+        return ""
+    return (
+        ". A proxy of your network may re-sign the traffic with its own certificate: "
+        "`pbi config set-verify-certificates system` trusts the certificates installed "
+        "in Windows or macOS, or give the proxy's CA file instead of `system`"
+    )
+
+
 class PowerBIClient:
     """Talks to the Power BI REST API and keeps what it learns in the lake.
 
@@ -420,7 +433,7 @@ class PowerBIClient:
     ) -> requests.Response:
         headers = {
             **credentials.headers,
-            "Accept": "application/json",
+            "Accept": "*/*" if endpoint.binary else "application/json",
             "User-Agent": self._user_agent,
         }
         logger.debug(f"{endpoint.method} {endpoint.path}")
@@ -436,11 +449,13 @@ class PowerBIClient:
         except requests.RequestException as error:
             raise ApiError(
                 f"{endpoint.id}: the request could not be sent "
-                f"({type(error).__name__}): {error}"
+                f"({type(error).__name__}): {error}{_tls_hint(error)}"
             ) from error
 
     @staticmethod
     def _parse_body(endpoint: Endpoint, response: requests.Response) -> Any:
+        if endpoint.binary:
+            return response.content
         if not response.content:
             return None
         try:

@@ -8,16 +8,20 @@ logger from writing over the screen.
 import os
 import sys
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
 import typer
 from loguru import logger
 
-from pbi_cli.cli_support import ClientPool, LakeOption
+from pbi_cli.cli_support import (
+    ClientPool,
+    LakeOption,
+    WithWorkLakeOption,
+    stored_plan_file,
+)
 from pbi_cli.config import VALID_GROUPS, PBIConfig
 from pbi_cli.core.jwt import TokenInfo, token_info
 from pbi_cli.core.planfile import PlanFile
-from pbi_cli.core.store import LakeStore
 from pbi_cli.errors import PBIError
 from pbi_cli.session import LAKE_ENV, lake_hint, lake_path, resolve_lake
 from pbi_cli.tui import Backend, run, textual_available
@@ -44,7 +48,10 @@ def should_launch() -> bool:
 
 
 def build_backend(
-    pool: ClientPool, lake: Optional[str] = None, plan: Optional[PlanFile] = None
+    pool: ClientPool,
+    lake: Optional[str] = None,
+    plan: Optional[PlanFile] = None,
+    with_work_lake: bool = False,
 ) -> Backend:
     """What the TUI needs, from the settings and the stored tokens.
 
@@ -52,12 +59,19 @@ def build_backend(
     :param lake: the lake to look at, as given with ``--lake`` (default: ``PBI_LAKE``, else
         the one the plan file names, else the lake of the cache folder)
     :param plan: the plan file of the session (``pbi tui --config``), if there is one
+    :param with_work_lake: look at that lake with the work lake on top (also when the plan
+        file says ``session.with_work_lake``)
     :raises PBIError: when there is no data lake to browse, or the one asked for cannot
         be read
     """
     from pbi_cli.cli import store_token  # late: pbi_cli.cli imports this module
 
-    opened = resolve_lake(lake, plan_lake=plan.lake if plan is not None else None)
+    opened = resolve_lake(
+        lake,
+        plan_lake=plan.lake if plan is not None else None,
+        with_work_lake=with_work_lake
+        or (plan is not None and plan.session.with_work_lake),
+    )
     if opened is None:
         raise PBIError(
             f"The TUI browses the data lake. {lake_hint()} Or look at a lake that "
@@ -102,8 +116,8 @@ def build_backend(
         assert plan is not None and plan.path is not None
         return PlanFile.load(plan.path)
 
-    def open_lake(location: str) -> LakeStore:
-        found = resolve_lake(location)
+    def open_lake(location: str, with_work_lake: bool = False) -> Any:
+        found = resolve_lake(location, with_work_lake=with_work_lake)
         assert found is not None  # a location was given
         if not found.work:
             PBIConfig().remember_lake(str(found.store.root))
@@ -130,12 +144,15 @@ def launch(
     tenant: Optional[str] = None,
     lake: Optional[str] = None,
     config: Optional[Path] = None,
+    with_work_lake: bool = False,
 ) -> None:
     """Open the TUI.
 
     :param tenant: the tenant of the lake to browse (default: that of the token)
     :param lake: the lake to look at (default: ``PBI_LAKE``, else the one the plan file
         names, else the lake of the cache folder); a lake given here is only read
+    :param with_work_lake: look at that lake with the work lake on top: what is fetched goes
+        to the work lake
     :param config: a plan file: the Sync screen plans and runs its steps, and its ``session``
         section says which lake to open, which workspace to select and what to do about a
         detail the lake lacks
@@ -148,7 +165,7 @@ def launch(
         )
     plan = PlanFile.load(config) if config is not None else None
     with ClientPool() as pool:
-        backend = build_backend(pool, lake, plan)
+        backend = build_backend(pool, lake, plan, with_work_lake)
         logger.remove()  # the screen is the terminal's: logs go to a file
         target = log_file()
         try:
@@ -173,6 +190,7 @@ def tui(
         ),
     ] = None,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
     config: Annotated[
         Optional[Path],
         typer.Option(
@@ -206,13 +224,27 @@ def tui(
     # Look at a lake that someone shared: no token, no network to Power BI, read-only
     pbi tui --lake s3://my-bucket/pbi-lake
 
+    # ... and look further with your own account: what you fetch goes to your work lake
+    pbi tui --lake s3://my-bucket/pbi-lake --with-work-lake
+
     # With a plan file: its steps on the Sync screen, and its session settings
     pbi tui --config pbi-plan.yaml
     ```
 
+    A plan file named once (`pbi config set-plan-file PATH`, or `PBI_PLAN`) is used when
+    `--config` is not given.
+
     A lake given with `--lake` is only read: nothing can be fetched into it, and no account
-    is needed. Only the lake of the cache folder is written by a sync. With `--config` the
+    is needed. Only the lake of the cache folder is written by a sync. With
+    `--with-work-lake` (or `session.with_work_lake` in the plan file) both are shown as one,
+    the newest answer of each request is taken, and what you fetch or sync goes to your work
+    lake; the other lake is still never written. With `--config` the
     lake is the one of `--lake`, else of `PBI_LAKE`, else of the plan file's `session.lake`,
     else the lake of the cache folder.
     """
-    launch(tenant, lake, config)
+    if config is None:
+        stored = stored_plan_file()
+        if stored is not None:
+            config = stored[0]
+            typer.echo(f"Plan file: {config} (from {stored[1]})")
+    launch(tenant, lake, config, with_work_lake=with_work_lake)

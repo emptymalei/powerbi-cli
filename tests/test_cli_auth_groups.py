@@ -19,13 +19,15 @@ def _cfg(tmp_path) -> PBIConfig:
 
 
 def _isolated_runner(tmp_path, monkeypatch) -> CliRunner:
-    """Return a CliRunner whose env has HOME pointed at *tmp_path*.
+    """Return a CliRunner whose env has the home folder pointed at *tmp_path*.
 
     Because ``PBIConfig()`` (without an explicit config_file) calls
-    ``Path.home()`` at construction time, monkeypatching HOME here causes
-    every CLI invocation inside the runner to use the tmp config dir.
+    ``Path.home()`` at construction time, monkeypatching the home here causes
+    every CLI invocation inside the runner to use the tmp config dir. Windows
+    takes the home from USERPROFILE, not HOME.
     """
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
     return CliRunner()
 
@@ -313,8 +315,7 @@ class TestLoadAuthAutoGroupResolution:
         self, tmp_path, monkeypatch, group: str, profile: str, token: str
     ):
         """Helper: create a group profile and store a credential for it."""
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         cfg = _cfg(tmp_path)
         cfg.add_profile_to_group(group, profile)
         cfg.set_group_active_profile(group, profile)
@@ -343,8 +344,7 @@ class TestLoadAuthAutoGroupResolution:
         self, tmp_path, monkeypatch
     ):
         """load_auth selects the correct token for each group independently."""
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         cfg = _cfg(tmp_path)
         cfg.add_profile_to_group("user", "user-nlm")
         cfg.set_group_active_profile("user", "user-nlm")
@@ -360,8 +360,7 @@ class TestLoadAuthAutoGroupResolution:
 
     def test_load_auth_falls_back_to_flat_profiles(self, tmp_path, monkeypatch):
         """load_auth() falls back to flat profiles when no group profile is configured."""
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         # Store a flat profile (no group)
         from pbi_cli.cli import _save_profiles, _set_credential
 
@@ -379,8 +378,7 @@ class TestLoadAuthAutoGroupResolution:
 
     def test_load_auth_no_profile_raises(self, tmp_path, monkeypatch):
         """load_auth() raises ClickException when neither group nor flat profile exists."""
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         from pbi_cli.errors import PBIError
 
         with pytest.raises(PBIError):
@@ -389,8 +387,7 @@ class TestLoadAuthAutoGroupResolution:
     def test_a_missing_account_says_which_group_it_was_asked_for(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         from pbi_cli.errors import AuthError
 
         with pytest.raises(AuthError) as no_active_profile:
@@ -409,8 +406,7 @@ class TestLoadAuthAutoGroupResolution:
 
     def test_load_auth_explicit_profile_in_group(self, tmp_path, monkeypatch):
         """load_auth(profile=..., group=...) uses the specified profile from the given group."""
-        monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+        _isolated_runner(tmp_path, monkeypatch)
         cfg = _cfg(tmp_path)
         # Add two profiles to admin group; activate one that is NOT "admin-b"
         cfg.add_profile_to_group("admin", "admin-a")

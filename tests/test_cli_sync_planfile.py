@@ -11,6 +11,7 @@ from fake_powerbi import FakePowerBI
 from typer.testing import CliRunner
 
 from pbi_cli.cli import app, store_token
+from pbi_cli.cli_sync import _quote
 from pbi_cli.core.store import LakeStore
 
 
@@ -319,7 +320,9 @@ def test_an_expired_token_ends_the_run_and_says_how_to_continue(accounts, tmp_pa
 
     assert result.exit_code == 1
     assert "What is done is kept" in result.output
-    assert f"run `pbi sync run --config {path}` again to continue" in result.output
+    # a Windows path has backslashes, so it is quoted to be pasted into a shell
+    again = f"pbi sync run --config {_quote(str(path))}"
+    assert f"run `{again}` again to continue" in result.output
 
 
 def test_the_scan_of_chosen_workspaces_is_the_scan_of_those(accounts, tmp_path):
@@ -610,13 +613,14 @@ def test_a_session_lake_without_a_lake_is_told_to_open_the_work_lake_instead(
     )
 
     result = sync(command, "--config", path)
+    elsewhere = str(Path("/somewhere/else").absolute())  # C:\somewhere\else on Windows
 
     assert result.exit_code == 0, result.output
     assert f"Data lake: {cache_folder / 'lake'}" in result.output
     assert (
-        "Note: session.lake (/somewhere/else) holds no lake, so `pbi tui --config` opens "
+        f"Note: session.lake ({elsewhere}) holds no lake, so `pbi tui --config` opens "
         f"your work lake instead ({cache_folder / 'lake'}). A sync writes to the work "
-        "lake only: `pbi config set-cache-folder /somewhere/else` makes that folder your "
+        f"lake only: `pbi config set-cache-folder {elsewhere}` makes that folder your "
         "work lake, or leave session.lake out of the plan file."
     ) in result.output
     if command == "run":
@@ -678,3 +682,54 @@ def test_the_command_to_continue_quotes_a_plan_file_with_spaces(accounts, tmp_pa
     assert f'run `pbi sync run --force --days 7 --config "{path}"` again' in (
         result.output
     )
+
+
+# ---------------------------------------------------------------------------
+# the example of a few core workspaces
+# ---------------------------------------------------------------------------
+
+
+def test_the_example_of_core_workspaces_keeps_everything_about_them_only(
+    accounts, tmp_path, cache_folder
+):
+    example = Path(__file__).resolve().parents[1] / "examples"
+    text = (example / "pbi-plan.core-workspaces.yaml").read_text(encoding="utf-8")
+    for mine, theirs in (
+        (
+            "# accounts:\n#   admin: my-admin\n#   user: [my-user]",
+            "accounts:\n  admin: adm\n  user: [svc, bob]",
+        ),
+        ('"Sales Reporting"', '"Workspace 2"'),
+        ('"Finance*"', '"Workspace 1?"'),  # Workspace 10, 11 and 12
+        ("00000000-0000-0000-0000-000000000000", "ws-0003"),
+    ):
+        assert mine in text, mine
+        text = text.replace(mine, theirs)
+    path = write(tmp_path, text)
+
+    result = sync("run", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "0 failed" in result.output
+    held = lake(cache_folder)
+    ids = lambda endpoint, name: sorted(  # noqa: E731
+        s.params[name] for s in held.parameter_sets("tenant-1", endpoint)
+    )
+    chosen = ["ws-0002", "ws-0003", "ws-0010", "ws-0011", "ws-0012"]
+    assert ids("admin.groups.users", "groupId") == chosen
+    # who can open each report, dataset and app of them, read item by item
+    reports = [r["id"] for r in accounts.reports if r["workspaceId"] in chosen]
+    datasets = [d["id"] for d in accounts.datasets if d["workspaceId"] in chosen]
+    apps = [a["id"] for a in accounts.apps if a["workspaceId"] in chosen]
+    assert reports and datasets and apps
+    assert ids("admin.reports.users", "reportId") == sorted(reports)
+    assert ids("admin.datasets.users", "datasetId") == sorted(datasets)
+    assert ids("admin.apps.users", "appId") == sorted(apps)
+    [scan] = accounts.calls_to(r"/admin/workspaces/getInfo$")
+    assert sorted(scan.body["workspaces"]) == chosen  # one scan, of those only
+    assert scan.query["getArtifactUsers"] == "true"
+    assert scan.query["datasetExpressions"] == "true"
+    # the pages only a user reads, through the account that lists the workspace
+    assert accounts.calls_to(r"/pages$")
+    assert not accounts.calls_to(r"^/admin/activityevents")
+    assert result.output.count("Step ") >= 3, result.output

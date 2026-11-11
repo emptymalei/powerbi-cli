@@ -1,5 +1,7 @@
 """A config file that cannot be read is never replaced, and it is never seen half written."""
 
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -7,6 +9,9 @@ from pbi_cli import config as config_module
 from pbi_cli.cli import app
 from pbi_cli.config import PBIConfig
 from pbi_cli.errors import PBIError
+
+# A local folder is kept absolute: on Windows "/somewhere" is on the current drive
+SOMEWHERE = str(Path("/somewhere").absolute())
 
 BROKEN = "groups:\n  admin: {profiles: [unclosed\n"
 
@@ -68,7 +73,7 @@ def test_an_empty_config_file_can_be_saved():
 
     PBIConfig().cache_folder = "/somewhere"
 
-    assert PBIConfig().cache_folder == "/somewhere"
+    assert PBIConfig().cache_folder == SOMEWHERE
 
 
 def test_the_config_file_is_replaced_in_one_step(monkeypatch):
@@ -100,4 +105,4 @@ def test_saving_goes_through_a_replace(monkeypatch):
 
     [(source, target)] = replaced
     assert target == config_file() and source.parent == config_file().parent
-    assert PBIConfig().cache_folder == "/somewhere"
+    assert PBIConfig().cache_folder == SOMEWHERE

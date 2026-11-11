@@ -7,6 +7,7 @@ read, and moved to the name of the group and profile.
 """
 
 import json
+import os
 import stat
 
 import pytest
@@ -165,7 +166,9 @@ def test_the_credentials_file_is_only_ever_readable_by_its_owner(
     _set_credential("adm", "abc", "admin")
 
     assert modes == [0o600]
-    assert stat.S_IMODE(_get_credentials_file().stat().st_mode) == 0o600
+    # Windows keeps only a read-only bit; the ACL of the profile folder guards the file
+    if os.name != "nt":
+        assert stat.S_IMODE(_get_credentials_file().stat().st_mode) == 0o600
     assert [p.name for p in _get_credentials_file().parent.iterdir()] == [
         "credentials.json"
     ]

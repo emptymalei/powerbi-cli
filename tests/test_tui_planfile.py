@@ -256,7 +256,8 @@ def test_the_name_of_the_step_is_in_the_line_of_a_run_that_goes_on(
         await open_sync(ui)
         await ui.press("r")
         await ui.until(entered.is_set)
-        await ui.until(lambda: "step 1" in ui.static("#run-line"))
+        # the line says "starting" until the update of the first stage arrives
+        await ui.until(lambda: "stage 1" in ui.static("#run-line"))
         line = ui.static("#run-line")
         stop_enabled = not ui.sync.query_one("#stop", Button).disabled
         release.set()

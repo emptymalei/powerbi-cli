@@ -8,6 +8,8 @@ went and what the lake holds (it reads the lake only, so it needs no token).
 
 import re
 import shlex
+import time
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AbstractSet, Annotated, Callable, List, Optional, Sequence
@@ -30,9 +32,11 @@ from pbi_cli.cli_support import (
     new_app,
     parse_duration,
     print_table,
+    stored_plan_file,
 )
 from pbi_cli.config import PBIConfig
-from pbi_cli.core.catalog import holding
+from pbi_cli.core.accessreport import refresh_access_table
+from pbi_cli.core.catalog import Catalog, holding
 from pbi_cli.core.planfile import Overrides, PlanFile, Step
 from pbi_cli.core.planrun import PlanRun, SequencePlan
 from pbi_cli.core.ratelimit import Limiter, QuotaTracker, format_wait
@@ -52,7 +56,7 @@ from pbi_cli.core.sync.runners import DEFERRED, DONE, FAILED, SKIPPED
 from pbi_cli.core.sync.state import DEFERRED as MARKED_DEFERRED
 from pbi_cli.core.sync.state import FAILED as MARKED_FAILED
 from pbi_cli.core.sync.state import STATE_NAME, SyncState
-from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS, select_targets
+from pbi_cli.core.sync.targets import ALL, DEFAULT, TARGETS
 from pbi_cli.errors import PBIError
 from pbi_cli.session import (
     lake_hint,
@@ -160,6 +164,19 @@ ExcludeInactiveOption = Annotated[
     bool,
     typer.Option("--exclude-inactive", help="Leave inactive workspaces out of scans"),
 ]
+PreferScanOption = Annotated[
+    bool,
+    typer.Option(
+        "--prefer-scan",
+        help=(
+            "Take the users and data sources of the items from the scan instead of one "
+            "request per item: report-users, dataset-users, dashboard-users, "
+            "dataflow-users and group-users with --get-artifact-users, datasources and "
+            "dataflow-datasources with --datasource-details. Needs the scan target; the "
+            "plan and the run list what is left to the scan"
+        ),
+    ),
+]
 ScanIntervalOption = Annotated[
     float,
     typer.Option(
@@ -227,6 +244,7 @@ def _options(
     wait: float = 120.0,
     admin_profile: Optional[str] = None,
     user_profile: Optional[str] = None,
+    prefer_scan: bool = False,
 ) -> SyncOptions:
     return SyncOptions(
         targets=tuple(targets or ()),
@@ -245,6 +263,7 @@ def _options(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         admin_profile=admin_profile,
@@ -264,21 +283,23 @@ def _lake() -> LakeStore:
 
 
 def _print_targets(
-    names: List[str],
+    options: SyncOptions,
     store: LakeStore,
     available: Optional[AbstractSet[Scope]] = None,
     accounts: Sequence[str] = (),
 ) -> None:
     """Say what is synced.
 
+    :param options: what the sync does (its targets, and whether it prefers the scan)
     :param available: the kinds of account that are stored; what the plain sync is, and
         what can be named, depends on them
     :param accounts: the accounts the sync uses, each as ``profile (kind)``
     """
+    names = list(options.targets)
     typer.echo(f"Data lake: {store.root}")
     if available is not None and not available:
         return  # no account: the engine says so, with what to do
-    selection = select_targets(names, available)
+    selection = options.select(available)
     if accounts:
         typer.echo(f"Accounts: {', '.join(accounts)}")
     typer.echo(f"Targets: {', '.join(selection.names)}")
@@ -318,6 +339,7 @@ _IN_THE_FILE = {
     "full_scan": ("--full-scan", "tenant: {full_scan: true}"),
     "exclude_personal": ("--exclude-personal", "tenant: {exclude_personal: true}"),
     "exclude_inactive": ("--exclude-inactive", "tenant: {exclude_inactive: true}"),
+    "prefer_scan": ("--prefer-scan", "tenant: {prefer_scan: true}"),
     "admin_profile": ("--admin-profile", "accounts: {admin: <profile>}"),
     "user_profile": ("--user-profile", "accounts: {user: [<profile>]}"),
 }
@@ -326,6 +348,92 @@ _IN_THE_FILE = {
 def _given(ctx: typer.Context, name: str) -> bool:
     """Whether an option was typed on the command line (and not just left at its default)."""
     return getattr(ctx.get_parameter_source(name), "name", "") == "COMMANDLINE"
+
+
+#: The sync target that fetches the users of each kind of item.
+USER_TARGETS = {
+    "workspace": "group-users",
+    "report": "report-users",
+    "dataset": "dataset-users",
+    "dashboard": "dashboard-users",
+    "dataflow": "dataflow-users",
+    "app": "app-users",
+}
+
+
+def fetch_users(
+    kinds: Sequence[str],
+    workspace_ids: Sequence[str] = (),
+    *,
+    yes: bool = False,
+) -> RunReport:
+    """Fetch the users of the items the lake lacks them of, as `pbi sync run report-users`
+    and its kin do: after showing what it costs against the quotas, and asking.
+
+    What the lake holds fresh is not fetched again, so only the gaps cost requests.
+
+    :param kinds: the kinds of items (keys of `USER_TARGETS`)
+    :param workspace_ids: only the items of these workspaces (an app is in none)
+    :param yes: do not ask
+    :raises typer.Abort: when the answer is no
+    :raises PBIError: when there is no lake, no account that can do it, or the token expired
+    """
+    targets = [USER_TARGETS[kind] for kind in kinds if kind in USER_TARGETS]
+    if not targets:
+        # no names would mean the plain targets: never what a fetch of users wants
+        raise PBIError("There is no kind of item to fetch the users of.")
+    options = replace(
+        _options(
+            targets,
+            force=False,
+            max_age=None,
+            days=MAX_DAYS,
+            lineage=False,
+            datasource_details=False,
+            dataset_schema=False,
+            dataset_expressions=False,
+            get_artifact_users=False,
+            full_scan=False,
+            exclude_personal=False,
+            exclude_inactive=False,
+            scan_interval=5.0,
+            scan_timeout=600.0,
+        ),
+        workspace_ids=tuple(workspace_ids),
+    )
+    store = _lake()
+    with ClientPool() as clients:
+        engine = SyncEngine(clients, store)
+        plan = engine.plan(options)
+        typer.echo("To fetch the users that the lake lacks:\n")
+        _print_plan(plan)
+        if not yes and not typer.confirm("\nFetch them now?"):
+            raise typer.Abort()
+        report = engine.run(options, on_event=_Progress())
+    _finish_run(report, f"pbi sync run {' '.join(targets)}")
+    return report
+
+
+def _plan_to_use(
+    ctx: typer.Context, config: Optional[Path], targets: Optional[List[str]]
+) -> Optional[Path]:
+    """The plan file a command works from: the one given with ``--config``, else, when no
+    target and none of the options that a plan file takes over were typed, the one that was
+    named once (``PBI_PLAN``, ``pbi config set-plan-file``). Naming targets always means
+    "these targets", never the stored plan.
+
+    :return: the plan file, or ``None`` for a run of target names
+    """
+    if config is not None:
+        return config
+    if targets or any(_given(ctx, name) for name in _IN_THE_FILE):
+        return None
+    stored = stored_plan_file()
+    if stored is None:
+        return None
+    path, where = stored
+    typer.echo(f"Plan file: {path} (from {where}; name targets to sync those instead)")
+    return path
 
 
 #: Words that a shell (POSIX or PowerShell) takes as they are, without quotes.
@@ -507,6 +615,8 @@ def _print_quota(quota: Sequence[QuotaLine]) -> None:
 def _print_plan(plan: Plan) -> None:
     typer.echo(f"Tenant: {plan.tenant}\n")
     _print_target_rows(plan)
+    for note in plan.notes:
+        typer.secho(f"  {note}", fg="yellow")
     _print_quota(plan.quota)
 
 
@@ -521,6 +631,8 @@ def _print_sequence(sequence: SequencePlan) -> None:
                     f"  {item.target.name} copies {item.target.sensitive}", fg="yellow"
                 )
         _print_target_rows(made)
+        for note in made.notes:
+            typer.secho(f"  {note}", fg="yellow")
     if not sequence.steps:
         typer.echo("\nNo step is planned yet.")
     for where, problem in sequence.unmatched:
@@ -546,6 +658,7 @@ def sync_plan(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
+    prefer_scan: PreferScanOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
@@ -570,6 +683,11 @@ def sync_plan(
     pbi sync plan --config pbi-plan.yaml
     ```
 
+    The plan file can be named once instead of on every command: `pbi config
+    set-plan-file PATH`, or the environment variable `PBI_PLAN`. Then a plain `pbi sync run`
+    runs it; naming targets, or an option that a plan file takes over, runs those instead.
+    Nothing is looked for by its place (such as the current folder).
+
     With `--config` the plan file says what to sync, so no target names and none of the
     options that it takes over (the scan options, the profiles) can be given; `--force`,
     `--max-age`, `--days` and the like still apply to every step of it.
@@ -582,6 +700,7 @@ def sync_plan(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    config = _plan_to_use(ctx, config, targets)
     if config is not None:
         _refuse_with_a_plan_file(ctx, targets)
         _plan_file_plan(
@@ -609,6 +728,7 @@ def sync_plan(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         admin_profile=admin_profile,
@@ -618,7 +738,7 @@ def sync_plan(
     with ClientPool() as clients:
         engine = SyncEngine(clients, store)
         _print_targets(
-            list(options.targets),
+            options,
             store,
             engine.available_scopes(options),
             engine.accounts(options),
@@ -720,6 +840,7 @@ def sync_run(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
+    prefer_scan: PreferScanOption = False,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
@@ -778,6 +899,7 @@ def sync_run(
         `--admin-profile` and `--user-profile` choose other profiles than the active ones.
 
     """
+    config = _plan_to_use(ctx, config, targets)
     if config is not None:
         _refuse_with_a_plan_file(ctx, targets)
         report = _plan_file_run(
@@ -809,6 +931,7 @@ def sync_run(
         full_scan=full_scan,
         exclude_personal=exclude_personal,
         exclude_inactive=exclude_inactive,
+        prefer_scan=prefer_scan,
         scan_interval=scan_interval,
         scan_timeout=scan_timeout,
         workers=workers,
@@ -821,12 +944,13 @@ def sync_run(
     with ClientPool() as clients:
         engine = SyncEngine(clients, store)
         _print_targets(
-            list(options.targets),
+            options,
             store,
             engine.available_scopes(options),
             engine.accounts(options),
         )
         report = engine.run(options, on_event=_Progress())
+    _update_tables(store)
     _finish_run(report, _again(ctx))
 
 
@@ -853,7 +977,32 @@ def _plan_file_run(
         def announce(number: int, step: Step) -> None:
             typer.secho(f"\nStep {number}: {step.title}", bold=True)
 
-        return run.run(on_event=_Progress(), on_step=announce)
+        report = run.run(on_event=_Progress(), on_step=announce)
+    _update_tables(store)
+    return report
+
+
+def _update_tables(store: LakeStore) -> None:
+    """Work out again the table of who has access to what, for each tenant a run changed,
+    so that `pbi lake access` and the terminal UI answer at once (`pbi_cli.core.accessreport`).
+    Failing here does not fail the sync: the next question works the table out instead.
+    """
+    for tenant in store.tenants():
+        if not store.tables_stale(tenant):
+            continue
+        started = time.monotonic()
+        try:
+            table = refresh_access_table(Catalog(store, tenant))
+        except Exception as error:  # noqa: BLE001 - the sync itself went well
+            typer.secho(
+                f"Could not update who has access to what in the lake: {error}",
+                fg="yellow",
+            )
+            continue
+        typer.echo(
+            f"Updated who has access to what in the lake: {len(table.rows)} row(s), "
+            f"{time.monotonic() - started:.1f}s."
+        )
 
 
 def _finish_run(report: RunReport, again: str) -> None:

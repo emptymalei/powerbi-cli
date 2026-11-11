@@ -8,6 +8,7 @@ from pbi_cli.core.accessreport import (
     COLUMNS,
     AccessReport,
     AccessRow,
+    access_of,
     access_report,
 )
 from pbi_cli.core.catalog import Access, Catalog, UsersView
@@ -142,3 +143,64 @@ def test_an_unknown_kind_is_an_error(world):
     with pytest.raises(ValueError, match="Unknown kind 'table'"):
         access_report(catalog_of(world), "table")
     assert "workspace" in ACCESS_KINDS and "report" in ACCESS_KINDS
+
+
+def test_what_one_person_has_access_to_comes_from_every_kind(world):
+    world.run("groups", "report-users", "apps", "app-users")
+    catalog = catalog_of(world)
+    ann = access_report(catalog, "report").rows[0].person.email
+
+    found = access_of(catalog, ann)
+
+    assert {r.item_id for r in found.rows} == {"rep-0001"}
+    assert all(r.person.email == ann for r in found.rows)
+    assert found.items > len(catalog.all_items("report"))  # reports and the rest
+    kinds = [r.kind for r in found.rows]
+    assert kinds == sorted(kinds, key=ACCESS_KINDS.index)
+
+
+def test_the_person_is_matched_whole_unless_partial(world):
+    world.run("groups", "report-users")
+    catalog = catalog_of(world)
+
+    assert access_of(catalog, "rep-0001").rows == []
+    part = access_of(catalog, "rep-0001", partial=True)
+    assert {r.item_id for r in part.rows} == {"rep-0001"}
+    assert access_of(catalog, "ANN-REP-0001@EXAMPLE.COM").rows == part.rows
+
+
+def test_items_that_could_not_be_looked_into_are_counted_with_their_kind(world):
+    world.run("groups", "reports")  # reports, but nobody who can open them
+
+    found = access_of(catalog_of(world), "ann", kinds=["report"])
+
+    assert found.rows == [] and found.items == len(found.missing) > 0
+    assert found.missing[0].startswith("report ")
+
+
+def test_workspaces_leave_the_apps_out(world):
+    world.run("groups", "report-users", "apps", "app-users")
+    catalog = catalog_of(world)
+
+    found = access_of(catalog, "Ann", workspaces=["ws-0001"])
+
+    assert all(r.kind != "app" for r in found.rows)
+    assert found.items < access_of(catalog, "Ann").items
+
+
+@pytest.mark.parametrize("who, kinds", [(" ", None), ("ann", ["table"])])
+def test_nobody_or_an_unknown_kind_is_an_error(world, who, kinds):
+    world.run("groups", "report-users")
+
+    with pytest.raises(ValueError):
+        access_of(catalog_of(world), who, kinds=kinds)
+
+
+def test_the_kinds_come_in_the_usual_order_whatever_order_they_were_asked_for(world):
+    world.run("groups", "report-users", "apps", "app-users")
+
+    found = access_of(catalog_of(world), "Ann", kinds=["app", "report"])
+
+    kinds = [r.kind for r in found.rows]
+    assert {"app", "report"} <= set(kinds)
+    assert kinds == sorted(kinds, key=ACCESS_KINDS.index)

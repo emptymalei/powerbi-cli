@@ -525,9 +525,9 @@ def test_a_yaml_file_cannot_run_code():
     [
         ("s3://bucket/lake", "s3://bucket/lake"),
         ("az://container/lake", "az://container/lake"),
-        ("/shared/lake", "/shared/lake"),
-        ("shared", "/work/shared"),
-        ("../shared", "/work/../shared"),
+        ("/shared/lake", str(Path("/shared/lake"))),  # \shared\lake on Windows
+        ("shared", str(Path("/work/shared"))),
+        ("../shared", str(Path("/work/../shared"))),
     ],
 )
 def test_the_lake_of_a_plan_is_a_url_or_a_folder_from_the_folder_of_the_file(

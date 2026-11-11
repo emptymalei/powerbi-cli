@@ -21,14 +21,17 @@ from textual.app import App
 from textual.binding import Binding
 from textual.notifications import SeverityLevel
 
-from pbi_cli.core.catalog import Catalog, Match
+from pbi_cli.core.backup import backup_lake
+from pbi_cli.core.catalog import Catalog, Item, Match
+from pbi_cli.core.layers import LayeredStore
 from pbi_cli.core.planfile import SHOW_ALL, find_workspace
 from pbi_cli.core.planrun import PlanRun
+from pbi_cli.core.reportexport import export_report
 from pbi_cli.core.sync.engine import INTERRUPTED, TOKEN_EXPIRED, RunReport
 from pbi_cli.core.sync.plan import SyncOptions
 from pbi_cli.core.timefmt import format_age
 from pbi_cli.errors import AuthError, PBIError, TokenExpiredError
-from pbi_cli.tui import clipboard
+from pbi_cli.tui import clipboard, exporting
 from pbi_cli.tui.backend import Backend, Identity
 from pbi_cli.tui.explorer import ExplorerScreen
 from pbi_cli.tui.fetching import Fetching
@@ -77,6 +80,18 @@ def lake_label(root: Any, width: int = 36) -> str:
     return text if len(text) <= width else "…" + text[-(width - 1) :]
 
 
+#: What the header adds to a shared lake that has the work lake on top.
+ON_TOP = " + work lake"
+
+
+def store_label(store: Any) -> str:
+    """The header's words for a lake: where it is, and ``+ work lake`` when the work lake is
+    on top of it."""
+    if isinstance(store, LayeredStore):
+        return lake_label(store.root, 36 - len(ON_TOP)) + ON_TOP
+    return lake_label(store.root)
+
+
 class PBIApp(App[None]):
     """The pbi terminal UI.
 
@@ -122,7 +137,7 @@ class PBIApp(App[None]):
         self.tenant: Optional[str] = None
         self.catalog: Optional[Catalog] = None
         self.run_state: Optional[RunState] = None
-        self.lake_label = lake_label(backend.store.root)
+        self.lake_label = store_label(backend.store)
         self._resume: Optional[Tuple[Union[SyncOptions, PlanRun], str]] = None
         self._signed_in_as: Optional[Tuple[str, Optional[str]]] = None
         self._sink: Optional[int] = None
@@ -473,12 +488,24 @@ class PBIApp(App[None]):
             return False
         return True
 
-    def open_lake_at(self, location: str) -> None:
-        """Open a lake by its location, without the dialog (the command palette's way)."""
+    def open_lake_at(self, location: str, with_work_lake: bool = False) -> None:
+        """Open a lake by its location, without the dialog (the command palette's way).
+
+        :param with_work_lake: look at it with the work lake on top
+        """
         if self._can_open_lakes():
             self.switch_lake(
-                self.backend.work_lake if location == WORK_LAKE else location
+                self.backend.work_lake if location == WORK_LAKE else location,
+                with_work_lake,
             )
+
+    def action_work_lake_on_top(self) -> None:
+        """Look at the lake that is open with the work lake on top, or without it again."""
+        store = self.backend.store
+        if isinstance(store, LayeredStore):
+            self.open_lake_at(str(store.root))
+        else:
+            self.open_lake_at(str(store.root), with_work_lake=True)
 
     def action_open_lake(self) -> None:
         """Choose another lake to look at (or the work lake again)."""
@@ -500,18 +527,24 @@ class PBIApp(App[None]):
             chosen,
         )
 
-    def switch_lake(self, location: Optional[str]) -> None:
+    def switch_lake(
+        self, location: Optional[str], with_work_lake: bool = False
+    ) -> None:
         """Open a lake, in the background, and show it."""
         if location:
             self._lake_asked += 1
-            self._open_lake(self._lake_asked, location)
+            self._open_lake(self._lake_asked, location, with_work_lake)
 
     @work(thread=True, exclusive=True, group="open-lake")
-    def _open_lake(self, asked: int, location: str) -> None:
+    def _open_lake(self, asked: int, location: str, with_work_lake: bool) -> None:
         opener = self.backend.open_lake
         assert opener is not None
         try:
-            store = opener(location)
+            store = (
+                opener(location, with_work_lake=True)
+                if with_work_lake
+                else opener(location)
+            )
         except Exception as error:  # a bucket that cannot be read must not end the UI
             self.call_from_thread(self._lake_failed, asked, location, error)
             return
@@ -525,7 +558,7 @@ class PBIApp(App[None]):
         if asked is not None and asked != self._lake_asked:
             return  # a slow lake that another one, asked for later, replaces
         self.backend.store = store
-        self.lake_label = lake_label(store.root)
+        self.lake_label = store_label(store)
         self._catalog_asked += 1  # what is being read of the lake before is not shown
         self.catalog = None
         self.identity = self.backend.identity()
@@ -538,6 +571,13 @@ class PBIApp(App[None]):
         elif len(store.tenants()) > 1:
             self.call_after_refresh(self.action_choose_tenant)
         self.refresh_bars()
+        if isinstance(store, LayeredStore):
+            self.notify(
+                f"Opened {store.root} with your work lake on top: both are shown as one, "
+                "and what you fetch or sync goes to your work lake. The shared lake is "
+                "never written."
+            )
+            return
         self.notify(
             f"Opened {store.root}"
             + (" (view only)." if self.backend.readonly else "."),
@@ -703,6 +743,94 @@ class PBIApp(App[None]):
             ),
             timeout=NOTICE_LONG if not tool else None,
         )
+
+    # -- a copy of the lake, a report as a file ------------------------------------------------
+
+    def backup_now(self) -> None:
+        """Copy the whole lake next to itself (`pbi lake backup`), before something big."""
+        if self.backend.readonly:
+            self.notify(self.backend.readonly, title="Backup", severity="warning")
+            return
+        state = self.run_state
+        if state is not None and state.running:
+            self.notify(
+                "A sync is running: stop it, or wait for it, then back up.",
+                title="Backup",
+                severity="warning",
+            )
+            return
+        self.notify("Backing up the lake …", title="Backup")
+        self._backup()
+
+    @work(thread=True, exclusive=True, group="backup")
+    def _backup(self) -> None:
+        try:
+            done = backup_lake(self.backend.written.root)
+        except Exception as error:  # the lake is not ours to end the UI over
+            self.call_from_thread(
+                self.notify, str(error), title="Backup", severity="error"
+            )
+            return
+        self.call_from_thread(
+            self.notify,
+            (
+                "The lake holds nothing yet: there is nothing to back up."
+                if done is None
+                else f"Backed up {done.files} file(s) to {done.destination}. "
+                f"Restore it with: pbi lake restore {done.destination}"
+            ),
+            title="Backup",
+            timeout=NOTICE_LONG,
+        )
+
+    def download_report(self, item: Item, fmt: str) -> None:
+        """Save a report as a file (`pbi reports export`) in the export folder.
+
+        :param item: the report
+        :param fmt: ``pbix``, ``pdf``, ``pptx`` or ``png``
+        """
+        if not item.workspace_id:
+            self.notify(
+                "The lake does not say which workspace this report is in.",
+                title="Download",
+                severity="warning",
+            )
+            return
+        folder = self.export_folder or str(Path.cwd())
+        self.notify(
+            f"Asking Power BI for {item.name} as {fmt} …"
+            + ("" if fmt == "pbix" else " this can take a while."),
+            title="Download",
+        )
+        self._download(item, fmt, folder)
+
+    @work(thread=True, exclusive=True, group="download")
+    def _download(self, item: Item, fmt: str, folder: str) -> None:
+        try:
+            client = self.backend.client_for("user")
+            done = export_report(client, item.workspace_id or "", item.id, fmt)
+            path = exporting.free_path(
+                folder, exporting.file_stem(item.name) + done.extension
+            )
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(done.content)
+        except AuthError as error:  # no token, or an expired one: ask for a fresh one
+            self.call_from_thread(self.explain_sync_problem, error, None)
+            return
+        except Exception as error:  # an ExportError, a refusal of the API, a full disk
+            self.call_from_thread(
+                self.notify,
+                str(error) or type(error).__name__,
+                title="Download",
+                severity="error",
+                timeout=NOTICE_LONG,
+            )
+            return
+        self.call_from_thread(self._downloaded, path)
+
+    def _downloaded(self, path: Path) -> None:
+        self.export_folder = str(path.parent)
+        self.notify(f"Saved {path}", title="Download", timeout=NOTICE_LONG)
 
     def workspace_scope(
         self, catalog: Optional[Catalog] = None

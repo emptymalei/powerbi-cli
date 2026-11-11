@@ -1,0 +1,74 @@
+# A plan that keeps EVERYTHING pbi can read, but only about a few core workspaces.
+#
+#     pbi sync plan --config pbi-plan.core-workspaces.yaml   # what it does and costs; sends nothing
+#     pbi sync run  --config pbi-plan.core-workspaces.yaml   # does it
+#     pbi tui       --config pbi-plan.core-workspaces.yaml   # looks at it
+#
+# Copy it, then put your workspaces under `workspaces:`, one entry each: by name (a pattern,
+# looked up in the list of workspaces in the lake) or by id.
+#
+# What it costs. The lists of the tenant are a few requests. Each workspace below gets a
+# metadata scan (a few requests for up to 100 workspaces together) and every detail of every
+# item in it, which is a request per item and detail: who can open each report, dataset,
+# dashboard, dataflow and app, the data sources, the pages, the tiles, the parameters and
+# the refresh history. For a few workspaces that is usually well within the quotas; the plan
+# shows the numbers before anything is sent.
+#
+# What it copies. Names and e-mail addresses of everybody with access to these workspaces,
+# connection details of their data sources, and the DAX and Power Query of their datasets.
+# Keep the lake private (see "Sensitive data" in docs/lake.md).
+
+version: 1
+
+# The accounts, by the names of their `pbi auth` profiles (`pbi profile list`). Without this
+# section the active profile of each group is used.
+#
+# The administrator's account reads the lists, the scans, and who has access. Some details
+# only a user's account can read: the pages of reports, the tiles of dashboards, the
+# parameters of datasets, and the full refresh history (an administrator gets a summary of
+# the last week). For those, store a user account that is a member of the workspaces; without
+# one they are left out, and the plan says so.
+# accounts:
+#   admin: my-admin
+#   user: [my-user]
+
+tenant:
+  # The lists of the tenant: workspaces, apps, capacities, reports, datasets, dashboards and
+  # dataflows. They are needed: a workspace named below is looked up in the list of
+  # workspaces, and the details of its items are found through the lists of items.
+  targets: [default]
+  # The audit events cannot be fetched for some workspaces only: they are a log of the whole
+  # tenant. Add `activity` to the targets above to keep them (they hold e-mail addresses and
+  # IP addresses), and `activity_days: 28` for every day Power BI keeps.
+
+# The core workspaces. Each entry is one workspace by `id`, or the workspaces whose names
+# match a pattern (`*` is any text, `?` one character, case does not matter, and the whole
+# name has to match). A name matches active workspaces that are not personal.
+workspaces:
+  - name: "Sales Reporting" # one workspace, by its exact name
+    # A metadata scan with every option: lineage, the data sources, the tables, columns and
+    # measures of the datasets, their DAX and Power Query, and the users of every item. The
+    # schema and the queries need the tenant settings "Enhance admin APIs responses with
+    # detailed metadata" and "... with DAX and mashup expressions".
+    scan: all
+    # Every detail of every item: users, datasources, pages, refreshes, parameters, tiles.
+    details: all
+    # Whose account reads them: the administrator's where it can, else a user account whose
+    # own list of workspaces holds the workspace.
+    via: auto
+
+  - name: "Finance*" # every workspace whose name starts with Finance
+    scan: all
+    details: all
+
+  - id: 00000000-0000-0000-0000-000000000000 # one workspace, by its id (replace it)
+    name: Executive Dashboards # with an id, a name is only a label for messages
+    scan: all
+    details: all
+    # via: my-user # a user profile that reads this workspace, when the administrator's
+    #              # account should not (or a detail needs a user that is a member)
+
+session:
+  workspaces: plan # the Explorer lists only the workspaces above; w shows every one
+  open: "Sales Reporting" # the workspace selected at the start
+  lazy: ask # a detail the lake lacks is fetched when you press f

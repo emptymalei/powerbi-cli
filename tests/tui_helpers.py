@@ -51,13 +51,15 @@ class Ui:
 
         A sync that is running is not waited for (a test may be holding it up) unless
         ``sync`` is true.
+
+        One ``pilot.pause()`` drains only the messages that were queued when it began, and
+        decides that the app is idle by comparing CPU time with wall time, which on Windows
+        moves in steps of about 16 ms. A chain such as focus, then ``DescendantFocus``, then
+        a worker for the tab, takes several passes; so the app counts as settled only when,
+        after a pass, no worker runs and no message is waiting to be handled.
         """
-        for _ in range(8):
-            running = [
-                w
-                for w in self.app.workers
-                if not w.is_finished and (sync or w.group != "sync")
-            ]
+        for _ in range(100):
+            running = self._running(sync)
             for worker in running:
                 try:
                     await worker.wait()
@@ -66,8 +68,20 @@ class Ui:
                 ):  # a newer selection replaced it: that is the point
                     pass
             await self.pilot.pause()
-            if not running:
+            if not running and not self._running(sync) and not self._pending():
                 return
+
+    def _running(self, sync: bool) -> list:
+        return [
+            w
+            for w in self.app.workers
+            if not w.is_finished and (sync or w.group != "sync")
+        ]
+
+    def _pending(self) -> bool:
+        """Whether the app or a widget of its screen has messages or callbacks waiting."""
+        pumps = [self.app, *self.app.screen.walk_children(with_self=True)]
+        return any(p.message_queue_size or p._next_callbacks for p in pumps)
 
     async def until(self, condition: Callable[[], Any], seconds: float = 10.0) -> None:
         """Wait until ``condition()`` is true; fail the test if it is not in time."""

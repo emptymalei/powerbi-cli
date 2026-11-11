@@ -280,6 +280,52 @@ class ChoiceModal(Dialog[Optional[str]]):
 WORK_LAKE = "<work lake>"
 
 
+class AskModal(Dialog[Optional[str]]):
+    """Ask for one line of text.
+
+    The modal closes with the text that was typed, or with ``None`` when the user gives up
+    (or types nothing).
+
+    :param title: what is asked
+    :param body: a few words that say more
+    :param placeholder: an example of an answer
+    :param action: the label of the button that goes ahead
+    """
+
+    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    def __init__(
+        self, title: str, body: str, placeholder: str = "", action: str = "Go ahead"
+    ) -> None:
+        super().__init__()
+        self._title = title
+        self._body = body
+        self._placeholder = placeholder
+        self._action = action
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield PlainLabel(self._title, id="dialog-title")
+            yield PlainStatic(self._body)
+            yield Input(placeholder=self._placeholder, id="answer")
+            with Horizontal(id="buttons"):
+                yield Button(self._action, variant="primary", id="ok", compact=True)
+                yield Button("Cancel", id="cancel", compact=True)
+
+    def on_mount(self) -> None:
+        self.query_one("#answer", Input).focus()
+
+    @on(Input.Submitted)
+    @on(Button.Pressed, "#ok")
+    def _typed(self) -> None:
+        text = self.query_one("#answer", Input).value.strip()
+        self.dismiss(text or None)
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
 class OpenLakeModal(Dialog[Optional[str]]):
     """Choose a lake to look at: the work lake, a recent one, or a location typed in.
 

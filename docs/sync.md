@@ -301,6 +301,10 @@ not an error, the run goes on with the rest, and the next run continues with the
 units. A quota of 200 an hour means that 1,000 units take five runs, an hour apart; the plan
 tells how long it would take.
 
+Most of those units are usually the users or the data sources of every item, a request
+each. A scan holds them for up to 100 workspaces per request: see
+[Taking the details from the scan](#taking-the-details-from-the-scan).
+
 If an administrator operation keeps answering `403 Forbidden` (three times in a row) the
 token is probably not an administrator's, and the run stops asking for that operation.
 
@@ -371,6 +375,44 @@ again before starting another. A scan that failed is started again.
 A lake in S3 is worth copying before a large run: `pbi sync run --backup` copies it next
 to itself before the first write (`--backup-to PLACE` chooses where). See
 [Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
+
+### Taking the details from the scan
+
+A scan holds much of what the fan-out targets ask for one item at a time. With
+`--get-artifact-users` it lists the users of every workspace, report, dataset, dashboard and
+dataflow; with `--datasource-details` the data sources of every dataset and dataflow. A scan
+costs a few requests for up to 100 workspaces, where `report-users` costs one request for
+every report out of 200 an hour: a tenant with 3,000 reports needs 15 hours for those alone.
+
+**`--prefer-scan`** (`prefer_scan: true` in the tenant of a [plan file](plan-file.md)) leaves
+those targets to the scan:
+
+| Target | Left to the scan when it is made with |
+| --- | --- |
+| `group-users`, `report-users`, `dataset-users`, `dashboard-users`, `dataflow-users` | `--get-artifact-users` |
+| `datasources`, `dataflow-datasources` | `--datasource-details` |
+
+```
+pbi sync run all --get-artifact-users --datasource-details --prefer-scan
+```
+
+It is off unless it is asked for. It needs the `scan` target. The plan and the run say what was
+left to the scan (`Left to the scan (prefer_scan): report-users, ...`). They also say which
+target is still fetched one item at a time because the scan is made without the option that
+holds its answers. A target left to the scan is not fetched even when it is named.
+
+The [lake](lake.md#the-data-model) takes the users of an item from its own
+request when there is one, and else from the newest scan of its workspace; the `access` table
+says which in `source`. What the scan does not cover has no users then:
+
+- **apps:** `app-users` is never left to the scan, because a scan does not list the people of
+  an app;
+- **left-out workspaces:** the workspaces the scan leaves out (`--exclude-personal`,
+  `--exclude-inactive`) get no users from it;
+- **new items:** an item created after the last scan has none until the next one.
+
+In the [terminal UI](tui.md), `f` still fetches the users of one item, one request, when the
+lake lacks them.
 
 ## Stopping, and continuing
 

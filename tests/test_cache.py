@@ -357,7 +357,10 @@ def test_the_manager_does_not_follow_a_link_out_of_the_cache(temp_cache_dir):
     outside = temp_cache_dir / "outside"
     outside.mkdir()
     (outside / "precious.txt").write_text("x")
-    (cache / "link").symlink_to(outside, target_is_directory=True)
+    try:
+        (cache / "link").symlink_to(outside, target_is_directory=True)
+    except OSError as error:  # Windows lets only admins or developer mode make one
+        pytest.skip(f"cannot make a symbolic link here: {error}")
 
     CacheManager(cache_folder=str(cache)).clear(cache_key="link")
 

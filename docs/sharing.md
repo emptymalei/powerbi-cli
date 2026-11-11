@@ -40,6 +40,47 @@ lake is only looked at and do nothing; browsing, the filters, `Ctrl+P` and the L
 the Sync screen (what the lake holds, how the last syncs went) work as always.
 `pbi lake prune` refuses a lake that is read-only.
 
+### Look further with your own account
+
+A lake someone shared holds what *they* fetched. When you have an account of your own (a
+service account, say) and want to look further into something, open the shared lake with
+**your work lake on top**:
+
+```bash
+pbi tui --lake s3://my-bucket/pbi-lake --with-work-lake
+pbi lake access ann@example.com --lake s3://my-bucket/pbi-lake --with-work-lake
+pbi lake ls --lake s3://my-bucket/pbi-lake --with-work-lake   # column LAKE: shared or work
+```
+
+Nothing is copied or merged. Both lakes are read as one, and what you fetch goes to your work
+lake:
+
+- **Reads take both.** Where both lakes answer the same request, the answer fetched last is
+  taken, whichever lake it is in. A day of activity events is taken whole from the lake
+  that holds more of it.
+- **Writes go to your work lake, and only there.** A fetch in the Explorer (`f`), a sync, `pbi
+  lake users --fetch` and the tables worked out from both lakes are written to your work lake.
+  The shared lake stays read-only, as always: the store of it refuses every write. A sync plans
+  and runs on your work lake alone, so it fetches what *your* lake lacks.
+- **Answers that depend on who asked stay apart.** Some answers depend on the account that
+  asked, such as the workspaces a user can see. They are kept per account, so your
+  account's answers sit beside the publisher's and never replace them.
+- **You can tell where each answer came from.** The header of the TUI says
+  `+ work lake`. The Explorer adds `shared lake` or `your work lake` to when a list was
+  fetched. `pbi lake ls` has a column `LAKE`.
+- **Who has access to what** is worked out from both lakes once. The result is kept in your
+  work lake (in `_layers/`, beside its own tables). It is worked out again when either lake
+  changes: a fetch into your work lake, or a new publish of the shared one.
+- **Publishing stays yours.** `pbi lake publish` reads your work lake alone, so what the
+  shared lake holds is never published again under your name.
+
+In the TUI, `Ctrl+P` → **Put the work lake on top** does the same for the lake that is open,
+and **Take the work lake off** goes back to the shared lake alone. A [plan file](plan-file.md#session)
+does it with `session.with_work_lake: true` beside `session.lake`.
+
+It needs a work lake (`pbi config set-cache-folder`). For a lake that is your work lake
+already, it changes nothing.
+
 ## Publish a lake
 
 Publishing makes a complete, consistent copy of your work lake, in a place that others can
@@ -58,7 +99,11 @@ The copy has the layout of the lake, so `pbi tui --lake` reads it as it is. It h
 - the scans;
 - how the last five syncs went, and when the last complete scan started (what the freshness
   dots of the Explorer need). Not the units that failed, and not the ids of scans that were
-  started and not collected.
+  started and not collected;
+- the [table of who has access to what](lake.md#the-access-table), so that `pbi lake access`
+  and the terminal UI answer at once from the published lake. It is not published when the
+  users or the scans are left out: whoever opens the lake then works it out from what is
+  there.
 
 It does not hold your token, your settings or anything that is not in the lake.
 
@@ -72,17 +117,27 @@ opens the published lake sees all of it:
 | --- | --- | --- |
 | `lists` | (cannot be left out) | the names of workspaces and items, and the people who own or last changed them (e-mail addresses) |
 | `scans` | `--exclude scans` | the contents of every workspace; with the scan options also data source details, dataset schemas and queries (DAX, Power Query) and the users of every item |
-| `users` | `--exclude users` | the people who can open each report, with their e-mail addresses |
+| `users` | `--exclude users` | the people who have access to each workspace, report, dataset, dashboard, dataflow and app, with their e-mail addresses |
 | `datasources` | `--exclude datasources` | connection details of the data sources: servers, databases, paths |
 | `activity` | `--exclude activity` | what each person did and when: e-mail addresses, IP addresses, devices |
 
-A scan keeps whatever its options asked for: one made with `--get-artifact-users` or
-`--dataset-expressions` holds users and queries. Publishing does not take fields out of a
-scan. Leave the scans out, or scan again without those options, if that matters.
+**Leaving out the users** leaves out every list of them (the users of workspaces, reports,
+datasets, dashboards, dataflows and apps, whichever account fetched them, and what a person
+can open), and also takes the people out of what is published of the other categories: the
+`users` of a workspace in a list of workspaces (`pbi workspaces list -e users`), and of every
+workspace and item in a scan (`--get-artifact-users`). The manifest of such a version says
+`published_without`, and its size and checksum are those of what was published. The table
+of who has access is then not published either.
+
+Otherwise a scan keeps whatever its options asked for: one made with `--dataset-expressions`
+holds queries, and one made with `--datasource-details` the connection details of the data
+sources even when `--exclude datasources` leaves out the other answers about them. Leave the
+scans out, or scan again without those options, if that matters.
 
 Leaving a category out of a later publish takes it out of the published lake too: what an
 earlier publish copied of it is deleted, so the marker never says "left out" over data that
-is still there. Tenants that a publish with `--tenant` left alone stay, and the marker lists
+is still there. Leaving the users out later copies the lists and scans again without the
+people (and taking them back in later copies them again with the people). Tenants that a publish with `--tenant` left alone stay, and the marker lists
 them.
 
 ### What it never does

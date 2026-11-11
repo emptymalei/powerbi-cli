@@ -11,6 +11,10 @@ from loguru import logger
 from pbi_cli.core.fsutil import replace_file
 from pbi_cli.errors import PBIError
 
+#: The value of ``verify_certificates`` that trusts the certificate store of the operating
+#: system (Windows, macOS) instead of the certificates that come with ``requests``.
+SYSTEM_CERTIFICATES = "system"
+
 # Public API
 __all__ = [
     "PBIConfig",
@@ -291,6 +295,26 @@ class PBIConfig:
             self.set("default_output_folder", None)
 
     @property
+    def plan_file(self) -> Optional[str]:
+        """The plan file that ``pbi sync`` and ``pbi tui`` use when none is given.
+
+        :return: its absolute path, or None
+        """
+        return self.get("plan_file")
+
+    @plan_file.setter
+    def plan_file(self, value: Optional[str]):
+        """Set (or, with None, forget) the plan file to use when none is given.
+
+        :param value: the path to the file; ``~`` is expanded and the path made absolute,
+            so that it means the same from any folder
+        """
+        self.set(
+            "plan_file",
+            None if value is None else str(Path(value).expanduser().absolute()),
+        )
+
+    @property
     def cache_folder(self) -> Optional[str]:
         """Get the cache folder.
 
@@ -377,8 +401,9 @@ class PBIConfig:
     def verify_certificates(self) -> Union[bool, str]:
         """Get how TLS certificates are verified.
 
-        :return: True to verify against the system CA bundle, False to skip
-            verification, or the path to a CA bundle file
+        :return: True to verify against the certificates that come with ``requests``
+            (certifi), ``"system"`` to verify against the certificate store of the operating
+            system, False to skip verification, or the path to a CA bundle file
         """
         value = self.get("verify_certificates", True)
         if isinstance(value, str):
@@ -389,9 +414,9 @@ class PBIConfig:
     def verify_certificates(self, value: Union[bool, str]):
         """Set how TLS certificates are verified.
 
-        :param value: True, False, or the path to a CA bundle file
+        :param value: True, False, ``"system"``, or the path to a CA bundle file
         """
-        if isinstance(value, str):
+        if isinstance(value, str) and value != SYSTEM_CERTIFICATES:
             value = str(Path(value).expanduser().absolute())
         self.set("verify_certificates", value)
 

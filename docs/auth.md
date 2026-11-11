@@ -185,6 +185,28 @@ administrator's token in the `admin` group:
 pbi auth -t <admin token> -p admin-nlm -g admin
 ```
 
+## Behind a company proxy
+
+A network that inspects HTTPS re-signs the traffic with a certificate of its own. Windows and
+macOS trust it, because IT installs its root there, but Python's `requests` checks against
+the certificates it comes with, so every request fails:
+
+```text
+failed: admin.groups: ... certificate verify failed: self-signed certificate in certificate chain
+```
+
+Tell pbi to trust what the operating system trusts. The certificates are still checked:
+
+```bash
+pbi config set-verify-certificates system
+```
+
+The other settings: the path to the proxy's CA file (PEM), which trusts that root in addition
+to the usual ones; `true`, the certificates that come with `requests` (the default); and
+`false`, no check at all, which lets anyone on the way read the token (it prints a warning).
+`pbi config get-verify-certificates` shows the setting. With `system`, an S3 lake behind the
+same proxy is trusted the same way.
+
 ## Keeping the token safe
 
 - pbi_cli never writes a token to the data lake, to logs or to error messages, and the

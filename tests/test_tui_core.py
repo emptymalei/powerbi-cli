@@ -1147,7 +1147,7 @@ def test_the_summary_of_a_plan_file_says_what_the_file_says():
         )
     )
 
-    assert "pbi-plan.yaml" in summary and "/plans" in summary
+    assert "pbi-plan.yaml" in summary and str(Path("/plans")) in summary
     assert "administrator: admin-nlm" in summary and "users: svc" in summary
     assert (
         "groups, reports, datasets, dashboards, dataflows, activity; 7 days" in summary

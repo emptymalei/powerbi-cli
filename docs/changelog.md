@@ -62,6 +62,76 @@
 
 ### Added
 
+- **A shared lake with your work lake on top** (`--with-work-lake` on `pbi tui` and on
+  `pbi lake ls`, `show`, `users`, `access` and `duckdb`; `session.with_work_lake` in a plan
+  file; **Put the work lake on top** in the TUI's palette). Someone who opens a lake a
+  colleague shared and has an account of their own, a service account say, can look further
+  without copying anything. Both lakes are read as one, and the answer fetched last is taken.
+  What they fetch or sync goes to their work lake, and the shared lake is never written.
+  Answers that depend on who asked are kept per account. The TUI, the Explorer and
+  `pbi lake ls` say which lake each answer came from. Who has access to what is worked out
+  from both and kept in the work lake. `pbi lake publish` reads the work lake alone. See
+  [Look further with your own account](sharing.md#look-further-with-your-own-account).
+- **The access table**: `pbi lake access`, `pbi lake users` and the terminal UI's "Who has
+  access to…" answer from one table that the lake keeps (`_tables/access.csv`) instead of
+  reading the users of every item each time. On a lake of 9,500 items, a question took 3 to
+  4 seconds, and 87 seconds the first time after a sync on Windows; with the table it takes
+  under a tenth of a second. `pbi sync run` works the table out at its end; a snapshot written
+  after it marks it stale, and the next question works it out again. `pbi lake publish`
+  publishes the table too, so a published lake answers at once. See
+  [The access table](lake.md#the-access-table).
+- **`prefer_scan`** (`tenant: {prefer_scan: true}` in a plan file, `--prefer-scan` on `pbi sync
+  plan` and `pbi sync run`) takes the users and the data sources of the items from the scan
+  instead of one request per item. A scan with `get_artifact_users` holds the users of every
+  workspace, report, dataset, dashboard and dataflow, and one with `datasource_details` the data
+  sources of every dataset and dataflow, for up to 100 workspaces per request; so
+  `group-users`, `report-users`, `dataset-users`, `dashboard-users`, `dataflow-users`,
+  `datasources` and `dataflow-datasources` are left to it, which with `targets: [all]` is most of
+  the requests. It is off unless asked for, and the plan and the run list what was left to the
+  scan, and what is still fetched per item because the scan lacks the option. `app-users` stays:
+  a scan does not list the people of an app. The everything example has it on. See
+  [Taking the details from the scan](sync.md#taking-the-details-from-the-scan).
+- **`examples/pbi-plan.core-workspaces.yaml`**: a plan file that keeps everything about a few
+  workspaces only, by name or id: a scan with every option and every detail of every item. See
+  [Plan file](plan-file.md#a-first-plan).
+- `pbi reports export` (and `pbi export`) can save a report as more than a `.pbix`: `-f pdf`,
+  `pptx` or `png` (made by Power BI as a job that the command waits for, with `--timeout`), and
+  for a paginated report `xlsx`, `docx`, `csv`, `xml`, `mhtml` or `accessiblepdf`. `-p` chooses
+  pages, `--filter` and `--locale` shape them, `--include-hidden-pages` adds hidden ones,
+  `--param` sets paginated parameters, and `--live-connection` keeps a `.pbix` connected to its
+  dataset. The older `pbi export` now goes through the same client, so it honours the TLS
+  setting and throttling. The formats other than `pbix` need a Premium, Embedded or Fabric
+  capacity. See [Exporting a report](export.md).
+- A plan file can be named once instead of with `--config` on every command: `pbi config
+  set-plan-file PATH` (checked at once, kept as an absolute path; `get-plan-file` and
+  `clear-plan-file` show and forget it), or the environment variable `PBI_PLAN` for one shell
+  or job. `pbi sync plan`, `pbi sync run` and `pbi tui` then use it when no `--config` is
+  given; naming targets, or an option that a plan file takes over, still means those targets.
+  A file is never found by where it lies. See [Name the file once](plan-file.md#name-the-file-once).
+- The [terminal UI](tui.md#who-has-access-a-report-as-a-file-a-copy-of-the-lake) has three more
+  actions in its palette: *Who has access to …* (what a person can open, from the lake, to save or
+  copy), *Download this report as …* (a `.pbix`, PDF, PowerPoint or images, in the export folder)
+  and *Back up the lake*.
+- `pbi lake users` and `pbi lake access` take `--fetch` (and `--yes`): they fetch the users
+  that the lake lacks first, as `pbi sync run report-users` and its kin do, after showing what it
+  costs against the quotas and asking. Only the gaps cost requests, and `-w` limits it to the items
+  of some workspaces. See [Filling the gaps](lake.md#filling-the-gaps-fetch).
+- `pbi lake restore BACKUP` puts a backup made by `pbi lake backup` back over the lake of the
+  cache folder: it shows what it would copy and delete and asks, copies everything before it
+  deletes anything (so a restore that stops half way loses nothing), refuses a backup without its
+  `backup.json`, and first copies the lake as it is now (`<lake>-before-restore-<time>`, unless
+  `--no-safety-copy`). See [Back up a lake](lake.md#back-up-a-lake-before-writing-into-it).
+- `pbi lake duckdb [DATABASE]` loads the lake into a [DuckDB](https://duckdb.org) database
+  (`pip install "pbi-cli[duckdb]"`): a table for each list, for who has access to what
+  (`access`), for what a scan found (`scan_items`, `scan_edges` for the lineage,
+  `scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), for the audit events and
+  for the requests, with the ids that join them. The documentation of the
+  [data lake](lake.md#the-data-model) now describes its data model, with a diagram.
+- `pbi lake access USER` lists everything that one person has access to (workspaces, reports,
+  datasets, dashboards, dataflows, apps), found by e-mail address or name in the users the lake
+  holds, with `--partial` for a part of one, `-k` and `-w` to narrow it down and `-o` to save
+  it. It says how many items it could not look into. See
+  [What one person has access to](lake.md#what-one-person-has-access-to-pbi-lake-access).
 - `pbi lake users KIND` lists everyone with access to every report, dataset, dashboard,
   dataflow, app or workspace in one table or file (`-o users.xlsx`, `.csv`, `.json`, `.md`,
   `.tsv`), optionally for some workspaces (`-w`), from what the lake holds. Items whose users
@@ -262,9 +332,13 @@
   scans only the chosen workspaces without moving the point the next incremental scan
   continues from, and a stop also cuts short a wait for quota.
 - `pbi config set-verify-certificates` and `pbi config get-verify-certificates` choose how API
-  requests verify TLS certificates: `true` (the default), `false` (prints a warning), or the path
-  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
-  longer skip the verification unconditionally.
+  requests verify TLS certificates: `true` (the default: the certificates that come with
+  `requests`), `system` (the certificate store of Windows or macOS, with
+  [truststore](https://truststore.readthedocs.io), which is what a company proxy that re-signs
+  TLS traffic needs), `false` (prints a warning), or the path to a CA bundle file. Requests no
+  longer skip the verification unconditionally. A request that fails with
+  `CERTIFICATE_VERIFY_FAILED` says which setting to use. See
+  [Behind a company proxy](auth.md#behind-a-company-proxy).
 - Shell completion: `pbi --install-completion` and `pbi --show-completion`.
 - `pbi sync plan`, `pbi sync run` and `pbi sync status` keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
@@ -297,6 +371,17 @@
 
 ### Fixed
 
+- `pbi lake publish --exclude users` left out only the users of reports and what a person can
+  open. It now leaves out every list of users (of workspaces, datasets, dashboards, dataflows
+  and apps, by an administrator or a user account), and takes the people out of the lists of
+  workspaces and the scans that are published (their `users`). `--exclude datasources` now
+  also leaves out the data sources of dataflows and those a user account fetched. A later
+  publish that leaves the users out (or takes them back in) copies the lists and scans again.
+  See [Publish a lake](sharing.md#publish-a-lake).
+- `pbi lake access`, `pbi lake users` and the terminal UI's "Who has access to…" now find the
+  users that only a scan holds (`--get-artifact-users`, or `prefer_scan`). They looked only at
+  each item's own list of users and named every other item as one whose users the lake lacks;
+  items that only a scan knows are now included too.
 - When Power BI throttles a request (HTTP 429), every request of the tenant to that
   operation waits, not only the one that was throttled; a stopped sync no longer waits for
   the throttle to end; and the request that is tried again carries the token of that moment

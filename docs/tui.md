@@ -53,10 +53,10 @@ What it lists is what can be done *now*, so nothing in it is a dead end:
 
 | Where | Commands |
 | --- | --- |
-| the Explorer | fetch again what is selected (it says what: `Scan Finance`, `Fetch the lists of the tenant`, `Fetch what you can see`, ...), fetch the details the selected item lacks (`Fetch the users and data sources of Finance model`), filter, clear the filter, show a tab |
+| the Explorer | who has access to … (a person), download the selected report as a file, fetch again what is selected (it says what: `Scan Finance`, `Fetch the lists of the tenant`, `Fetch what you can see`, ...), fetch the details the selected item lacks (`Fetch the users and data sources of Finance model`), filter, clear the filter, show a tab |
 | the Sync screen | run the sync, show a tab |
 | while a sync runs | stop the sync, from any screen |
-| everywhere | open the Explorer or the Sync screen, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (`Make svc-finance the active user account`), store a new token for a profile, open another lake, the work lake, or one you opened lately |
+| everywhere | open the Explorer or the Sync screen, back up the lake, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (`Make svc-finance the active user account`), store a new token for a profile, open another lake, the work lake, or one you opened lately |
 | Textual | its own commands: the theme, the key list, a screenshot, quit |
 
 On a lake that is only looked at ([view only](#other-lakes-and-view-only)) there is nothing
@@ -299,6 +299,25 @@ A cell that a spreadsheet would take for a formula (it starts with `=`, `+`, `-`
 as text: with a `'` in front of it in CSV and tab-separated text, as a text cell in a workbook. What the
 tables show as `-` (nothing) is an empty cell in the export.
 
+### Who has access, a report as a file, a copy of the lake
+
+Three things that the command line does are in the [palette](#the-command-palette) too:
+
+- **Who has access to …** asks for an e-mail address or a name (in any case) and looks through
+  the users that the lake holds, like `pbi lake access`. What that person can open comes as the
+  Save / Copy dialog of [`x`](#copying-and-saving-what-you-see), so it can go to a spreadsheet. A part of
+  a name finds people too (it says so). It works on a lake that is only looked at, and it tells you how many
+  items have no users in the lake, because the answer may be incomplete. Nothing is sent to Power BI.
+- **Download this report as …** is offered when a report is selected: a `.pbix` for Power BI
+  Desktop, a PDF, a PowerPoint presentation, or images (a `.zip`). It is saved in the folder of `x`
+  (named after the report, never over an earlier file) and the UI says where. It uses your user
+  account, so an expired token asks for a fresh one. The formats other than `.pbix` are made by
+  Power BI and need a Premium, Embedded or Fabric capacity; they can take a while, and the UI keeps
+  working meanwhile. See [Exporting a report](export.md).
+- **Back up the lake** copies the whole lake next to itself (`pbi lake backup`), for example before a
+  big sync or `pbi lake prune`. It says where the copy is and the command that puts it back
+  (`pbi lake restore`). It is not offered on a lake that is only looked at, and it waits while a sync runs.
+
 ### Finding things
 
 - `/` filters what has the focus: the workspaces of the tree, or the rows of the table. All
@@ -393,7 +412,7 @@ file instead of the targets and the options:
   expires stops it, the dialog asks for the token of **the account that expired** (the kind and
   the profile, which the plan can use several of) and the plan goes on from the step it was in.
 
-The `session` section of the file sets four things:
+The `session` section of the file sets these things:
 
 - `lake`: the lake to open. `--lake` and `PBI_LAKE` come first, then the file, then your work
   lake. Any lake but your work lake is [opened read-only](#other-lakes-and-view-only), and
@@ -401,6 +420,9 @@ The `session` section of the file sets four things:
   lake is opened instead, and a notice says so, with the command that would make that folder your
   work lake (`pbi config set-cache-folder <folder>`; a sync writes to the work lake only, so this
   is how a sync fills the lake the file names). A bucket that holds no lake is an error.
+- `with_work_lake`: `true` opens `lake` with your work lake on top, as `--with-work-lake` does:
+  both lakes are shown as one, and the plan runs and fetches into your work lake. See
+  [Look further with your own account](sharing.md#look-further-with-your-own-account).
 - `open`: a workspace to select at the start, by id or by a pattern for its name (the first
   match). It is selected once, not again when the lake is read again.
 - `workspaces`: which workspaces the Explorer lists at the start: `plan` (the default: only the ones

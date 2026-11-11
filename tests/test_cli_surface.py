@@ -26,6 +26,8 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi auth/params/bearer_token/help": "'-' reads the token from standard input",
     "pbi auth/params/bearer_token/required": "the token may come from stdin or --login",
     "pbi auth/params/login": "new: pbi auth --login (PowerShell sign-in)",
+    # Certificates can be checked against the store of Windows or macOS.
+    "pbi config set-verify-certificates/help": "documents `system`",
     # Typer adds shell completion to the root command.
     "pbi/param_order": "root gains --install-completion and --show-completion",
     "pbi/params/install_completion": "new: pbi --install-completion",
@@ -38,6 +40,34 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     # "x > 0" is now checked by a callback: Typer only has inclusive bounds.
     "pbi workspaces scan get/params/interval/type": "value must still be > 0, checked by a callback",
     "pbi workspaces scan get/params/timeout/type": "value must still be > 0, checked by a callback",
+    # A report can be exported as more than a .pbix: pdf, pptx, png, paginated formats.
+    "pbi export/help": "says it exports to several formats",
+    "pbi export/param_order": "gains the options of the formats",
+    "pbi export/params/target/help": "a folder, or a name without an ending, is allowed",
+    "pbi export/params/fmt": "new: --format",
+    "pbi export/params/page": "new: --page",
+    "pbi export/params/report_filter": "new: --filter",
+    "pbi export/params/locale": "new: --locale",
+    "pbi export/params/include_hidden_pages": "new: --include-hidden-pages",
+    "pbi export/params/param": "new: --param",
+    "pbi export/params/live_connection": "new: --live-connection",
+    "pbi export/params/timeout": "new: --timeout",
+    "pbi reports export/help": "says it exports to several formats",
+    "pbi reports export/param_order": "gains the options of the formats",
+    "pbi reports export/params/target/help": "a folder, or a name without an ending, is allowed",
+    "pbi reports export/params/fmt": "new: --format",
+    "pbi reports export/params/page": "new: --page",
+    "pbi reports export/params/report_filter": "new: --filter",
+    "pbi reports export/params/locale": "new: --locale",
+    "pbi reports export/params/include_hidden_pages": "new: --include-hidden-pages",
+    "pbi reports export/params/param": "new: --param",
+    "pbi reports export/params/live_connection": "new: --live-connection",
+    "pbi reports export/params/timeout": "new: --timeout",
+    # The plan file can be named once instead of on every command.
+    "pbi config/command_order": "pbi config gains set-plan-file, get-plan-file, clear-plan-file",
+    "pbi config set-plan-file": "new: pbi config set-plan-file",
+    "pbi config get-plan-file": "new: pbi config get-plan-file",
+    "pbi config clear-plan-file": "new: pbi config clear-plan-file",
     # The data lake: commands that browse and tidy what the other commands fetched.
     "pbi/command_order": "the root gains the lake, sync and tui commands",
     "pbi lake": "new: pbi lake",
@@ -47,6 +77,9 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
     "pbi lake publish": "new: pbi lake publish",
     "pbi lake backup": "new: pbi lake backup (a copy of a lake before writing into it)",
     "pbi lake users": "new: pbi lake users (who has access to every item of a kind)",
+    "pbi lake access": "new: pbi lake access (what one person has access to)",
+    "pbi lake duckdb": "new: pbi lake duckdb (the lake as DuckDB tables)",
+    "pbi lake restore": "new: pbi lake restore (a backup put back over the lake)",
     # pbi sync: keeps the tenant in the data lake
     "pbi sync": "new: pbi sync",
     "pbi sync plan": "new: pbi sync plan",
@@ -67,7 +100,17 @@ ACCEPTED_SURFACE_CHANGES: Dict[str, str] = {
 }
 
 # Key format: "<command path> --help" or "<command path> (no subcommand)". Value = reason.
-ACCEPTED_HELP_CHANGES: Dict[str, str] = {}
+ACCEPTED_HELP_CHANGES: Dict[str, str] = {
+    "pbi config set-verify-certificates --help": "documents `system`",
+    "pbi sync plan --help": "gains --prefer-scan",
+    "pbi sync run --help": "gains --prefer-scan",
+    "pbi lake access --help": "gains --with-work-lake",
+    "pbi lake duckdb --help": "gains --with-work-lake",
+    "pbi lake ls --help": "gains --with-work-lake",
+    "pbi lake show --help": "gains --with-work-lake",
+    "pbi lake users --help": "gains --with-work-lake",
+    "pbi tui --help": "gains --with-work-lake",
+}
 
 REGENERATE_HINT = (
     "If this change is intentional, record it in ACCEPTED_*_CHANGES with a reason "

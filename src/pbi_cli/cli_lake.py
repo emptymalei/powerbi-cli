@@ -16,21 +16,32 @@ from pbi_cli.cli_support import (
     BackupOption,
     BackupToOption,
     LakeOption,
+    WithWorkLakeOption,
     back_up,
     command,
     format_age,
     new_app,
     print_table,
 )
+from pbi_cli.cli_sync import fetch_users
 from pbi_cli.config import PBIConfig
-from pbi_cli.core.accessreport import ACCESS_KINDS, COLUMNS, AccessReport, access_report
-from pbi_cli.core.backup import backup_lake
+from pbi_cli.core.accessreport import (
+    ACCESS_KINDS,
+    COLUMNS,
+    AccessReport,
+    access_of,
+    access_report,
+    resolve_workspaces,
+)
+from pbi_cli.core.backup import SAFETY_SUFFIX, backup_lake, plan_restore, restore_lake
 from pbi_cli.core.catalog import Catalog
+from pbi_cli.core.lakesql import describe, load_lake
+from pbi_cli.core.layers import LayeredStore
 from pbi_cli.core.publish import EXCLUDABLE, PublishPlan, plan_publish, publish
 from pbi_cli.core.registry import get_endpoint
 from pbi_cli.core.store import LakeStore, ParameterSet, Snapshot, safe_name
 from pbi_cli.errors import PBIError
-from pbi_cli.session import as_path, lake_hint, resolve_lake
+from pbi_cli.session import as_path, lake_hint, lake_path, resolve_lake
 from pbi_cli.tui import exporting
 
 lake_app = new_app("lake")
@@ -46,15 +57,23 @@ def lake_group(ctx: typer.Context):
 # -- helpers -----------------------------------------------------------------------
 
 
-def _store(location: Optional[str] = None) -> LakeStore:
-    """The lake to look at: the one given with ``--lake``, else that of the cache folder.
+def _store(location: Optional[str] = None, with_work_lake: bool = False) -> Any:
+    """The lake to look at: the one given with ``--lake``, else that of the cache folder;
+    with ``--with-work-lake`` the one given with the work lake on top (`LayeredStore`).
 
     Only the lake of the cache folder can be written (and cleaned up with ``prune``).
     """
-    opened = resolve_lake(location)
+    opened = resolve_lake(location, with_work_lake=with_work_lake)
     if opened is None:
         raise PBIError(f"There is no data lake yet. {lake_hint()}")
     return opened.store
+
+
+def _where(store: Any) -> str:
+    """The lake that is looked at, for the first line of a command."""
+    if isinstance(store, LayeredStore):
+        return f"{store.root}, with your work lake on top ({store.work.root})"
+    return str(store.root)
 
 
 def _tenants(store: LakeStore, wanted: Optional[str]) -> List[str]:
@@ -156,6 +175,7 @@ def lake_ls(
         ),
     ] = False,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
 ):
     """List what the data lake holds
 
@@ -172,10 +192,13 @@ def lake_ls(
 
     # What someone shared, without any token
     pbi lake ls --lake s3://my-bucket/pbi-lake
+
+    # ... with what you fetched yourself on top (column LAKE says which is which)
+    pbi lake ls --lake s3://my-bucket/pbi-lake --with-work-lake
     ```
     """
-    store = _store(lake)
-    typer.echo(f"Data lake: {store.root}")
+    store = _store(lake, with_work_lake)
+    typer.echo(f"Data lake: {_where(store)}")
     tenants = _tenants(store, tenant)
     if not tenants:
         typer.echo("The lake is empty. Commands such as `pbi workspaces list` fill it.")
@@ -186,7 +209,14 @@ def lake_ls(
         ["ENDPOINT", "REF", "VERSION", "FETCHED (UTC)", "AGE", "ROWS", "SIZE"]
         if all_versions
         else ["ENDPOINT", "REF", "FETCHED (UTC)", "AGE", "ROWS", "SIZE", "VERSIONS"]
-    ) + ["PARAMETERS"]
+    )
+    layered = isinstance(store, LayeredStore)
+    if layered:
+        header.append("LAKE")  # where each answer is: the shared lake or the work lake
+    header.append("PARAMETERS")
+
+    def lake_of(place: Any) -> List[str]:
+        return [store.layer_of(place)] if layered else []
 
     shown = 0
     for tenant_name in tenants:
@@ -207,6 +237,7 @@ def lake_ls(
                         "-" if manifest.get("rows") is None else manifest["rows"],
                         _size(int(manifest.get("bytes", 0))),
                         *([] if all_versions else [len(versions)]),
+                        *lake_of(snapshot),
                         _params_text(pset.params),
                     ]
                     rows.append(row)
@@ -225,6 +256,7 @@ def lake_ls(
                         stored.rows if all_versions else sum(d.rows for d in days),
                         "-",
                         *([] if all_versions else [f"{len(days)} day(s)"]),
+                        *lake_of(stored),
                         state if all_versions else f"newest day {stored.day} ({state})",
                     ]
                 )
@@ -284,6 +316,7 @@ def lake_show(
         ),
     ] = False,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
 ):
     """Print a stored response (or its manifest) as JSON
 
@@ -305,7 +338,7 @@ def lake_show(
     pbi lake show admin.activityevents --day 2026-09-29
     ```
     """
-    store = _store(lake)
+    store = _store(lake, with_work_lake)
     tenant_name = _one_tenant(store, tenant)
     known = store.endpoints(tenant_name)
     endpoint_id = next((e for e in known if _matches(e, endpoint)), None)
@@ -462,6 +495,21 @@ def _show_publish_plan(plan: PublishPlan) -> None:
     )
     if plan.prune:
         typer.echo("Older versions in the destination will be deleted afterwards.")
+    if "users" in plan.excluded:
+        typer.echo(
+            "The users are left out: they are also taken out of the lists and the scans "
+            "that are published, and the table of who has access is not published."
+        )
+    elif plan.access_table:
+        typer.echo(
+            "The table of who has access to what is published too, so the published lake "
+            "answers at once."
+        )
+    else:
+        typer.echo(
+            "The table of who has access is not published without the scans: whoever "
+            "opens the lake works it out from what is published."
+        )
     typer.echo(
         "Whoever opens the published lake sees all of it. Leave a category out with "
         "--exclude."
@@ -640,6 +688,45 @@ def lake_backup(
     typer.echo(f"Open it with: pbi tui --lake {done.destination}")
 
 
+FetchOption = Annotated[
+    bool,
+    typer.Option(
+        "--fetch",
+        help=(
+            "Fetch the users that the lake lacks first (as `pbi sync run report-users` and "
+            "its kin do), after showing what it costs against the quotas. Needs an admin "
+            "account, and writes into the lake of the cache folder"
+        ),
+    ),
+]
+FetchYesOption = Annotated[
+    bool, typer.Option("--yes", help="With --fetch: do not ask before fetching")
+]
+
+
+def _fetch_users(
+    store: LakeStore,
+    catalog: Catalog,
+    kinds: Sequence[str],
+    workspaces: Optional[Sequence[str]],
+    yes: bool,
+) -> None:
+    """Fetch the users that the lake lacks of these kinds (for ``--fetch``).
+
+    :raises PBIError: for a lake that is only read, or a workspace that is not in the lake
+    """
+    if not store.writable:
+        raise PBIError(
+            "--fetch writes into the lake of your cache folder: "
+            + (store.why_read_only() or "this lake is only read.")
+        )
+    try:
+        ids = resolve_workspaces(catalog, workspaces) or set()
+    except ValueError as error:
+        raise PBIError(str(error)) from error
+    fetch_users(kinds, sorted(ids), yes=yes)
+
+
 #: The columns of ``pbi lake users`` on the terminal; a file has them all.
 _SHOWN = (0, 1, 3, 5, 6, 7)
 
@@ -687,6 +774,9 @@ def lake_users(
         ),
     ] = None,
     lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
+    fetch: FetchOption = False,
+    yes: FetchYesOption = False,
 ):
     """Who has access to every item of a kind, as a table or a file
 
@@ -706,22 +796,61 @@ def lake_users(
     ```
 
     The users come from `pbi sync run report-users`, `app-users` or a scan with
-    `--get-artifact-users`; `pbi lake ls` shows what the lake holds. The terminal UI
-    exports the same for the item or the workspace that you are looking at (`x`).
+    `--get-artifact-users`; `pbi lake ls` shows what the lake holds. `--fetch` fetches the
+    ones the lake lacks first (it shows the cost and asks, `--yes` skips that). The terminal
+    UI exports the same for the item or the workspace that you are looking at (`x`).
     """
     if kind not in ACCESS_KINDS:
         raise typer.BadParameter(
             f"'{kind}' is not a kind. Choose one of: {', '.join(ACCESS_KINDS)}.",
             param_hint="KIND",
         )
-    store = _store(lake)
-    catalog = Catalog(store, _one_tenant(store, tenant))
+    store = _store(lake, with_work_lake)
+    tenant_name = _one_tenant(store, tenant)
+    catalog = Catalog(store, tenant_name)
     try:
-        found = access_report(catalog, kind, workspace)
+        found = access_report(catalog, kind, workspace, _building)
+        if fetch and (found.missing or not found.items):
+            _fetch_users(store, catalog, [kind], workspace, yes)
+            catalog = Catalog(store, tenant_name)  # reads what was just fetched
+            found = access_report(catalog, kind, workspace, _building)
     except ValueError as error:
         raise PBIError(str(error)) from error
 
     title = f"Users of {kind}s" if kind != "workspace" else "Users of workspaces"
+    if not found.rows:
+        raise PBIError(_nobody(kind, found))
+    _deliver(
+        found,
+        title,
+        _SHOWN,
+        output,
+        fmt,
+        saved=f"{len(found.rows)} row(s) for {found.items} {kind}(s)",
+        summary=(
+            f"{len(found.rows)} row(s): {found.people} different people, "
+            f"{found.items - len(found.missing)} of {found.items} {kind}(s) with users."
+        ),
+    )
+
+
+def _deliver(
+    found: AccessReport,
+    title: str,
+    shown: Sequence[int],
+    output: Optional[str],
+    fmt: Optional[str],
+    *,
+    saved: str,
+    summary: str,
+) -> None:
+    """Print an access report as a table, or save it as a file; then name the items whose
+    users the lake does not hold.
+
+    :param shown: the columns (indexes into `COLUMNS`) that the terminal shows
+    :param saved: what the file holds, for the message
+    :param summary: the line under the table
+    """
     table = exporting.Exportable(title, COLUMNS, found.table)
     if output is not None:
         chosen = fmt or Path(output).suffix.lstrip(".").lower() or exporting.CSV
@@ -729,29 +858,20 @@ def lake_users(
             raise PBIError(
                 f"Cannot write '{chosen}'. Formats: {', '.join(exporting.TABLE_FORMATS)}."
             )
-        if not found.rows:
-            raise PBIError(_nobody(kind, found))
         path = exporting.write(table, chosen, output)
-        typer.secho(
-            f"✓ Saved {len(found.rows)} row(s) for {found.items} {kind}(s) to {path}",
-            fg="green",
-        )
-    elif found.rows:
-        print_table(
-            [COLUMNS[i] for i in _SHOWN],
-            [[row[i] for i in _SHOWN] for row in table.cells],
-        )
-        typer.echo(
-            f"\n{len(found.rows)} row(s): {found.people} different people, "
-            f"{found.items - len(found.missing)} of {found.items} {kind}(s) with users."
-        )
+        typer.secho(f"✓ Saved {saved} to {path}", fg="green")
     else:
-        raise PBIError(_nobody(kind, found))
-    if found.missing and found.rows:
-        shown = ", ".join(found.missing[:5])
+        print_table(
+            [COLUMNS[i] for i in shown],
+            [[row[i] for i in shown] for row in table.cells],
+        )
+        typer.echo(f"\n{summary}")
+    if found.missing:
+        listed = ", ".join(found.missing[:5])
         more = f" and {len(found.missing) - 5} more" if len(found.missing) > 5 else ""
         typer.secho(
-            f"{len(found.missing)} {kind}(s) have no users in the lake: {shown}{more}.",
+            f"{len(found.missing)} of {found.items} item(s) have no users in the lake, "
+            f"so this may be incomplete: {listed}{more}.",
             fg="yellow",
         )
 
@@ -765,3 +885,313 @@ def _nobody(kind: str, found: AccessReport) -> str:
         "app": "`pbi sync run app-users`",
     }.get(kind, "`pbi sync run report-users` or a scan with `--get-artifact-users`")
     return f"The lake holds none of the users of its {count} {kind}(s). Fetch them with {hint}."
+
+
+#: The columns of ``pbi lake access`` on the terminal, without and with the person.
+_SHOWN_ITEMS = (0, 1, 3, 7, 9)
+_SHOWN_PEOPLE = (0, 1, 3, 5, 6, 7)
+
+
+def _building() -> None:
+    """Say that the table of who has access is worked out: it reads every user of the lake."""
+    typer.echo(
+        "Working out who has access to what from the lake (once after it changed; "
+        "a big lake takes a while) …",
+        err=True,
+    )
+
+
+@command(lake_app, "access")
+def lake_access(
+    who: Annotated[
+        str,
+        typer.Argument(
+            metavar="USER",
+            help="An e-mail address or a name (ignoring case)",
+        ),
+    ],
+    kind: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--kind",
+            "-k",
+            help=f"Only this kind (repeat for more): {', '.join(ACCESS_KINDS)}",
+        ),
+    ] = None,
+    workspace: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--workspace",
+            "-w",
+            help="Only the items of this workspace, by id or name (repeat for more)",
+        ),
+    ] = None,
+    partial: Annotated[
+        bool,
+        typer.Option(
+            "--partial",
+            help="Match a part of the e-mail address or name (for example a domain)",
+        ),
+    ] = False,
+    output: Annotated[
+        Optional[str],
+        typer.Option(
+            "--output",
+            "-o",
+            help="Save to this file instead of printing: .csv, .xlsx, .json, .md or .tsv",
+        ),
+    ] = None,
+    fmt: Annotated[
+        Optional[str],
+        typer.Option(
+            "--format",
+            "-f",
+            help="csv, xlsx, json, md or tsv (default: from the file name, else csv)",
+        ),
+    ] = None,
+    tenant: Annotated[
+        Optional[str],
+        typer.Option(
+            "--tenant", "-t", help="Tenant (only needed if the lake holds several)"
+        ),
+    ] = None,
+    lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
+    fetch: FetchOption = False,
+    yes: FetchYesOption = False,
+):
+    """What one person has access to: workspaces, reports, datasets, apps ...
+
+    The other way round from `pbi lake users`: it looks through the users of every item the
+    lake holds, and lists the ones where the person is. Nothing is sent to Power BI.
+
+    ```
+    # Everything that one person can open
+    pbi lake access ann@example.com
+
+    # ... only reports and dashboards, in a spreadsheet
+    pbi lake access ann@example.com -k report -k dashboard -o ann.xlsx
+
+    # Everybody of one domain
+    pbi lake access --partial @contractor.com -o contractors.csv
+
+    # In a lake someone shared, with what your own account fetched on top
+    pbi lake access ann@example.com --lake s3://my-bucket/pbi-lake --with-work-lake
+    ```
+
+    The answer is as complete as the lake: items whose users the lake does not hold are
+    named under the table (fetch them with `pbi sync run report-users`, `app-users` or a
+    scan with `--get-artifact-users`, or let `--fetch` do it: it shows the cost against the
+    quotas and asks first, `--yes` skips that; every kind of item costs a request each, so
+    narrow it with `-k` and `-w`). Access through a group shows as the group, because
+    the lake does not hold who is in it. For the answer of Power BI itself, with an admin
+    account, use `pbi users user-access -u <user id>`.
+    """
+    store = _store(lake, with_work_lake)
+    tenant_name = _one_tenant(store, tenant)
+    catalog = Catalog(store, tenant_name)
+    try:
+        found = access_of(
+            catalog,
+            who,
+            kinds=kind,
+            workspaces=workspace,
+            partial=partial,
+            on_build=_building,
+        )
+        if fetch and (found.missing or not found.items):
+            _fetch_users(store, catalog, kind or ACCESS_KINDS, workspace, yes)
+            catalog = Catalog(store, tenant_name)  # reads what was just fetched
+            found = access_of(
+                catalog,
+                who,
+                kinds=kind,
+                workspaces=workspace,
+                partial=partial,
+                on_build=_building,
+            )
+    except ValueError as error:
+        raise PBIError(str(error)) from error
+    if not found.rows:
+        held = found.items - len(found.missing)
+        raise PBIError(
+            f"Nothing in the lake gives '{who}' access: {held} of {found.items} item(s) "
+            f"have their users in the lake and none lists them"
+            + (
+                f"; {len(found.missing)} have no users in the lake (e.g. "
+                f"{found.missing[0]})."
+                if found.missing
+                else "."
+            )
+            + (" Try --partial for a part of a name." if not partial else "")
+        )
+    places = {r.workspace_id or r.item_id for r in found.rows if r.kind != "app"}
+    _deliver(
+        found,
+        f"Access of {who}",
+        _SHOWN_PEOPLE if partial else _SHOWN_ITEMS,
+        output,
+        fmt,
+        saved=f"{len(found.rows)} row(s) for {who}",
+        summary=(
+            f"{len(found.rows)} item(s) in {len(places)} workspace(s) for '{who}'"
+            + (f" ({found.people} different people)" if partial else "")
+            + "."
+        ),
+    )
+
+
+@command(lake_app, "duckdb")
+def lake_duckdb(
+    database: Annotated[
+        Path,
+        typer.Argument(
+            metavar="DATABASE",
+            help="The DuckDB file to make (an existing one is replaced)",
+        ),
+    ] = Path("pbi-lake.duckdb"),
+    tenant: Annotated[
+        Optional[str],
+        typer.Option("--tenant", "-t", help="Only this tenant (default: all)"),
+    ] = None,
+    lake: LakeOption = None,
+    with_work_lake: WithWorkLakeOption = False,
+):
+    """Load the lake into a DuckDB database, to question it with SQL
+
+    Makes a table of each list (`workspaces`, `reports`, `datasets`, ...), of who has access
+    to what (`access`), of what a scan found (`scan_items`, `scan_edges` for the lineage,
+    `scan_datasources`, `scan_tables`, `scan_columns`, `scan_measures`), of the audit events
+    (`events`), and of the requests the lake holds (`requests`). Each table has the ids that
+    join it to the others. Needs `pip install "pbi-cli[duckdb]"`. The database is a copy of
+    the newest answers: load again after a sync. Reads the lake only.
+
+    ```
+    pbi lake duckdb
+    duckdb pbi-lake.duckdb "select workspace, report, dataset from report_overview"
+
+    # Who can open a report that reads from one server?
+    duckdb pbi-lake.duckdb "
+      select distinct a.email, r.report
+      from scan_datasources s
+      join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+      join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+      join report_overview r on r.report_id = b.from_id
+      join access a on a.item_id = r.report_id and a.kind = 'report'
+      where s.server = 'sql.example'"
+    ```
+
+    See the data model in the documentation of the data lake.
+    """
+    store = _store(lake, with_work_lake)
+    typer.echo(f"Loading {_where(store)} ...")
+    con = load_lake(store, str(database), tenant)
+    try:
+        tables = describe(con)
+    finally:
+        con.close()
+    for name, count in tables:
+        typer.echo(f"  {name:<18} {count} row(s)")
+    typer.secho(f"✓ Wrote {database} ({len(tables)} tables and views)", fg="green")
+    typer.echo(f"Open it with: duckdb {database}")
+
+
+@command(lake_app, "restore")
+def lake_restore(
+    backup: Annotated[
+        str,
+        typer.Argument(
+            metavar="BACKUP",
+            help="The backup made by `pbi lake backup`: a folder or a URL such as s3://...",
+        ),
+    ],
+    yes: Annotated[bool, typer.Option("--yes", help="Restore without asking")] = False,
+    no_safety_copy: Annotated[
+        bool,
+        typer.Option(
+            "--no-safety-copy",
+            help="Do not copy the lake as it is now before replacing it",
+        ),
+    ] = False,
+    keep_extra: Annotated[
+        bool,
+        typer.Option(
+            "--keep-extra",
+            help="Keep the files of the lake that the backup does not have",
+        ),
+    ] = False,
+    allow_incomplete: Annotated[
+        bool,
+        typer.Option(
+            "--allow-incomplete",
+            help="Also restore a copy that has no backup.json (it stopped half way)",
+        ),
+    ] = False,
+):
+    """Put a backup back over the data lake of the cache folder
+
+    The lake becomes what the backup holds: the files of the backup are copied back, and the
+    files that it does not have are deleted (`--keep-extra` keeps them). Everything is copied
+    before anything is deleted, so a restore that stops half way has lost nothing; run it
+    again. Unless you say `--no-safety-copy`, the lake as it is now is copied first, next to it
+    as `<lake>-before-restore-<time>`, so that a restore can be undone too. A backup that has
+    no `backup.json` stopped before it was complete and is refused.
+
+    ```
+    pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+    pbi lake restore ~/PowerBI/cache/lake-backup-20261030T224000Z --yes
+    ```
+
+    Close the terminal UI and stop any sync first: nothing should write to the lake while it
+    is replaced. Only the lake of the cache folder can be restored; a published lake is
+    protected.
+    """
+    work = lake_path()
+    if work is None:
+        raise PBIError(f"There is no data lake yet. {lake_hint()}")
+    store = LakeStore(work)
+    if not store.writable:
+        raise PBIError(store.why_read_only())
+    try:
+        source = as_path(backup)
+    except Exception as error:
+        raise PBIError(f"Cannot use {backup} as the backup: {error}") from error
+    plan = plan_restore(
+        source, work, keep_extra=keep_extra, allow_incomplete=allow_incomplete
+    )
+    when = f", made {plan.made_at[:16].replace('T', ' ')} UTC" if plan.made_at else ""
+    typer.echo(f"Backup: {plan.backup}{when}")
+    if plan.source:
+        typer.echo(f"  of:   {plan.source}")
+    typer.echo(f"Lake:   {plan.lake}")
+    typer.echo(
+        f"\nTo restore: copy {len(plan.copy)} file(s) ({_size(plan.size)})"
+        + (
+            f", delete {len(plan.delete)} file(s) that the backup does not have"
+            if plan.delete
+            else ""
+        )
+        + "."
+    )
+    if not plan.complete:
+        typer.secho("The backup has no backup.json: it may be incomplete.", fg="yellow")
+    if not yes and not typer.confirm(
+        f"\nReplace the lake {plan.lake} with the backup?"
+    ):
+        raise typer.Abort()
+    if not no_safety_copy:
+        saved = backup_lake(work, suffix=SAFETY_SUFFIX)
+        if saved is None:
+            typer.echo("The lake holds nothing yet: no safety copy is needed.")
+        else:
+            typer.secho(
+                f"✓ The lake as it was is kept in {saved.destination}", fg="green"
+            )
+    done = restore_lake(
+        plan, on_file=lambda n: n % 500 == 0 and typer.echo(f"  {n} file(s) ...")
+    )
+    typer.secho(
+        f"✓ Restored: {done.copied} file(s) copied ({_size(done.size)}), "
+        f"{done.deleted} deleted",
+        fg="green",
+    )

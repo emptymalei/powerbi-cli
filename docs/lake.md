@@ -194,6 +194,61 @@ table, so a gap is never mistaken for an item nobody can open. The users come fr
 `pbi sync run report-users`, `app-users` or a scan with `--get-artifact-users` (see
 [Sync](sync.md)).
 
+### What one person has access to: `pbi lake access`
+
+The other way round: `pbi lake access ann@example.com` looks through the users of every item
+the lake holds and lists the ones where that person is, whether a workspace, a report, a
+dataset, a dashboard, a dataflow or an app. The person is found by e-mail address or name,
+ignoring case; `--partial` takes a part of one (`--partial @contractor.com` for everybody of a
+domain, which also shows who they are).
+
+```text
+$ pbi lake access ann@example.com
+Kind       Item      Workspace  Access  Source
+Workspace  Finance   Finance    Admin   admin.groups
+Report     Sales     Finance    Owner   admin.reports.users
+Report     Stock     Logistics  Viewer  admin.reports.users
+
+3 item(s) in 2 workspace(s) for 'ann@example.com'.
+```
+
+`-k report -k dashboard` limits it to some kinds, `-w Finance` to the items of a workspace,
+and `-o ann.xlsx` saves it (`.csv`, `.xlsx`, `.json`, `.md`, `.tsv`). It sends nothing to
+Power BI, so it is only as complete as the lake: the items whose users the lake does not hold
+are counted and named under the table, because they might list the person too. It answers
+from [the access table](#the-access-table), so it is quick once that is worked out. Access through
+a group shows as the group, since the lake does not hold who is in it. For Power BI's own
+answer, with an admin account, use `pbi users user-access -u <user id>`; it costs one request
+of the quota of 200 an hour.
+
+### Filling the gaps: `--fetch`
+
+Who can open what is in the lake only for the items that were synced with
+`pbi sync run report-users`, `app-users` and the like (or a scan with `--get-artifact-users`).
+`pbi lake users` and `pbi lake access` name the items they could not look into. Add `--fetch`
+and they fetch those users first, as the sync does:
+
+```text
+$ pbi lake access ann@example.com -k report --fetch
+To fetch the users that the lake lacks:
+
+Tenant: 72f988bf-...
+
+TARGET        ... REQUESTS
+report-users  ... 212
+...
+Fetch them now? [y/N]: y
+  [21/212] admin.reports.users ...
+```
+
+It shows what it costs against the quotas (the users of a report are 200 requests an hour)
+and asks (`--yes` skips that). What the lake holds fresh is not fetched again, so only the
+gaps cost anything, and `-w Finance` (or `-w ID`) fetches only for the items of that
+workspace. Without `-k`, `lake access` fetches every kind, so narrow it down if the lake is
+big. `--fetch` needs an admin account (`pbi auth -t <token> -g admin`) and writes into the lake
+of your cache folder; a lake given with `--lake` is only read. A run that a quota or an expired
+token stops keeps what it got: run the command again.
+
 ### Back up a lake before writing into it
 
 In a local lake every file is written to a temporary name and then moved over the old one,
@@ -225,10 +280,33 @@ copied by the cloud, not through your machine; the bucket needs room for a secon
 
 The copy has the layout of a lake: `pbi tui --lake <copy>` opens it (read only). Its
 `backup.json` is written last and says what was copied and when; a copy without it stopped
-before it was complete. To go back, copy the backup over the lake, for example
-`aws s3 sync s3://my-bucket/pbi-lake-backup-20261030T224000Z s3://my-bucket/pbi-lake --delete`,
-or a folder over the folder. Backups are never deleted by pbi: remove the old ones yourself.
-The terminal UI takes no backup; run `pbi lake backup` before a large sync from it.
+before it was complete. Backups are never deleted by pbi: remove the old ones yourself.
+
+To go back, `pbi lake restore BACKUP` puts a backup back over the lake of the cache folder:
+
+```text
+$ pbi lake restore s3://my-bucket/pbi-lake-backup-20261030T224000Z
+Backup: s3://my-bucket/pbi-lake-backup-20261030T224000Z, made 2026-10-30 22:40 UTC
+  of:   s3://my-bucket/pbi-lake
+Lake:   s3://my-bucket/pbi-lake
+
+To restore: copy 4210 file(s) (310.2 MB), delete 12 file(s) that the backup does not have.
+
+Replace the lake s3://my-bucket/pbi-lake with the backup? [y/N]: y
+✓ The lake as it was is kept in s3://my-bucket/pbi-lake-before-restore-20261031T071500Z
+✓ Restored: 4210 file(s) copied (310.2 MB), 12 deleted
+```
+
+It shows what it would copy and delete and asks first (`--yes` skips). The lake becomes what
+the backup holds: files of the backup are copied back and files that it does not have are
+deleted (`--keep-extra` keeps them). All files are copied before any is deleted, so a restore
+that stops half way has lost nothing; run it again. Unless you say `--no-safety-copy`, the lake
+as it is now is copied first (`<lake>-before-restore-<time>`), so that a restore can be undone
+too. A backup without its `backup.json` stopped before it was complete and is refused
+(`--allow-incomplete` overrides that). Close the terminal UI and stop any sync before you
+restore: nothing should write to the lake while it is replaced. A published lake is protected
+and is not restored over. The [terminal UI](tui.md#who-has-access-a-report-as-a-file-a-copy-of-the-lake) has
+*Back up the lake* in its palette; a sync run from it takes no backup of its own.
 
 Every one of these commands (and `pbi sync status` and `pbi tui`) can look at another lake
 than the one of your cache folder, such as one that a colleague shared, with
@@ -270,6 +348,14 @@ fresh each part is, all read from the lake.
         dt=2026-09-30/v=.../                a scan is stored like a snapshot (a "job")
     _state/
       sync.json                             what `pbi sync` remembers between runs
+    _tables/
+      access.csv                            who has access to what, worked out from the above
+      access-gaps.csv                       the items whose users the lake does not hold
+      access.json                           when it was worked out
+      STALE                                 only when a snapshot is newer than the table
+  _layers/<shared lake>/tenant=<tenant id>/
+    _tables/                                the access table of a shared lake with this one on
+                                            top (`--with-work-lake`), and what it was built from
   publish.json                              only in a published lake: who, when, what was left out
 ```
 
@@ -289,6 +375,35 @@ ignored.
 
 A lake with a `publish.json` at its root has been [published](sharing.md#publish-a-lake). It
 is protected: only `pbi lake publish` writes to it.
+
+### The access table
+
+Who has access to an item is in many places: the answer of the item's own request
+(`admin.reports.users` and the like, one folder per item), the users of a workspace in the list
+of workspaces, and the users of every item in the scans. Reading all of them takes seconds on a
+lake of thousands of items, and minutes when the files are read for the first time (on Windows
+the virus scanner looks at each one). So `pbi lake access`, `pbi lake users` and the terminal
+UI read them **once** into one table, `_tables/access.csv`, and answer from that.
+
+- **When it is worked out:** `pbi sync run` does it at its end when it stored anything
+  (`Updated who has access to what in the lake: … row(s)`); otherwise the first question after
+  the lake changed does, and says so (`Working out who has access to what …`).
+- **When it is stale:** every snapshot written marks it so (`_tables/STALE`), so a table is
+  never older than the lake it answers from; it is worked out again, whole, the next time.
+- **What it holds:** one row per person and item, with the same columns as `pbi lake users -o`
+  (kind, item, workspace, name, e-mail, access, type, source), in UTF-8. Being a plain CSV,
+  it opens in a spreadsheet, DuckDB and pandas as it is. The `source` says whether a row came
+  from the item's own request, the list of workspaces, or a `scan`.
+- **A lake that is only read** (`--lake`, a published lake) uses a table that is there and
+  otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish`
+  publishes the table with the lake, unless the users or the scans are left out.
+- **A shared lake with your work lake on top** (`--with-work-lake`, see
+  [Look further with your own account](sharing.md#look-further-with-your-own-account)) has a
+  table of both, kept in your work lake under `_layers/`. It is worked out again when your work
+  lake changes or the shared lake is published again.
+
+It holds the names and e-mail addresses of everybody with access: keep it as private as the
+rest of the lake.
 
 ### The manifest of a snapshot
 
@@ -324,6 +439,73 @@ which names its set of workspaces; `workspace_ids` lists them, and `scan_id` and
 - A **job** is a scan: start it, poll its status, fetch its result. The result is stored
   like a snapshot, one request per set of workspaces and options, so scanning the same
   workspaces again adds a version. See [Sync](sync.md#scans).
+
+## The data model
+
+The lake is **not** a database with a schema of its own. It keeps what Power BI answered, as
+JSON, one folder per request (see [Layout](#layout)); `pbi_cli` adds only a manifest to each.
+How the pieces belong together is worked out when they are read, by Power BI's own ids.
+
+| What | Where it is | How it joins |
+| --- | --- | --- |
+| Workspaces | `admin.groups` (or `user.groups` per account) | `id` |
+| Reports, datasets, dashboards, dataflows | the lists of the tenant, else one list per workspace (`user.group_*`) | the row's `workspaceId` is a workspace's `id`; a report's `datasetId` is a dataset's `id` |
+| Inside a workspace | `admin.scan.result`, one scan per set of workspaces and options; the newest scan that *returned* a workspace is the one used | `workspaces[].id`, with its reports, datasets, tables, users, data sources |
+| Lineage | the scan, with `--lineage` | `upstreamDatasets[].targetDatasetId`, `upstreamDataflows[].targetDataflowId`, a dashboard tile's `reportId` and `datasetId`; `datasourceUsages[].datasourceInstanceId` is a data source's `datasourceId` |
+| People | one answer per item (`admin.reports.users` with `reportId`, `admin.apps.users` with `appId`, ...), else the `users` of the item in its scan | the item's id, which the request's parameters name |
+| Audit events | one file set per UTC day | `Id` (events are deduplicated by it) |
+| Freshness | `fetched_at` in the manifest against the lifetime of the operation | plus `_state/sync.json`: runs, units that failed, scans started |
+
+Nothing is normalized and no key is checked, so a lake that was synced only in part still
+works, and says what is missing. The people inside a *group* are not in the lake (Power BI
+lists the group, Microsoft Entra lists its members): access through a group shows as the
+group.
+
+### Query it with SQL: `pbi lake duckdb`
+
+`pbi lake duckdb` loads the newest answer of every request into a
+[DuckDB](https://duckdb.org) database (`pip install "pbi-cli[duckdb]"`). The tables carry the
+ids above, so the joins are the ones in this picture:
+
+![The tables of the data lake and the ids that join them: workspaces, reports, datasets and dashboards, access, scan_edges and scan_datasources](images/lake-tables.svg)
+
+| Table | One row for | Made from |
+| --- | --- | --- |
+| `workspaces`, `reports`, `datasets`, `dashboards`, `dataflows`, `apps`, `capacities` | each item of the newest complete list; the columns are Power BI's | the lists of the tenant |
+| `access` | each person with access to an item: `kind`, `item_id`, `workspace_id`, `name`, `email`, `access`, `type`, `source` | the user operations and the scans (`source` says which) |
+| `scan_items` | each report, dataset, dashboard or dataflow a scan found, with its `workspace_id` and `dataset_id` | the newest scan of each workspace |
+| `scan_edges` | each lineage link: `from_kind`, `from_id`, `to_kind`, `to_id`, `relation` | the scans |
+| `scan_datasources` | each data source: `instance_id`, `type`, `server`, `database`, `path`, `url` | the scans |
+| `scan_tables`, `scan_columns`, `scan_measures` | each table, column (with its DAX) and measure of a dataset | the scans, with the schema option |
+| `events` | each audit event, with its `day` | the event logs |
+| `requests` | each request the lake holds: endpoint, parameters, `fetched_at`, path | the manifests |
+| `report_overview` (a view) | each report with its workspace and dataset names | `reports`, `workspaces`, `datasets` |
+
+```bash
+pbi lake duckdb                      # makes pbi-lake.duckdb
+duckdb pbi-lake.duckdb
+```
+
+```sql
+-- Who can open a report that reads from the server sql.example?
+select distinct r.report, a.email
+from scan_datasources s
+join scan_edges e on e.to_id = s.instance_id and e.to_kind = 'datasource'
+join scan_edges b on b.to_id = e.from_id and b.from_kind = 'report'
+join report_overview r on r.report_id = b.from_id
+join access a on a.item_id = r.report_id and a.kind = 'report'
+where s.server = 'sql.example';
+
+-- Reports per workspace, and how many people can open them
+select workspace, count(distinct report_id) reports, count(distinct email) people
+from report_overview r left join access a on a.item_id = r.report_id
+group by workspace order by reports desc;
+```
+
+The database is a copy: load again after a sync. The lake must be in a folder (copy an S3 lake
+down first, for example with `aws s3 sync`). A table is made only when the lake holds the
+data for it, and a row of `access` from a scan exists only for a scan made with
+`--get-artifact-users`. From Python: [`pbi_cli.core.lakesql`](references/core/lakesql.md).
 
 ## Freshness
 

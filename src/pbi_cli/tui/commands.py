@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, List
 
+from pbi_cli.core.catalog import Item
 from pbi_cli.tui.explorer import ExplorerScreen
 from pbi_cli.tui.modals import WORK_LAKE
 from pbi_cli.tui.syncscreen import SyncScreen
@@ -37,6 +38,18 @@ SYNC_TABS = (
     ("1", "plan", "Plan", "What the sync would do, and what it costs"),
     ("2", "run", "Run", "The log of the sync that runs, or ran last"),
     ("3", "lake", "Lake", "What the lake holds, and how the last sync went"),
+)
+
+#: What a report can be downloaded as: format, name, and what it needs.
+DOWNLOADS = (
+    ("pbix", "a .pbix file", "Opens in Power BI Desktop."),
+    ("pdf", "a PDF", "Needs a Premium, Embedded or Fabric capacity."),
+    (
+        "pptx",
+        "a PowerPoint presentation",
+        "Needs a Premium, Embedded or Fabric capacity.",
+    ),
+    ("png", "images (a .zip)", "Needs a capacity, and images allowed in the tenant."),
 )
 
 #: How many of the lakes opened lately the palette offers.
@@ -132,6 +145,30 @@ def _explorer(screen: Any, view_only: bool) -> List[Command]:
             "clipboard yank paste excel users",
         )
     )
+    found.append(
+        Command(
+            "Who has access to…",
+            _help(
+                "Type an e-mail address or a name: what that person can open, from the "
+                "users the lake holds, to save or copy"
+            ),
+            screen.action_find_access,
+            "person user email permission can open reports workspaces",
+        )
+    )
+    subject = screen.subject
+    if not view_only and isinstance(subject, Item) and subject.kind == "report":
+        for fmt, title, more in DOWNLOADS:
+            found.append(
+                Command(
+                    f"Download this report as {title}",
+                    _help(
+                        f"Save {subject.name} in the export folder. {more}",
+                    ),
+                    partial(screen.pbi.download_report, subject, fmt),
+                    "export save file report pbix pdf pptx powerpoint png image",
+                )
+            )
     plan = screen.pbi.backend.plan
     if plan is not None and plan.workspaces:
         everyone = screen.pbi.show_all_workspaces
@@ -254,13 +291,34 @@ def _lakes(app: Any) -> List[Command]:
         )
     ]
     here = str(backend.store.root)
-    if backend.readonly and backend.work_lake:
+    if (backend.readonly or backend.layered) and backend.work_lake:
         found.append(
             Command(
                 "Open the work lake",
                 _help("The lake of your cache folder, the one you can fetch into"),
                 partial(app.open_lake_at, WORK_LAKE),
                 "cache folder own",
+            )
+        )
+    if backend.layered:
+        found.append(
+            Command(
+                "Take the work lake off",
+                _help("Look at the shared lake alone again (view only)"),
+                app.action_work_lake_on_top,
+                "layers shared alone view only",
+            )
+        )
+    elif backend.readonly and backend.work_lake and backend.open_lake is not None:
+        found.append(
+            Command(
+                "Put the work lake on top",
+                _help(
+                    "Look at this lake and your work lake as one: what you fetch with "
+                    "your own account goes to the work lake, never to this one"
+                ),
+                app.action_work_lake_on_top,
+                "layers shared both fetch service account investigate",
             )
         )
     lately = [
@@ -341,6 +399,17 @@ def commands_for(app: Any, screen: Any) -> List[Command]:
         )
     )
     if not view_only:
+        found.append(
+            Command(
+                "Back up the lake",
+                _help(
+                    "Copy the whole lake next to itself, before a big sync or a prune "
+                    "(`pbi lake restore` puts it back)"
+                ),
+                app.backup_now,
+                "copy safety snapshot s3 restore",
+            )
+        )
         found.extend(_accounts(app))
     if backend.open_lake is not None:
         found.extend(_lakes(app))

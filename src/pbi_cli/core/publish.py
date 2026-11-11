@@ -6,8 +6,11 @@ and that protects it: nothing but a later publish by the same person writes to i
 published lake is a snapshot; the people who read it need no account.
 
 What is copied: the newest version of every request (every version with ``history``), every
-day of events, the scans, and the part of the sync state that the Explorer's freshness dots
-read. A category that holds personal data or queries can be left out. The marker is written
+day of events, the scans, the part of the sync state that the Explorer's freshness dots
+read, and the table of who has access to what (`pbi_cli.core.accessreport`). A category that
+holds personal data or queries can be left out. Leaving out the users also takes the people
+out of the lists and the scans that are copied (the ``users`` of a workspace or an item), and
+leaves out the access table. The marker is written
 last (a first publish marks the place as unfinished before it copies anything), and a version
 is never overwritten, so a publish that stops halfway is harmless: run it again.
 
@@ -19,24 +22,29 @@ result = publish(plan)
 """
 
 import getpass
+import hashlib
 import json
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
+from pbi_cli.core.accessreport import access_table, write_access_table
+from pbi_cli.core.catalog import Catalog
 from pbi_cli.core.fsutil import inside_place, same_place
 from pbi_cli.core.store import (
+    DATA,
     MANIFEST,
     LakeStore,
     PublishInfo,
+    _dump,
     cli_version,
     plain_name,
     safe_name,
 )
 from pbi_cli.core.sync.state import SCHEMA as STATE_SCHEMA
 from pbi_cli.core.sync.state import STATE_NAME
-from pbi_cli.core.sync.targets import get_target
+from pbi_cli.core.sync.targets import TARGETS, get_target
 from pbi_cli.errors import PBIError
 
 #: How many finished runs of the sync a published lake keeps for ``pbi sync status``.
@@ -66,6 +74,12 @@ def _sensitive(target: str) -> str:
     return get_target(target).sensitive
 
 
+def _detail_endpoints(detail: str) -> Tuple[str, ...]:
+    """The operations of the targets that fetch one detail of items (``users``, ...), for
+    an administrator and for a user."""
+    return tuple(dict.fromkeys(t.endpoint for t in TARGETS if t.detail == detail))
+
+
 CATEGORIES: Tuple[Category, ...] = (
     Category(
         "lists",
@@ -84,13 +98,14 @@ CATEGORIES: Tuple[Category, ...] = (
     Category(
         "users",
         "Who has access",
-        ("admin.reports.users", "admin.users.artifact_access"),
-        _sensitive("report-users"),
+        _detail_endpoints("users") + ("admin.users.artifact_access",),
+        "the people who have access to each workspace, report, dataset, dashboard, "
+        "dataflow and app, with their e-mail addresses",
     ),
     Category(
         "datasources",
         "Data sources",
-        ("admin.datasets.datasources",),
+        _detail_endpoints("datasources"),
         _sensitive("datasources"),
     ),
     Category(
@@ -100,6 +115,13 @@ CATEGORIES: Tuple[Category, ...] = (
 
 #: The names ``--exclude`` takes.
 EXCLUDABLE = tuple(c.name for c in CATEGORIES if c.excludable)
+
+#: The keys that hold people in the answers of other categories: the ``users`` of a
+#: workspace in a list of workspaces (``$expand=users``), and of a workspace and its items in
+#: a scan (``getArtifactUsers``; a datamart has ``Users``).
+PEOPLE_KEYS = frozenset({"users", "Users"})
+#: The categories whose answers can hold `PEOPLE_KEYS`.
+_HOLD_PEOPLE = ("lists", "scans")
 
 _BY_FOLDER: Dict[str, str] = {
     safe_name(endpoint): category.name
@@ -133,6 +155,9 @@ class Leaf:
     :param parts: its path below the root of the lake
     :param files: ``(name, size)`` of each file, the manifest last
     :param mutable: whether it can change (a day of events); a version cannot
+    :param without_people: take `PEOPLE_KEYS` out of its answer (the users are left out)
+    :param redo: copy it even when the destination has it: an earlier publish copied it
+        with or without the people, and this one does the other
     """
 
     tenant: str
@@ -142,6 +167,8 @@ class Leaf:
     parts: Tuple[str, ...]
     files: Tuple[Tuple[str, int], ...]
     mutable: bool
+    without_people: bool = False
+    redo: bool = False
 
     @property
     def size(self) -> int:
@@ -179,6 +206,9 @@ class PublishPlan:
     :param history: every version is copied, not only the newest
     :param prune: afterwards the older versions at the destination are deleted
     :param before: what the destination's marker said before, if it was published already
+    :param access_table: whether the table of who has access is published; it is not when
+        the users or the scans are left out (a table without the scans would still hold the
+        people that only the scans name)
     """
 
     source: LakeStore
@@ -192,6 +222,7 @@ class PublishPlan:
     history: bool = False
     prune: bool = False
     before: Optional[PublishInfo] = None
+    access_table: bool = True
 
     @property
     def files(self) -> int:
@@ -215,6 +246,7 @@ class PublishResult:
     :param info: what the marker now says
     :param removed: endpoint folders deleted at the destination because their category is
         now left out
+    :param tables: the tenants whose table of who has access was published
     """
 
     copied: int
@@ -223,6 +255,7 @@ class PublishResult:
     pruned: int
     info: PublishInfo = field(repr=False)
     removed: int = 0
+    tables: List[str] = field(default_factory=list)
 
 
 def _check_excluded(exclude: Iterable[str]) -> List[str]:
@@ -289,6 +322,34 @@ def _files_of(directory: Any) -> Tuple[Tuple[str, int], ...]:
     return tuple(sorted(found, key=lambda f: (f[0] == MANIFEST, f[0])))  # manifest last
 
 
+def without_people(value: Any) -> Any:
+    """An answer with every `PEOPLE_KEYS` taken out, at any depth."""
+    if isinstance(value, dict):
+        return {k: without_people(v) for k, v in value.items() if k not in PEOPLE_KEYS}
+    if isinstance(value, list):
+        return [without_people(v) for v in value]
+    return value
+
+
+def _people_left_out(leaf: Leaf) -> Iterator[Tuple[str, bytes]]:
+    """The files of a version with the people taken out of its answer, and a manifest
+    whose size and checksum are those of what is copied (and that says what was taken out).
+    """
+    manifest = json.loads((leaf.source / MANIFEST).read_bytes())
+    data_file = plain_name(str(manifest.get("data_file") or DATA))
+    for name, _ in leaf.files:
+        if name == MANIFEST:
+            continue
+        payload = (leaf.source / name).read_bytes()
+        if name == data_file:
+            payload = _dump(without_people(json.loads(payload)))
+            manifest["bytes"] = len(payload)
+            manifest["sha256"] = hashlib.sha256(payload).hexdigest()
+            manifest["published_without"] = sorted(PEOPLE_KEYS)
+        yield name, payload
+    yield MANIFEST, _dump(manifest, indent=2)
+
+
 def _payloads(leaf: Leaf) -> Iterator[Tuple[str, bytes]]:
     """The files of a leaf with their content, the manifest last (a copy that stops half
     way is ignored).
@@ -297,6 +358,9 @@ def _payloads(leaf: Leaf) -> Iterator[Tuple[str, bytes]]:
     parts it lists are copied with it, so the copy never lists a part it does not hold.
     """
     if not leaf.mutable:
+        if leaf.without_people:
+            yield from _people_left_out(leaf)
+            return
         for name, _ in leaf.files:
             yield name, (leaf.source / name).read_bytes()
         return
@@ -383,6 +447,10 @@ def plan_publish(
     summaries = {
         c.name: CategorySummary(c, excluded=c.name in excluded) for c in CATEGORIES
     }
+    no_people = "users" in excluded
+    # an earlier publish that took the people out (or left them in) when this one does the
+    # other: the versions it copied of the lists and scans are copied again
+    flipped = before is not None and ("users" in before.excluded) != no_people
     leaves: List[Leaf] = []
     for tenant in found:
         for endpoint, directory, mutable in source.publishable(tenant, history):
@@ -402,6 +470,8 @@ def plan_publish(
                     _parts(source.root, directory),
                     files,
                     mutable,
+                    without_people=no_people and name in _HOLD_PEOPLE,
+                    redo=flipped and name in _HOLD_PEOPLE,
                 )
             )
     if not leaves:
@@ -424,6 +494,7 @@ def plan_publish(
         history=history,
         prune=prune,
         before=before,
+        access_table=not ({"users", "scans"} & set(excluded)),
     )
 
 
@@ -458,7 +529,7 @@ def publish(
     copied = skipped = size = 0
     for done, leaf in enumerate(plan.leaves, start=1):
         target = writer.root.joinpath(*leaf.parts)
-        if not leaf.mutable and (target / MANIFEST).exists():
+        if not leaf.mutable and not leaf.redo and (target / MANIFEST).exists():
             skipped += len(leaf.files)  # a version never changes: it is there already
         else:
             for name, payload in _payloads(leaf):
@@ -469,6 +540,17 @@ def publish(
             on_leaf(done, len(plan.leaves))
     for tenant, state in plan.states.items():
         writer.write_state(tenant, STATE_NAME, state)
+    # who has access to what, so that the published lake answers without reading the users
+    # of every item; worked out from the lake that is published, else taken out
+    tables: List[str] = []
+    for tenant in plan.tenants:
+        if plan.access_table:
+            write_access_table(
+                writer, tenant, access_table(Catalog(plan.source, tenant))
+            )
+            tables.append(tenant)
+        else:
+            writer.remove_tables(tenant)
     # what an earlier publish copied of a category that is now left out goes, so that the
     # marker does not say "left out" over data that is still there
     removed = 0
@@ -492,4 +574,4 @@ def publish(
         cli_version=cli_version(),
     )
     writer.write_marker(info)  # last: it says the copy is complete
-    return PublishResult(copied, skipped, size, pruned, info, removed)
+    return PublishResult(copied, skipped, size, pruned, info, removed, tables)

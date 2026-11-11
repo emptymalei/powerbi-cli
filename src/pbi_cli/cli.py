@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -27,7 +29,6 @@ from slugify import slugify
 import pbi_cli.powerbi.admin as powerbi_admin
 import pbi_cli.powerbi.admin.report as powerbi_admin_report
 import pbi_cli.powerbi.app as powerbi_app
-import pbi_cli.powerbi.report as powerbi_report
 import pbi_cli.powerbi.workspace as powerbi_workspace
 from pbi_cli.cache import LAKE_FOLDER, CacheManager, check_cache_name
 from pbi_cli.cli_lake import lake_app
@@ -45,6 +46,7 @@ from pbi_cli.cli_support import (
 from pbi_cli.cli_sync import sync_app
 from pbi_cli.cli_tui import launch, should_launch, tui
 from pbi_cli.config import (
+    SYSTEM_CERTIFICATES,
     VALID_GROUPS,
     PBIConfig,
     migrate_legacy_config,
@@ -55,6 +57,7 @@ from pbi_cli.core.client import FOREVER, PowerBIClient, Result, rows_of
 from pbi_cli.core.fsutil import replace_file
 from pbi_cli.core.powershell import powershell_token
 from pbi_cli.core.registry import get_endpoint
+from pbi_cli.core.reportexport import ExportedReport, export_report
 from pbi_cli.core.scan import (
     MAX_WORKSPACES,
     ScanFlags,
@@ -66,8 +69,7 @@ from pbi_cli.core.scan import (
 from pbi_cli.errors import ApiError, AuthError, PBIError, RateLimitError
 from pbi_cli.powerbi.admin import Workspaces
 from pbi_cli.powerbi.io import multi_group_dict_to_excel
-from pbi_cli.session import lake_hint, lake_path, open_client
-from pbi_cli.web import DataRetriever
+from pbi_cli.session import lake_hint, lake_path, open_client, requests_verify
 
 try:
     import keyring
@@ -108,11 +110,15 @@ def _get_auth_config_file() -> Path:
 
 
 def _verify_certificates():
-    """How API requests verify TLS certificates, from the config.
+    """How API requests verify TLS certificates, from the config, as ``requests`` takes it.
+
+    ``system`` is made to mean the certificate store of the operating system here (see
+    `pbi_cli.session.requests_verify`), so the commands that do not go through
+    `open_client` trust it as well.
 
     :return: True, False, or the path to a CA bundle file
     """
-    return PBIConfig().verify_certificates
+    return requests_verify(PBIConfig().verify_certificates)
 
 
 def _display_table(
@@ -1346,6 +1352,76 @@ def get_cache_folder():
         typer.echo("Use 'pbi config set-cache-folder' to set one.")
 
 
+@command(config_app, "set-plan-file")
+def set_plan_file(
+    path: Annotated[
+        Path,
+        typer.Argument(
+            metavar="PATH",
+            exists=True,
+            dir_okay=False,
+            help="The plan file (YAML) to use when --config is not given",
+        ),
+    ],
+):
+    """Name the plan file that `pbi sync` and `pbi tui` use when none is given
+
+    Instead of `--config PATH` on every command. The file is checked now, and its absolute
+    path is kept, so it means the same from any folder. The environment variable `PBI_PLAN`
+    does the same for one shell and wins over this setting. Naming targets
+    (`pbi sync run groups`) or giving `--config` still overrides it.
+
+    ```
+    pbi config set-plan-file ~/PowerBI/pbi-plan.yaml
+    pbi sync run
+    ```
+    """
+    from pbi_cli.core.planfile import PlanFile
+
+    PlanFile.load(path)  # a file that cannot be used is refused here, not at 6 a.m.
+    pbi_config = PBIConfig()
+    pbi_config.plan_file = str(path)
+    typer.secho(f"✓ Plan file set to: {pbi_config.plan_file}", fg="green")
+    typer.echo("  `pbi sync plan`, `pbi sync run` and `pbi tui` use it from now on.")
+
+
+@command(config_app, "get-plan-file")
+def get_plan_file():
+    """Show which plan file is used when none is given
+
+    ```
+    pbi config get-plan-file
+    ```
+    """
+    named = os.environ.get("PBI_PLAN", "").strip()
+    stored = PBIConfig().plan_file
+    if named:
+        typer.echo(f"Plan file: {named} (from the environment variable PBI_PLAN)")
+        if stored:
+            typer.echo(f"  The setting {stored} is overruled by it.")
+    elif stored:
+        typer.echo(f"Plan file: {stored} (from `pbi config set-plan-file`)")
+    else:
+        typer.secho("No plan file is named.", fg="yellow")
+        typer.echo("Use `pbi config set-plan-file PATH`, or `--config PATH`.")
+        return
+    used = Path(named or stored or "").expanduser()
+    if not used.is_file():
+        typer.secho(f"  but {used} is not a file.", fg="red")
+
+
+@command(config_app, "clear-plan-file")
+def clear_plan_file():
+    """Forget the plan file that was named with `pbi config set-plan-file`
+
+    ```
+    pbi config clear-plan-file
+    ```
+    """
+    PBIConfig().plan_file = None
+    typer.secho("✓ No plan file is named any more.", fg="green")
+
+
 @command(config_app, "enable-cache")
 def enable_cache():
     """Enable caching of API call results
@@ -1378,19 +1454,25 @@ def set_verify_certificates(
         str,
         typer.Argument(
             metavar="VALUE",
-            help="true, false, or the path to a CA bundle file",
+            help="true, system, false, or the path to a CA bundle file",
         ),
     ],
 ):
     """Set how API requests verify TLS certificates
 
-    VALUE is `true` (verify against the system CA bundle, the default),
-    `false` (do not verify), or the path to a CA bundle file, for example
-    when a corporate proxy re-signs TLS traffic.
+    VALUE is `true` (verify against the certificates that come with Python's
+    requests, the default), `system` (verify against the certificate store of
+    Windows or macOS), `false` (do not verify), or the path to a CA bundle file.
+
+    Behind a company proxy that re-signs TLS traffic, the requests fail with
+    CERTIFICATE_VERIFY_FAILED: `system` trusts the proxy's root certificate
+    when it is installed in the operating system, which is where IT puts it,
+    and keeps the verification on.
 
     ```
-    pbi config set-verify-certificates true
+    pbi config set-verify-certificates system
     pbi config set-verify-certificates ~/certs/corporate-ca.pem
+    pbi config set-verify-certificates true
     pbi config set-verify-certificates false
     ```
     """
@@ -1400,11 +1482,13 @@ def set_verify_certificates(
         setting = True
     elif lowered == "false":
         setting = False
+    elif lowered == SYSTEM_CERTIFICATES:
+        setting = SYSTEM_CERTIFICATES
     else:
         path = Path(value).expanduser()
         if not path.is_file():
             raise PBIError(
-                f"'{value}' is not true, false or an existing CA bundle file"
+                f"'{value}' is not true, system, false or an existing CA bundle file"
             )
         setting = str(path)
 
@@ -1585,8 +1669,152 @@ def clear_cache(
         typer.secho(f"✓ Cleared entire cache{kept}", fg="green")
 
 
+ExportFormatOption = Annotated[
+    str,
+    typer.Option(
+        "--format",
+        "-f",
+        help=(
+            "pbix (the report for Power BI Desktop), pdf, pptx, png, or for a paginated "
+            "report xlsx, docx, csv, xml, mhtml, accessiblepdf. All but pbix need a "
+            "workspace on a Premium, Embedded or Fabric capacity"
+        ),
+    ),
+]
+ExportPageOption = Annotated[
+    Optional[List[str]],
+    typer.Option(
+        "--page",
+        "-p",
+        help="Only this page, by name as `pbi reports pages` lists it (repeat for more)",
+    ),
+]
+ExportFilterOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--filter",
+        help="A report filter such as \"Store/Territory eq 'NC'\" (pdf, pptx, png)",
+    ),
+]
+ExportLocaleOption = Annotated[
+    Optional[str],
+    typer.Option("--locale", help="How numbers and dates are written, such as en-us"),
+]
+ExportHiddenOption = Annotated[
+    bool,
+    typer.Option(
+        "--include-hidden-pages", help="Also the pages that are hidden (pdf, pptx, png)"
+    ),
+]
+ExportParamOption = Annotated[
+    Optional[List[str]],
+    typer.Option(
+        "--param",
+        help="NAME=VALUE for a parameter of a paginated report (repeat for more)",
+    ),
+]
+ExportLiveOption = Annotated[
+    bool,
+    typer.Option(
+        "--live-connection",
+        help="For pbix: keep the connection to the dataset instead of including the model",
+    ),
+]
+ExportTimeoutOption = Annotated[
+    float,
+    typer.Option(
+        "--timeout",
+        min=1,
+        help="Seconds to wait for Power BI to make a pdf, pptx or png",
+    ),
+]
+
+
+def _export_parameters(pairs: Optional[List[str]]) -> Dict[str, str]:
+    found: Dict[str, str] = {}
+    for pair in pairs or []:
+        name, separator, value = pair.partition("=")
+        if not separator or not name.strip():
+            raise typer.BadParameter(
+                f"'{pair}' is not NAME=VALUE", param_hint="--param"
+            )
+        found[name.strip()] = value
+    return found
+
+
+def _export_path(target: Path, done: ExportedReport, report_id: str) -> Path:
+    """Where an exported report goes: the target, a file of the report's name in the
+    target when that is a folder, and the ending that Power BI gave when the target has none.
+    """
+    path = target.expanduser()
+    if path.is_dir():
+        stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", done.name or report_id).strip(" .")
+        return path / ((stem or report_id) + done.extension)
+    if not path.suffix:
+        return path.with_name(path.name + done.extension)
+    return path
+
+
+def _export_to_file(
+    group_id: str,
+    report_id: str,
+    target: Optional[Path],
+    fmt: str,
+    pages: Optional[List[str]],
+    report_filter: Optional[str],
+    locale: Optional[str],
+    include_hidden_pages: bool,
+    param: Optional[List[str]],
+    live_connection: bool,
+    timeout: float,
+) -> None:
+    """Export a report, then save it to ``target`` or say what came."""
+    shown: List[Tuple[str, int]] = []
+
+    def progress(state: str, percent: int) -> None:
+        if (state, percent) not in shown:
+            shown.append((state, percent))
+            typer.echo(f"  {state} {percent}%")
+
+    with _client("user") as client:
+        done = export_report(
+            client,
+            group_id,
+            report_id,
+            fmt.strip().lower(),
+            pages=pages or (),
+            report_filter=report_filter,
+            locale=locale,
+            include_hidden_pages=include_hidden_pages,
+            parameters=_export_parameters(param),
+            live_connection=live_connection,
+            timeout=timeout,
+            on_progress=progress,
+        )
+    if target is None:
+        # A file cannot be printed: say what came instead
+        typer.echo("\n" + "=" * 80)
+        typer.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
+        typer.echo("=" * 80)
+        typer.echo(f"Format: {done.format} ({done.extension})")
+        typer.echo(f"Content size: {len(done.content)} bytes")
+        typer.echo("\nUse --target option to save the export to a file.")
+        typer.echo("=" * 80)
+        return
+    path = _export_path(target, done, report_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(done.content)
+    typer.secho(f"✓ Export saved to {path}", fg="green")
+    if path.suffix.lower() != done.extension.lower():
+        typer.secho(
+            f"  Power BI sent a {done.extension} file, the name says {path.suffix}: "
+            "a report of several pages comes as a .zip of images.",
+            fg="yellow",
+        )
+
+
 @command(app, "export")
-def export_report(
+def export_report_file(
     group_id: Annotated[str, typer.Option("--group-id", "-g", help="Group ID")],
     report_id: Annotated[str, typer.Option("--report-id", "-r", help="Report ID")],
     target: Annotated[
@@ -1594,38 +1822,43 @@ def export_report(
         typer.Option(
             "--target",
             "-t",
-            help="target file (if omitted, prints info to console)",
+            help=(
+                "target file or folder (if omitted, prints info to console); a name "
+                "without an ending gets the one of the format"
+            ),
         ),
     ] = None,
+    fmt: ExportFormatOption = "pbix",
+    page: ExportPageOption = None,
+    report_filter: ExportFilterOption = None,
+    locale: ExportLocaleOption = None,
+    include_hidden_pages: ExportHiddenOption = False,
+    param: ExportParamOption = None,
+    live_connection: ExportLiveOption = False,
+    timeout: ExportTimeoutOption = 600.0,
 ):
-    """export report based on id"""
-    dr = DataRetriever(
-        session_query_configs={"headers": load_auth(), "verify": _verify_certificates()}
+    """export report based on id, as a .pbix or another format
+
+    The same as `pbi reports export`.
+
+    ```
+    pbi export -g GROUP -r REPORT -t sales.pbix
+    pbi export -g GROUP -r REPORT -f pdf -t sales.pdf
+    ```
+    """
+    _export_to_file(
+        group_id,
+        report_id,
+        target,
+        fmt,
+        page,
+        report_filter,
+        locale,
+        include_hidden_pages,
+        param,
+        live_connection,
+        timeout,
     )
-
-    uri = f"https://api.powerbi.com/v1.0/myorg/groups/{group_id}/reports/{report_id}/Export"
-
-    result = dr.get(uri)
-    try:
-        result.raise_for_status()
-    except requests.HTTPError as error:
-        # the body is the API's error, not the report: do not save it as one
-        raise PBIError(describe_request_error(error)) from None
-
-    if target is None:
-        # For binary export data, we can't print it directly to console
-        # Instead, show information about the export
-        typer.echo("\n" + "=" * 80)
-        typer.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
-        typer.echo("=" * 80)
-        typer.echo(f"Content size: {len(result.content)} bytes")
-        typer.echo(f"Content type: {result.headers.get('content-type', 'unknown')}")
-        typer.echo("\nUse --target option to save the export to a file.")
-        typer.echo("=" * 80)
-    else:
-        with open(target, "wb") as fp:
-            fp.write(result.content)
-        typer.secho(f"✓ Export saved to {target}", fg="green")
 
 
 @workspaces_app.callback(invoke_without_command=True)
@@ -2309,34 +2542,57 @@ def reports_export(
         typer.Option(
             "--target",
             "-t",
-            help="target file (if omitted, prints info to console)",
+            help=(
+                "target file or folder (if omitted, prints info to console); a name "
+                "without an ending gets the one of the format"
+            ),
         ),
     ] = None,
+    fmt: ExportFormatOption = "pbix",
+    page: ExportPageOption = None,
+    report_filter: ExportFilterOption = None,
+    locale: ExportLocaleOption = None,
+    include_hidden_pages: ExportHiddenOption = False,
+    param: ExportParamOption = None,
+    live_connection: ExportLiveOption = False,
+    timeout: ExportTimeoutOption = 600.0,
 ):
-    """Export report as file"""
+    """Export a report as a .pbix file, or as a PDF, PowerPoint, images ...
 
-    pbi_report = powerbi_report.Report(
-        auth=load_auth(),
-        verify=_verify_certificates(),
-        report_id=report_id,
-        group_id=group_id,
+    A `.pbix` opens in Power BI Desktop. The other formats are made by Power BI as a job
+    that this command waits for (`--timeout`); they need the report in a workspace on a
+    Premium, Embedded or Fabric capacity (not Premium Per User), and `png` has to be
+    allowed in the tenant settings. A report of several pages comes as a `.zip` of images
+    in `png`. Pages are named as `pbi reports pages` lists them.
+
+    ```
+    # The report for Power BI Desktop
+    pbi reports export -g GROUP -r REPORT -t sales.pbix
+
+    # Two pages as a PDF, for one territory
+    pbi reports export -g GROUP -r REPORT -f pdf -p ReportSection1 -p ReportSection3 \\
+        --filter "Store/Territory eq 'NC'" -t sales.pdf
+
+    # A PowerPoint presentation into a folder, named after the report
+    pbi reports export -g GROUP -r REPORT -f pptx -t ~/Reports
+    ```
+
+    The account needs access to the report; a `.pbix` also needs the permission to
+    download it. Nothing is stored in the data lake.
+    """
+    _export_to_file(
+        group_id,
+        report_id,
+        target,
+        fmt,
+        page,
+        report_filter,
+        locale,
+        include_hidden_pages,
+        param,
+        live_connection,
+        timeout,
     )
-
-    result = pbi_report.export()
-
-    if target is None:
-        # For binary export data, we can't print it directly to console
-        # Instead, show information about the export
-        typer.echo("\n" + "=" * 80)
-        typer.echo(f"Report Export (Group: {group_id}, Report: {report_id})")
-        typer.echo("=" * 80)
-        typer.echo(f"Content size: {len(result)} bytes")
-        typer.echo("\nUse --target option to save the export to a file.")
-        typer.echo("=" * 80)
-    else:
-        with open(target, "wb") as fp:
-            fp.write(result)
-        typer.secho(f"✓ Export saved to {target}", fg="green")
 
 
 def _all_report_pages(group_id: str) -> List[Dict[str, Any]]:

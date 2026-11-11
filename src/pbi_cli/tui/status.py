@@ -89,7 +89,11 @@ class StatusBar(Horizontal):
 
         busy = Text()
         state = app.run_state
-        if state is not None and state.running:
+        running = state is not None and state.running
+        # While a sync runs the busy part keeps one width (see the CSS), so that the left
+        # part, which wraps, keeps its lines and the screen below does not jump at every tick
+        self.set_class(running, "-running")
+        if running:
             self._frame = (self._frame + 1) % len(SPINNER)
             busy.append(f"{SPINNER[self._frame]} ", style="#F2C811")
             busy.append(state.summary(app.backend.clock) + " ")

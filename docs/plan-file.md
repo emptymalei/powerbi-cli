@@ -31,6 +31,17 @@ pbi sync plan --config pbi-plan.yaml   # reads the lake, calls nothing
 pbi sync run  --config pbi-plan.yaml   # does it
 ```
 
+To keep **everything** pbi can read (every target, a scan of every workspace with every
+option, 28 days of audit events), start from
+[`examples/pbi-plan.everything.yaml`](https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.everything.yaml).
+Its details cost a request per item, so on a big tenant a run does what fits the quota and
+the next run carries on: read what `pbi sync plan` says it costs first.
+
+To keep everything about **a few core workspaces** only (a scan with every option and every
+detail of every item, for the workspaces you name), start from
+[`examples/pbi-plan.core-workspaces.yaml`](https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.core-workspaces.yaml).
+It keeps the lists of the tenant too, because the workspaces are looked up in them.
+
 The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
 writes by default (`Out-File`, `>`), so a file made there needs no conversion.
 
@@ -90,6 +101,7 @@ tenant:
 | `activity_days` | Days of audit events, today included, 1 to 28 (default 28). Only with `activity` among the targets. |
 | `scan` | **Scan every workspace of the tenant**, with these options: [the scan options](#the-scan-options) below, as a mapping, a list of names or `all`; `true` or `[]` is a scan with none. It asks for the scan, so `scan` need not be among the targets as well. (To scan only some workspaces, put `scan:` in an entry of `workspaces` instead.) |
 | `full_scan`, `exclude_personal`, `exclude_inactive` | As the options of `pbi sync run` of the same names. They need a scan: a `scan:` section here, or `scan` among the targets. |
+| `prefer_scan` | As `--prefer-scan` of `pbi sync run`: `true` takes the users and the data sources of the items from the scan instead of one request per item: `report-users` and the other user targets when the scan has `get_artifact_users`, `datasources` and `dataflow-datasources` when it has `datasource_details`. Off by default; the plan says what it leaves to the scan. It needs a scan, as the keys above do. See [Taking the details from the scan](sync.md#taking-the-details-from-the-scan). |
 
 The administrator's targets run once, with the administrator's account. A target of a
 user's account (`user-groups`, ...) runs **once for each user profile** of the file, each
@@ -210,9 +222,12 @@ session:
   workspaces: plan
 ```
 
+With `with_work_lake: true` beside `lake`, the lake the file names is looked at with your work lake on top.
+
 | Key | What it is |
 | --- | --- |
 | `lake` | The lake that `pbi tui --config` opens: a folder or a URL such as `s3://bucket/folder`. A relative folder is relative to the folder of the file, and `~` is your home folder. `--lake` and `PBI_LAKE` come first; without any, your work lake (the cache folder). Any lake but your work lake is [opened read-only](sharing.md). A local folder that holds no lake is not an error: your work lake is opened instead and the UI says so (with the `pbi config set-cache-folder` command that would make that folder your work lake); a bucket that holds none is an error. Leave `lake` out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another. |
+| `with_work_lake` | `true` opens `lake` with your work lake on top, as `--with-work-lake` does: both are shown as one, the newest answer of each request is taken, and what you fetch or sync goes to your work lake (see [Look further with your own account](sharing.md#look-further-with-your-own-account)). Needs `lake`. |
 | `open` | A workspace to select at the start: an id, or a name pattern (the first match). |
 | `workspaces` | Which workspaces the Explorer lists at the start: `plan` (the default) lists only the ones that `workspaces` of the file names, by id or by name pattern, when it names any; `all` lists every workspace of the lake. `w` switches in the UI, see [Only the workspaces of the plan file](tui.md#only-the-workspaces-of-the-plan-file). |
 | `lazy` | What to do about a detail the lake lacks: `ask` (press `f`, the default), `auto` (fetch the harmless ones by itself) or `off` (do nothing). Write `off` as it is: it is not read as a yes or a no. |
@@ -299,6 +314,28 @@ be said again, and is refused with a message that says where in the file it goes
 names, the scan options (`--lineage`, `--datasource-details`, `--dataset-schema`,
 `--dataset-expressions`, `--get-artifact-users`), `--full-scan`, `--exclude-personal`,
 `--exclude-inactive`, `--admin-profile` and `--user-profile`.
+
+### Name the file once
+
+Typing `--config` on every command is the plain way, and the only way that is never a
+surprise. If you always use the same file, name it once, and a bare command uses it:
+
+```bash
+pbi config set-plan-file ~/PowerBI/pbi-plan.yaml   # checked now; kept as an absolute path
+pbi sync run                                       # runs that file
+pbi tui                                            # opens it
+pbi config get-plan-file                           # which file, and from where
+pbi config clear-plan-file                         # forget it
+```
+
+For one shell or one scheduled job, the environment variable does the same without touching
+the settings: `PBI_PLAN=~/PowerBI/pbi-plan.yaml pbi sync run` (PowerShell:
+`$env:PBI_PLAN = "C:\PowerBI\pbi-plan.yaml"`). The order is `--config`, then `PBI_PLAN`, then
+`pbi config set-plan-file`. Naming targets (`pbi sync run groups`), or typing an option that
+a plan file takes over, always means "these targets": the named file is left alone. And the
+file is never looked for by where it lies: a `pbi-plan.yaml` in the current folder is not
+used unless you name it. The command says which file it uses and where that was named, and
+a named file that is gone is an error with the way out.
 
 ## In the terminal UI
 
