@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/references/core/planfile/">
       
       
-        <link rel="prev" href="../jwt/">
+        <link rel="prev" href="../lakesql/">
       
       
         <link rel="next" href="../planrun/">
@@ -545,6 +545,33 @@
     
   
   Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
 
     
   </span>
@@ -1096,6 +1123,33 @@
     
   
   jwt
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
 
     
   </span>
@@ -1669,6 +1723,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../scan/" class="md-nav__link">
         
   
@@ -1790,10 +1871,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1811,8 +1892,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3100,14 +3181,7 @@ first because they fetch the list of workspaces.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">418</span>
 <span class="normal">419</span>
 <span class="normal">420</span>
 <span class="normal">421</span>
@@ -3124,7 +3198,14 @@ first because they fetch the list of workspaces.</p>
 <span class="normal">432</span>
 <span class="normal">433</span>
 <span class="normal">434</span>
-<span class="normal">435</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Accounting</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Which accounts a plan uses, once it is known which are stored.</span>
 
@@ -3203,10 +3284,10 @@ first because they fetch the list of workspaces.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The accounts in words, each as ``profile (kind)``: the administrator's first."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">admin</span><span class="si">}</span><span class="s2"> (admin)"</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin</span> <span class="k">else</span> <span class="p">[]</span>
     <span class="k">return</span> <span class="n">found</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s2"> (user)"</span> <span class="k">for</span> <span class="n">profile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="p">]</span>
@@ -3252,14 +3333,14 @@ first because they fetch the list of workspaces.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Accounts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Accounts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""What a plan asks of the sync engine about the stored accounts."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
@@ -3369,8 +3450,7 @@ active one)</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">309</span>
-<span class="normal">310</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">310</span>
 <span class="normal">311</span>
 <span class="normal">312</span>
 <span class="normal">313</span>
@@ -3379,7 +3459,8 @@ active one)</p>
 <span class="normal">316</span>
 <span class="normal">317</span>
 <span class="normal">318</span>
-<span class="normal">319</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">319</span>
+<span class="normal">320</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AccountsPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The accounts a plan uses, by the profile names of ``pbi auth``.</span>
 
@@ -3513,19 +3594,19 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">445</span>
 <span class="normal">446</span>
 <span class="normal">447</span>
 <span class="normal">448</span>
 <span class="normal">449</span>
-<span class="normal">450</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Compiled</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The steps for the workspaces of a plan.</span>
 
@@ -3719,27 +3800,7 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1320</span>
-<span class="normal">1321</span>
-<span class="normal">1322</span>
-<span class="normal">1323</span>
-<span class="normal">1324</span>
-<span class="normal">1325</span>
-<span class="normal">1326</span>
-<span class="normal">1327</span>
-<span class="normal">1328</span>
-<span class="normal">1329</span>
-<span class="normal">1330</span>
-<span class="normal">1331</span>
-<span class="normal">1332</span>
-<span class="normal">1333</span>
-<span class="normal">1334</span>
-<span class="normal">1335</span>
-<span class="normal">1336</span>
-<span class="normal">1337</span>
-<span class="normal">1338</span>
-<span class="normal">1339</span>
-<span class="normal">1340</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1340</span>
 <span class="normal">1341</span>
 <span class="normal">1342</span>
 <span class="normal">1343</span>
@@ -3757,7 +3818,27 @@ what is wrong with it in words</p>
 <span class="normal">1355</span>
 <span class="normal">1356</span>
 <span class="normal">1357</span>
-<span class="normal">1358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">1358</span>
+<span class="normal">1359</span>
+<span class="normal">1360</span>
+<span class="normal">1361</span>
+<span class="normal">1362</span>
+<span class="normal">1363</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Overrides</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a flag of the command line changes in every step of a plan.</span>
 
@@ -3828,24 +3909,24 @@ what is wrong with it in words</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1341</span>
-<span class="normal">1342</span>
-<span class="normal">1343</span>
-<span class="normal">1344</span>
-<span class="normal">1345</span>
-<span class="normal">1346</span>
-<span class="normal">1347</span>
-<span class="normal">1348</span>
-<span class="normal">1349</span>
-<span class="normal">1350</span>
-<span class="normal">1351</span>
-<span class="normal">1352</span>
-<span class="normal">1353</span>
-<span class="normal">1354</span>
-<span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOptions</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1361</span>
+<span class="normal">1362</span>
+<span class="normal">1363</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyncOptions</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The options of a step with the flags of the command line put over them."""</span>
     <span class="n">changes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">force</span><span class="p">:</span>
@@ -4044,14 +4125,7 @@ what is wrong with it in words</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 526</span>
-<span class="normal"> 527</span>
-<span class="normal"> 528</span>
-<span class="normal"> 529</span>
-<span class="normal"> 530</span>
-<span class="normal"> 531</span>
-<span class="normal"> 532</span>
-<span class="normal"> 533</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 533</span>
 <span class="normal"> 534</span>
 <span class="normal"> 535</span>
 <span class="normal"> 536</span>
@@ -4832,7 +4906,27 @@ what is wrong with it in words</p>
 <span class="normal">1311</span>
 <span class="normal">1312</span>
 <span class="normal">1313</span>
-<span class="normal">1314</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFile</span><span class="p">:</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span>
+<span class="normal">1322</span>
+<span class="normal">1323</span>
+<span class="normal">1324</span>
+<span class="normal">1325</span>
+<span class="normal">1326</span>
+<span class="normal">1327</span>
+<span class="normal">1328</span>
+<span class="normal">1329</span>
+<span class="normal">1330</span>
+<span class="normal">1331</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
+<span class="normal">1334</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFile</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A plan file, read and checked.</span>
 
 <span class="sd">    :param version: the version of the format</span>
@@ -5020,7 +5114,7 @@ what is wrong with it in words</p>
             <span class="s2">"Add `activity` to tenant.targets to keep the audit events (they hold "</span>
             <span class="s2">"e-mail addresses and IP addresses), or remove this key."</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"full_scan"</span><span class="p">,</span> <span class="s2">"exclude_personal"</span><span class="p">,</span> <span class="s2">"exclude_inactive"</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"full_scan"</span><span class="p">,</span> <span class="s2">"exclude_personal"</span><span class="p">,</span> <span class="s2">"exclude_inactive"</span><span class="p">,</span> <span class="s2">"prefer_scan"</span><span class="p">):</span>
             <span class="n">needs</span><span class="p">(</span>
                 <span class="n">key</span><span class="p">,</span>
                 <span class="s2">"scan"</span><span class="p">,</span>
@@ -5034,6 +5128,7 @@ what is wrong with it in words</p>
             <span class="n">full_scan</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"full_scan"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">),</span>
             <span class="n">exclude_personal</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"exclude_personal"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">),</span>
             <span class="n">exclude_inactive</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"exclude_inactive"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">),</span>
+            <span class="n">prefer_scan</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"prefer_scan"</span><span class="p">,</span> <span class="s2">"tenant"</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -5129,11 +5224,21 @@ what is wrong with it in words</p>
                 <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">shown</span><span class="si">}</span><span class="s2">' is not a choice. The choices are: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">SHOW_MODES</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
                 <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"workspaces"</span><span class="p">),</span>
             <span class="p">)</span>
+        <span class="n">lake</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"lake"</span><span class="p">,</span> <span class="s2">"session"</span><span class="p">)</span>
+        <span class="n">with_work_lake</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"with_work_lake"</span><span class="p">,</span> <span class="s2">"session"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">with_work_lake</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lake</span><span class="p">:</span>
+            <span class="n">reader</span><span class="o">.</span><span class="n">fail</span><span class="p">(</span>
+                <span class="s2">"session.with_work_lake"</span><span class="p">,</span>
+                <span class="s2">"puts your work lake on top of session.lake, and there is none: name the "</span>
+                <span class="s2">"lake to look at (for example a shared one) in session.lake."</span><span class="p">,</span>
+                <span class="n">_line</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"with_work_lake"</span><span class="p">),</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">SessionPlan</span><span class="p">(</span>
-            <span class="n">lake</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"lake"</span><span class="p">,</span> <span class="s2">"session"</span><span class="p">),</span>
+            <span class="n">lake</span><span class="o">=</span><span class="n">lake</span><span class="p">,</span>
             <span class="nb">open</span><span class="o">=</span><span class="n">reader</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="s2">"open"</span><span class="p">,</span> <span class="s2">"session"</span><span class="p">),</span>
             <span class="n">lazy</span><span class="o">=</span><span class="n">lazy</span><span class="p">,</span>
             <span class="n">workspaces</span><span class="o">=</span><span class="n">shown</span><span class="p">,</span>
+            <span class="n">with_work_lake</span><span class="o">=</span><span class="n">with_work_lake</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># -- what the file says about itself ------------------------------------------------------</span>
@@ -5254,6 +5359,8 @@ what is wrong with it in words</p>
                             <span class="n">full_scan</span><span class="o">=</span><span class="n">tenant</span><span class="o">.</span><span class="n">full_scan</span><span class="p">,</span>
                             <span class="n">exclude_personal</span><span class="o">=</span><span class="n">tenant</span><span class="o">.</span><span class="n">exclude_personal</span><span class="p">,</span>
                             <span class="n">exclude_inactive</span><span class="o">=</span><span class="n">tenant</span><span class="o">.</span><span class="n">exclude_inactive</span><span class="p">,</span>
+                            <span class="c1"># the scan is an administrator's: so is what it answers</span>
+                            <span class="n">prefer_scan</span><span class="o">=</span><span class="n">tenant</span><span class="o">.</span><span class="n">prefer_scan</span> <span class="ow">and</span> <span class="n">scope</span> <span class="ow">is</span> <span class="n">Scope</span><span class="o">.</span><span class="n">ADMIN</span><span class="p">,</span>
                             <span class="n">admin_profile</span><span class="o">=</span><span class="n">profile</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="n">Scope</span><span class="o">.</span><span class="n">ADMIN</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                             <span class="n">user_profile</span><span class="o">=</span><span class="n">profile</span> <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="n">Scope</span><span class="o">.</span><span class="n">USER</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="p">),</span>
@@ -5774,25 +5881,7 @@ absolute (<code>~</code> is the home folder, and a relative folder is relative t
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">858</span>
-<span class="normal">859</span>
-<span class="normal">860</span>
-<span class="normal">861</span>
-<span class="normal">862</span>
-<span class="normal">863</span>
-<span class="normal">864</span>
-<span class="normal">865</span>
-<span class="normal">866</span>
-<span class="normal">867</span>
-<span class="normal">868</span>
-<span class="normal">869</span>
-<span class="normal">870</span>
-<span class="normal">871</span>
-<span class="normal">872</span>
-<span class="normal">873</span>
-<span class="normal">874</span>
-<span class="normal">875</span>
-<span class="normal">876</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">876</span>
 <span class="normal">877</span>
 <span class="normal">878</span>
 <span class="normal">879</span>
@@ -5819,7 +5908,25 @@ absolute (<code>~</code> is the home folder, and a relative folder is relative t
 <span class="normal">900</span>
 <span class="normal">901</span>
 <span class="normal">902</span>
-<span class="normal">903</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accounting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Accounting</span><span class="p">:</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">accounting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Accounting</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Which accounts the plan uses: the profiles it names, else the active ones.</span>
 
 <span class="sd">    :param accounts: tells which accounts are stored (the sync engine does)</span>
@@ -5913,30 +6020,30 @@ stored</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">955</span>
-<span class="normal">956</span>
-<span class="normal">957</span>
-<span class="normal">958</span>
-<span class="normal">959</span>
-<span class="normal">960</span>
-<span class="normal">961</span>
-<span class="normal">962</span>
-<span class="normal">963</span>
-<span class="normal">964</span>
-<span class="normal">965</span>
-<span class="normal">966</span>
-<span class="normal">967</span>
-<span class="normal">968</span>
-<span class="normal">969</span>
-<span class="normal">970</span>
-<span class="normal">971</span>
-<span class="normal">972</span>
-<span class="normal">973</span>
-<span class="normal">974</span>
-<span class="normal">975</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">975</span>
 <span class="normal">976</span>
 <span class="normal">977</span>
-<span class="normal">978</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">first_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">]:</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span>
+<span class="normal">987</span>
+<span class="normal">988</span>
+<span class="normal">989</span>
+<span class="normal">990</span>
+<span class="normal">991</span>
+<span class="normal">992</span>
+<span class="normal">993</span>
+<span class="normal">994</span>
+<span class="normal">995</span>
+<span class="normal">996</span>
+<span class="normal">997</span>
+<span class="normal">998</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">first_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Step</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The steps that need nothing from the lake: the tenant, and what tells which user</span>
 <span class="sd">    account lists which workspace (the list of workspaces of each user account, one</span>
 <span class="sd">    request each, when an entry may need it).</span>
@@ -6010,21 +6117,21 @@ say what a plan says; the message names the file, the line and the key</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">568</span>
 <span class="normal">569</span>
 <span class="normal">570</span>
 <span class="normal">571</span>
 <span class="normal">572</span>
 <span class="normal">573</span>
 <span class="normal">574</span>
-<span class="normal">575</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">"PlanFile"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Read and check a plan file.</span>
 
@@ -6116,19 +6223,19 @@ lake knows it) or by a name pattern, looked up in the workspaces the lake knows.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1123</span>
-<span class="normal">1124</span>
-<span class="normal">1125</span>
-<span class="normal">1126</span>
-<span class="normal">1127</span>
-<span class="normal">1128</span>
-<span class="normal">1129</span>
-<span class="normal">1130</span>
-<span class="normal">1131</span>
-<span class="normal">1132</span>
-<span class="normal">1133</span>
-<span class="normal">1134</span>
-<span class="normal">1135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">named_workspaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">named_workspaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The ids of the workspaces that the file names: by id (as it is, whether or not the</span>
 <span class="sd">    lake knows it) or by a name pattern, looked up in the workspaces the lake knows.</span>
 
@@ -6237,14 +6344,7 @@ lake knows it) or by a name pattern, looked up in the workspaces the lake knows.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
-<span class="normal">582</span>
-<span class="normal">583</span>
-<span class="normal">584</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">584</span>
 <span class="normal">585</span>
 <span class="normal">586</span>
 <span class="normal">587</span>
@@ -6275,7 +6375,14 @@ lake knows it) or by a name pattern, looked up in the workspaces the lake knows.
 <span class="normal">612</span>
 <span class="normal">613</span>
 <span class="normal">614</span>
-<span class="normal">615</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"PlanFile"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Check the text of a plan file.</span>
 
@@ -6396,25 +6503,25 @@ that names it, and of the tenant's scan of every workspace, put together.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1103</span>
-<span class="normal">1104</span>
-<span class="normal">1105</span>
-<span class="normal">1106</span>
-<span class="normal">1107</span>
-<span class="normal">1108</span>
-<span class="normal">1109</span>
-<span class="normal">1110</span>
-<span class="normal">1111</span>
-<span class="normal">1112</span>
-<span class="normal">1113</span>
-<span class="normal">1114</span>
-<span class="normal">1115</span>
-<span class="normal">1116</span>
-<span class="normal">1117</span>
-<span class="normal">1118</span>
-<span class="normal">1119</span>
-<span class="normal">1120</span>
-<span class="normal">1121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ScanFlags</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">scan_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workspace</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ScanFlags</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The options of the scan that the file asks for a workspace: those of every entry</span>
 <span class="sd">    that names it, and of the tenant's scan of every workspace, put together.</span>
 
@@ -6550,27 +6657,7 @@ one whose accounts have not been asked yet</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1137</span>
-<span class="normal">1138</span>
-<span class="normal">1139</span>
-<span class="normal">1140</span>
-<span class="normal">1141</span>
-<span class="normal">1142</span>
-<span class="normal">1143</span>
-<span class="normal">1144</span>
-<span class="normal">1145</span>
-<span class="normal">1146</span>
-<span class="normal">1147</span>
-<span class="normal">1148</span>
-<span class="normal">1149</span>
-<span class="normal">1150</span>
-<span class="normal">1151</span>
-<span class="normal">1152</span>
-<span class="normal">1153</span>
-<span class="normal">1154</span>
-<span class="normal">1155</span>
-<span class="normal">1156</span>
-<span class="normal">1157</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1157</span>
 <span class="normal">1158</span>
 <span class="normal">1159</span>
 <span class="normal">1160</span>
@@ -6639,7 +6726,27 @@ one whose accounts have not been asked yet</p>
 <span class="normal">1223</span>
 <span class="normal">1224</span>
 <span class="normal">1225</span>
-<span class="normal">1226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_steps</span><span class="p">(</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span>
+<span class="normal">1242</span>
+<span class="normal">1243</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">workspace_steps</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">accounting</span><span class="p">:</span> <span class="n">Accounting</span><span class="p">,</span>
     <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
@@ -6771,8 +6878,8 @@ one whose accounts have not been asked yet</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">128</span>
-<span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFileError</span><span class="p">(</span><span class="n">PBIError</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">129</span>
+<span class="normal">130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlanFileError</span><span class="p">(</span><span class="n">PBIError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""A plan file that cannot be used. The message names the file, the line and the key."""</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -6880,6 +6987,23 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
                   <code><span title="pbi_cli.core.planfile.SHOW_PLAN">SHOW_PLAN</span></code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>with_work_lake</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>look at <code>lake</code> with the work lake on top (<code>--with-work-lake</code>):
+both are shown as one, and what is fetched goes to the work lake</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -6892,11 +7016,7 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">385</span>
 <span class="normal">386</span>
 <span class="normal">387</span>
 <span class="normal">388</span>
@@ -6907,7 +7027,14 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 <span class="normal">393</span>
 <span class="normal">394</span>
 <span class="normal">395</span>
-<span class="normal">396</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SessionPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Settings for a terminal UI session (``pbi tui --config``).</span>
 
@@ -6917,12 +7044,15 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 <span class="sd">        ``auto`` (fetch the harmless ones after you stay on an item) or ``off``</span>
 <span class="sd">    :param workspaces: which workspaces the Explorer shows at the start: ``plan`` (only the</span>
 <span class="sd">        ones the file names, when it names any) or ``all``; a key switches between them</span>
+<span class="sd">    :param with_work_lake: look at `lake` with the work lake on top (``--with-work-lake``):</span>
+<span class="sd">        both are shown as one, and what is fetched goes to the work lake</span>
 <span class="sd">    """</span>
 
     <span class="n">lake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="nb">open</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">lazy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">LAZY_ASK</span>
     <span class="n">workspaces</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SHOW_PLAN</span>
+    <span class="n">with_work_lake</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7029,16 +7159,16 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">406</span>
 <span class="normal">407</span>
-<span class="normal">408</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One ordinary run that a plan is made of.</span>
 
@@ -7211,6 +7341,23 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
                   <code>False</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>prefer_scan</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>take the users and data sources of the items from the scan instead
+of one request per item (<code>pbi_cli.core.sync.plan.SyncOptions.prefer_scan</code>)</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -7223,8 +7370,7 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">322</span>
-<span class="normal">323</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">323</span>
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span>
@@ -7240,7 +7386,11 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 <span class="normal">336</span>
 <span class="normal">337</span>
 <span class="normal">338</span>
-<span class="normal">339</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantPlan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What to keep for the whole tenant.</span>
 
@@ -7250,6 +7400,8 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
 <span class="sd">    :param full_scan: scan every workspace, not only those that changed</span>
 <span class="sd">    :param exclude_personal: leave personal workspaces out of the scan</span>
 <span class="sd">    :param exclude_inactive: leave inactive workspaces out of the scan</span>
+<span class="sd">    :param prefer_scan: take the users and data sources of the items from the scan instead</span>
+<span class="sd">        of one request per item (`pbi_cli.core.sync.plan.SyncOptions.prefer_scan`)</span>
 <span class="sd">    """</span>
 
     <span class="n">targets</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
@@ -7258,6 +7410,7 @@ ones the file names, when it names any) or <code>all</code>; a key switches betw
     <span class="n">full_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">exclude_personal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">exclude_inactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">prefer_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7446,11 +7599,7 @@ only the label of that workspace, as in the file of <code>pbi workspaces scan ba
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">346</span>
 <span class="normal">347</span>
 <span class="normal">348</span>
 <span class="normal">349</span>
@@ -7482,7 +7631,11 @@ only the label of that workspace, as in the file of <code>pbi workspaces scan ba
 <span class="normal">375</span>
 <span class="normal">376</span>
 <span class="normal">377</span>
-<span class="normal">378</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">WorkspaceEntry</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What to keep for some workspaces.</span>
 
@@ -7605,10 +7758,10 @@ id), else its id.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span><span class="n">flags</span><span class="p">:</span> <span class="n">ScanFlags</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">describe_scan</span><span class="p">(</span><span class="n">flags</span><span class="p">:</span> <span class="n">ScanFlags</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The options of a scan in words (``lineage, datasource details``)."""</span>
     <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SCAN_KEYS</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">flags</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span>
     <span class="k">return</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span> <span class="k">if</span> <span class="n">chosen</span> <span class="k">else</span> <span class="s2">"no options"</span>
@@ -7705,14 +7858,7 @@ another), or <code>None</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/planfile.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">508</span>
-<span class="normal">509</span>
-<span class="normal">510</span>
-<span class="normal">511</span>
-<span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">515</span>
 <span class="normal">516</span>
 <span class="normal">517</span>
 <span class="normal">518</span>
@@ -7720,7 +7866,14 @@ another), or <code>None</code></p>
 <span class="normal">520</span>
 <span class="normal">521</span>
 <span class="normal">522</span>
-<span class="normal">523</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_workspace</span><span class="p">(</span><span class="n">wanted</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_workspace</span><span class="p">(</span><span class="n">wanted</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">workspaces</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The workspace that ``session.open`` of a plan file means.</span>
 
 <span class="sd">    :param wanted: an id, or a name pattern (as in `WorkspaceEntry.name`)</span>

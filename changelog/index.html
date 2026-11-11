@@ -562,6 +562,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tui/" class="md-nav__link">
         
   
@@ -1101,6 +1128,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1263,6 +1317,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1384,10 +1465,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1405,8 +1486,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2477,6 +2558,76 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">¤</a></h3>
 <ul>
+<li><strong>A shared lake with your work lake on top</strong> (<code>--with-work-lake</code> on <code>pbi tui</code> and on
+  <code>pbi lake ls</code>, <code>show</code>, <code>users</code>, <code>access</code> and <code>duckdb</code>; <code>session.with_work_lake</code> in a plan
+  file; <strong>Put the work lake on top</strong> in the TUI's palette). Someone who opens a lake a
+  colleague shared and has an account of their own, a service account say, can look further
+  without copying anything. Both lakes are read as one, and the answer fetched last is taken.
+  What they fetch or sync goes to their work lake, and the shared lake is never written.
+  Answers that depend on who asked are kept per account. The TUI, the Explorer and
+  <code>pbi lake ls</code> say which lake each answer came from. Who has access to what is worked out
+  from both and kept in the work lake. <code>pbi lake publish</code> reads the work lake alone. See
+  <a href="../sharing/#look-further-with-your-own-account">Look further with your own account</a>.</li>
+<li><strong>The access table</strong>: <code>pbi lake access</code>, <code>pbi lake users</code> and the terminal UI's "Who has
+  access to…" answer from one table that the lake keeps (<code>_tables/access.csv</code>) instead of
+  reading the users of every item each time. On a lake of 9,500 items, a question took 3 to
+  4 seconds, and 87 seconds the first time after a sync on Windows; with the table it takes
+  under a tenth of a second. <code>pbi sync run</code> works the table out at its end; a snapshot written
+  after it marks it stale, and the next question works it out again. <code>pbi lake publish</code>
+  publishes the table too, so a published lake answers at once. See
+  <a href="../lake/#the-access-table">The access table</a>.</li>
+<li><strong><code>prefer_scan</code></strong> (<code>tenant: {prefer_scan: true}</code> in a plan file, <code>--prefer-scan</code> on <code>pbi sync
+  plan</code> and <code>pbi sync run</code>) takes the users and the data sources of the items from the scan
+  instead of one request per item. A scan with <code>get_artifact_users</code> holds the users of every
+  workspace, report, dataset, dashboard and dataflow, and one with <code>datasource_details</code> the data
+  sources of every dataset and dataflow, for up to 100 workspaces per request; so
+  <code>group-users</code>, <code>report-users</code>, <code>dataset-users</code>, <code>dashboard-users</code>, <code>dataflow-users</code>,
+  <code>datasources</code> and <code>dataflow-datasources</code> are left to it, which with <code>targets: [all]</code> is most of
+  the requests. It is off unless asked for, and the plan and the run list what was left to the
+  scan, and what is still fetched per item because the scan lacks the option. <code>app-users</code> stays:
+  a scan does not list the people of an app. The everything example has it on. See
+  <a href="../sync/#taking-the-details-from-the-scan">Taking the details from the scan</a>.</li>
+<li><strong><code>examples/pbi-plan.core-workspaces.yaml</code></strong>: a plan file that keeps everything about a few
+  workspaces only, by name or id: a scan with every option and every detail of every item. See
+  <a href="../plan-file/#a-first-plan">Plan file</a>.</li>
+<li><code>pbi reports export</code> (and <code>pbi export</code>) can save a report as more than a <code>.pbix</code>: <code>-f pdf</code>,
+  <code>pptx</code> or <code>png</code> (made by Power BI as a job that the command waits for, with <code>--timeout</code>), and
+  for a paginated report <code>xlsx</code>, <code>docx</code>, <code>csv</code>, <code>xml</code>, <code>mhtml</code> or <code>accessiblepdf</code>. <code>-p</code> chooses
+  pages, <code>--filter</code> and <code>--locale</code> shape them, <code>--include-hidden-pages</code> adds hidden ones,
+  <code>--param</code> sets paginated parameters, and <code>--live-connection</code> keeps a <code>.pbix</code> connected to its
+  dataset. The older <code>pbi export</code> now goes through the same client, so it honours the TLS
+  setting and throttling. The formats other than <code>pbix</code> need a Premium, Embedded or Fabric
+  capacity. See <a href="../export/">Exporting a report</a>.</li>
+<li>A plan file can be named once instead of with <code>--config</code> on every command: <code>pbi config
+  set-plan-file PATH</code> (checked at once, kept as an absolute path; <code>get-plan-file</code> and
+  <code>clear-plan-file</code> show and forget it), or the environment variable <code>PBI_PLAN</code> for one shell
+  or job. <code>pbi sync plan</code>, <code>pbi sync run</code> and <code>pbi tui</code> then use it when no <code>--config</code> is
+  given; naming targets, or an option that a plan file takes over, still means those targets.
+  A file is never found by where it lies. See <a href="../plan-file/#name-the-file-once">Name the file once</a>.</li>
+<li>The <a href="../tui/#who-has-access-a-report-as-a-file-a-copy-of-the-lake">terminal UI</a> has three more
+  actions in its palette: <em>Who has access to …</em> (what a person can open, from the lake, to save or
+  copy), <em>Download this report as …</em> (a <code>.pbix</code>, PDF, PowerPoint or images, in the export folder)
+  and <em>Back up the lake</em>.</li>
+<li><code>pbi lake users</code> and <code>pbi lake access</code> take <code>--fetch</code> (and <code>--yes</code>): they fetch the users
+  that the lake lacks first, as <code>pbi sync run report-users</code> and its kin do, after showing what it
+  costs against the quotas and asking. Only the gaps cost requests, and <code>-w</code> limits it to the items
+  of some workspaces. See <a href="../lake/#filling-the-gaps-fetch">Filling the gaps</a>.</li>
+<li><code>pbi lake restore BACKUP</code> puts a backup made by <code>pbi lake backup</code> back over the lake of the
+  cache folder: it shows what it would copy and delete and asks, copies everything before it
+  deletes anything (so a restore that stops half way loses nothing), refuses a backup without its
+  <code>backup.json</code>, and first copies the lake as it is now (<code>&lt;lake&gt;-before-restore-&lt;time&gt;</code>, unless
+  <code>--no-safety-copy</code>). See <a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</li>
+<li><code>pbi lake duckdb [DATABASE]</code> loads the lake into a <a href="https://duckdb.org">DuckDB</a> database
+  (<code>pip install "pbi-cli[duckdb]"</code>): a table for each list, for who has access to what
+  (<code>access</code>), for what a scan found (<code>scan_items</code>, <code>scan_edges</code> for the lineage,
+  <code>scan_datasources</code>, <code>scan_tables</code>, <code>scan_columns</code>, <code>scan_measures</code>), for the audit events and
+  for the requests, with the ids that join them. The documentation of the
+  <a href="../lake/#the-data-model">data lake</a> now describes its data model, with a diagram.</li>
+<li><code>pbi lake access USER</code> lists everything that one person has access to (workspaces, reports,
+  datasets, dashboards, dataflows, apps), found by e-mail address or name in the users the lake
+  holds, with <code>--partial</code> for a part of one, <code>-k</code> and <code>-w</code> to narrow it down and <code>-o</code> to save
+  it. It says how many items it could not look into. See
+  <a href="../lake/#what-one-person-has-access-to-pbi-lake-access">What one person has access to</a>.</li>
 <li><code>pbi lake users KIND</code> lists everyone with access to every report, dataset, dashboard,
   dataflow, app or workspace in one table or file (<code>-o users.xlsx</code>, <code>.csv</code>, <code>.json</code>, <code>.md</code>,
   <code>.tsv</code>), optionally for some workspaces (<code>-w</code>), from what the lake holds. Items whose users
@@ -2677,9 +2828,13 @@
   scans only the chosen workspaces without moving the point the next incremental scan
   continues from, and a stop also cuts short a wait for quota.</li>
 <li><code>pbi config set-verify-certificates</code> and <code>pbi config get-verify-certificates</code> choose how API
-  requests verify TLS certificates: <code>true</code> (the default), <code>false</code> (prints a warning), or the path
-  to a CA bundle file, for example behind a corporate proxy that re-signs TLS traffic. Requests no
-  longer skip the verification unconditionally.</li>
+  requests verify TLS certificates: <code>true</code> (the default: the certificates that come with
+  <code>requests</code>), <code>system</code> (the certificate store of Windows or macOS, with
+  <a href="https://truststore.readthedocs.io">truststore</a>, which is what a company proxy that re-signs
+  TLS traffic needs), <code>false</code> (prints a warning), or the path to a CA bundle file. Requests no
+  longer skip the verification unconditionally. A request that fails with
+  <code>CERTIFICATE_VERIFY_FAILED</code> says which setting to use. See
+  <a href="../auth/#behind-a-company-proxy">Behind a company proxy</a>.</li>
 <li>Shell completion: <code>pbi --install-completion</code> and <code>pbi --show-completion</code>.</li>
 <li><code>pbi sync plan</code>, <code>pbi sync run</code> and <code>pbi sync status</code> keep the tenant in the data lake:
   the lists of workspaces, apps, reports and more, audit events one log per UTC day, and
@@ -2712,6 +2867,17 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">¤</a></h3>
 <ul>
+<li><code>pbi lake publish --exclude users</code> left out only the users of reports and what a person can
+  open. It now leaves out every list of users (of workspaces, datasets, dashboards, dataflows
+  and apps, by an administrator or a user account), and takes the people out of the lists of
+  workspaces and the scans that are published (their <code>users</code>). <code>--exclude datasources</code> now
+  also leaves out the data sources of dataflows and those a user account fetched. A later
+  publish that leaves the users out (or takes them back in) copies the lists and scans again.
+  See <a href="../sharing/#publish-a-lake">Publish a lake</a>.</li>
+<li><code>pbi lake access</code>, <code>pbi lake users</code> and the terminal UI's "Who has access to…" now find the
+  users that only a scan holds (<code>--get-artifact-users</code>, or <code>prefer_scan</code>). They looked only at
+  each item's own list of users and named every other item as one whose users the lake lacks;
+  items that only a scan knows are now included too.</li>
 <li>When Power BI throttles a request (HTTP 429), every request of the tenant to that
   operation waits, not only the one that was throttled; a stopped sync no longer waits for
   the throttle to end; and the request that is tried again carries the token of that moment

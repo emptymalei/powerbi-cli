@@ -16,7 +16,7 @@
         <link rel="prev" href="../sync/">
       
       
-        <link rel="next" href="../tui/">
+        <link rel="next" href="../export/">
       
       
         
@@ -716,6 +716,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="On the command line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name-the-file-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Name the file once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -744,6 +761,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1295,6 +1339,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1457,6 +1528,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1578,10 +1676,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1599,8 +1697,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2499,6 +2597,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="On the command line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name-the-file-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Name the file once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2628,6 +2743,15 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>sync<span class="w"> </span>plan<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w">   </span><span class="c1"># reads the lake, calls nothing</span>
 pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w">  </span>--config<span class="w"> </span>pbi-plan.yaml<span class="w">   </span><span class="c1"># does it</span>
 </code></pre></div>
+<p>To keep <strong>everything</strong> pbi can read (every target, a scan of every workspace with every
+option, 28 days of audit events), start from
+<a href="https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.everything.yaml"><code>examples/pbi-plan.everything.yaml</code></a>.
+Its details cost a request per item, so on a big tenant a run does what fits the quota and
+the next run carries on: read what <code>pbi sync plan</code> says it costs first.</p>
+<p>To keep everything about <strong>a few core workspaces</strong> only (a scan with every option and every
+detail of every item, for the workspaces you name), start from
+<a href="https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.core-workspaces.yaml"><code>examples/pbi-plan.core-workspaces.yaml</code></a>.
+It keeps the lists of the tenant too, because the workspaces are looked up in them.</p>
 <p>The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
 writes by default (<code>Out-File</code>, <code>&gt;</code>), so a file made there needs no conversion.</p>
 <p>The file is <strong>strict</strong>. A key that is not known is an error (with a guess at what you
@@ -2687,6 +2811,10 @@ may not be an account of the file.</p>
 <tr>
 <td><code>full_scan</code>, <code>exclude_personal</code>, <code>exclude_inactive</code></td>
 <td>As the options of <code>pbi sync run</code> of the same names. They need a scan: a <code>scan:</code> section here, or <code>scan</code> among the targets.</td>
+</tr>
+<tr>
+<td><code>prefer_scan</code></td>
+<td>As <code>--prefer-scan</code> of <code>pbi sync run</code>: <code>true</code> takes the users and the data sources of the items from the scan instead of one request per item: <code>report-users</code> and the other user targets when the scan has <code>get_artifact_users</code>, <code>datasources</code> and <code>dataflow-datasources</code> when it has <code>datasource_details</code>. Off by default; the plan says what it leaves to the scan. It needs a scan, as the keys above do. See <a href="../sync/#taking-the-details-from-the-scan">Taking the details from the scan</a>.</td>
 </tr>
 </tbody>
 </table>
@@ -2901,6 +3029,7 @@ report), is fetched for those that can, and the plan says which are left out.</p
 <span class="w">  </span><span class="nt">lazy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ask</span>
 <span class="w">  </span><span class="nt">workspaces</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plan</span>
 </code></pre></div>
+<p>With <code>with_work_lake: true</code> beside <code>lake</code>, the lake the file names is looked at with your work lake on top.</p>
 <table>
 <thead>
 <tr>
@@ -2912,6 +3041,10 @@ report), is fetched for those that can, and the plan says which are left out.</p
 <tr>
 <td><code>lake</code></td>
 <td>The lake that <code>pbi tui --config</code> opens: a folder or a URL such as <code>s3://bucket/folder</code>. A relative folder is relative to the folder of the file, and <code>~</code> is your home folder. <code>--lake</code> and <code>PBI_LAKE</code> come first; without any, your work lake (the cache folder). Any lake but your work lake is <a href="../sharing/">opened read-only</a>. A local folder that holds no lake is not an error: your work lake is opened instead and the UI says so (with the <code>pbi config set-cache-folder</code> command that would make that folder your work lake); a bucket that holds none is an error. Leave <code>lake</code> out to open your own. A sync never writes there: it writes to your work lake, and says so when this names another.</td>
+</tr>
+<tr>
+<td><code>with_work_lake</code></td>
+<td><code>true</code> opens <code>lake</code> with your work lake on top, as <code>--with-work-lake</code> does: both are shown as one, the newest answer of each request is taken, and what you fetch or sync goes to your work lake (see <a href="../sharing/#look-further-with-your-own-account">Look further with your own account</a>). Needs <code>lake</code>.</td>
 </tr>
 <tr>
 <td><code>open</code></td>
@@ -3001,6 +3134,23 @@ be said again, and is refused with a message that says where in the file it goes
 names, the scan options (<code>--lineage</code>, <code>--datasource-details</code>, <code>--dataset-schema</code>,
 <code>--dataset-expressions</code>, <code>--get-artifact-users</code>), <code>--full-scan</code>, <code>--exclude-personal</code>,
 <code>--exclude-inactive</code>, <code>--admin-profile</code> and <code>--user-profile</code>.</p>
+<h3 id="name-the-file-once">Name the file once<a class="headerlink" href="#name-the-file-once" title="Permanent link">¤</a></h3>
+<p>Typing <code>--config</code> on every command is the plain way, and the only way that is never a
+surprise. If you always use the same file, name it once, and a bare command uses it:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>config<span class="w"> </span>set-plan-file<span class="w"> </span>~/PowerBI/pbi-plan.yaml<span class="w">   </span><span class="c1"># checked now; kept as an absolute path</span>
+pbi<span class="w"> </span>sync<span class="w"> </span>run<span class="w">                                       </span><span class="c1"># runs that file</span>
+pbi<span class="w"> </span>tui<span class="w">                                            </span><span class="c1"># opens it</span>
+pbi<span class="w"> </span>config<span class="w"> </span>get-plan-file<span class="w">                           </span><span class="c1"># which file, and from where</span>
+pbi<span class="w"> </span>config<span class="w"> </span>clear-plan-file<span class="w">                         </span><span class="c1"># forget it</span>
+</code></pre></div>
+<p>For one shell or one scheduled job, the environment variable does the same without touching
+the settings: <code>PBI_PLAN=~/PowerBI/pbi-plan.yaml pbi sync run</code> (PowerShell:
+<code>$env:PBI_PLAN = "C:\PowerBI\pbi-plan.yaml"</code>). The order is <code>--config</code>, then <code>PBI_PLAN</code>, then
+<code>pbi config set-plan-file</code>. Naming targets (<code>pbi sync run groups</code>), or typing an option that
+a plan file takes over, always means "these targets": the named file is left alone. And the
+file is never looked for by where it lies: a <code>pbi-plan.yaml</code> in the current folder is not
+used unless you name it. The command says which file it uses and where that was named, and
+a named file that is gone is an error with the way out.</p>
 <h2 id="in-the-terminal-ui">In the terminal UI<a class="headerlink" href="#in-the-terminal-ui" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>tui<span class="w"> </span>--config<span class="w"> </span>pbi-plan.yaml
 </code></pre></div>

@@ -573,6 +573,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#behind-a-company-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Behind a company proxy
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keeping-the-token-safe" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -715,6 +726,33 @@
     
   
   Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
 
     
   </span>
@@ -1273,6 +1311,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1435,6 +1500,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1556,10 +1648,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1577,8 +1669,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2469,6 +2561,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#behind-a-company-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Behind a company proxy
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keeping-the-token-safe" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2658,6 +2761,20 @@ administrator (or a service principal allowed to use the admin APIs). Store an
 administrator's token in the <code>admin</code> group:</p>
 <div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>auth<span class="w"> </span>-t<span class="w"> </span>&lt;admin<span class="w"> </span>token&gt;<span class="w"> </span>-p<span class="w"> </span>admin-nlm<span class="w"> </span>-g<span class="w"> </span>admin
 </code></pre></div>
+<h2 id="behind-a-company-proxy">Behind a company proxy<a class="headerlink" href="#behind-a-company-proxy" title="Permanent link">¤</a></h2>
+<p>A network that inspects HTTPS re-signs the traffic with a certificate of its own. Windows and
+macOS trust it, because IT installs its root there, but Python's <code>requests</code> checks against
+the certificates it comes with, so every request fails:</p>
+<div class="highlight"><pre><span></span><code>failed: admin.groups: ... certificate verify failed: self-signed certificate in certificate chain
+</code></pre></div>
+<p>Tell pbi to trust what the operating system trusts. The certificates are still checked:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>config<span class="w"> </span>set-verify-certificates<span class="w"> </span>system
+</code></pre></div>
+<p>The other settings: the path to the proxy's CA file (PEM), which trusts that root in addition
+to the usual ones; <code>true</code>, the certificates that come with <code>requests</code> (the default); and
+<code>false</code>, no check at all, which lets anyone on the way read the token (it prints a warning).
+<code>pbi config get-verify-certificates</code> shows the setting. With <code>system</code>, an S3 lake behind the
+same proxy is trusted the same way.</p>
 <h2 id="keeping-the-token-safe">Keeping the token safe<a class="headerlink" href="#keeping-the-token-safe" title="Permanent link">¤</a></h2>
 <ul>
 <li>pbi_cli never writes a token to the data lake, to logs or to error messages, and the

@@ -711,6 +711,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Scans">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#taking-the-details-from-the-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taking the details from the scan
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -803,6 +820,33 @@
     
   
   Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
 
     
   </span>
@@ -1361,6 +1405,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1523,6 +1594,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1644,10 +1742,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1665,8 +1763,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2587,6 +2685,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Scans">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#taking-the-details-from-the-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Taking the details from the scan
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3137,6 +3252,9 @@ default, 0 to never wait). When it would have to wait longer, its unit is <em>de
 not an error, the run goes on with the rest, and the next run continues with the deferred
 units. A quota of 200 an hour means that 1,000 units take five runs, an hour apart; the plan
 tells how long it would take.</p>
+<p>Most of those units are usually the users or the data sources of every item, a request
+each. A scan holds them for up to 100 workspaces per request: see
+<a href="#taking-the-details-from-the-scan">Taking the details from the scan</a>.</p>
 <p>If an administrator operation keeps answering <code>403 Forbidden</code> (three times in a row) the
 token is probably not an administrator's, and the run stops asking for that operation.</p>
 <h2 id="audit-events">Audit events<a class="headerlink" href="#audit-events" title="Permanent link">¤</a></h2>
@@ -3198,6 +3316,50 @@ again before starting another. A scan that failed is started again.</p>
 <p>A lake in S3 is worth copying before a large run: <code>pbi sync run --backup</code> copies it next
 to itself before the first write (<code>--backup-to PLACE</code> chooses where). See
 <a href="../lake/#back-up-a-lake-before-writing-into-it">Back up a lake</a>.</p>
+<h3 id="taking-the-details-from-the-scan">Taking the details from the scan<a class="headerlink" href="#taking-the-details-from-the-scan" title="Permanent link">¤</a></h3>
+<p>A scan holds much of what the fan-out targets ask for one item at a time. With
+<code>--get-artifact-users</code> it lists the users of every workspace, report, dataset, dashboard and
+dataflow; with <code>--datasource-details</code> the data sources of every dataset and dataflow. A scan
+costs a few requests for up to 100 workspaces, where <code>report-users</code> costs one request for
+every report out of 200 an hour: a tenant with 3,000 reports needs 15 hours for those alone.</p>
+<p><strong><code>--prefer-scan</code></strong> (<code>prefer_scan: true</code> in the tenant of a <a href="../plan-file/">plan file</a>) leaves
+those targets to the scan:</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Left to the scan when it is made with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>group-users</code>, <code>report-users</code>, <code>dataset-users</code>, <code>dashboard-users</code>, <code>dataflow-users</code></td>
+<td><code>--get-artifact-users</code></td>
+</tr>
+<tr>
+<td><code>datasources</code>, <code>dataflow-datasources</code></td>
+<td><code>--datasource-details</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>pbi sync run all --get-artifact-users --datasource-details --prefer-scan
+</code></pre></div>
+<p>It is off unless it is asked for. It needs the <code>scan</code> target. The plan and the run say what was
+left to the scan (<code>Left to the scan (prefer_scan): report-users, ...</code>). They also say which
+target is still fetched one item at a time because the scan is made without the option that
+holds its answers. A target left to the scan is not fetched even when it is named.</p>
+<p>The <a href="../lake/#the-data-model">lake</a> takes the users of an item from its own
+request when there is one, and else from the newest scan of its workspace; the <code>access</code> table
+says which in <code>source</code>. What the scan does not cover has no users then:</p>
+<ul>
+<li><strong>apps:</strong> <code>app-users</code> is never left to the scan, because a scan does not list the people of
+  an app;</li>
+<li><strong>left-out workspaces:</strong> the workspaces the scan leaves out (<code>--exclude-personal</code>,
+  <code>--exclude-inactive</code>) get no users from it;</li>
+<li><strong>new items:</strong> an item created after the last scan has none until the next one.</li>
+</ul>
+<p>In the <a href="../tui/">terminal UI</a>, <code>f</code> still fetches the users of one item, one request, when the
+lake lacks them.</p>
 <h2 id="stopping-and-continuing">Stopping, and continuing<a class="headerlink" href="#stopping-and-continuing" title="Permanent link">¤</a></h2>
 <p>A sync can be stopped at any time, and run again:</p>
 <ul>

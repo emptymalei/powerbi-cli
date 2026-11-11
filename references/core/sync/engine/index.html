@@ -564,6 +564,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../tui/" class="md-nav__link">
         
   
@@ -1115,6 +1142,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../planfile/" class="md-nav__link">
         
   
@@ -1277,6 +1331,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../scan/" class="md-nav__link">
         
   
@@ -1400,10 +1481,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1421,8 +1502,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="true">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -3846,7 +3927,9 @@ is no account of that kind</p>
 <span class="normal">654</span>
 <span class="normal">655</span>
 <span class="normal">656</span>
-<span class="normal">657</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SyncEngine</span><span class="p">:</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SyncEngine</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Plans and runs syncs of one tenant into a lake.</span>
 
 <span class="sd">    :param client_for: returns the client that signs in for a kind of token, as the profile</span>
@@ -3930,7 +4013,7 @@ is no account of that kind</p>
         <span class="n">available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_scopes</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">available</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
-        <span class="n">selection</span> <span class="o">=</span> <span class="n">select_targets</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">targets</span><span class="p">,</span> <span class="n">available</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">_label</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">profile_of</span><span class="p">(</span><span class="n">scope</span><span class="p">)))</span>
             <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
@@ -3947,7 +4030,7 @@ is no account of that kind</p>
                 <span class="s2">"No account is stored. Store a token with `pbi auth -t &lt;token&gt; -g admin` "</span>
                 <span class="s2">"(an administrator's) or `pbi auth -t &lt;token&gt; -g user` (a user's)."</span>
             <span class="p">)</span>
-        <span class="n">selection</span> <span class="o">=</span> <span class="n">select_targets</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">targets</span><span class="p">,</span> <span class="n">available</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">selection</span><span class="o">.</span><span class="n">targets</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PBIError</span><span class="p">(</span>
                 <span class="s2">"There is nothing to sync with the accounts that are stored."</span>
@@ -4037,6 +4120,7 @@ is no account of that kind</p>
             <span class="n">tenant</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span>
             <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span>
             <span class="n">quota</span><span class="o">=</span><span class="n">lines</span><span class="p">,</span>
+            <span class="n">notes</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">notes</span><span class="p">(),</span>
             <span class="n">accounts</span><span class="o">=</span><span class="p">[</span>
                 <span class="n">_label</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">clients</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="p">],</span>
@@ -4283,6 +4367,7 @@ is no account of that kind</p>
                 <span class="n">COMPLETED_WITH_FAILURES</span> <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">counts</span><span class="p">[</span><span class="n">FAILED</span><span class="p">]</span> <span class="k">else</span> <span class="n">COMPLETED</span>
             <span class="p">)</span>
 
+        <span class="n">report</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">notes</span><span class="p">())</span>
         <span class="n">report</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">planner</span><span class="o">.</span><span class="n">unplaced_notes</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
         <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">targets</span><span class="p">:</span>
@@ -4411,7 +4496,7 @@ then says what to store.</p>
     <span class="n">available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_scopes</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">available</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
-    <span class="n">selection</span> <span class="o">=</span> <span class="n">select_targets</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">targets</span><span class="p">,</span> <span class="n">available</span><span class="p">)</span>
+    <span class="n">selection</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span>
         <span class="n">_label</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">profile_of</span><span class="p">(</span><span class="n">scope</span><span class="p">)))</span>
         <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
@@ -4592,7 +4677,8 @@ of the kind). Nothing is sent: a token is only looked up, and read for its tenan
 <span class="normal">369</span>
 <span class="normal">370</span>
 <span class="normal">371</span>
-<span class="normal">372</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
+<span class="normal">372</span>
+<span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Plan</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""What a sync with these options would do. Only the lake is read, never the API."""</span>
     <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
     <span class="n">targets</span><span class="p">,</span> <span class="n">needed</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">planner</span><span class="o">.</span><span class="n">dry_run</span><span class="p">()</span>
@@ -4619,6 +4705,7 @@ of the kind). Nothing is sent: a token is only looked up, and read for its tenan
         <span class="n">tenant</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">tenant</span><span class="p">,</span>
         <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span>
         <span class="n">quota</span><span class="o">=</span><span class="n">lines</span><span class="p">,</span>
+        <span class="n">notes</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">notes</span><span class="p">(),</span>
         <span class="n">accounts</span><span class="o">=</span><span class="p">[</span>
             <span class="n">_label</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">client</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">clients</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">],</span>
@@ -4754,8 +4841,7 @@ done is kept, so running again continues.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/engine.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">376</span>
-<span class="normal">377</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">377</span>
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
@@ -4799,7 +4885,8 @@ done is kept, so running again continues.</p>
 <span class="normal">418</span>
 <span class="normal">419</span>
 <span class="normal">420</span>
-<span class="normal">421</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+<span class="normal">421</span>
+<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">options</span><span class="p">:</span> <span class="n">SyncOptions</span><span class="p">,</span>
     <span class="n">on_event</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Event</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

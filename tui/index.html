@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://emptymalei.github.io/powerbi-cli/tui/">
       
       
-        <link rel="prev" href="../plan-file/">
+        <link rel="prev" href="../export/">
       
       
         <link rel="next" href="../cache/">
@@ -566,6 +566,33 @@
                   
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
     
   
   
@@ -723,6 +750,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Copying and saving what you see
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-has-access-a-report-as-a-file-a-copy-of-the-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Who has access, a report as a file, a copy of the lake
       </span>
     </span>
   </a>
@@ -1417,6 +1455,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1579,6 +1644,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1700,10 +1792,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1721,8 +1813,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2608,6 +2700,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#who-has-access-a-report-as-a-file-a-copy-of-the-lake" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Who has access, a report as a file, a copy of the lake
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#finding-things" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2831,7 +2934,7 @@ same. Type a few letters, <code>Enter</code> runs the highlighted one, <code>Esc
 <tbody>
 <tr>
 <td>the Explorer</td>
-<td>fetch again what is selected (it says what: <code>Scan Finance</code>, <code>Fetch the lists of the tenant</code>, <code>Fetch what you can see</code>, ...), fetch the details the selected item lacks (<code>Fetch the users and data sources of Finance model</code>), filter, clear the filter, show a tab</td>
+<td>who has access to … (a person), download the selected report as a file, fetch again what is selected (it says what: <code>Scan Finance</code>, <code>Fetch the lists of the tenant</code>, <code>Fetch what you can see</code>, ...), fetch the details the selected item lacks (<code>Fetch the users and data sources of Finance model</code>), filter, clear the filter, show a tab</td>
 </tr>
 <tr>
 <td>the Sync screen</td>
@@ -2843,7 +2946,7 @@ same. Type a few letters, <code>Enter</code> runs the highlighted one, <code>Esc
 </tr>
 <tr>
 <td>everywhere</td>
-<td>open the Explorer or the Sync screen, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (<code>Make svc-finance the active user account</code>), store a new token for a profile, open another lake, the work lake, or one you opened lately</td>
+<td>open the Explorer or the Sync screen, back up the lake, reload the lake, choose the tenant, accounts, sign in, make a stored profile the active one of its group (<code>Make svc-finance the active user account</code>), store a new token for a profile, open another lake, the work lake, or one you opened lately</td>
 </tr>
 <tr>
 <td>Textual</td>
@@ -3178,6 +3281,24 @@ to the terminal, and that a terminal has to allow that; a file always works.</p>
 <p>A cell that a spreadsheet would take for a formula (it starts with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>) is written
 as text: with a <code>'</code> in front of it in CSV and tab-separated text, as a text cell in a workbook. What the
 tables show as <code>-</code> (nothing) is an empty cell in the export.</p>
+<h3 id="who-has-access-a-report-as-a-file-a-copy-of-the-lake">Who has access, a report as a file, a copy of the lake<a class="headerlink" href="#who-has-access-a-report-as-a-file-a-copy-of-the-lake" title="Permanent link">¤</a></h3>
+<p>Three things that the command line does are in the <a href="#the-command-palette">palette</a> too:</p>
+<ul>
+<li><strong>Who has access to …</strong> asks for an e-mail address or a name (in any case) and looks through
+  the users that the lake holds, like <code>pbi lake access</code>. What that person can open comes as the
+  Save / Copy dialog of <a href="#copying-and-saving-what-you-see"><code>x</code></a>, so it can go to a spreadsheet. A part of
+  a name finds people too (it says so). It works on a lake that is only looked at, and it tells you how many
+  items have no users in the lake, because the answer may be incomplete. Nothing is sent to Power BI.</li>
+<li><strong>Download this report as …</strong> is offered when a report is selected: a <code>.pbix</code> for Power BI
+  Desktop, a PDF, a PowerPoint presentation, or images (a <code>.zip</code>). It is saved in the folder of <code>x</code>
+  (named after the report, never over an earlier file) and the UI says where. It uses your user
+  account, so an expired token asks for a fresh one. The formats other than <code>.pbix</code> are made by
+  Power BI and need a Premium, Embedded or Fabric capacity; they can take a while, and the UI keeps
+  working meanwhile. See <a href="../export/">Exporting a report</a>.</li>
+<li><strong>Back up the lake</strong> copies the whole lake next to itself (<code>pbi lake backup</code>), for example before a
+  big sync or <code>pbi lake prune</code>. It says where the copy is and the command that puts it back
+  (<code>pbi lake restore</code>). It is not offered on a lake that is only looked at, and it waits while a sync runs.</li>
+</ul>
 <h3 id="finding-things">Finding things<a class="headerlink" href="#finding-things" title="Permanent link">¤</a></h3>
 <ul>
 <li><code>/</code> filters what has the focus: the workspaces of the tree, or the rows of the table. All
@@ -3279,7 +3400,7 @@ file instead of the targets and the options:</p>
   expires stops it, the dialog asks for the token of <strong>the account that expired</strong> (the kind and
   the profile, which the plan can use several of) and the plan goes on from the step it was in.</li>
 </ul>
-<p>The <code>session</code> section of the file sets four things:</p>
+<p>The <code>session</code> section of the file sets these things:</p>
 <ul>
 <li><code>lake</code>: the lake to open. <code>--lake</code> and <code>PBI_LAKE</code> come first, then the file, then your work
   lake. Any lake but your work lake is <a href="#other-lakes-and-view-only">opened read-only</a>, and
@@ -3287,6 +3408,9 @@ file instead of the targets and the options:</p>
   lake is opened instead, and a notice says so, with the command that would make that folder your
   work lake (<code>pbi config set-cache-folder &lt;folder&gt;</code>; a sync writes to the work lake only, so this
   is how a sync fills the lake the file names). A bucket that holds no lake is an error.</li>
+<li><code>with_work_lake</code>: <code>true</code> opens <code>lake</code> with your work lake on top, as <code>--with-work-lake</code> does:
+  both lakes are shown as one, and the plan runs and fetches into your work lake. See
+  <a href="../sharing/#look-further-with-your-own-account">Look further with your own account</a>.</li>
 <li><code>open</code>: a workspace to select at the start, by id or by a pattern for its name (the first
   match). It is selected once, not again when the lake is read again.</li>
 <li><code>workspaces</code>: which workspaces the Explorer lists at the start: <code>plan</code> (the default: only the ones

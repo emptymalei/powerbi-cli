@@ -571,6 +571,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#look-further-with-your-own-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Look further with your own account
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -710,6 +721,33 @@
     
   
   Plan file
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Exporting a report
 
     
   </span>
@@ -1268,6 +1306,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/lakesql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  lakesql
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/planfile/" class="md-nav__link">
         
   
@@ -1430,6 +1495,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../references/core/reportexport/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  reportexport
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../references/core/scan/" class="md-nav__link">
         
   
@@ -1551,10 +1643,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_19" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4_21" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_4_19" id="__nav_3_2_4_19_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_4_21" id="__nav_3_2_4_21_label" tabindex="0">
             
   
   
@@ -1572,8 +1664,8 @@
           </label>
         
         
-          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_19_label" aria-expanded="false">
-            <label class="md-nav__title" for="__nav_3_2_4_19">
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_4_21_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2_4_21">
               <span class="md-nav__icon md-icon"></span>
               
   
@@ -2381,6 +2473,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#look-further-with-your-own-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Look further with your own account
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2519,6 +2622,41 @@ or asked about. Signing in, <code>r</code> (fetch again) and <strong>Run</strong
 lake is only looked at and do nothing; browsing, the filters, <code>Ctrl+P</code> and the Lake tab of
 the Sync screen (what the lake holds, how the last syncs went) work as always.
 <code>pbi lake prune</code> refuses a lake that is read-only.</p>
+<h3 id="look-further-with-your-own-account">Look further with your own account<a class="headerlink" href="#look-further-with-your-own-account" title="Permanent link">¤</a></h3>
+<p>A lake someone shared holds what <em>they</em> fetched. When you have an account of your own (a
+service account, say) and want to look further into something, open the shared lake with
+<strong>your work lake on top</strong>:</p>
+<div class="highlight"><pre><span></span><code>pbi<span class="w"> </span>tui<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--with-work-lake
+pbi<span class="w"> </span>lake<span class="w"> </span>access<span class="w"> </span>ann@example.com<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--with-work-lake
+pbi<span class="w"> </span>lake<span class="w"> </span>ls<span class="w"> </span>--lake<span class="w"> </span>s3://my-bucket/pbi-lake<span class="w"> </span>--with-work-lake<span class="w">   </span><span class="c1"># column LAKE: shared or work</span>
+</code></pre></div>
+<p>Nothing is copied or merged. Both lakes are read as one, and what you fetch goes to your work
+lake:</p>
+<ul>
+<li><strong>Reads take both.</strong> Where both lakes answer the same request, the answer fetched last is
+  taken, whichever lake it is in. A day of activity events is taken whole from the lake
+  that holds more of it.</li>
+<li><strong>Writes go to your work lake, and only there.</strong> A fetch in the Explorer (<code>f</code>), a sync, <code>pbi
+  lake users --fetch</code> and the tables worked out from both lakes are written to your work lake.
+  The shared lake stays read-only, as always: the store of it refuses every write. A sync plans
+  and runs on your work lake alone, so it fetches what <em>your</em> lake lacks.</li>
+<li><strong>Answers that depend on who asked stay apart.</strong> Some answers depend on the account that
+  asked, such as the workspaces a user can see. They are kept per account, so your
+  account's answers sit beside the publisher's and never replace them.</li>
+<li><strong>You can tell where each answer came from.</strong> The header of the TUI says
+  <code>+ work lake</code>. The Explorer adds <code>shared lake</code> or <code>your work lake</code> to when a list was
+  fetched. <code>pbi lake ls</code> has a column <code>LAKE</code>.</li>
+<li><strong>Who has access to what</strong> is worked out from both lakes once. The result is kept in your
+  work lake (in <code>_layers/</code>, beside its own tables). It is worked out again when either lake
+  changes: a fetch into your work lake, or a new publish of the shared one.</li>
+<li><strong>Publishing stays yours.</strong> <code>pbi lake publish</code> reads your work lake alone, so what the
+  shared lake holds is never published again under your name.</li>
+</ul>
+<p>In the TUI, <code>Ctrl+P</code> → <strong>Put the work lake on top</strong> does the same for the lake that is open,
+and <strong>Take the work lake off</strong> goes back to the shared lake alone. A <a href="../plan-file/#session">plan file</a>
+does it with <code>session.with_work_lake: true</code> beside <code>session.lake</code>.</p>
+<p>It needs a work lake (<code>pbi config set-cache-folder</code>). For a lake that is your work lake
+already, it changes nothing.</p>
 <h2 id="publish-a-lake">Publish a lake<a class="headerlink" href="#publish-a-lake" title="Permanent link">¤</a></h2>
 <p>Publishing makes a complete, consistent copy of your work lake, in a place that others can
 read:</p>
@@ -2533,7 +2671,11 @@ pbi<span class="w"> </span>lake<span class="w"> </span>publish<span class="w"> <
 <li>the scans;</li>
 <li>how the last five syncs went, and when the last complete scan started (what the freshness
   dots of the Explorer need). Not the units that failed, and not the ids of scans that were
-  started and not collected.</li>
+  started and not collected;</li>
+<li>the <a href="../lake/#the-access-table">table of who has access to what</a>, so that <code>pbi lake access</code>
+  and the terminal UI answer at once from the published lake. It is not published when the
+  users or the scans are left out: whoever opens the lake then works it out from what is
+  there.</li>
 </ul>
 <p>It does not hold your token, your settings or anything that is not in the lake.</p>
 <h3 id="what-it-shows-before-it-copies">What it shows before it copies<a class="headerlink" href="#what-it-shows-before-it-copies" title="Permanent link">¤</a></h3>
@@ -2562,7 +2704,7 @@ opens the published lake sees all of it:</p>
 <tr>
 <td><code>users</code></td>
 <td><code>--exclude users</code></td>
-<td>the people who can open each report, with their e-mail addresses</td>
+<td>the people who have access to each workspace, report, dataset, dashboard, dataflow and app, with their e-mail addresses</td>
 </tr>
 <tr>
 <td><code>datasources</code></td>
@@ -2576,12 +2718,21 @@ opens the published lake sees all of it:</p>
 </tr>
 </tbody>
 </table>
-<p>A scan keeps whatever its options asked for: one made with <code>--get-artifact-users</code> or
-<code>--dataset-expressions</code> holds users and queries. Publishing does not take fields out of a
-scan. Leave the scans out, or scan again without those options, if that matters.</p>
+<p><strong>Leaving out the users</strong> leaves out every list of them (the users of workspaces, reports,
+datasets, dashboards, dataflows and apps, whichever account fetched them, and what a person
+can open), and also takes the people out of what is published of the other categories: the
+<code>users</code> of a workspace in a list of workspaces (<code>pbi workspaces list -e users</code>), and of every
+workspace and item in a scan (<code>--get-artifact-users</code>). The manifest of such a version says
+<code>published_without</code>, and its size and checksum are those of what was published. The table
+of who has access is then not published either.</p>
+<p>Otherwise a scan keeps whatever its options asked for: one made with <code>--dataset-expressions</code>
+holds queries, and one made with <code>--datasource-details</code> the connection details of the data
+sources even when <code>--exclude datasources</code> leaves out the other answers about them. Leave the
+scans out, or scan again without those options, if that matters.</p>
 <p>Leaving a category out of a later publish takes it out of the published lake too: what an
 earlier publish copied of it is deleted, so the marker never says "left out" over data that
-is still there. Tenants that a publish with <code>--tenant</code> left alone stay, and the marker lists
+is still there. Leaving the users out later copies the lists and scans again without the
+people (and taking them back in later copies them again with the people). Tenants that a publish with <code>--tenant</code> left alone stay, and the marker lists
 them.</p>
 <h3 id="what-it-never-does">What it never does<a class="headerlink" href="#what-it-never-does" title="Permanent link">¤</a></h3>
 <ul>
