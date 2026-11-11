@@ -73,6 +73,9 @@
   scan, and what is still fetched per item because the scan lacks the option. `app-users` stays:
   a scan does not list the people of an app. The everything example has it on. See
   [Taking the details from the scan](sync.md#taking-the-details-from-the-scan).
+- **`examples/pbi-plan.core-workspaces.yaml`**: a plan file that keeps everything about a few
+  workspaces only, by name or id: a scan with every option and every detail of every item. See
+  [Plan file](plan-file.md#a-first-plan).
 - `pbi reports export` (and `pbi export`) can save a report as more than a `.pbix`: `-f pdf`,
   `pptx` or `png` (made by Power BI as a job that the command waits for, with `--timeout`), and
   for a paginated report `xlsx`, `docx`, `csv`, `xml`, `mhtml` or `accessiblepdf`. `-p` chooses

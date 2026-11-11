@@ -37,6 +37,11 @@ option, 28 days of audit events), start from
 Its details cost a request per item, so on a big tenant a run does what fits the quota and
 the next run carries on: read what `pbi sync plan` says it costs first.
 
+To keep everything about **a few core workspaces** only (a scan with every option and every
+detail of every item, for the workspaces you name), start from
+[`examples/pbi-plan.core-workspaces.yaml`](https://github.com/emptymalei/powerbi-cli/blob/main/examples/pbi-plan.core-workspaces.yaml).
+It keeps the lists of the tenant too, because the workspaces are looked up in them.
+
 The file is UTF-8, with or without a byte order mark, or UTF-16, which is what PowerShell
 writes by default (`Out-File`, `>`), so a file made there needs no conversion.
 

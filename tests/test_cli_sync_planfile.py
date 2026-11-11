@@ -682,3 +682,46 @@ def test_the_command_to_continue_quotes_a_plan_file_with_spaces(accounts, tmp_pa
     assert f'run `pbi sync run --force --days 7 --config "{path}"` again' in (
         result.output
     )
+
+
+# ---------------------------------------------------------------------------
+# the example of a few core workspaces
+# ---------------------------------------------------------------------------
+
+
+def test_the_example_of_core_workspaces_keeps_everything_about_them_only(
+    accounts, tmp_path, cache_folder
+):
+    example = Path(__file__).resolve().parents[1] / "examples"
+    text = (example / "pbi-plan.core-workspaces.yaml").read_text(encoding="utf-8")
+    for mine, theirs in (
+        (
+            "# accounts:\n#   admin: my-admin\n#   user: [my-user]",
+            "accounts:\n  admin: adm\n  user: [svc, bob]",
+        ),
+        ('"Sales Reporting"', '"Workspace 2"'),
+        ('"Finance*"', '"Workspace 1?"'),  # Workspace 10, 11 and 12
+        ("00000000-0000-0000-0000-000000000000", "ws-0003"),
+    ):
+        assert mine in text, mine
+        text = text.replace(mine, theirs)
+    path = write(tmp_path, text)
+
+    result = sync("run", "--config", path)
+
+    assert result.exit_code == 0, result.output
+    assert "0 failed" in result.output
+    held = lake(cache_folder)
+    ids = lambda endpoint, name: sorted(  # noqa: E731
+        s.params[name] for s in held.parameter_sets("tenant-1", endpoint)
+    )
+    chosen = ["ws-0002", "ws-0003", "ws-0010", "ws-0011", "ws-0012"]
+    assert ids("admin.groups.users", "groupId") == chosen
+    [scan] = accounts.calls_to(r"/admin/workspaces/getInfo$")
+    assert sorted(scan.body["workspaces"]) == chosen  # one scan, of those only
+    assert scan.query["getArtifactUsers"] == "true"
+    assert scan.query["datasetExpressions"] == "true"
+    # the pages only a user reads, through the account that lists the workspace
+    assert accounts.calls_to(r"/pages$")
+    assert not accounts.calls_to(r"^/admin/activityevents")
+    assert result.output.count("Step ") >= 3, result.output
