@@ -4,6 +4,24 @@
 
 ### Changed
 
+- **A sync with a scan takes the users and data sources of the items from it.** `prefer_scan`
+  is on by default whenever the `scan` target is in the sync: `report-users`,
+  `dataset-users` and the other users targets come from a scan made with
+  `--get-artifact-users`, and `datasources` and `dataflow-datasources` from one made with
+  `--datasource-details`, a few requests per 100 workspaces instead of one request per item
+  out of 200 an hour. `--no-prefer-scan` (`prefer_scan: false` in a plan file) asks for each
+  item, as before; `--prefer-scan` still refuses a sync without the scan. See
+  [Taking the details from the scan](sync.md#taking-the-details-from-the-scan).
+- **The users of the items stay fresh for 7 days in a sync**, not 24 hours: `group-users`,
+  `report-users`, `dataset-users`, `dashboard-users`, `dataflow-users` and `app-users`. They
+  cost a request per item, and a big tenant spent its whole quota asking for them again every
+  day. `--max-age` still replaces the limit. Commands that ask for the users of one item
+  (`pbi reports users` and the like) keep the day.
+- **Who has access to an item is taken from the newest answer the lake holds**: the item's own
+  request or the scan of its workspace, whichever was stored last. The item's own request
+  used to win however old it was, so users fetched one item at a time once hid every newer
+  scan.
+
 - The buttons of the [terminal UI](tui.md) are slim, one line each, instead of three-line
   blocks; everything a button does is also a key and a command of the palette.
 - `pbi workspaces scan batch` scans in batches of up to 100 workspaces per request, not one

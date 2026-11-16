@@ -393,7 +393,8 @@ UI read them **once** into one table, `_tables/access.csv`, and answer from that
 - **What it holds:** one row per person and item, with the same columns as `pbi lake users -o`
   (kind, item, workspace, name, e-mail, access, type, source), in UTF-8. Being a plain CSV,
   it opens in a spreadsheet, DuckDB and pandas as it is. The `source` says whether a row came
-  from the item's own request, the list of workspaces, or a `scan`.
+  from the item's own request, the list of workspaces, or a `scan`: for each item, the one of
+  them that was stored last.
 - **A lake that is only read** (`--lake`, a published lake) uses a table that is there and
   otherwise works one out in memory each time, since it cannot keep it. `pbi lake publish`
   publishes the table with the lake, unless the users or the scans are left out.

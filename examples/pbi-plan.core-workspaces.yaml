@@ -12,7 +12,9 @@
 # item in it, which is a request per item and detail: who can open each report, dataset,
 # dashboard, dataflow and app, the data sources, the pages, the tiles, the parameters and
 # the refresh history. For a few workspaces that is usually well within the quotas; the plan
-# shows the numbers before anything is sent.
+# shows the numbers before anything is sent. The users of each item are asked for again once
+# a week (`--max-age 1d` asks every day); the scan, made again once it is a day old, holds
+# them too, and the lake takes whichever answer is newer.
 #
 # What it copies. Names and e-mail addresses of everybody with access to these workspaces,
 # connection details of their data sources, and the DAX and Power Query of their datasets.

@@ -95,14 +95,36 @@ def test_the_options_of_a_sync_choose_through_the_switch():
     flags = ScanFlags(get_artifact_users=True)
     asked = ("reports", "report-users", "scan")
 
-    assert SyncOptions(asked, scan_flags=flags).select().names == [
-        "reports",
-        "scan",
-        "report-users",
-    ]
+    each = SyncOptions(asked, scan_flags=flags, prefer_scan=False)
+    assert each.select().names == ["reports", "scan", "report-users"]
     preferred = SyncOptions(asked, scan_flags=flags, prefer_scan=True)
     assert preferred.select().names == ["reports", "scan"]
     assert preferred.summary()["prefer_scan"] is True
+
+
+def test_a_sync_with_a_scan_prefers_it_unless_told_not_to():
+    flags = ScanFlags(get_artifact_users=True)
+    asked = ("reports", "report-users", "scan")
+
+    chosen = SyncOptions(asked, scan_flags=flags).select()
+
+    assert chosen.names == ["reports", "scan"]
+    assert chosen.left_to_scan == ("report-users",)
+    assert "--no-prefer-scan" in chosen.notes()[0]
+
+
+def test_a_sync_without_a_scan_fetches_one_item_at_a_time_by_default():
+    chosen = SyncOptions(("reports", "report-users")).select()
+
+    assert chosen.names == ["reports", "report-users"]
+    assert chosen.notes() == []
+
+
+def test_a_scan_without_the_option_says_what_would_save_requests():
+    chosen = SyncOptions(("reports", "report-users", "scan")).select()
+
+    assert "report-users" in chosen.names
+    assert chosen.not_in_scan == (("report-users", "get_artifact_users"),)
 
 
 # ---------------------------------------------------------------------------
@@ -122,8 +144,8 @@ FLAGS = ScanFlags(get_artifact_users=True)
 def test_the_plan_does_not_count_requests_for_what_the_scan_answers(world):
     world.run("reports", "datasets")
 
-    each = world.plan(*TARGETS, scan_flags=FLAGS)
-    preferred = world.plan(*TARGETS, scan_flags=FLAGS, prefer_scan=True)
+    each = world.plan(*TARGETS, scan_flags=FLAGS, prefer_scan=False)
+    preferred = world.plan(*TARGETS, scan_flags=FLAGS)
 
     operations = {line.endpoint for line in each.quota}
     assert {"admin.reports.users", "admin.datasets.users"} <= operations
@@ -177,10 +199,22 @@ def test_the_plan_file_switches_it_on_for_the_steps_of_the_administrator():
     assert set(by_title["the tenant (adm)"].select().left_to_scan) == set(SCAN_ANSWERS)
 
 
-def test_it_is_off_unless_the_plan_file_says_so():
+def test_it_is_on_when_the_plan_file_has_a_scan_and_does_not_say():
     plan = read(EVERYTHING.replace("  prefer_scan: true\n", ""))
+    steps = plan.first_steps(Accounting(admin="adm", users=("svc",)))
+
+    assert plan.tenant.prefer_scan is None
+    by_title = {step.title: step.options for step in steps}
+    assert set(by_title["the tenant (adm)"].select().left_to_scan) == set(SCAN_ANSWERS)
+    assert by_title["the tenant (svc)"].prefer_scan is False
+
+
+def test_the_plan_file_can_switch_it_off():
+    plan = read(EVERYTHING.replace("prefer_scan: true", "prefer_scan: false"))
+    steps = plan.first_steps(Accounting(admin="adm"))
 
     assert plan.tenant.prefer_scan is False
+    assert steps[0].options.select().left_to_scan == ()
 
 
 def test_the_plan_file_refuses_it_without_a_scan():
@@ -219,8 +253,9 @@ def sync(*args: str):
 def test_pbi_sync_plan_says_what_is_left_to_the_scan(admin):
     asked = ["reports", "report-users", "scan", "--get-artifact-users"]
 
-    plain = sync("plan", *asked)
-    preferred = sync("plan", *asked, "--prefer-scan")
+    plain = sync("plan", *asked, "--no-prefer-scan")
+    preferred = sync("plan", *asked)
+    asked_for = sync("plan", *asked, "--prefer-scan")
 
     assert plain.exit_code == 0, plain.output
     assert preferred.exit_code == 0, preferred.output
@@ -228,6 +263,14 @@ def test_pbi_sync_plan_says_what_is_left_to_the_scan(admin):
     assert "Left to the scan" not in plain.output
     assert "Targets: reports, scan\n" in preferred.output
     assert "Left to the scan (prefer_scan): report-users." in preferred.output
+    assert asked_for.output == preferred.output
+
+
+def test_pbi_sync_plan_asked_to_prefer_a_scan_it_does_not_make_refuses(admin):
+    result = sync("plan", "reports", "report-users", "--prefer-scan")
+
+    assert result.exit_code == 1
+    assert "no scan is among the targets" in result.output
 
 
 def test_pbi_sync_run_asks_for_no_users(admin):

@@ -286,9 +286,16 @@ Finished in 0 seconds: 7 fetched, 7 fresh (not fetched again), 0 failed, 0 defer
 ### When is something fresh?
 
 A stored answer is fresh when it is younger than a limit that depends on the target: 24
-hours for the lists, scans and lists of users, 1 hour for the audit events of a day that is
-not over, and 1 hour for what a user sees. `--max-age 6h` (or `30m`, `2d`) replaces the
-limit. `--force` fetches everything again, and scans every workspace again; the one thing it
+hours for the lists and the scans, 7 days for the users of each item that an administrator
+asks for one item at a time (`report-users`, `app-users` and the like), 1 hour for the audit
+events of a day that is not over, and 1 hour for what a user sees. `--max-age 6h` (or `30m`,
+`2d`) replaces the limit for every target.
+
+The users of the items get a week because they cost a request per item out of 200 an hour:
+asked again every day, a tenant of thousands of items would spend all of its quota on them.
+A scan with `--get-artifact-users` keeps them fresher for a few requests (see
+[Taking the details from the scan](#taking-the-details-from-the-scan)); `--max-age 1d`
+asks for them every day. `--force` fetches everything again, and scans every workspace again; the one thing it
 does not fetch again is a complete day of audit events, which cannot change.
 
 ### Quotas
@@ -384,8 +391,8 @@ dataflow; with `--datasource-details` the data sources of every dataset and data
 costs a few requests for up to 100 workspaces, where `report-users` costs one request for
 every report out of 200 an hour: a tenant with 3,000 reports needs 15 hours for those alone.
 
-**`--prefer-scan`** (`prefer_scan: true` in the tenant of a [plan file](plan-file.md)) leaves
-those targets to the scan:
+So a sync that has the `scan` target leaves those targets to the scan (`--prefer-scan`,
+on by default whenever the scan is among the targets):
 
 | Target | Left to the scan when it is made with |
 | --- | --- |
@@ -393,17 +400,23 @@ those targets to the scan:
 | `datasources`, `dataflow-datasources` | `--datasource-details` |
 
 ```
-pbi sync run all --get-artifact-users --datasource-details --prefer-scan
+pbi sync run all --get-artifact-users --datasource-details     # users and data sources from the scan
+pbi sync run all --get-artifact-users --no-prefer-scan         # one request per item, as before
 ```
 
-It is off unless it is asked for. It needs the `scan` target. The plan and the run say what was
-left to the scan (`Left to the scan (prefer_scan): report-users, ...`). They also say which
-target is still fetched one item at a time because the scan is made without the option that
-holds its answers. A target left to the scan is not fetched even when it is named.
+`--no-prefer-scan` (`prefer_scan: false` in the tenant of a [plan file](plan-file.md)) asks
+for each item instead. `--prefer-scan` (`prefer_scan: true`) is the default made strict: a
+sync without the scan is refused, where by default it fetches one item at a time. The plan
+and the run say what was left to the scan (`Left to the scan (prefer_scan): report-users,
+...`). They also say which target is still fetched one item at a time because the scan is
+made without the option that holds its answers. A target left to the scan is not fetched
+even when it is named.
 
-The [lake](lake.md#the-data-model) takes the users of an item from its own
-request when there is one, and else from the newest scan of its workspace; the `access` table
-says which in `source`. What the scan does not cover has no users then:
+The [lake](lake.md#the-data-model) takes the users of an item from the newest answer it
+holds: the item's own request, or the newest scan of its workspace (for a workspace, also
+the list of workspaces with `-e users`); the `access` table says which in `source`. So users
+asked for one item at a time before are not taken over a newer scan. What the scan does not
+cover has no users then:
 
 - **apps:** `app-users` is never left to the scan, because a scan does not list the people of
   an app;

@@ -1303,12 +1303,23 @@ class Catalog:
         return view
 
     def _read_users(self, subject: Subject) -> UsersView:
+        """The newest answer the lake holds about who has access to a subject.
+
+        The list of workspaces (with their users), the subject's own request (``report-users``
+        and the like) and its scan can each say it; the one stored last is taken, so an old
+        answer of one item is not taken over a newer scan (a sync that leaves the users to the
+        scan stops asking for them one item at a time). When two are as old, the order above
+        decides.
+        """
+        found: List[UsersView] = []
         if isinstance(subject, Workspace) and subject.raw.get("users"):
-            found = self.listing("workspace")
-            return UsersView(
-                self._access(subject.raw["users"]),
-                "admin.groups",
-                found.fetched_at if found else None,
+            listing = self.listing("workspace")
+            found.append(
+                UsersView(
+                    self._access(subject.raw["users"]),
+                    "admin.groups",
+                    listing.fetched_at if listing else None,
+                )
             )
         providers, held = self._held_users(subject)
         if held is not None:
@@ -1318,24 +1329,34 @@ class Catalog:
             except (OSError, ValueError) as error:
                 logger.warning(f"Ignoring unreadable {provider.endpoint.id}: {error}")
             else:
-                return UsersView(
-                    self._access(rows), provider.endpoint.id, snapshot.fetched_at
+                found.append(
+                    UsersView(
+                        self._access(rows), provider.endpoint.id, snapshot.fetched_at
+                    )
                 )
         if isinstance(subject, Workspace):
             view = self.scan_of(subject.id)
             if view is not None and view.workspace.get("users"):
-                return UsersView(
-                    self._access(view.workspace["users"]), "scan", view.as_of
+                found.append(
+                    UsersView(self._access(view.workspace["users"]), "scan", view.as_of)
                 )
         else:
             scanned = subject.scan or {}
             if scanned.get("users"):
                 view = self.scan_of(subject.workspace_id or "")
-                return UsersView(
-                    self._access(scanned["users"]),
-                    "scan",
-                    view.as_of if view else None,
+                found.append(
+                    UsersView(
+                        self._access(scanned["users"]),
+                        "scan",
+                        view.as_of if view else None,
+                    )
                 )
+        if found:
+            never = datetime.min.replace(tzinfo=timezone.utc)
+            return max(
+                enumerate(found),
+                key=lambda pair: (pair[1].fetched_at or never, -pair[0]),
+            )[1]
         targets = " or ".join(f"`pbi sync run {p.target.name}`" for p in providers)
         if isinstance(subject, Workspace):
             ways = (
