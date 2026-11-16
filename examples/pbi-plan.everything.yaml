@@ -6,11 +6,14 @@
 #
 # What it costs. The lists of the tenant are a few requests. The scan of every workspace is a
 # few requests for each 100 workspaces, and it holds the users and the data sources of the
-# items too, so `prefer_scan: true` (below) takes them from it. Without it, the details of
-# every item (who can open every report, dataset, dashboard, dataflow and workspace; the data
-# sources of every dataset and dataflow) are ONE REQUEST PER ITEM, and Power BI allows 200 an
-# hour for the users: a tenant with 2,000 reports needs 10 hours for their users alone. The
-# people of an app are not in a scan, so `app-users` is still a request per app. The plan
+# items too, so a sync with a scan takes them from it (`prefer_scan`, below: the default
+# whenever there is a scan). With `prefer_scan: false`, the details of every item (who can
+# open every report, dataset, dashboard, dataflow and workspace; the data sources of every
+# dataset and dataflow) are ONE REQUEST PER ITEM, and Power BI allows 200 an hour for the
+# users: a tenant with 2,000 reports needs 10 hours for their users alone. The people of an
+# app are not in a scan, so `app-users` is still a request per app; the users asked for one
+# item at a time are asked for again once a week, not every day (`--max-age 1d` asks every
+# day). The plan
 # shows this before anything is sent; a run does what fits the quota, keeps it, and says how
 # much is held back: run it again and it carries on where it stopped, fetching only what the
 # lake does not hold fresh.

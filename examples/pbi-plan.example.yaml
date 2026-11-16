@@ -26,7 +26,7 @@ accounts:
 # user's account runs once for each of the user profiles above.
 tenant:
   targets: [default, activity] # add `app-users` for the people who can open each app (a request for
-  #                              # every app: 200 an hour)
+  #                              # every app: 200 an hour; asked for again once a week)
   activity_days: 7 # days of audit events (1 to 28); only with `activity` above
   # scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan
   #                                     # only some, use `scan:` in an entry below)
