@@ -42,8 +42,9 @@ tenant:
   scan: all
   exclude_personal: true # leave out the personal workspaces ("My workspace"); false keeps them
   # Take the users and the data sources of the items from the scan above, not one request per
-  # item. The plan lists what it leaves to the scan. false asks for each item, as Power BI's
-  # per-item operations answer, at the cost described at the top.
+  # item (the default whenever there is a scan; written here so that it is plain). The plan
+  # lists what it leaves to the scan. false asks for each item, as Power BI's per-item
+  # operations answer, at the cost described at the top.
   prefer_scan: true
 
 session:

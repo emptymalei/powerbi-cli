@@ -165,14 +165,16 @@ ExcludeInactiveOption = Annotated[
     typer.Option("--exclude-inactive", help="Leave inactive workspaces out of scans"),
 ]
 PreferScanOption = Annotated[
-    bool,
+    Optional[bool],
     typer.Option(
-        "--prefer-scan",
+        "--prefer-scan/--no-prefer-scan",
+        show_default=False,
         help=(
             "Take the users and data sources of the items from the scan instead of one "
             "request per item: report-users, dataset-users, dashboard-users, "
             "dataflow-users and group-users with --get-artifact-users, datasources and "
-            "dataflow-datasources with --datasource-details. Needs the scan target; the "
+            "dataflow-datasources with --datasource-details. On by default when the scan "
+            "is among the targets; --no-prefer-scan fetches them one item at a time. The "
             "plan and the run list what is left to the scan"
         ),
     ),
@@ -244,7 +246,7 @@ def _options(
     wait: float = 120.0,
     admin_profile: Optional[str] = None,
     user_profile: Optional[str] = None,
-    prefer_scan: bool = False,
+    prefer_scan: Optional[bool] = None,
 ) -> SyncOptions:
     return SyncOptions(
         targets=tuple(targets or ()),
@@ -658,7 +660,7 @@ def sync_plan(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
-    prefer_scan: PreferScanOption = False,
+    prefer_scan: PreferScanOption = None,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,
@@ -840,7 +842,7 @@ def sync_run(
     full_scan: FullScanOption = False,
     exclude_personal: ExcludePersonalOption = False,
     exclude_inactive: ExcludeInactiveOption = False,
-    prefer_scan: PreferScanOption = False,
+    prefer_scan: PreferScanOption = None,
     scan_interval: ScanIntervalOption = 5.0,
     scan_timeout: ScanTimeoutOption = 600.0,
     admin_profile: AdminProfileOption = None,

@@ -655,8 +655,10 @@ def test_a_workspace_without_a_scan_says_how_to_get_its_users(world):
     assert users.rows == [] and "pbi sync run scan" in users.missing
 
 
-def test_the_users_of_a_report_come_from_the_fetched_ones_first(world):
-    world.run("report-users", "scan", scan_flags=FULL)
+def test_the_users_of_a_report_fetched_after_the_scan_are_taken(world):
+    world.run("scan", scan_flags=FULL)
+    world.clock.advance(hours=1)
+    world.run("report-users", prefer_scan=False)
     catalog = catalog_of(world)
 
     users = catalog.users(catalog.item("report", "rep-0001"))
@@ -665,6 +667,18 @@ def test_the_users_of_a_report_come_from_the_fetched_ones_first(world):
         ("Ann", "ann-rep-0001@example.com", "Owner")
     ]
     assert users.source == "admin.reports.users"
+
+
+def test_a_scan_newer_than_the_users_of_a_report_is_taken(world):
+    world.run("report-users")
+    world.clock.advance(days=2)
+    world.run("scan", scan_flags=FULL)
+    catalog = catalog_of(world)
+
+    users = catalog.users(catalog.item("report", "rep-0001"))
+
+    assert users.source == "scan"
+    assert [(a.email, a.role) for a in users.rows] == [("ann@example.com", "Owner")]
 
 
 def test_the_users_of_a_report_come_from_the_scan_otherwise(synced):
@@ -714,7 +728,7 @@ def test_users_and_details_are_kept_until_the_lake_is_read_again(world, monkeypa
 
 
 def test_unreadable_users_in_the_lake_are_ignored(world):
-    world.run("report-users", "scan", scan_flags=FULL)
+    world.run("report-users", "scan", scan_flags=FULL, prefer_scan=False)
     for found in world.store.parameter_sets(TENANT, "admin.reports.users"):
         (found.latest.directory / "data.json").write_text("{", encoding="utf-8")
     catalog = catalog_of(world)

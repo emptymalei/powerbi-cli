@@ -28,6 +28,12 @@ from typing import AbstractSet, Any, Dict, List, Mapping, Optional, Sequence, Se
 from pbi_cli.core.registry import Scope
 from pbi_cli.errors import PBIError
 
+#: How long the users of an item, asked for one item at a time by an administrator, stay
+#: fresh for a sync: a request each out of 200 an hour, so a tenant of thousands of items
+#: would spend its whole quota asking again every day. ``--max-age`` overrules it; a scan
+#: with ``--get-artifact-users`` refreshes them for 100 workspaces per request.
+USERS_TTL = timedelta(days=7)
+
 #: Names that stand for several targets.
 DEFAULT = "default"
 ALL = "all"
@@ -130,6 +136,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"reportId": ("row", "id")},
         item="report",
         detail="users",
+        ttl=USERS_TTL,
         workspace="workspaceId",
     ),
     Target(
@@ -156,6 +163,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"groupId": ("row", "id")},
         item="workspace",
         detail="users",
+        ttl=USERS_TTL,
     ),
     Target(
         "dataset-users",
@@ -168,6 +176,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"datasetId": ("row", "id")},
         item="dataset",
         detail="users",
+        ttl=USERS_TTL,
         workspace="workspaceId",
     ),
     Target(
@@ -181,6 +190,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"dashboardId": ("row", "id")},
         item="dashboard",
         detail="users",
+        ttl=USERS_TTL,
         workspace="workspaceId",
     ),
     Target(
@@ -194,6 +204,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"dataflowId": ("row", "objectId")},
         item="dataflow",
         detail="users",
+        ttl=USERS_TTL,
         workspace="workspaceId",
     ),
     Target(
@@ -207,6 +218,7 @@ TARGETS: Tuple[Target, ...] = (
         bind={"appId": ("row", "id")},
         item="app",
         detail="users",
+        ttl=USERS_TTL,
         workspace="workspaceId",
     ),
     Target(
@@ -463,7 +475,8 @@ class Selection:
                 f"Left to the scan (prefer_scan): {', '.join(self.left_to_scan)}. Their "
                 "users and data sources come from the scan, one request for up to 100 "
                 "workspaces, not one request per item; a workspace the scan leaves out "
-                "(a personal or inactive one, when they are excluded) has none."
+                "(a personal or inactive one, when they are excluded) has none. "
+                "--no-prefer-scan (prefer_scan: false) fetches them one item at a time."
             )
         for name, option in self.not_in_scan:
             found.append(
@@ -511,6 +524,7 @@ def select_targets(
     names: Sequence[str] = (),
     available: Optional[AbstractSet[Scope]] = None,
     scan_options: Optional[AbstractSet[str]] = None,
+    needs_scan: bool = True,
 ) -> Selection:
     """Turn what the user named into the targets to sync.
 
@@ -526,9 +540,12 @@ def select_targets(
         (names of `pbi_cli.core.scan.ScanFlags`). The fan-outs that such a scan answers
         (`SCAN_ANSWERS`) are left out, whether they were named or came with ``all``; the
         others stay, listed in `Selection.not_in_scan`. ``None`` leaves nothing to the scan.
+    :param needs_scan: whether preferring the scan was asked for, so that a sync without
+        the scan is refused; else (the scan preferred by default) a sync without the scan
+        fetches every fan-out one item at a time
     :raises PBIError: for a name that is not a target, a target that needs an account that
-        is not stored, or a sync that prefers the scan, has no scan, and has fan-outs that
-        a scan would answer
+        is not stored, or a sync that was asked to prefer the scan, has no scan, and has
+        fan-outs that a scan would answer
     """
     wanted: Set[str] = set()
     for name in names or (DEFAULT,):
@@ -549,6 +566,10 @@ def select_targets(
         covered = [
             t.name for t in TARGETS if t.name in wanted and t.name in SCAN_ANSWERS
         ]
+        if covered and "scan" not in wanted and not needs_scan:
+            covered = (
+                []
+            )  # preferred by default: without a scan there is nothing to prefer
         if covered and "scan" not in wanted:
             raise PBIError(
                 f"prefer_scan takes {', '.join(covered)} from the scan, and no scan is among "

@@ -331,7 +331,8 @@ class TenantPlan:
     :param exclude_personal: leave personal workspaces out of the scan
     :param exclude_inactive: leave inactive workspaces out of the scan
     :param prefer_scan: take the users and data sources of the items from the scan instead
-        of one request per item (`pbi_cli.core.sync.plan.SyncOptions.prefer_scan`)
+        of one request per item (`pbi_cli.core.sync.plan.SyncOptions.prefer_scan`); ``None``
+        when the file does not say, which does so whenever the tenant has a scan
     """
 
     targets: Tuple[str, ...] = ()
@@ -340,7 +341,7 @@ class TenantPlan:
     full_scan: bool = False
     exclude_personal: bool = False
     exclude_inactive: bool = False
-    prefer_scan: bool = False
+    prefer_scan: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -732,7 +733,11 @@ class PlanFile:
             full_scan=reader.boolean(box, "full_scan", "tenant"),
             exclude_personal=reader.boolean(box, "exclude_personal", "tenant"),
             exclude_inactive=reader.boolean(box, "exclude_inactive", "tenant"),
-            prefer_scan=reader.boolean(box, "prefer_scan", "tenant"),
+            prefer_scan=(
+                reader.boolean(box, "prefer_scan", "tenant")
+                if "prefer_scan" in box
+                else None
+            ),
         )
 
     @classmethod
@@ -964,7 +969,9 @@ class PlanFile:
                             exclude_personal=tenant.exclude_personal,
                             exclude_inactive=tenant.exclude_inactive,
                             # the scan is an administrator's: so is what it answers
-                            prefer_scan=tenant.prefer_scan and scope is Scope.ADMIN,
+                            prefer_scan=(
+                                tenant.prefer_scan if scope is Scope.ADMIN else False
+                            ),
                             admin_profile=profile if scope is Scope.ADMIN else None,
                             user_profile=profile if scope is Scope.USER else None,
                         ),
