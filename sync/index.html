@@ -3240,9 +3240,15 @@ Finished in 0 seconds: 7 fetched, 7 fresh (not fetched again), 0 failed, 0 defer
 </code></pre></div>
 <h3 id="when-is-something-fresh">When is something fresh?<a class="headerlink" href="#when-is-something-fresh" title="Permanent link">¤</a></h3>
 <p>A stored answer is fresh when it is younger than a limit that depends on the target: 24
-hours for the lists, scans and lists of users, 1 hour for the audit events of a day that is
-not over, and 1 hour for what a user sees. <code>--max-age 6h</code> (or <code>30m</code>, <code>2d</code>) replaces the
-limit. <code>--force</code> fetches everything again, and scans every workspace again; the one thing it
+hours for the lists and the scans, 7 days for the users of each item that an administrator
+asks for one item at a time (<code>report-users</code>, <code>app-users</code> and the like), 1 hour for the audit
+events of a day that is not over, and 1 hour for what a user sees. <code>--max-age 6h</code> (or <code>30m</code>,
+<code>2d</code>) replaces the limit for every target.</p>
+<p>The users of the items get a week because they cost a request per item out of 200 an hour:
+asked again every day, a tenant of thousands of items would spend all of its quota on them.
+A scan with <code>--get-artifact-users</code> keeps them fresher for a few requests (see
+<a href="#taking-the-details-from-the-scan">Taking the details from the scan</a>); <code>--max-age 1d</code>
+asks for them every day. <code>--force</code> fetches everything again, and scans every workspace again; the one thing it
 does not fetch again is a complete day of audit events, which cannot change.</p>
 <h3 id="quotas">Quotas<a class="headerlink" href="#quotas" title="Permanent link">¤</a></h3>
 <p>Every request counts against the quota of its operation (see the
@@ -3322,8 +3328,8 @@ to itself before the first write (<code>--backup-to PLACE</code> chooses where).
 dataflow; with <code>--datasource-details</code> the data sources of every dataset and dataflow. A scan
 costs a few requests for up to 100 workspaces, where <code>report-users</code> costs one request for
 every report out of 200 an hour: a tenant with 3,000 reports needs 15 hours for those alone.</p>
-<p><strong><code>--prefer-scan</code></strong> (<code>prefer_scan: true</code> in the tenant of a <a href="../plan-file/">plan file</a>) leaves
-those targets to the scan:</p>
+<p>So a sync that has the <code>scan</code> target leaves those targets to the scan (<code>--prefer-scan</code>,
+on by default whenever the scan is among the targets):</p>
 <table>
 <thead>
 <tr>
@@ -3342,15 +3348,21 @@ those targets to the scan:</p>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code>pbi sync run all --get-artifact-users --datasource-details --prefer-scan
+<div class="highlight"><pre><span></span><code>pbi sync run all --get-artifact-users --datasource-details     # users and data sources from the scan
+pbi sync run all --get-artifact-users --no-prefer-scan         # one request per item, as before
 </code></pre></div>
-<p>It is off unless it is asked for. It needs the <code>scan</code> target. The plan and the run say what was
-left to the scan (<code>Left to the scan (prefer_scan): report-users, ...</code>). They also say which
-target is still fetched one item at a time because the scan is made without the option that
-holds its answers. A target left to the scan is not fetched even when it is named.</p>
-<p>The <a href="../lake/#the-data-model">lake</a> takes the users of an item from its own
-request when there is one, and else from the newest scan of its workspace; the <code>access</code> table
-says which in <code>source</code>. What the scan does not cover has no users then:</p>
+<p><code>--no-prefer-scan</code> (<code>prefer_scan: false</code> in the tenant of a <a href="../plan-file/">plan file</a>) asks
+for each item instead. <code>--prefer-scan</code> (<code>prefer_scan: true</code>) is the default made strict: a
+sync without the scan is refused, where by default it fetches one item at a time. The plan
+and the run say what was left to the scan (<code>Left to the scan (prefer_scan): report-users,
+...</code>). They also say which target is still fetched one item at a time because the scan is
+made without the option that holds its answers. A target left to the scan is not fetched
+even when it is named.</p>
+<p>The <a href="../lake/#the-data-model">lake</a> takes the users of an item from the newest answer it
+holds: the item's own request, or the newest scan of its workspace (for a workspace, also
+the list of workspaces with <code>-e users</code>); the <code>access</code> table says which in <code>source</code>. So users
+asked for one item at a time before are not taken over a newer scan. What the scan does not
+cover has no users then:</p>
 <ul>
 <li><strong>apps:</strong> <code>app-users</code> is never left to the scan, because a scan does not list the people of
   an app;</li>

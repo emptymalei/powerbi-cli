@@ -5932,7 +5932,7 @@ an administrator account, and else what a user can see, workspace by workspace.
 <li><code>--full-scan</code>: Scan every workspace, not only those that changed since the last scan</li>
 <li><code>--exclude-personal</code>: Leave personal workspaces out of scans</li>
 <li><code>--exclude-inactive</code>: Leave inactive workspaces out of scans</li>
-<li><code>--prefer-scan</code>: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan</li>
+<li><code>--prefer-scan / --no-prefer-scan</code>: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. On by default when the scan is among the targets; --no-prefer-scan fetches them one item at a time. The plan and the run list what is left to the scan</li>
 <li><code>--scan-interval &lt;float range&gt;</code>: Seconds between status checks of a scan  [default: 5.0; x&gt;=0.1]</li>
 <li><code>--scan-timeout &lt;float range&gt;</code>: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x&gt;=1]</li>
 <li><code>--admin-profile &lt;str&gt;</code>: The profile of the administrator account to use (default: the active profile of the group admin)</li>
@@ -6005,7 +6005,7 @@ an administrator account, and else what a user can see, workspace by workspace.
 <li><code>--full-scan</code>: Scan every workspace, not only those that changed since the last scan</li>
 <li><code>--exclude-personal</code>: Leave personal workspaces out of scans</li>
 <li><code>--exclude-inactive</code>: Leave inactive workspaces out of scans</li>
-<li><code>--prefer-scan</code>: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. Needs the scan target; the plan and the run list what is left to the scan</li>
+<li><code>--prefer-scan / --no-prefer-scan</code>: Take the users and data sources of the items from the scan instead of one request per item: report-users, dataset-users, dashboard-users, dataflow-users and group-users with --get-artifact-users, datasources and dataflow-datasources with --datasource-details. On by default when the scan is among the targets; --no-prefer-scan fetches them one item at a time. The plan and the run list what is left to the scan</li>
 <li><code>--scan-interval &lt;float range&gt;</code>: Seconds between status checks of a scan  [default: 5.0; x&gt;=0.1]</li>
 <li><code>--scan-timeout &lt;float range&gt;</code>: Seconds to wait for one scan (a timed out scan is continued next run)  [default: 600.0; x&gt;=1]</li>
 <li><code>--admin-profile &lt;str&gt;</code>: The profile of the administrator account to use (default: the active profile of the group admin)</li>

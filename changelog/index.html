@@ -2500,8 +2500,29 @@
 <h2 id="040-unreleased">0.4.0 (unreleased)<a class="headerlink" href="#040-unreleased" title="Permanent link">¤</a></h2>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">¤</a></h3>
 <ul>
-<li>The buttons of the <a href="../tui/">terminal UI</a> are slim, one line each, instead of three-line
-  blocks; everything a button does is also a key and a command of the palette.</li>
+<li><strong>A sync with a scan takes the users and data sources of the items from it.</strong> <code>prefer_scan</code>
+  is on by default whenever the <code>scan</code> target is in the sync: <code>report-users</code>,
+  <code>dataset-users</code> and the other users targets come from a scan made with
+  <code>--get-artifact-users</code>, and <code>datasources</code> and <code>dataflow-datasources</code> from one made with
+  <code>--datasource-details</code>, a few requests per 100 workspaces instead of one request per item
+  out of 200 an hour. <code>--no-prefer-scan</code> (<code>prefer_scan: false</code> in a plan file) asks for each
+  item, as before; <code>--prefer-scan</code> still refuses a sync without the scan. See
+  <a href="../sync/#taking-the-details-from-the-scan">Taking the details from the scan</a>.</li>
+<li><strong>The users of the items stay fresh for 7 days in a sync</strong>, not 24 hours: <code>group-users</code>,
+  <code>report-users</code>, <code>dataset-users</code>, <code>dashboard-users</code>, <code>dataflow-users</code> and <code>app-users</code>. They
+  cost a request per item, and a big tenant spent its whole quota asking for them again every
+  day. <code>--max-age</code> still replaces the limit. Commands that ask for the users of one item
+  (<code>pbi reports users</code> and the like) keep the day.</li>
+<li>
+<p><strong>Who has access to an item is taken from the newest answer the lake holds</strong>: the item's own
+  request or the scan of its workspace, whichever was stored last. The item's own request
+  used to win however old it was, so users fetched one item at a time once hid every newer
+  scan.</p>
+</li>
+<li>
+<p>The buttons of the <a href="../tui/">terminal UI</a> are slim, one line each, instead of three-line
+  blocks; everything a button does is also a key and a command of the palette.</p>
+</li>
 <li><code>pbi workspaces scan batch</code> scans in batches of up to 100 workspaces per request, not one
   request per workspace: the API allows 500 scan requests an hour, so the old way ran out
   of quota after 500 workspaces. Every workspace still gets its own file, named as before,

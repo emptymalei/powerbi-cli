@@ -2703,7 +2703,7 @@ what is wanted for <em>one workspace</em> cannot be said at all. With it:</p>
 <span class="c1"># user's account runs once for each of the user profiles above.</span>
 <span class="nt">tenant</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">default</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">activity</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># add `app-users` for the people who can open each app (a request for</span>
-<span class="w">  </span><span class="c1">#                              # every app: 200 an hour)</span>
+<span class="w">  </span><span class="c1">#                              # every app: 200 an hour; asked for again once a week)</span>
 <span class="w">  </span><span class="nt">activity_days</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span><span class="w"> </span><span class="c1"># days of audit events (1 to 28); only with `activity` above</span>
 <span class="w">  </span><span class="c1"># scan: [lineage, datasource_details] # a scan of every workspace of the tenant (to scan</span>
 <span class="w">  </span><span class="c1">#                                     # only some, use `scan:` in an entry below)</span>
@@ -2814,7 +2814,7 @@ may not be an account of the file.</p>
 </tr>
 <tr>
 <td><code>prefer_scan</code></td>
-<td>As <code>--prefer-scan</code> of <code>pbi sync run</code>: <code>true</code> takes the users and the data sources of the items from the scan instead of one request per item: <code>report-users</code> and the other user targets when the scan has <code>get_artifact_users</code>, <code>datasources</code> and <code>dataflow-datasources</code> when it has <code>datasource_details</code>. Off by default; the plan says what it leaves to the scan. It needs a scan, as the keys above do. See <a href="../sync/#taking-the-details-from-the-scan">Taking the details from the scan</a>.</td>
+<td>As <code>--prefer-scan</code> and <code>--no-prefer-scan</code> of <code>pbi sync run</code>: <code>true</code> takes the users and the data sources of the items from the scan instead of one request per item: <code>report-users</code> and the other user targets when the scan has <code>get_artifact_users</code>, <code>datasources</code> and <code>dataflow-datasources</code> when it has <code>datasource_details</code>. On by default whenever the tenant has a scan; <code>false</code> asks for each item. The plan says what it leaves to the scan. It needs a scan, as the keys above do. See <a href="../sync/#taking-the-details-from-the-scan">Taking the details from the scan</a>.</td>
 </tr>
 </tbody>
 </table>

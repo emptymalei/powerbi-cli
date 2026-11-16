@@ -2620,13 +2620,13 @@ about 100 workspaces per request. A sync that <em>prefers the scan</em> leaves t
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Mode</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Mode</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""How a target is fetched."""</span>
 
     <span class="n">SNAPSHOT</span> <span class="o">=</span> <span class="s2">"snapshot"</span>
@@ -2775,19 +2775,7 @@ answers: each with the name of that option</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">451</span>
 <span class="normal">452</span>
 <span class="normal">453</span>
 <span class="normal">454</span>
@@ -2813,7 +2801,20 @@ answers: each with the name of that option</p>
 <span class="normal">474</span>
 <span class="normal">475</span>
 <span class="normal">476</span>
-<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Selection</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The targets of a sync.</span>
 
@@ -2840,7 +2841,8 @@ answers: each with the name of that option</p>
                 <span class="sa">f</span><span class="s2">"Left to the scan (prefer_scan): </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_to_scan</span><span class="p">)</span><span class="si">}</span><span class="s2">. Their "</span>
                 <span class="s2">"users and data sources come from the scan, one request for up to 100 "</span>
                 <span class="s2">"workspaces, not one request per item; a workspace the scan leaves out "</span>
-                <span class="s2">"(a personal or inactive one, when they are excluded) has none."</span>
+                <span class="s2">"(a personal or inactive one, when they are excluded) has none. "</span>
+                <span class="s2">"--no-prefer-scan (prefer_scan: false) fetches them one item at a time."</span>
             <span class="p">)</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">option</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">not_in_scan</span><span class="p">:</span>
             <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -2884,22 +2886,23 @@ answers: each with the name of that option</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span>
-<span class="normal">473</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">notes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">notes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""What a plan and a run say about preferring the scan."""</span>
     <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_to_scan</span><span class="p">:</span>
@@ -2907,7 +2910,8 @@ answers: each with the name of that option</p>
             <span class="sa">f</span><span class="s2">"Left to the scan (prefer_scan): </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_to_scan</span><span class="p">)</span><span class="si">}</span><span class="s2">. Their "</span>
             <span class="s2">"users and data sources come from the scan, one request for up to 100 "</span>
             <span class="s2">"workspaces, not one request per item; a workspace the scan leaves out "</span>
-            <span class="s2">"(a personal or inactive one, when they are excluded) has none."</span>
+            <span class="s2">"(a personal or inactive one, when they are excluded) has none. "</span>
+            <span class="s2">"--no-prefer-scan (prefer_scan: false) fetches them one item at a time."</span>
         <span class="p">)</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">option</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">not_in_scan</span><span class="p">:</span>
         <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -3240,13 +3244,7 @@ workspaces only</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span>
-<span class="normal">51</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
@@ -3287,7 +3285,13 @@ workspaces only</p>
 <span class="normal">89</span>
 <span class="normal">90</span>
 <span class="normal">91</span>
-<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span>
+<span class="normal">97</span>
+<span class="normal">98</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Target</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One thing a sync keeps.</span>
 
@@ -3376,9 +3380,9 @@ workspaces only</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">children_of</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Target</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">children_of</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Target</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The fan-out targets that work on the rows of a target."""</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">target</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">TARGETS</span> <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">name</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -3426,18 +3430,18 @@ workspaces only</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
-<span class="normal">431</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_target</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_target</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The target with this name.</span>
 
 <span class="sd">    :raises PBIError: if there is none</span>
@@ -3459,7 +3463,7 @@ workspaces only</p>
 
 
 <h2 id="pbi_cli.core.sync.targets.select_targets" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">select_targets</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="p">(),</span> <span class="n">available</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scan_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">select_targets</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="p">(),</span> <span class="n">available</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scan_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">needs_scan</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 <a href="#pbi_cli.core.sync.targets.select_targets" class="headerlink" title="Permanent link">¤</a></h2>
 
@@ -3536,6 +3540,24 @@ others stay, listed in <code>Selection.not_in_scan</code>. <code>None</code> lea
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>needs_scan</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>whether preferring the scan was asked for, so that a sync without
+the scan is refused; else (the scan preferred by default) a sync without the scan
+fetches every fan-out one item at a time</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3556,8 +3578,8 @@ others stay, listed in <code>Selection.not_in_scan</code>. <code>None</code> lea
             <td>
               <div class="doc-md-description">
                 <p>for a name that is not a target, a target that needs an account that
-is not stored, or a sync that prefers the scan, has no scan, and has fan-outs that
-a scan would answer</p>
+is not stored, or a sync that was asked to prefer the scan, has no scan, and has
+fan-outs that a scan would answer</p>
               </div>
             </td>
           </tr>
@@ -3567,20 +3589,7 @@ a scan would answer</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/pbi_cli/core/sync/targets.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">510</span>
-<span class="normal">511</span>
-<span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
-<span class="normal">517</span>
-<span class="normal">518</span>
-<span class="normal">519</span>
-<span class="normal">520</span>
-<span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">523</span>
 <span class="normal">524</span>
 <span class="normal">525</span>
 <span class="normal">526</span>
@@ -3637,10 +3646,32 @@ a scan would answer</p>
 <span class="normal">577</span>
 <span class="normal">578</span>
 <span class="normal">579</span>
-<span class="normal">580</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">select_targets</span><span class="p">(</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">select_targets</span><span class="p">(</span>
     <span class="n">names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">available</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractSet</span><span class="p">[</span><span class="n">Scope</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">scan_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">needs_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selection</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Turn what the user named into the targets to sync.</span>
 
@@ -3656,9 +3687,12 @@ a scan would answer</p>
 <span class="sd">        (names of `pbi_cli.core.scan.ScanFlags`). The fan-outs that such a scan answers</span>
 <span class="sd">        (`SCAN_ANSWERS`) are left out, whether they were named or came with ``all``; the</span>
 <span class="sd">        others stay, listed in `Selection.not_in_scan`. ``None`` leaves nothing to the scan.</span>
+<span class="sd">    :param needs_scan: whether preferring the scan was asked for, so that a sync without</span>
+<span class="sd">        the scan is refused; else (the scan preferred by default) a sync without the scan</span>
+<span class="sd">        fetches every fan-out one item at a time</span>
 <span class="sd">    :raises PBIError: for a name that is not a target, a target that needs an account that</span>
-<span class="sd">        is not stored, or a sync that prefers the scan, has no scan, and has fan-outs that</span>
-<span class="sd">        a scan would answer</span>
+<span class="sd">        is not stored, or a sync that was asked to prefer the scan, has no scan, and has</span>
+<span class="sd">        fan-outs that a scan would answer</span>
 <span class="sd">    """</span>
     <span class="n">wanted</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="ow">or</span> <span class="p">(</span><span class="n">DEFAULT</span><span class="p">,):</span>
@@ -3679,6 +3713,10 @@ a scan would answer</p>
         <span class="n">covered</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">TARGETS</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">wanted</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">SCAN_ANSWERS</span>
         <span class="p">]</span>
+        <span class="k">if</span> <span class="n">covered</span> <span class="ow">and</span> <span class="s2">"scan"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wanted</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">needs_scan</span><span class="p">:</span>
+            <span class="n">covered</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[]</span>
+            <span class="p">)</span>  <span class="c1"># preferred by default: without a scan there is nothing to prefer</span>
         <span class="k">if</span> <span class="n">covered</span> <span class="ow">and</span> <span class="s2">"scan"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PBIError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"prefer_scan takes </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">covered</span><span class="p">)</span><span class="si">}</span><span class="s2"> from the scan, and no scan is among "</span>
